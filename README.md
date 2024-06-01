@@ -7,7 +7,7 @@
 link to published medium story : [Dare you to click](https://medium.com/@sciencely98/exploring-graph-analysis-and-recommendation-with-vishgraphs-and-corerec-51e696ee6e59)
 
 
-Welcome to VishGraphs - your go-to Python library for making random graphs.
+Welcome to CoreRec & VishGraphs - your go-to Python library for Training Recomendation models & making random graphs.
 
 <h2>
     <img src="REPO_UTIL/intro.png" style="vertical-align: middle; margin-right: 8px;" width="30" height="30">
