@@ -1,0 +1,6 @@
+matplotlib==3.9.0
+networkx==3.3
+numpy==1.26.4
+pandas==2.2.2
+scikit_learn==1.4.2
+torch==2.3.0

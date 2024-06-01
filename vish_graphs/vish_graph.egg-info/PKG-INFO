@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: vish_graph
+Version: 0.2.0
+Summary: Graph processing library
+Home-page: https://github.com/visheshyadav/vish_graphs
+Author: Vishesh Yadav
+Author-email: sciencely98@gmail.com
+Requires-Dist: numpy
+Requires-Dist: matplotlib
+Requires-Dist: pandas
+Requires-Dist: networkx
+Requires-Dist: scikit-learn
+Requires-Dist: torch
+Requires-Dist: torchvision
+
+A Python library for processing and visualizing graphs.
