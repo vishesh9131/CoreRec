@@ -1,4 +1,13 @@
 # VishGraphs and CoreRec Manual
+
+<!-- <h1><img src="path_to_your_image" style="vertical-align: middle; margin-right: 10px;"> VishGraphs and CoreRec Manual</h1> -->
+
+<h1>
+    <img src="CoreRec/REPO_UTIL/coreRec.svg" style="vertical-align: middle; margin-right: 10px;">
+    VishGraphs and CoreRec Manual
+</h1>
+
+
 link to published medium story : [Dare you to click](https://medium.com/@sciencely98/exploring-graph-analysis-and-recommendation-with-vishgraphs-and-corerec-51e696ee6e59)
 
 
