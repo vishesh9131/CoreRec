@@ -3,7 +3,7 @@
 <!-- <h1><img src="path_to_your_image" style="vertical-align: middle; margin-right: 10px;"> VishGraphs and CoreRec Manual</h1> -->
 
 <h1>
-    <img src="CoreRec/REPO_UTIL/coreRec.svg" style="vertical-align: middle; margin-right: 10px;">
+    <img src="CoreRec/REPO_UTIL/recomer.png" style="vertical-align: middle; margin-right: 10px;">
     VishGraphs and CoreRec Manual
 </h1>
 
