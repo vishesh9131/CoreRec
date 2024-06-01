@@ -76,17 +76,16 @@ To install VishGraphs, you can use pip:
 
 | Directory/File                | Files                                             | Description                                      |
 |------------------------------|---------------------------------------------------|--------------------------------------------------|
-| [CoreRec/](#corerec)          | [REPO_UTIL/](#repo_util)                          | Contains CoreRec related files and modules       |
+| CoreRec          | [REPO_UTIL/](#repo_util)                          | Contains CoreRec related files and modules       |
 |                              | [coreRec.svg](#corerec_svg)                       |                                                  |
-| [SANDBOX/](#sandbox)          | [usecases.md](#usecases_md)                        | Contains sandbox files for testing and experimentation |
+| [SANDBOX/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX)          | usecases.md                                      | Contains sandbox files for testing and experimentation |
 |                              | [vish_graphs.py](#vish_graphs_py)                 |                                                  |
-| [USECASES/](#usecases)        | [vish_graphs.py](#vish_graphs_py_2)                | Contains specific use case files                 |
+| [USECASES/](https://github.com/vishesh9131/CoreRec/tree/main/USECASES)        | vish_graphs.py                | Contains specific use case files                 |
 |                              | [weightG.py](#weightg_py)                         |                                                  |
 | [UPDATES/](#updates)          |                                                   | Directory for update-related files                |
-| [BACKUP/](#backup)            |                                                   | Directory for backup files                        |
-| [vish_graphs/](#vish_graphs)  | [vish_graphs.py](#vish_graphs_py_3)                | Directory for VishGraphs related files and modules |
-| [ROADMAP/](#roadmap)          |                                                   | Directory for roadmap and future updates          |
-| [README.md](#readme)          |                                                   | Main README file                                 |
+| [BACKUP/](https://github.com/vishesh9131/CoreRec/tree/main/BACKUP)            |                                                   | Directory for backup files                        |
+| [vish_graphs/](https://github.com/vishesh9131/CoreRec/tree/main/vish_graphs)  | vish_graphs.py          | Directory for VishGraphs related files and modules |
+| [ROADMAP/](https://github.com/vishesh9131/CoreRec/tree/main/ROADMAP)          |                                                   | Directory for roadmap and future updates          |
 
 # Usage
 ### Generating Random Graphs
@@ -101,7 +100,7 @@ graph_file = vishgraphs.generate_random_graph(10, "random_graph.csv")
 ## 🔍 Delve into Advanced Graph Analysis and Recommendation with VishGraphs and CoreRec! 🚀
 Welcome to a world of cutting-edge graph analysis and recommendation tools brought to you by VishGraphs and CoreRec. Uncover the potential of data visualization and machine learning in a sophisticated manner.
 
-[🔗 Explore Detailed UseCases Here 🔗](https://github.com/Vishesh9131/CoreRec/USECASES/usecases.md)
+[🔗 Explore Detailed UseCases Here 🔗](https://github.com/vishesh9131/CoreRec/blob/main/USECASES/usecases.md)
 
 
 ## CoreRec
