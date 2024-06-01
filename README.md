@@ -20,12 +20,40 @@ VishGraphs is a versatile Python library designed to simplify graph visualizatio
     <img src="REPO_UTIL/feature.png" style="vertical-align: middle; margin-right: 10px;" width="40" height="38">
     Features
 </h2>
+### Feature Summary
 
-- Generate random graphs with customizable parameters.
-- Visualize graphs in both 2D and 3D.
-- Analyze graph properties such as connectivity and centrality.
-- Export graphs to various formats for further analysis or presentation.
+#### core_rec.py
 
+- **`GraphTransformer(num_layers, d_model, num_heads, d_feedforward, input_dim)`**
+  - Defines a Transformer model for graph data with configurable parameters.
+  
+- **`GraphDataset(adj_matrix)`**
+  - Creates a PyTorch dataset for graph data to facilitate model training.
+  
+- **`train_model(model, data_loader, criterion=False, optimizer=False, num_epochs=False)`**
+  - Trains a given model using the provided data loader and parameters.
+  
+- **`predict(model, graph, node_index, top_k=5)`**
+  - Predicts similar nodes based on a trained model and graph data.
+  
+- **`aaj_accuracy(graph, node_index, recommended_indices)`**
+  - Calculates accuracy metrics for recommended nodes based on graph data.
+
+#### vish_graphs.py
+
+- **`generate_large_random_graph(num_people, file_path="large_random_graph.csv", seed=None)`**
+  - Generates a large random graph and saves it to a CSV file.
+  
+- **`draw_graph(adj_matrix, top_nodes=None, recommended_nodes=None, node_labels=None, transparent_labeled=True, edge_weights=None)`**
+  - Draws a 2D visualization of a graph with optional features.
+  
+- **`draw_graph_3d(adj_matrix, top_nodes=None, recommended_nodes=None, node_labels=None, transparent_labeled=True, edge_weights=None)`**
+  - Creates a 3D visualization of a graph with customizable properties.
+  
+- **`show_bipartite_relationship(adj_matrix)`**
+  - Visualizes bipartite relationships in a graph.
+
+These libraries provide essential functionalities for graph analysis, visualization, and machine learning tasks.
 <!-- ## Installation -->
 <h2>
     <img src="REPO_UTIL/install.png" style="vertical-align: middle; margin-right: 10px;" width="40" height="38">
@@ -33,10 +61,9 @@ VishGraphs is a versatile Python library designed to simplify graph visualizatio
 </h2>
 
 
-You can install VishGraphs via pip:
+For Security reasons, we are not providing the pip install command for now.
 
-
-pip install vishgraphs
+just copy the files "`vish_graphs.py`" ,"`core_rec.py`" and "`common_imports.py`" to your project folder and import them in your project.
 
 
 
@@ -55,7 +82,7 @@ pip install vishgraphs
 3. [Usage](#usage)
     - [Generating Random Graphs](#generating-random-graphs)
     - [Drawing Graphs](#drawing-graphs)
-4. [Examples](#examples)
+4. [Directory Structure](#directory-structure)
 5. [Troubleshooting](#troubleshooting)
 6. [Contributing](#contributing)
 7. [License](#license)
@@ -199,14 +226,41 @@ vishgraphs.draw_graph(adj_matrix, nodes, top_nodes)
     Troubleshooting
 </h3>
 
-If you encounter any issues while using VishGraphs, please check the documentation or open an issue on the GitHub repository.
+### Troubleshooting Guide
+
+For issues with CoreRec and VishGraphs:
+
+1. **Check Documentation:** Ensure you're following the library's guidelines and examples correctly.
+2. **GitHub Issues:** Report bugs or seek help by creating an issue on the GitHub repository.
+3. **Verify Data:** Confirm that your input data is correctly formatted and compatible.
+4. **Model Parameters:** Double-check model configurations and training parameters.
+5. **Visualization Inputs:** Ensure correct parameters for graph visualization functions.
+6. **Community Help:** Utilize community forums for additional support.
+
+This streamlined approach should help resolve common issues efficiently.
 
 
 <h3>
     <img src="REPO_UTIL/cont.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
     Contributing
 </h3>
-Contributions to VishGraphs are welcome! You can contribute by reporting bugs, submitting feature requests, or creating pull requests.
+
+
+We welcome contributions to enhance the functionalities of our graph analysis and recommendation tools. If you're interested in contributing, here are a few ways you can help:
+
+- **Bug Fixes:** Identify and fix bugs in the existing code.
+- **Feature Enhancements:** Suggest and implement improvements to current features.
+- **New Features:** Propose and develop new features that could benefit users of the libraries.
+- **Documentation:** Help improve the documentation to make the libraries more user-friendly.
+
+### To contribute, please follow these steps:
+1. Fork the repository.
+2. Create a new branch for your feature or fix.
+3. Develop your changes while adhering to the coding standards and guidelines.
+4. Submit a pull request with a clear description of the changes and any relevant issue numbers.
+
+Your contributions are greatly appreciated and will help make these tools more effective and accessible to everyone!
+
 
 <h3>
     <img src="REPO_UTIL/lic.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
