@@ -1,45 +1,60 @@
+
+# ###############################################################################################################
+#                           --CoreRec: Connecting to the Unseen--                            
+# CoreRec module is designed for graph-based recommendation systems using neural network architectures. It includes:
+#     1. GraphTransformer: A neural network model using Transformer architecture for processing graph data.
+#     2. GraphDataset: A custom dataset class for handling graph data.
+#     3. train_model: A function to train models with options for custom loss functions and training procedures.
+#     4. predict: Functions to predict top-k nodes based on model outputs, with optional thresholding.
+#     5. draw_graph: A function to visualize graphs with options to highlight top nodes and recommended nodes.
+# Note: This module integrates PyTorch for model training and evaluation, and NetworkX for graph manipulation.
+# ###############################################################################################################
 from common_import import *
 
 class GraphTransformer(nn.Module):
-    def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim):
+    def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim, use_weights=False):
         super(GraphTransformer, self).__init__()
-        self.input_linear = nn.Linear(input_dim, d_model)  # Linear layer to map input_dim to d_model
+        self.use_weights = use_weights
+        self.input_linear = nn.Linear(input_dim, d_model)
         self.encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=num_heads, dim_feedforward=d_feedforward, batch_first=True)
         self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=num_layers)
-        self.output_linear = nn.Linear(d_model, input_dim)  # Output layer for node scores
+        self.output_linear = nn.Linear(d_model, input_dim)
 
-    def forward(self, x):
-        x = x.float()  
+    def forward(self, x, weights=None):
+        x = x.float()
+        if self.use_weights and weights is not None:
+            x = x * weights.float()
         x = self.input_linear(x)
         x = self.transformer_encoder(x)
         x = self.output_linear(x)
         return x
 
-
 # Custom Dataset for Graph Data
 class GraphDataset(Dataset):
-    def __init__(self, adj_matrix):
-        self.adj_matrix = adj_matrix
+    def __init__(self, adj_matrix, weight_matrix=None):
+        self.adj_matrix = torch.tensor(adj_matrix, dtype=torch.float32)  # Ensure float32
+        if weight_matrix is not None:
+            self.weight_matrix = torch.tensor(weight_matrix, dtype=torch.float32)  # Ensure float32
+        else:
+            self.weight_matrix = None
 
     def __len__(self):
         return len(self.adj_matrix)
 
     def __getitem__(self, idx):
-        # Here, let's assume we're trying to predict connections for each node.
         node_features = self.adj_matrix[idx]
-        targets = self.adj_matrix[idx]  # Use adjacency matrix row as the target.
-        return node_features, targets
-
+        if self.weight_matrix is not None:
+            weights = self.weight_matrix[idx]
+            return node_features, weights
+        return node_features, node_features  # Return node_features as targets if no weights
 
 # Training Loop
-def train_model(model, data_loader, criterion=False, optimizer=False, num_epochs=False):
+def train_model(model, data_loader, criterion, optimizer, num_epochs):
     model.train()
     for epoch in range(num_epochs):
-        for batch in data_loader:
-            inputs, targets = batch
-            inputs = inputs.float()
-            targets = targets.float()
-
+        for inputs, targets in data_loader:
+            inputs = inputs.float()  # Ensure inputs are float
+            targets = targets.float()  # Ensure targets are float
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, targets)

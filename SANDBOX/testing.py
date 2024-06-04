@@ -58,21 +58,22 @@ adamic_adar_scores = cr.adamic_adar_index(adj_matrix, node_index)
 top_jaccard = sorted(jaccard_scores, key=lambda x: x[1], reverse=True)[:5]
 top_adamic_adar = sorted(adamic_adar_scores, key=lambda x: x[1], reverse=True)[:5]
 
-print("Top 5 nodes based on Jaccard similarity:", top_jaccard)
-print("Top 5 nodes based on Adamic/Adar index:", top_adamic_adar)
+# print("Top 5 nodes based on Jaccard similarity:", top_jaccard)
+# print("Top 5 nodes based on Adamic/Adar index:", top_adamic_adar)
 
 # init predict
 recommended_nodes = cr.predict(model, adj_matrix, node_index, top_k=5, threshold=0.5)
 
 # prinitng result
 print(f"Recommended nodes for node {node_index}: {recommended_nodes}")
-jaccard_score, adamic_adar_score = cr.aaj_accuracy(adj_matrix, node_index, recommended_nodes)
-print(f"Average Jaccard Score: {jaccard_score}")
-print(f"Average Adamic/Adar Score: {adamic_adar_score}")
+# jaccard_score, adamic_adar_score = cr.aaj_accuracy(adj_matrix, node_index, recommended_nodes)
+# print(f"Average Jaccard Score: {jaccard_score}")
+# print(f"Average Adamic/Adar Score: {adamic_adar_score}")
+aaj= cr.aaj_accuracy(adj_matrix, node_index, recommended_nodes)
+print("aajaajaajaaj= ",aaj)
 
-
-vg.draw_graph_3d(adj_matrix,top_nodes=top_nodes,node_labels=node_labels,edge_weights=weight_matrix)
-c=vg.bipartite_matrix_maker("graph_dataset.csv")
-vg.show_bipartite_relationship(c)
+# vg.draw_graph_3d(adj_matrix,top_nodes=top_nodes,node_labels=node_labels,edge_weights=weight_matrix)
+# c=vg.bipartite_matrix_maker("graph_dataset.csv")
+# vg.show_bipartite_relationship(c)
 
 # vg.draw_graph(adj_matrix,top_nodes=top_nodes,node_labels=node_labels,edge_weights=weight_matrix)
