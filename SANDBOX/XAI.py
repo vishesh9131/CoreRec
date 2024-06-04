@@ -38,7 +38,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 top_nodes = vg.find_top_nodes(adj_matrix, num_nodes=5)
 
     # Train the model
-num_epochs = 10
+num_epochs = 500
 cs.train_model(model, data_loader, criterion, optimizer, num_epochs)
 
 
