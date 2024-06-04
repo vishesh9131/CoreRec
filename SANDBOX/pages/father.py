@@ -16,22 +16,17 @@ import os
 
 def app():
     st.title('CoreRec')
-    base_dir = os.path.dirname(__file__)  # Gets the directory where the script is located
-    csv_path = os.path.join(base_dir, 'adj.csv')
-    adj_matrix = np.loadtxt(csv_path, delimiter=",")
+
     # Load the CSV file into a DataFrame
-    # adj_matrix = np.loadtxt('adj.csv', delimiter=",")
+    adj_matrix = np.loadtxt('adj.csv', delimiter=",")
 
-    base_dir1 = os.path.dirname(__file__)  # Gets the directory where the script is located
-    csv_path1 = os.path.join(base_dir1, 'label.csv')
-    wgt_matrix = np.loadtxt(csv_path1, delimiter=",")
-    # wgt_matrix = np.loadtxt('label.csv', delimiter=",")
 
-    base_dir2 = os.path.dirname(__file__)  # Gets the directory where the script is located
-    csv_path2 = os.path.join(base_dir2, 'labelele.csv')
-    df = pd.read_csv(csv_path2)
+    wgt_matrix = np.loadtxt('label.csv', delimiter=",")
+
+
+    df = pd.read_csv("labelele.csv")
     # df = pd.read_csv("labelele.csv")
-    # df = pd.read_csv("labelele.csv")
+    df = pd.read_csv("labelele.csv")
     col = df.values.flatten()
     node_labels = {i: label for i, label in enumerate(col)}
 
