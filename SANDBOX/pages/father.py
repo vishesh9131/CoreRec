@@ -16,7 +16,7 @@ def load_data_and_model():
     wgt_matrix = np.loadtxt('./SANDBOX/label.csv', delimiter=",")
     # adj_matrix = np.loadtxt('adj.csv', delimiter=",")
     # wgt_matrix = np.loadtxt('label.csv', delimiter=",")
-    df = pd.read_csv("labelele.csv")
+    df = pd.read_csv("./SANDBOX/labelele.csv")
     col = df.values.flatten()
     node_labels = {i: label for i, label in enumerate(col)}
     model = cs.GraphTransformer(num_layers=2, d_model=128, num_heads=8, d_feedforward=512, input_dim=len(adj_matrix[0]), use_weights=True)
