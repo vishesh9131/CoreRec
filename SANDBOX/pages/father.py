@@ -15,7 +15,7 @@ import os
 
 
 def app():
-    st.title('CoreRec')
+    st.title('Test_A')
 
     # Load the CSV file into a DataFrame
     adj_matrix = np.loadtxt('./SANDBOX/adj.csv', delimiter=",")
