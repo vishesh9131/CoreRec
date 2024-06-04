@@ -77,8 +77,8 @@ def load_data_and_model(model_path):
     wgt_matrix = np.loadtxt('./SANDBOX/label.csv', delimiter=",")
     # adj_matrix = np.loadtxt('adj.csv', delimiter=",")
     # wgt_matrix = np.loadtxt('label.csv', delimiter=",")
-    df = pd.read_csv("labelele.csv")
-    # df = pd.read_csv("./SANDBOX/labelele.csv")
+    # df = pd.read_csv("labelele.csv")
+    df = pd.read_csv("./SANDBOX/labelele.csv")
 
     col = df.values.flatten()
     node_labels = {i: label for i, label in enumerate(col)}
