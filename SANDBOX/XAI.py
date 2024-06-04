@@ -38,7 +38,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 top_nodes = vg.find_top_nodes(adj_matrix, num_nodes=5)
 
     # Train the model
-num_epochs = 10
+num_epochs = 1000
 cs.train_model(model, data_loader, criterion, optimizer, num_epochs)
 
 
@@ -49,5 +49,5 @@ print(f"Recommended nodes for node {node_index}: {recommended_nodes}")
 
 
 # Save the model
-torch.save(model.state_dict(), 'trained_model.pth')
+torch.save(model.state_dict(), 'alpha_tuned_model_e1k_.pth')
 
