@@ -10,12 +10,17 @@ import core_rec as cs
 import vish_graphs as vg
 import random
 import matplotlib.pyplot as plt
+import os
+
+
 
 def app():
     st.title('CoreRec')
-
+    base_dir = os.path.dirname(__file__)  # Gets the directory where the script is located
+    csv_path = os.path.join(base_dir, 'adj.csv')
+    adj_matrix = np.loadtxt(csv_path, delimiter=",")
     # Load the CSV file into a DataFrame
-    adj_matrix = np.loadtxt('adj.csv', delimiter=",")
+    # adj_matrix = np.loadtxt('adj.csv', delimiter=",")
     wgt_matrix = np.loadtxt('label.csv', delimiter=",")
     df = pd.read_csv("labelele.csv")
     col = df.values.flatten()
