@@ -15,9 +15,9 @@ def app():
     st.title('CoreRec')
 
     # Load the CSV file into a DataFrame
-    adj_matrix = np.loadtxt('adj.csv', delimiter=",")
-    wgt_matrix = np.loadtxt('label.csv', delimiter=",")
-    df = pd.read_csv("labelele.csv")
+    adj_matrix = np.loadtxt('pages/adj.csv', delimiter=",")
+    wgt_matrix = np.loadtxt('pages/label.csv', delimiter=",")
+    df = pd.read_csv("pages/labelele.csv")
     col = df.values.flatten()
     node_labels = {i: label for i, label in enumerate(col)}
 
