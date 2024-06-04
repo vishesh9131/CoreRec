@@ -16,7 +16,7 @@ PAGES = {
 }
 
 # Simulate tabs using buttons
-st.title('Navigation')
+st.title('CoreRec by Vishesh')
 tab1, tab2 = st.columns(2)
 
 # Use session state to track active tab
