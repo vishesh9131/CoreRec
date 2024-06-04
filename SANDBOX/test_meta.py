@@ -1,7 +1,7 @@
 import streamlit as st
 
 # Set the page config to widen the layout and set a title
-st.set_page_config(page_title='CoreRec', layout='wide')
+st.set_page_config(page_title='test_A', layout='wide')
 
 # Import pages
 from pages import father, credits
