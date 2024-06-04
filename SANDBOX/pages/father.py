@@ -18,11 +18,11 @@ def app():
     st.title('CoreRec')
 
     # Load the CSV file into a DataFrame
-    adj_matrix = np.loadtxt('./CoreRec/SANDBOX/adj.csv', delimiter=",")
+    adj_matrix = np.loadtxt('./SANDBOX/adj.csv', delimiter=",")
 
-    wgt_matrix = np.loadtxt('./CoreRec/SANDBOX/label.csv', delimiter=",")
+    wgt_matrix = np.loadtxt('./SANDBOX/label.csv', delimiter=",")
 
-    df = pd.read_csv("./CoreRec/SANDBOX/labelele.csv")
+    df = pd.read_csv("./SANDBOX/labelele.csv")
     # df = pd.read_csv("labelele.csv")
     # df = pd.read_csv("labelele.csv")
     col = df.values.flatten()
