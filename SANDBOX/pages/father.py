@@ -12,16 +12,16 @@ import os
 # Load data and model outside of the app function to avoid reloading
 @st.cache_data()
 def load_data_and_model():
-    # adj_matrix = np.loadtxt('./SANDBOX/adj.csv', delimiter=",")
-    # wgt_matrix = np.loadtxt('./SANDBOX/label.csv', delimiter=",")
-    adj_matrix = np.loadtxt('adj.csv', delimiter=",")
-    wgt_matrix = np.loadtxt('label.csv', delimiter=",")
+    adj_matrix = np.loadtxt('./SANDBOX/adj.csv', delimiter=",")
+    wgt_matrix = np.loadtxt('./SANDBOX/label.csv', delimiter=",")
+    # adj_matrix = np.loadtxt('adj.csv', delimiter=",")
+    # wgt_matrix = np.loadtxt('label.csv', delimiter=",")
     df = pd.read_csv("labelele.csv")
     col = df.values.flatten()
     node_labels = {i: label for i, label in enumerate(col)}
     model = cs.GraphTransformer(num_layers=2, d_model=128, num_heads=8, d_feedforward=512, input_dim=len(adj_matrix[0]), use_weights=True)
-    # model.load_state_dict(torch.load('./SANDBOX/trained_model.pth'))
-    model.load_state_dict(torch.load('trained_model.pth'))
+    model.load_state_dict(torch.load('./SANDBOX/trained_model.pth'))
+    # model.load_state_dict(torch.load('trained_model.pth'))
 
     model.eval()
     return adj_matrix, wgt_matrix, node_labels, model
