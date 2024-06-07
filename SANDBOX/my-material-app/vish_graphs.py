@@ -32,6 +32,27 @@ from scipy.sparse import dok_matrix
 import multiprocessing
 from functools import partial
 
+
+
+# def generate_random_graph(num_people, file_path="graph_dataset.csv", seed=None):
+#     np.random.seed(seed)
+#     adj_matrix = np.zeros((num_people, num_people))
+
+#     for i in range(num_people):
+#         for j in range(i + 1, num_people):
+#             strength = np.random.rand()
+#             if strength < 0.1:
+#                 adj_matrix[i, j] = 1
+#                 adj_matrix[j, i] = 1
+#             elif strength < 0.4:
+#                 adj_matrix[i, j] = 1
+#             else:
+#                 adj_matrix[i, j] = 0
+#                 adj_matrix[j, i] = 0
+
+#     np.savetxt(file_path, adj_matrix, delimiter=",")
+#     return file_path
+
 def generate_random_graph(num_people, file_path="graph_dataset.csv", seed=None):
     np.random.seed(seed)
     adj_matrix = np.zeros((num_people, num_people))
@@ -52,24 +73,6 @@ def generate_random_graph(num_people, file_path="graph_dataset.csv", seed=None):
     np.savetxt(file_path, adj_matrix, delimiter=",")
     return file_path
 
-# def generate_random_graph(num_people, file_path="graph_dataset.csv", seed=None):
-#     np.random.seed(seed)
-#     adj_matrix = np.zeros((num_people, num_people))
-
-#     for i in range(num_people):
-#         for j in range(i + 1, num_people):
-#             strength = np.random.rand()
-#             if strength < 0.1:
-#                 adj_matrix[i, j] = 1
-#                 adj_matrix[j, i] = 1
-#             elif strength < 0.4:
-#                 adj_matrix[i, j] = 1
-#             else:
-#                 adj_matrix[i, j] = 0
-#                 adj_matrix[j, i] = 0
-
-#     np.savetxt(file_path, adj_matrix, delimiter=",")
-#     return file_path
 
 def generate_connections(num_people, i, p_strong, p_weak):
     num_connections = num_people - i - 1
