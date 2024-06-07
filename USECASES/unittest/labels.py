@@ -113,7 +113,7 @@ file_path = generate_random_graph(50, seed=122)
 adj_matrix = np.loadtxt(file_path, delimiter=",")
 
 # Read the CSV file into a DataFrame
-df = pd.read_csv("labelele.csv")
+df = pd.read_csv("./SANDBOX/labelele.csv")
 
 # # Find the top nodes
 top_nodes = find_top_nodes(adj_matrix, num_nodes=5)
@@ -126,7 +126,7 @@ class TestLabels(unittest.TestCase):
     def setUp(self):
         self.file_path = generate_random_graph(50, seed=122)
         self.adj_matrix = np.loadtxt(self.file_path, delimiter=",")
-        self.df = pd.read_csv("labelele.csv")
+        self.df = pd.read_csv("./SANDBOX/labelele.csv")
         self.col = self.df.values
         self.node_labels = {i: label for i, label in enumerate(self.col)}
 
