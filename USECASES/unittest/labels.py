@@ -113,7 +113,7 @@ file_path = generate_random_graph(50, seed=122)
 adj_matrix = np.loadtxt(file_path, delimiter=",")
 
 # Read the CSV file into a DataFrame
-df = pd.read_csv("/Users/visheshyadav/Documents/GitHub/CoreRec/SANDBOX/labelele.csv")
+df = pd.read_csv("labelele.csv")
 
 # # Find the top nodes
 top_nodes = find_top_nodes(adj_matrix, num_nodes=5)
