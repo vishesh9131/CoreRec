@@ -6,6 +6,13 @@
 # #     # 3. draw_graph draws graph(matrix,set(range(len(adj_matrix))), set )
 # # # note: just write 3d after draw_graph this will make it in xyz space
 # # ###############################################################################################################
+import sys
+import os
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
+
 import numpy as np
 # import vishgraph as vg
 import core_rec as cs

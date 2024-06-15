@@ -9,22 +9,31 @@
 #     5. draw_graph: A function to visualize graphs with options to highlight top nodes and recommended nodes.
 # Note: This module integrates PyTorch for model training and evaluation, and NetworkX for graph manipulation.
 # ###############################################################################################################
+
 from common_import import *
 
 class GraphTransformer(nn.Module):
-    def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim, use_weights=False):
+    def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim, num_weights=10,use_weights=True):
         super(GraphTransformer, self).__init__()
+        self.num_weights = num_weights
         self.use_weights = use_weights
         self.input_linear = nn.Linear(input_dim, d_model)
         self.encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=num_heads, dim_feedforward=d_feedforward, batch_first=True)
         self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=num_layers)
         self.output_linear = nn.Linear(d_model, input_dim)
+        if self.use_weights:
+            self.weight_linears = nn.ModuleList([nn.Linear(input_dim, d_model) for _ in range(num_weights)])
 
     def forward(self, x, weights=None):
         x = x.float()
-        if self.use_weights and weights is not None:
-            x = x * weights.float()
-        x = self.input_linear(x)
+        if self.use_weights:
+            if weights is not None:
+                weighted_x = torch.zeros_like(x)
+                for i, weight in enumerate(weights):
+                    weighted_x += self.weight_linears[i](x) * weight
+                x = weighted_x
+            else:
+                x = self.input_linear(x)
         x = self.transformer_encoder(x)
         x = self.output_linear(x)
         return x
@@ -242,3 +251,5 @@ def explainable_predict(model, graph, node_index, top_k=5, threshold=0.5):
         explanations.append(explanation)
 
     return recommended_indices, explanations
+
+
