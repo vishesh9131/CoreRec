@@ -7,6 +7,13 @@ a clustering effect where densely connected nodes are grouped together. This exa
 simplifies the process, but in practice, the algorithm would run for many iterations to 
 stabilize the community assignments.
 '''
+
+import sys
+import os
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
 import numpy as np
 import networkx as nx
 import random

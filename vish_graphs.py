@@ -334,7 +334,6 @@ def bipartite_matrix_maker(csv_path):
             adj_matrix.append(values)
     return adj_matrix
 
-
     # Convert to a sparse CSR matrix if not already in that format
     if not isinstance(adj_matrix, csr_matrix):
         sparse_adj_matrix = csr_matrix(adj_matrix)
@@ -411,3 +410,33 @@ def bipartite_matrix_maker(csv_path):
 
     plt.title("Large Graph Visualization")
     plt.show()
+
+
+
+def scale_and_save_matrices(input_file, output_dir, num_matrices):
+    # Load the existing matrix
+    matrix = np.genfromtxt(input_file, delimiter=',')
+
+    # Create and save the scaled matrices
+    for i in range(1, num_matrices + 1):
+        scaled_matrix = matrix * i  # Scale the matrix by a factor of i
+        np.savetxt(f'{output_dir}/label_{i}.csv', scaled_matrix, delimiter=',', fmt='%d')
+
+# List of possible misspellings
+possible_misspellings = [
+    "scale_and_save_matrix", "scale_n_save_matrices", "scal_and_save_matrices", 
+    "scale_and_save_matrces", "scale_and_sav_matrices", "scale_n_save_matrix",
+    "scaleandsavematrices", "scaleandsave_matrix", "scale_n_save_matricies",
+    "scaling_and_saving_matrices", "scale_and_save_matricies", "scale_save_matrices",
+    "scale_save_matrix", "scale_save_matricies", "scal_save_matrices",
+    "scaling_save_matrices", "scaling_save_matrix", "scale_saving_matrices",
+    "scale_and_saving_matrices", "scale_saving_matrix"
+]
+
+# Creating aliases for the function
+for misspelling in possible_misspellings:
+    globals()[misspelling] = scale_and_save_matrices
+
+
+# Example usage
+# scale_and_save_matrices('SANDBOX/label.csv', 'SANDBOX/delete', 10)
