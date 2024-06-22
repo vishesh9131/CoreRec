@@ -1,10 +1,3 @@
-import sys
-import os
-current_dir = os.path.dirname(__file__)
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
-
-
 
 import numpy as np
 import core_rec as cs
@@ -14,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-
+from torch.utils.data import DataLoader, TensorDataset
 
 # Generate random graph and load adjacency matrix
 file_path = vg.generate_random_graph(40, seed=122)
@@ -62,9 +55,11 @@ num_epochs = 150
 cs.train_model(model, data_loader, criterion, optimizer, num_epochs)
 
 # Use the trained model for node recommendations
-node_index = 2
-predictions = cs.predict(model, adj_matrix, node_index, top_k=5)
-print(f"Recommended nodes for node {node_index}: {predictions}")
-print("Popular Nodes are:", top_nodes)
+for i in range(10):
+    node_index = i
+    predictions = cs.predict(model, adj_matrix, node_index, top_k=5)
+    print(f"Recommended nodes for node {node_index}: {predictions}")
+    # print("Popular Nodes are:", top_nodes)
 
-vg.draw_graph_3d(adj_matrix, top_nodes=top_nodes, recommended_nodes=predictions,transparent_labeled=False)
+# vg.draw_graph_3d(adj_matrix, top_nodes=top_nodes, recommended_nodes=predictions,transparent_labeled=False)
+

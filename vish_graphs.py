@@ -11,6 +11,7 @@
 #        (draw_graph, draw_graph_3d)
 #     6. Visualizing bipartite relationships and community detection based on cosine similarity
 #        (show_bipartite_relationship, show_bipartite_relationship_with_cosine)
+#     7. scale_and_save_matrices feature to scale given adj
 # Note: Append '3d' to draw_graph (draw_graph_3d) for 3D visualizations in xyz space.
 # ###############################################################################################################
 
