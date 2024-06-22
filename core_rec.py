@@ -69,7 +69,7 @@ def train_model(model, data_loader, criterion, optimizer, num_epochs):
             loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
-        print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {loss.item()}")
+        # print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {loss.item()}")
 
 
 # THIS TRAIN FN IS A RESCUE BRANCH TO ABOVE FN DONOT DELETE IT

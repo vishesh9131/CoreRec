@@ -65,6 +65,17 @@ For Security reasons, we are not providing the pip install command for now.
 
 just copy the files "`vish_graphs.py`" ,"`core_rec.py`" and "`common_imports.py`" to your project folder and import them in your project.
 
+### Or;
+
+### For Windows Users  
+For Windows Users You can set the python path by `set` command or just copy paste this in cmd prompt
+`set PATH "%PATH%;C:\path\to\your\CoreRecRepo`
+
+### For MAC OS Users  
+For Windows Users You can set the python path by `nano ~/.zshrc ` command or just copy paste this  
+`
+export PYTHONPATH=$PYTHONPATH:\path\to\your\CoreRecRepo`
+
 
 
 <h2>
