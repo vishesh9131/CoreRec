@@ -16,7 +16,7 @@ sys.path.append(parent_dir)
 import numpy as np
 # import vishgraph as vg
 import core_rec as cs
-
+import vish_graphs as vg
 # for trainig
 import torch
 import torch.nn as nn

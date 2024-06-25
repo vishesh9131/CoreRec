@@ -31,8 +31,9 @@ from common_import import *
 # Q1
 # file_path = vg.generate_random_graph(72, seed=332)
 # adj_matrix = np.loadtxt(file_path, delimiter=",")
+# top_nodes = vg.find_top_nodes(adj_matrix,2)
 # # vg.draw_graph(adj_matrix)
-# vg.draw_graph_3d(adj_matrix, None, None)
+# vg.draw_graph(adj_matrix, top_nodes, None,transparent_labeled=False)
 #######################################################################################################
 # Q2
 # file_path = vg.generate_random_graph(72, seed=332)
@@ -53,6 +54,7 @@ from common_import import *
 # import torch.nn as nn
 # import torch.optim as optim
 # from torch.utils.data import Dataset, DataLoader
+# import core_rec as cs
 # # in 5 steps 
 # # 1.Generate random graph and load adjacency matrix
 # # 2. Initialize Transformer Model
@@ -94,5 +96,5 @@ from common_import import *
 
 # # 6
 # vg.draw_graph_3d(adj_matrix,top_nodes=top_nodes,recommended_nodes=predictions)
-# top nodes are pushed in predictions list
-#######################################################################################################
+# # # top nodes are pushed in predictions list
+# ######################################################################################################

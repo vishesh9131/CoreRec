@@ -80,6 +80,7 @@ def generate_connections(num_people, i, p_strong, p_weak):
     strong_connections = np.where(connections < p_strong)[0] + i + 1
     weak_connections = np.where((connections >= p_strong) & (connections < p_strong + p_weak))[0] + i + 1
     return strong_connections, weak_connections
+
 @profile
 def generate_large_random_graph(num_people, file_path="large_random_graph.csv", seed=None):
     np.random.seed(seed)
@@ -157,7 +158,7 @@ def export_graph_data_to_csv(adj_matrix, node_labels, csv_file):
         headers = [f'Node {i}' for i in range(len(adj_matrix))]
         headers.append('Label')
         writer.writerow(headers)
-        
+    
         # Write data rows
         for index, row in enumerate(adj_matrix):
             # Append the label to the row
