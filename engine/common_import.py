@@ -9,3 +9,8 @@ from torch.utils.data import Dataset, DataLoader
 import networkx as nx
 from networkx.algorithms.community import greedy_modularity_communities
 import matplotlib.pyplot as plt
+import os
+
+# import for DDP ecosystem
+import torch.distributed as dist
+from torch.multiprocessing import Process

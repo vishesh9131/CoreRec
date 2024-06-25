@@ -79,7 +79,7 @@ print(f"Recommended nodes for node {node_index}: {recommended_nodes}")
 aaj= cr.aaj_accuracy(adj_matrix, node_index, recommended_nodes)
 print("aajaajaajaaj= ",aaj)
 
-# vg.draw_graph_3d(adj_matrix,top_nodes=top_nodes,node_labels=node_labels,edge_weights=weight_matrix)
+vg.draw_graph_3d(adj_matrix,top_nodes=top_nodes,node_labels=node_labels,edge_weights=weight_matrix)
 # c=vg.bipartite_matrix_maker("graph_dataset.csv")
 # vg.show_bipartite_relationship(c)
 

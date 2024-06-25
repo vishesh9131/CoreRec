@@ -122,72 +122,72 @@
 # plt.tight_layout()
 # plt.show()
 
-import numpy as np
-import core_rec as cs
-import vish_graphs as vg
-import pandas as pd
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-import matplotlib.pyplot as plt
-import random
-import os
-from matplotlib.ticker import FuncFormatter
+# import numpy as np
+# import core_rec as cs
+# import vish_graphs as vg
+# import pandas as pd
+# import torch
+# import torch.nn as nn
+# import torch.optim as optim
+# from torch.utils.data import Dataset, DataLoader
+# import matplotlib.pyplot as plt
+# import random
+# import os
+# from matplotlib.ticker import FuncFormatter
 
-def test_scores_for_random_nodes(node_counts, num_random_nodes=5, top_k=5, num_epochs=10, seed=23):
-    jaccard_scores = []
-    adamic_adar_scores = []
-    nodes_selected = []
+# def test_scores_for_random_nodes(node_counts, num_random_nodes=5, top_k=5, num_epochs=10, seed=23):
+#     jaccard_scores = []
+#     adamic_adar_scores = []
+#     nodes_selected = []
 
-    for num_nodes in node_counts:
-        file_path = vg.generate_random_graph(num_nodes, seed=seed)
-        adj_matrix = np.loadtxt(file_path, delimiter=",")
-        graph_dataset = cs.GraphDataset(adj_matrix)
-        data_loader = DataLoader(graph_dataset, batch_size=5, shuffle=True)
-        num_layers = 2
-        d_model = 128
-        num_heads = 8
-        d_feedforward = 512
-        input_dim = len(adj_matrix[0])
-        model = cs.GraphTransformer(num_layers, d_model, num_heads, d_feedforward, input_dim)
-        criterion = nn.MSELoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.001)
-        cs.train_model(model, data_loader, criterion, optimizer, num_epochs)
+#     for num_nodes in node_counts:
+#         file_path = vg.generate_random_graph(num_nodes, seed=seed)
+#         adj_matrix = np.loadtxt(file_path, delimiter=",")
+#         graph_dataset = cs.GraphDataset(adj_matrix)
+#         data_loader = DataLoader(graph_dataset, batch_size=5, shuffle=True)
+#         num_layers = 2
+#         d_model = 128
+#         num_heads = 8
+#         d_feedforward = 512
+#         input_dim = len(adj_matrix[0])
+#         model = cs.GraphTransformer(num_layers, d_model, num_heads, d_feedforward, input_dim)
+#         criterion = nn.MSELoss()
+#         optimizer = optim.Adam(model.parameters(), lr=0.001)
+#         cs.train_model(model, data_loader, criterion, optimizer, num_epochs)
 
-        for _ in range(num_random_nodes):
-            node_index = random.randint(0, num_nodes - 1)
-            recommended_nodes = cs.predict(model, adj_matrix, node_index, top_k=top_k)
-            aaj, aaj2 = cs.aaj_accuracy(adj_matrix, node_index, recommended_nodes)
-            jaccard_scores.append(aaj)
-            adamic_adar_scores.append(aaj2)
-            nodes_selected.append((num_nodes, node_index))
+#         for _ in range(num_random_nodes):
+#             node_index = random.randint(0, num_nodes - 1)
+#             recommended_nodes = cs.predict(model, adj_matrix, node_index, top_k=top_k)
+#             aaj, aaj2 = cs.aaj_accuracy(adj_matrix, node_index, recommended_nodes)
+#             jaccard_scores.append(aaj)
+#             adamic_adar_scores.append(aaj2)
+#             nodes_selected.append((num_nodes, node_index))
 
-    return nodes_selected, jaccard_scores, adamic_adar_scores
+#     return nodes_selected, jaccard_scores, adamic_adar_scores
 
-# Generate node counts from 20 to 200
-node_counts = range(20, 201, 20)
+# # Generate node counts from 20 to 200
+# node_counts = range(20, 201, 20)
 
-# Test scores
-nodes_selected, jaccard_scores, adamic_adar_scores = test_scores_for_random_nodes(node_counts)
+# # Test scores
+# nodes_selected, jaccard_scores, adamic_adar_scores = test_scores_for_random_nodes(node_counts)
 
-# Plotting
-fig, axs = plt.subplots(1, 2, figsize=(15, 7))
+# # Plotting
+# fig, axs = plt.subplots(1, 2, figsize=(15, 7))
 
-# Scatter plot for Jaccard Scores
-axs[0].scatter([n[0] for n in nodes_selected], jaccard_scores, c='blue', label='Jaccard Scores', alpha=0.6)
-axs[0].set_title('Jaccard Scores for Random Nodes')
-axs[0].set_xlabel('Number of Nodes')
-axs[0].set_ylabel('Jaccard Score')
-axs[0].grid(True)
+# # Scatter plot for Jaccard Scores
+# axs[0].scatter([n[0] for n in nodes_selected], jaccard_scores, c='blue', label='Jaccard Scores', alpha=0.6)
+# axs[0].set_title('Jaccard Scores for Random Nodes')
+# axs[0].set_xlabel('Number of Nodes')
+# axs[0].set_ylabel('Jaccard Score')
+# axs[0].grid(True)
 
-# Scatter plot for Adam/Adar Scores
-axs[1].scatter([n[0] for n in nodes_selected], adamic_adar_scores, c='red', label='Adam/Adar Scores', alpha=0.6)
-axs[1].set_title('Adam/Adar Scores for Random Nodes')
-axs[1].set_xlabel('Number of Nodes')
-axs[1].set_ylabel('Adam/Adar Score')
-axs[1].grid(True)
+# # Scatter plot for Adam/Adar Scores
+# axs[1].scatter([n[0] for n in nodes_selected], adamic_adar_scores, c='red', label='Adam/Adar Scores', alpha=0.6)
+# axs[1].set_title('Adam/Adar Scores for Random Nodes')
+# axs[1].set_xlabel('Number of Nodes')
+# axs[1].set_ylabel('Adam/Adar Score')
+# axs[1].grid(True)
 
-# Adjust layout and show plot
-plt.tight_layout()
-plt.show()
+# # Adjust layout and show plot
+# plt.tight_layout()
+# plt.show()
