@@ -1,0 +1,73 @@
+INFO - Using opt_einsum
+WARNING - No random seed is specified. Setting to 4149808495.
+WARNING - using automatically assigned random_state=563020097
+INFO - done splitting triples to groups of sizes [46, 14]
+WARNING - No random seed is specified. Setting to 1964627553.
+WARNING - No cuda devices were available. The model runs on CPU
+INFO - Using device: None
+WARNING - Encountered tensors on device_types={'cpu'} while only ['cuda'] are considered safe for automatic memory utilization maximization. This may lead to undocumented crashes (but can be safe, too).
+INFO - Evaluation took 0.02s seconds
+INFO - Using opt_einsum
+WARNING - using automatically assigned random_state=1680940476
+INFO - done splitting triples to groups of sizes [46, 14]
+WARNING - No random seed is specified. Setting to 1986485414.
+WARNING - No cuda devices were available. The model runs on CPU
+INFO - Using device: None
+WARNING - Encountered tensors on device_types={'cpu'} while only ['cuda'] are considered safe for automatic memory utilization maximization. This may lead to undocumented crashes (but can be safe, too).
+INFO - Evaluation took 0.03s seconds
+WARNING - using automatically assigned random_state=1404155431
+INFO - done splitting triples to groups of sizes [46, 14]
+WARNING - No random seed is specified. Setting to 3965136360.
+WARNING - No cuda devices were available. The model runs on CPU
+INFO - Using device: None
+WARNING - Encountered tensors on device_types={'cpu'} while only ['cuda'] are considered safe for automatic memory utilization maximization. This may lead to undocumented crashes (but can be safe, too).
+INFO - Evaluation took 0.02s seconds
+WARNING - using automatically assigned random_state=3469363268
+INFO - done splitting triples to groups of sizes [46, 14]
+WARNING - No random seed is specified. Setting to 2046401946.
+WARNING - No cuda devices were available. The model runs on CPU
+INFO - Using device: None
+WARNING - Encountered tensors on device_types={'cpu'} while only ['cuda'] are considered safe for automatic memory utilization maximization. This may lead to undocumented crashes (but can be safe, too).
+INFO - Evaluation took 0.02s seconds
+WARNING - using automatically assigned random_state=2720699725
+INFO - done splitting triples to groups of sizes [46, 14]
+WARNING - No random seed is specified. Setting to 2706627554.
+WARNING - No cuda devices were available. The model runs on CPU
+INFO - Using device: None
+WARNING - Encountered tensors on device_types={'cpu'} while only ['cuda'] are considered safe for automatic memory utilization maximization. This may lead to undocumented crashes (but can be safe, too).
+INFO - Evaluation took 0.02s seconds
+WARNING - using automatically assigned random_state=3162737177
+INFO - done splitting triples to groups of sizes [46, 14]
+WARNING - No random seed is specified. Setting to 3666305480.
+WARNING - No cuda devices were available. The model runs on CPU
+INFO - Using device: None
+WARNING - Encountered tensors on device_types={'cpu'} while only ['cuda'] are considered safe for automatic memory utilization maximization. This may lead to undocumented crashes (but can be safe, too).
+INFO - Evaluation took 0.02s seconds
+WARNING - using automatically assigned random_state=1855036515
+INFO - done splitting triples to groups of sizes [46, 14]
+WARNING - No random seed is specified. Setting to 2916633470.
+WARNING - No cuda devices were available. The model runs on CPU
+INFO - Using device: None
+WARNING - Encountered tensors on device_types={'cpu'} while only ['cuda'] are considered safe for automatic memory utilization maximization. This may lead to undocumented crashes (but can be safe, too).
+INFO - Evaluation took 0.01s seconds
+WARNING - using automatically assigned random_state=1176651245
+INFO - done splitting triples to groups of sizes [46, 14]
+WARNING - No random seed is specified. Setting to 3323962488.
+WARNING - No cuda devices were available. The model runs on CPU
+INFO - Using device: None
+WARNING - Encountered tensors on device_types={'cpu'} while only ['cuda'] are considered safe for automatic memory utilization maximization. This may lead to undocumented crashes (but can be safe, too).
+INFO - Evaluation took 0.02s seconds
+WARNING - using automatically assigned random_state=3665950098
+INFO - done splitting triples to groups of sizes [46, 14]
+WARNING - No random seed is specified. Setting to 2101493684.
+WARNING - No cuda devices were available. The model runs on CPU
+INFO - Using device: None
+WARNING - Encountered tensors on device_types={'cpu'} while only ['cuda'] are considered safe for automatic memory utilization maximization. This may lead to undocumented crashes (but can be safe, too).
+INFO - Evaluation took 0.02s seconds
+WARNING - using automatically assigned random_state=74702866
+INFO - done splitting triples to groups of sizes [46, 14]
+WARNING - No random seed is specified. Setting to 139568291.
+WARNING - No cuda devices were available. The model runs on CPU
+INFO - Using device: None
+WARNING - Encountered tensors on device_types={'cpu'} while only ['cuda'] are considered safe for automatic memory utilization maximization. This may lead to undocumented crashes (but can be safe, too).
+INFO - Evaluation took 0.02s seconds

@@ -57,4 +57,4 @@ print(f"Recommended nodes for node {node_index}: {recommended_nodes}")
 
 
     # Draw the graph in 3D
-vg.draw_graph_3d(adj_matrix, top_nodes, recommended_nodes,transparent_labeled=False)
+# vg.draw_graph_3d(adj_matrix, top_nodes, recommended_nodes,transparent_labeled=False)

@@ -17,8 +17,9 @@ from async_ddp import *
 
 class GraphTransformer(nn.Module):
     '''
-    This is a transformer model is used from ;
-    link :  https://github.com/pytorch/pytorch/blob/main/torch/nn/modules/transformer.py 
+    This is a transformer model for graph data. It is a combination of a linear layer and a transformer encoder.
+    The linear layer is used to transform the input data to the dimension of the transformer.
+    The transformer encoder is used to process the input data.
     '''
     def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim, num_weights=10, use_weights=True):
         super(GraphTransformer, self).__init__()
