@@ -25,7 +25,7 @@ file_path = vg.generate_random_graph(50, seed=122)
 adj_matrix = np.loadtxt(file_path, delimiter=",")
 
 # Read the CSV file into a DataFrame
-df = pd.read_csv("labelele.csv")
+df = pd.read_csv("SANDBOX/labelele.csv")
 
 # # Find the top nodes
 top_nodes = vg.find_top_nodes(adj_matrix, num_nodes=5)

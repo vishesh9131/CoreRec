@@ -8,12 +8,12 @@ from torch.utils.data import Dataset, DataLoader
 import core_rec as cs
 import matplotlib.pyplot as plt
 from matplotlib.table import Table
-import json
+
 # Load the CSV file into a DataFrame
-adj_matrix = np.loadtxt('label.csv', delimiter=",")
+adj_matrix = np.loadtxt('SANDBOX/label.csv', delimiter=",")
 
 # Load node labels
-df = pd.read_csv("labelele.csv")
+df = pd.read_csv("SANDBOX/labelele.csv")
 col = df.values.flatten()
 node_labels = {i: label for i, label in enumerate(col)}
 label_to_index = {label: i for i, label in enumerate(col)}  # Create a reverse mapping
@@ -50,14 +50,17 @@ data_loader = DataLoader(graph_dataset, batch_size=batch_size, shuffle=True)
 num_epochs = 100
 cs.train_model(model, data_loader, criterion, optimizer, num_epochs)
 
-# Recommend nodes for all labels
-recommendations_meta_exploit = {}
-for label in label_to_index.keys():
-    target_node_index = label_to_index[label]
-    recommended_nodes = cs.predict(model, adj_matrix, target_node_index, top_k=3, threshold=1)
-    recommended_labels = [node_labels[idx] for idx in recommended_nodes]
-    recommendations_meta_exploit[label] = recommended_labels
+# Recommend nodes for a target node
+target_node_label = "vishesh"  # Example target node label
 
-# Save recommendations to a file
-with open('recommendations_meta_exploit.json', 'w') as f:
-    json.dump(recommendations_meta_exploit, f)
+# Check if the target node label exists
+if target_node_label in label_to_index:
+    target_node_index = label_to_index[target_node_label]  # Get the index of the target node
+    recommended_nodes = cs.predict(model, adj_matrix, target_node_index, top_k=3, threshold=1)
+
+    # Map recommended node indices to labels
+    recommended_labels = [node_labels[idx] for idx in recommended_nodes]
+
+    print(f"Recommended nodes for target node {target_node_label}: {recommended_labels}")
+else:
+    print(f"Error: The label '{target_node_label}' does not exist. Available labels are: {list(label_to_index.keys())}")
