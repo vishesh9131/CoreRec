@@ -109,25 +109,25 @@ VishGraphs is a Python library for graph visualization and analysis. It provides
     <img src="REPO_UTIL/struct.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
     Directory Structure
 </h3>
-To install VishGraphs, you can use pip:
 ## Directory Structure
 
 | Directory/File                | Files                                             | Description                                      |
 |------------------------------|---------------------------------------------------|--------------------------------------------------|
-| CoreRec                      | [REPO_UTIL/](#repo_util)                          | Contains CoreRec related files and modules       |
-|                              | [coreRec.svg](#corerec_svg)                       | SVG logo for CoreRec                             |
-| [SANDBOX/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX) | usecases.md                                      | Contains sandbox files for testing and experimentation |
-|                              | [vish_graphs.py](#vish_graphs_py)                 | Main script for VishGraphs functionalities        |
-|                              | [tempCodeRunnerFile.py](#tempCodeRunnerFile_py)   | Temporary code runner file for testing           |
-|                              | [test.ipynb](#test_ipynb)                         | Jupyter notebook for testing various functionalities |
-|                              | [Analysis/](#analysis)                            | Directory for analysis scripts and notebooks     |
-|                              | [optimizaion/](#optimizaion)                      | Directory for optimization scripts and notebooks |
-| [USECASES/](https://github.com/vishesh9131/CoreRec/tree/main/USECASES) | vish_graphs.py                                   | Script for specific use cases of VishGraphs      |
-|                              | [weightG.py](#weightg_py)                         | Script for generating weighted graphs            |
-| [UPDATES/](#updates)         |                                                   | Directory for update-related files               |
+| CoreRec                      | [REPO_UTIL/](https://github.com/vishesh9131/CoreRec/tree/main/REPO_UTIL) | Contains CoreRec related files and modules       |
+|                              | [coreRec.svg](https://github.com/vishesh9131/CoreRec/blob/main/REPO_UTIL/coreRec.svg) | SVG logo for CoreRec                             |
+| [SANDBOX/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX) | [usecases.md](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/usecases.md) | Contains sandbox files for testing and experimentation |
+|                              | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/vish_graphs.py) | Main script for VishGraphs functionalities        |
+|                              | [tempCodeRunnerFile.py](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/tempCodeRunnerFile.py) | Temporary code runner file for testing           |
+|                              | [test.ipynb](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/test.ipynb) | Jupyter notebook for testing various functionalities |
+|                              | [Analysis/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX/Analysis) | Directory for analysis scripts and notebooks     |
+|                              | [optimizaion/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX/optimizaion) | Directory for optimization scripts and notebooks |
+| [USECASES/](https://github.com/vishesh9131/CoreRec/tree/main/USECASES) | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/USECASES/vish_graphs.py) | Script for specific use cases of VishGraphs      |
+|                              | [weightG.py](https://github.com/vishesh9131/CoreRec/blob/main/USECASES/weightG.py) | Script for generating weighted graphs            |
+| [UPDATES/](https://github.com/vishesh9131/CoreRec/tree/main/UPDATES) |                                                   | Directory for update-related files               |
 | [BACKUP/](https://github.com/vishesh9131/CoreRec/tree/main/BACKUP) |                                                   | Directory for backup files                       |
-| [vish_graphs/](https://github.com/vishesh9131/CoreRec/tree/main/vish_graphs) | vish_graphs.py                                   | Directory for VishGraphs related files and modules |
+| [vish_graphs/](https://github.com/vishesh9131/CoreRec/tree/main/vish_graphs) | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/vish_graphs/vish_graphs.py) | Directory for VishGraphs related files and modules |
 | [ROADMAP/](https://github.com/vishesh9131/CoreRec/tree/main/ROADMAP) |                                                   | Directory for roadmap and future updates         |
+
 # Usage
 ### Generating Random Graphs
 To generate a random graph, you can use the `generate_random_graph` function:
