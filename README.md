@@ -127,6 +127,11 @@ VishGraphs is a Python library for graph visualization and analysis. It provides
 | [BACKUP/](https://github.com/vishesh9131/CoreRec/tree/main/BACKUP) |                                                   | Directory for backup files                       |
 | [vish_graphs/](https://github.com/vishesh9131/CoreRec/tree/main/vish_graphs) | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/vish_graphs/vish_graphs.py) | Directory for VishGraphs related files and modules |
 | [ROADMAP/](https://github.com/vishesh9131/CoreRec/tree/main/ROADMAP) |                                                   | Directory for roadmap and future updates         |
+| [engine/](https://github.com/vishesh9131/CoreRec/tree/main/engine) | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/vish_graphs.py) | Graph manipulation and visualization functions   |
+|                              | [common_import.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/common_import.py) | Common imports and setup for the engine          |
+|                              | [core_rec.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/core_rec.py) | Core recommendation engine functionalities       |
+|                              | [timecapsule.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/timecapsule.py) | Time capsule functionalities for CoreRec         |
+|                              | [torch_nn/](https://github.com/vishesh9131/CoreRec/tree/main/engine/torch_nn) | Custom PyTorch neural network modules and utilities |
 
 # Usage
 ### Generating Random Graphs
