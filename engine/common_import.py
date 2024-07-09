@@ -2,7 +2,13 @@ import numpy as np
 import pandas as pd
 import sklearn
 import torch
-import torch.nn as nn
+# import torch.nn as nn
+
+import sys
+sys.path.append('/Users/visheshyadav/Documents/GitHub/CoreRec/engine/torch_nn')
+from torch_nn import *
+
+
 import torch.optim as optim
 from sklearn.metrics.pairwise import cosine_similarity
 from torch.utils.data import Dataset, DataLoader
