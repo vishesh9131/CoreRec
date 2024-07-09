@@ -109,7 +109,6 @@ VishGraphs is a Python library for graph visualization and analysis. It provides
     <img src="REPO_UTIL/struct.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
     Directory Structure
 </h3>
-## Directory Structure
 
 | Directory/File                | Files                                             | Description                                      |
 |------------------------------|---------------------------------------------------|--------------------------------------------------|
