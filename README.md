@@ -114,17 +114,20 @@ To install VishGraphs, you can use pip:
 
 | Directory/File                | Files                                             | Description                                      |
 |------------------------------|---------------------------------------------------|--------------------------------------------------|
-| CoreRec          | [REPO_UTIL/](#repo_util)                          | Contains CoreRec related files and modules       |
-|                              | [coreRec.svg](#corerec_svg)                       |                                                  |
-| [SANDBOX/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX)          | usecases.md                                      | Contains sandbox files for testing and experimentation |
-|                              | [vish_graphs.py](#vish_graphs_py)                 |                                                  |
-| [USECASES/](https://github.com/vishesh9131/CoreRec/tree/main/USECASES)        | vish_graphs.py                | Contains specific use case files                 |
-|                              | [weightG.py](#weightg_py)                         |                                                  |
-| [UPDATES/](#updates)          |                                                   | Directory for update-related files                |
-| [BACKUP/](https://github.com/vishesh9131/CoreRec/tree/main/BACKUP)            |                                                   | Directory for backup files                        |
-| [vish_graphs/](https://github.com/vishesh9131/CoreRec/tree/main/vish_graphs)  | vish_graphs.py          | Directory for VishGraphs related files and modules |
-| [ROADMAP/](https://github.com/vishesh9131/CoreRec/tree/main/ROADMAP)          |                                                   | Directory for roadmap and future updates          |
-
+| CoreRec                      | [REPO_UTIL/](#repo_util)                          | Contains CoreRec related files and modules       |
+|                              | [coreRec.svg](#corerec_svg)                       | SVG logo for CoreRec                             |
+| [SANDBOX/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX) | usecases.md                                      | Contains sandbox files for testing and experimentation |
+|                              | [vish_graphs.py](#vish_graphs_py)                 | Main script for VishGraphs functionalities        |
+|                              | [tempCodeRunnerFile.py](#tempCodeRunnerFile_py)   | Temporary code runner file for testing           |
+|                              | [test.ipynb](#test_ipynb)                         | Jupyter notebook for testing various functionalities |
+|                              | [Analysis/](#analysis)                            | Directory for analysis scripts and notebooks     |
+|                              | [optimizaion/](#optimizaion)                      | Directory for optimization scripts and notebooks |
+| [USECASES/](https://github.com/vishesh9131/CoreRec/tree/main/USECASES) | vish_graphs.py                                   | Script for specific use cases of VishGraphs      |
+|                              | [weightG.py](#weightg_py)                         | Script for generating weighted graphs            |
+| [UPDATES/](#updates)         |                                                   | Directory for update-related files               |
+| [BACKUP/](https://github.com/vishesh9131/CoreRec/tree/main/BACKUP) |                                                   | Directory for backup files                       |
+| [vish_graphs/](https://github.com/vishesh9131/CoreRec/tree/main/vish_graphs) | vish_graphs.py                                   | Directory for VishGraphs related files and modules |
+| [ROADMAP/](https://github.com/vishesh9131/CoreRec/tree/main/ROADMAP) |                                                   | Directory for roadmap and future updates         |
 # Usage
 ### Generating Random Graphs
 To generate a random graph, you can use the `generate_random_graph` function:
