@@ -11,3 +11,4 @@ numpy
 torch
 networkx
 matplotlib
+torch_geometric
