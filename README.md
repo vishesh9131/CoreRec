@@ -3,18 +3,14 @@
     VishGraphs and CoreRec Manual
 </h1>
 
-
-link to published medium story : [Dare you to click](https://medium.com/@sciencely98/exploring-graph-analysis-and-recommendation-with-vishgraphs-and-corerec-51e696ee6e59)
-
-
-Welcome to CoreRec & VishGraphs - your go-to Python library for Training Recomendation models & making random graphs.
+Discover the power of graph analysis and recommendation with CoreRec & VishGraphs. Dive into our comprehensive manual and explore the endless possibilities.
 
 <h2>
     <img src="REPO_UTIL/intro.png" style="vertical-align: middle; margin-right: 8px;" width="30" height="30">
     Introduction
 </h2>
 
-VishGraphs is a versatile Python library designed to simplify graph visualization and analysis tasks. Whether you're a data scientist, researcher, or hobbyist, VishGraphs provides intuitive tools to generate, visualize, and analyze graphs with ease.
+VishGraphs is your ultimate Python library for graph visualization and analysis. Whether you're a data scientist, researcher, or hobbyist, VishGraphs offers intuitive tools to generate, visualize, and analyze graphs effortlessly.
 
 <h2>
     <img src="REPO_UTIL/feature.png" style="vertical-align: middle; margin-right: 10px;" width="40" height="38">
@@ -25,64 +21,66 @@ VishGraphs is a versatile Python library designed to simplify graph visualizatio
 #### core_rec.py
 
 - **`GraphTransformer(num_layers, d_model, num_heads, d_feedforward, input_dim)`**
-  - Defines a Transformer model for graph data with configurable parameters.
+  - A Transformer model for graph data with customizable parameters.
   
 - **`GraphDataset(adj_matrix)`**
-  - Creates a PyTorch dataset for graph data to facilitate model training.
+  - A PyTorch dataset for graph data, streamlining model training.
   
 - **`train_model(model, data_loader, criterion=False, optimizer=False, num_epochs=False)`**
-  - Trains a given model using the provided data loader and parameters.
+  - Train your model with ease using our flexible training function.
   
 - **`predict(model, graph, node_index, top_k=5)`**
-  - Predicts similar nodes based on a trained model and graph data.
+  - Predict similar nodes with precision using trained models.
   
 - **`aaj_accuracy(graph, node_index, recommended_indices)`**
-  - Calculates accuracy metrics for recommended nodes based on graph data.
+  - Measure the accuracy of your recommendations with our robust metrics.
 
 #### vish_graphs.py
 
 - **`generate_large_random_graph(num_people, file_path="large_random_graph.csv", seed=None)`**
-  - Generates a large random graph and saves it to a CSV file.
+  - Generate and save large random graphs effortlessly.
   
 - **`draw_graph(adj_matrix, top_nodes=None, recommended_nodes=None, node_labels=None, transparent_labeled=True, edge_weights=None)`**
-  - Draws a 2D visualization of a graph with optional features.
+  - Create stunning 2D visualizations of your graphs.
   
 - **`draw_graph_3d(adj_matrix, top_nodes=None, recommended_nodes=None, node_labels=None, transparent_labeled=True, edge_weights=None)`**
-  - Creates a 3D visualization of a graph with customizable properties.
+  - Experience your graphs in 3D with customizable features.
   
 - **`show_bipartite_relationship(adj_matrix)`**
-  - Visualizes bipartite relationships in a graph.
+  - Visualize bipartite relationships with clarity.
 
-These libraries provide essential functionalities for graph analysis, visualization, and machine learning tasks.
-<!-- ## Installation -->
 <h2>
     <img src="REPO_UTIL/install.png" style="vertical-align: middle; margin-right: 10px;" width="40" height="38">
     Installation
 </h2>
 
+For security reasons, we are not providing the pip install command at this time.
 
-For Security reasons, we are not providing the pip install command for now.
-
-just copy the files "`vish_graphs.py`" ,"`core_rec.py`" and "`common_imports.py`" to your project folder and import them in your project.
+Simply copy the files "`vish_graphs.py`", "`core_rec.py`", and "`common_imports.py`" to your project folder and import them.
 
 ### Or;
 
 ### For Windows Users  
-For Windows Users You can set the python path by `set` command or just copy paste this in cmd prompt
-`set PATH "%PATH%;C:\path\to\your\CoreRecRepo`
+Set the Python path using the `set` command or copy and paste this in the command prompt:
 
-### For MAC OS Users  
-For Windows Users You can set the python path by `nano ~/.zshrc ` command or just copy paste this  
-`
-export PYTHONPATH=$PYTHONPATH:\path\to\your\CoreRecRepo`
+```
+set PATH "%PATH%;C:\path\to\your\CoreRecRepo"
+```
 
+### For Mac Users
+
+Set the Python path using the `export` command or copy and paste this in the terminal:
+
+```
+export PATH="$PATH:/path/to/your/CoreRecRepo"
+```
 
 
 <h2>
     <img src="REPO_UTIL/coreRec.svg" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
     CoreRec Manual
 </h2>
-<!-- # VishGraphs Manual -->
+
 <h3>
     <img src="REPO_UTIL/star.png" style="vertical-align: middle; margin-right: 0px;" width="20" height="20">
     Table of Contents
@@ -99,58 +97,64 @@ export PYTHONPATH=$PYTHONPATH:\path\to\your\CoreRecRepo`
 7. [License](#license)
 
 # Introduction
-- CoreRec :
-CoreRec is a recommendation engine designed for analyzing and visualizing graph data. It offers functionalities for recommending similar nodes based on graph structures, training machine learning models for graph-related tasks, and visualizing complex network structures.
-- VishGraphs :
-VishGraphs is a Python library for graph visualization and analysis. It provides tools for generating random graphs, drawing graphs in 2D and 3D, and analyzing graph properties.
-
+- CoreRec:
+CoreRec is a cutting-edge recommendation engine for graph data analysis and visualization. It excels in recommending similar nodes, training machine learning models, and visualizing complex network structures.
+- VishGraphs:
+VishGraphs is a Python library designed for graph visualization and analysis. It offers tools for generating random graphs, drawing graphs in 2D and 3D, and analyzing graph properties.
 
 <h3>
     <img src="REPO_UTIL/struct.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
     Directory Structure
 </h3>
 
+
 | Directory/File                | Files                                             | Description                                      |
 |------------------------------|---------------------------------------------------|--------------------------------------------------|
-| CoreRec                      | [REPO_UTIL/](https://github.com/vishesh9131/CoreRec/tree/main/REPO_UTIL) | Contains CoreRec related files and modules       |
-|                              | [coreRec.svg](https://github.com/vishesh9131/CoreRec/blob/main/REPO_UTIL/coreRec.svg) | SVG logo for CoreRec                             |
-| [SANDBOX/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX) | [usecases.md](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/usecases.md) | Contains sandbox files for testing and experimentation |
-|                              | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/vish_graphs.py) | Main script for VishGraphs functionalities        |
-|                              | [tempCodeRunnerFile.py](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/tempCodeRunnerFile.py) | Temporary code runner file for testing           |
-|                              | [test.ipynb](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/test.ipynb) | Jupyter notebook for testing various functionalities |
-|                              | [Analysis/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX/Analysis) | Directory for analysis scripts and notebooks     |
-|                              | [optimizaion/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX/optimizaion) | Directory for optimization scripts and notebooks |
-| [USECASES/](https://github.com/vishesh9131/CoreRec/tree/main/USECASES) | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/USECASES/vish_graphs.py) | Script for specific use cases of VishGraphs      |
-|                              | [weightG.py](https://github.com/vishesh9131/CoreRec/blob/main/USECASES/weightG.py) | Script for generating weighted graphs            |
-| [UPDATES/](https://github.com/vishesh9131/CoreRec/tree/main/UPDATES) |                                                   | Directory for update-related files               |
-| [BACKUP/](https://github.com/vishesh9131/CoreRec/tree/main/BACKUP) |                                                   | Directory for backup files                       |
-| [vish_graphs/](https://github.com/vishesh9131/CoreRec/tree/main/vish_graphs) | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/vish_graphs/vish_graphs.py) | Directory for VishGraphs related files and modules |
-| [ROADMAP/](https://github.com/vishesh9131/CoreRec/tree/main/ROADMAP) |                                                   | Directory for roadmap and future updates         |
 | [engine/](https://github.com/vishesh9131/CoreRec/tree/main/engine) | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/vish_graphs.py) | Graph manipulation and visualization functions   |
 |                              | [common_import.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/common_import.py) | Common imports and setup for the engine          |
 |                              | [core_rec.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/core_rec.py) | Core recommendation engine functionalities       |
 |                              | [timecapsule.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/timecapsule.py) | Time capsule functionalities for CoreRec         |
 |                              | [torch_nn/](https://github.com/vishesh9131/CoreRec/tree/main/engine/torch_nn) | Custom PyTorch neural network modules and utilities |
+|                              | [visualization.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/visualization.py) | Graph visualization functions                    |
+|                              | [models.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/models.py) | Graph visualization functions                    |
+|                              | [datasets.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/datasets.py) | Graph visualization functions                    |
+|                              | [async_dpp.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/async_dpp.py) | Graph visualization functions                    |
+|                              | [metrics.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/metrics.py) | Graph visualization functions                    |
+|                              | [train.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/train.py) | Graph visualization functions                    |
+|                              | [predict.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/predict.py) | Graph visualization functions                    |
+| [CoreRec/](https://github.com/vishesh9131/CoreRec/tree/main/CoreRec) | [REPO_UTIL/](https://github.com/vishesh9131/CoreRec/tree/main/REPO_UTIL) | CoreRec related files and modules                |
+|                              | [coreRec.svg](https://github.com/vishesh9131/CoreRec/blob/main/REPO_UTIL/coreRec.svg) | SVG logo for CoreRec                             |
+| [SANDBOX/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX) | [usecases.md](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/usecases.md) | Sandbox files for testing and experimentation    |
+|                              | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/vish_graphs.py) | Main script for VishGraphs functionalities        |
+|                              | [tempCodeRunnerFile.py](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/tempCodeRunnerFile.py) | Temporary code runner file for testing           |
+|                              | [test.ipynb](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/test.ipynb) | Jupyter notebook for testing various functionalities |
+|                              | [Analysis/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX/Analysis) | Analysis scripts and notebooks                   |
+|                              | [optimizaion/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX/optimizaion) | Optimization scripts and notebooks               |
+| [USECASES/](https://github.com/vishesh9131/CoreRec/tree/main/USECASES) | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/USECASES/vish_graphs.py) | Specific use cases of VishGraphs                 |
+|                              | [weightG.py](https://github.com/vishesh9131/CoreRec/blob/main/USECASES/weightG.py) | Script for generating weighted graphs            |
+| [UPDATES/](https://github.com/vishesh9131/CoreRec/tree/main/UPDATES) |                                                   | Update-related files                             |
+| [BACKUP/](https://github.com/vishesh9131/CoreRec/tree/main/BACKUP) |                                                   | Backup files                                     |
+| [vish_graphs/](https://github.com/vishesh9131/CoreRec/tree/main/vish_graphs) | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/vish_graphs/vish_graphs.py) | VishGraphs related files and modules             |
+| [ROADMAP/](https://github.com/vishesh9131/CoreRec/tree/main/ROADMAP) |                                                   | Roadmap and future updates                       |
 
 # Usage
 ### Generating Random Graphs
-To generate a random graph, you can use the `generate_random_graph` function:
+Generate random graphs effortlessly with the `generate_random_graph` function:
+
 ```python
 import vish_graphs as vg
-
-graph_file = vishgraphs.generate_random_graph(10, "random_graph.csv")
+graph_file = vg.generate_random_graph(10, "random_graph.csv")
 ```
----
+
 # The use cases are:-
 ## 🔍 Delve into Advanced Graph Analysis and Recommendation with VishGraphs and CoreRec! 🚀
 Welcome to a world of cutting-edge graph analysis and recommendation tools brought to you by VishGraphs and CoreRec. Uncover the potential of data visualization and machine learning in a sophisticated manner.
 
 [🔗 Explore Detailed UseCases Here 🔗](https://github.com/vishesh9131/CoreRec/blob/main/USECASES/usecases.md)
 
-
 ## CoreRec
 
-```
+```python
 import core_rec as cs
 ```
 ### 1. `recommend_similar_nodes(adj_matrix, node)`
@@ -184,58 +188,58 @@ In the `test.py` file, various functionalities from `vishgraphs.py` and `core_re
 - Recommending similar nodes using a trained model (`recommend_similar_nodes`).
 - Visualization of a graph in 3D (`draw_graph_3d`).
 
-
 ## vishgraphs
-```
+
+```python
 import vishgraphs as vg
 ```
 ### 1. `generate_random_graph(num_people, file_path="graph_dataset.csv", seed=None)`
 
-This function generates a random graph with a specified number of people and saves the adjacency matrix to a CSV file.
+Generate a random graph with a specified number of people and save the adjacency matrix to a CSV file.
 
 **Use case:** Generating synthetic graph data for testing algorithms or simulations.
 
 ### 2. `draw_graph(adj_matrix, nodes, top_nodes)`
 
-Draws a 2D visualization of a graph based on its adjacency matrix, highlighting top nodes if specified.
+Draw a 2D visualization of a graph based on its adjacency matrix, highlighting top nodes if specified.
 
 **Use case:** Visualizing relationships within a graph dataset.
 
 ### 3. `find_top_nodes(matrix, num_nodes=10)`
 
-Identifies the top nodes with the greatest number of strong correlations in a graph.
+Identify the top nodes with the greatest number of strong correlations in a graph.
 
 **Use case:** Identifying influential or highly connected nodes in a network.
 
 ### 4. `draw_graph_3d(adj_matrix, nodes, top_nodes)`
 
-Creates a 3D visualization of a graph based on its adjacency matrix, with optional highlighting of top nodes.
+Create a 3D visualization of a graph based on its adjacency matrix, with optional highlighting of top nodes.
 
 **Use case:** Visualizing complex network structures in a three-dimensional space.
 
 ### 5. `show_bipartite_relationship_with_cosine(adj_matrix)`
 
-Visualizes bipartite relationships in a graph using cosine similarity and community detection algorithms.
+Visualize bipartite relationships in a graph using cosine similarity and community detection algorithms.
 
 **Use case:** Analyzing relationships between different sets of nodes in a bipartite graph.
 
 ### 6. `bipartite_matrix_maker(csv_path)`
 
-Reads a CSV file containing a bipartite adjacency matrix and returns it as a list.
+Read a CSV file containing a bipartite adjacency matrix and return it as a list.
 
 **Use case:** Preparing data for analyzing bipartite networks.
 
-
 ---
 
-Feel free to explore the codebase and utilize these functionalities for your graph analysis and recommendation tasks! If you have any questions or need further assistance, don't hesitate to reach out. Happy graph analyzing! 📊🔍
+Explore the codebase and utilize these functionalities for your graph analysis and recommendation tasks! If you have any questions or need further assistance, don't hesitate to reach out. Happy graph analyzing! 📊🔍
 
 ### Drawing Graphs
 VishGraphs supports drawing graphs in both 2D and 3D:
+
 ```python
 adj_matrix = vishgraphs.bipartite_matrix_maker(graph_file)
 nodes = list(range(len(adj_matrix)))
-top_nodes = [0, 1, 2]  # Example top nodes
+top_nodes = [0, 1, 2] # Example top nodes
 vishgraphs.draw_graph(adj_matrix, nodes, top_nodes)
 ```
 
@@ -257,12 +261,10 @@ For issues with CoreRec and VishGraphs:
 
 This streamlined approach should help resolve common issues efficiently.
 
-
 <h3>
     <img src="REPO_UTIL/cont.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
     Contributing
 </h3>
-
 
 We welcome contributions to enhance the functionalities of our graph analysis and recommendation tools. If you're interested in contributing, here are a few ways you can help:
 
@@ -279,13 +281,10 @@ We welcome contributions to enhance the functionalities of our graph analysis an
 
 Your contributions are greatly appreciated and will help make these tools more effective and accessible to everyone!
 
-
 <h3>
     <img src="REPO_UTIL/lic.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
     License
 </h3>
-VishGraphs is distributed following thought.
+VishGraphs is distributed under the following terms:
 
-```
-The library and utilities are only for research purpose please do not use it commercially without the authors(@Vishesh9131) consent.
-```
+>The library and utilities are only for research purposes. Please do not use it commercially without the author's (@Vishesh9131) consent.
