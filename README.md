@@ -1,6 +1,6 @@
 <h1>
     <img src="REPO_UTIL/coreRec.svg" style="vertical-align: middle; margin-right: 0px;" width="70" height="70">
-    VishGraphs and CoreRec Manual
+    CoreRec & VishGraphs Manual
 </h1>
 
 Discover the power of graph analysis and recommendation with CoreRec & VishGraphs. Dive into our comprehensive manual and explore the endless possibilities.
@@ -10,13 +10,14 @@ Discover the power of graph analysis and recommendation with CoreRec & VishGraph
     Introduction
 </h2>
 
+CoreRec is your all-in-one recommendation engine for graph-based algorithms. Seamlessly integrating advanced neural network architectures, CoreRec excels in node recommendations, model training, and graph visualizations, making it the ultimate tool for data scientists and researchers.
 VishGraphs is your ultimate Python library for graph visualization and analysis. Whether you're a data scientist, researcher, or hobbyist, VishGraphs offers intuitive tools to generate, visualize, and analyze graphs effortlessly.
 
 <h2>
     <img src="REPO_UTIL/feature.png" style="vertical-align: middle; margin-right: 10px;" width="40" height="38">
     Features
 </h2>
-### Feature Summary
+
 
 #### core_rec.py
 
@@ -116,12 +117,12 @@ VishGraphs is a Python library designed for graph visualization and analysis. It
 |                              | [timecapsule.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/timecapsule.py) | Time capsule functionalities for CoreRec         |
 |                              | [torch_nn/](https://github.com/vishesh9131/CoreRec/tree/main/engine/torch_nn) | Custom PyTorch neural network modules and utilities |
 |                              | [visualization.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/visualization.py) | Graph visualization functions                    |
-|                              | [models.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/models.py) | Graph visualization functions                    |
-|                              | [datasets.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/datasets.py) | Graph visualization functions                    |
-|                              | [async_dpp.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/async_dpp.py) | Graph visualization functions                    |
-|                              | [metrics.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/metrics.py) | Graph visualization functions                    |
-|                              | [train.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/train.py) | Graph visualization functions                    |
-|                              | [predict.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/predict.py) | Graph visualization functions                    |
+|                              | [models.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/models.py) | Graph Based model definitions for the engine                   |
+|                              | [datasets.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/datasets.py) |  Custom dataset class for handling graph data in PyTorch                   |
+|                              | [async_dpp.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/async_dpp.py) | Distributed Data Parallelism Support                   |
+|                              | [metrics.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/metrics.py) | Evaluation Utilities                    |
+|                              | [train.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/train.py) | Training Loops                   |
+|                              | [predict.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/predict.py) | Prediction definition                   |
 | [CoreRec/](https://github.com/vishesh9131/CoreRec/tree/main/CoreRec) | [REPO_UTIL/](https://github.com/vishesh9131/CoreRec/tree/main/REPO_UTIL) | CoreRec related files and modules                |
 |                              | [coreRec.svg](https://github.com/vishesh9131/CoreRec/blob/main/REPO_UTIL/coreRec.svg) | SVG logo for CoreRec                             |
 | [SANDBOX/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX) | [usecases.md](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/usecases.md) | Sandbox files for testing and experimentation    |
