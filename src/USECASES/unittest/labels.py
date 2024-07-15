@@ -5,7 +5,7 @@ import os
 import unittest
 sys.path.append('/Users/visheshyadav/Documents/GitHub/CoreRec/vish_graphs')
 # Add the parent directory to the system path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 import networkx as nx
 import core_rec as cs
 import torch
@@ -103,28 +103,6 @@ def generate_random_graph(num_people, file_path="graph_dataset.csv", seed=None):
 class TestLabels(unittest.TestCase):
     def setUp(self):
         self.file_path = generate_random_graph(50, seed=122)
-        self.adj_matrix = np.load
-
-
-
-
-
-file_path = generate_random_graph(50, seed=122)
-adj_matrix = np.loadtxt(file_path, delimiter=",")
-
-# Read the CSV file into a DataFrame
-df = pd.read_csv("./SANDBOX/labelele.csv")
-
-# # Find the top nodes
-top_nodes = find_top_nodes(adj_matrix, num_nodes=5)
-
-col = df.values
-node_labels = {i: label for i, label in enumerate(col)}
-
-
-class TestLabels(unittest.TestCase):
-    def setUp(self):
-        self.file_path = generate_random_graph(50, seed=122)
         self.adj_matrix = np.loadtxt(self.file_path, delimiter=",")
         self.df = pd.read_csv("./SANDBOX/labelele.csv")
         self.col = self.df.values
@@ -140,4 +118,3 @@ class TestLabels(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

@@ -3,7 +3,7 @@ import os
 import unittest
 
 # Add the parent directory to the system path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 # Now you can import the modules from the parent directory
 import core_rec as cs
