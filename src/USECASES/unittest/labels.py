@@ -5,7 +5,7 @@ import os
 import unittest
 sys.path.append('/Users/visheshyadav/Documents/GitHub/CoreRec/vish_graphs')
 # Add the parent directory to the system path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import networkx as nx
 import core_rec as cs
 import torch
@@ -104,7 +104,7 @@ class TestLabels(unittest.TestCase):
     def setUp(self):
         self.file_path = generate_random_graph(50, seed=122)
         self.adj_matrix = np.loadtxt(self.file_path, delimiter=",")
-        self.df = pd.read_csv("./SANDBOX/labelele.csv")
+        self.df = pd.read_csv("./src/SANDBOX/labelele.csv")
         self.col = self.df.values
         self.node_labels = {i: label for i, label in enumerate(self.col)}
 
