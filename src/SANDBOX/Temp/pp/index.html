@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Prism - Bootstrap 4 Open Source Landing Page Template</title>
+    <meta name="description" content="Prism is a beautiful Bootstrap 4 template for open-source landing pages."/>
+
+    <!--Google font-->
+    <!-- <link href="https://fonts.googleapis.com/css?family=K2D:300,400,500,700,800" rel="stylesheet"> -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap CSS / Color Scheme -->
+    <link rel="stylesheet" href="css/bootstrap.css">
+</head>
+<body>
+
+<!--Header Section-->
+<section class="bg-gradient pt-4 pb-6">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 d-flex flex-row align-items-center justify-content-between">
+                <div class="heading-brand">CoreRec</div>
+                <a href="https://prismjs.com/download.html" class="btn btn-dark" target="_blank">Download</a>
+            </div>
+        </div>
+        <div class="row mt-6">
+            <div class="col-md-8 mx-auto text-center">
+                <h1>CoreRec is your all-in-one recommendation engine for graph-based algorithms.</h1>
+                <p class="lead mb-5">CoreRec excels in node recommendations, model training, and graph visualizations, 
+                    making it the ultimate tool for data scientists and researchers.</p>
+                <a href="https://github.com/vishesh9131/CoreRec" class="btn btn-success svg-icon">
+                    <em class="mr-2" data-feather="github"></em>
+                    Contribute
+                </a>
+            </div>
+        </div>
+        <div class="row mt-5">
+            <div class="col-md-9 mx-auto">
+                <div class="code-window">
+                    <div class="dots">
+                        <div class="red"></div>
+                        <div class="orange"></div>
+                        <div class="green"></div>
+                    </div>
+                    <pre class="language-javascript line-numbers"><code class="python3">import core_rec as cr
+import vish_graphs as vg
+import numpy as np
+
+
+file_path=vg.generaterandom_graph(100,seed=221)
+graph_dataset = cs.GraphDataset(adj_matrix)
+data_loader = DataLoader(graph_dataset, batch_size=5, shuffle=True)
+adj_matrix = np.loadtxt(file_path,delimiter=',')
+model = cs.GraphTransformer(
+           num_layers, d_model, num_heads, d_feedforward, input_dim)
+           top_nodes = vg.find_top_nodes(adj_matrix, num_nodes=5)
+
+num_epochs = 10
+cs.train_model(model, data_loader, criterion, optimizer, num_epochs)
+       
+       
+node_index = 2   #target node
+recommended_nodes = cs.predict(model, adj_matrix, node_index, top_k=5, threshold=0.5)
+print(f"Recommended nodes for node {node_index}: {recommended_nodes}")
+                    </code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!--Features Section-->
+<section class="py-6">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <h2 class="text-center text-md-left">Reasons Why People Will Love <span class="text-success">CoreRec</span></h2>
+                <div class="row feature-grid">
+                    <div class="col-sm-6">
+                        <div class="media">
+                            <div class="icon-box">
+                                <div class="icon-box-inner">
+                                    <span data-feather="check-circle" width="28" height="28"></span>
+                                </div>
+                            </div>
+                            <div class="media-body">
+                                Dead Simple
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="media">
+                            <div class="icon-box">
+                                <div class="icon-box-inner">
+                                    <span data-feather="command" width="28" height="28"></span>
+                                </div>
+                            </div>
+                            <div class="media-body">
+                                Highly Intuitive
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="media">
+                            <div class="icon-box">
+                                <div class="icon-box-inner">
+                                    <span data-feather="feather" width="28" height="28"></span>
+                                </div>
+                            </div>
+                            <div class="media-body">
+                                Light as a Feather
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="media">
+                            <div class="icon-box">
+                                <div class="icon-box-inner">
+                                    <span data-feather="zap" width="28" height="28"></span>
+                                </div>
+                            </div>
+                            <div class="media-body">
+                                Blazing Fast
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="media">
+                            <div class="icon-box">
+                                <div class="icon-box-inner">
+                                    <span data-feather="git-pull-request" width="28" height="28"></span>
+                                </div>
+                            </div>
+                            <div class="media-body">
+                                Extensible
+                            </div>
+                        </div>
+                    </div><div class="col-sm-6">
+                        <div class="media">
+                            <div class="icon-box">
+                                <div class="icon-box-inner">
+                                    <span data-feather="droplet" width="28" height="28"></span>
+                                </div>
+                            </div>
+                            <div class="media-body">
+                                Easy Styling
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+<!--footer-->
+<footer class="py-5 bg-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center">
+                <ul class="list-inline">
+                    <li class="list-inline-item"><a href="https://github.com/vishesh9131/CoreRec/blob/main/USECASES/usecases.md">Examples</a></li>
+                    <li class="list-inline-item"><a href="https://medium.com/@sciencely98/exploring-graph-analysis-and-recommendation-with-vishgraphs-and-corerec-51e696ee6e59">Medium</a></li>
+                    <li class="list-inline-item"><a href="https://github.com/vishesh9131/CoreRec">Fork on GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="row my-2">
+            <div class="col-md-4 mx-auto text-muted text-center small-xl">
+                &copy; 2024 CoreRec by Vishesh Yadav
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.7.3/feather.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.15.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.15.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+<script src="js/scripts.js"></script>
+</body>
+</html>
