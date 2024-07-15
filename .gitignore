@@ -1,12 +1,9 @@
-
-
 # Analysis_large_databases
-SANDBOX/Analysis/data_mother
-src/SANDBOX/Analysis/data_mother/wgtlabel.csv
-src/SANDBOX/Analysis/data_mother/large_network.h5
-src/SANDBOX/Analysis/data_mother/large_network.csv
-src/SANDBOX/Analysis/data_mother/wgtlabel.csv
+src/SANDBOX/Analysis/data_mother
 
-.history
-__pycache__./src/SANDBOX/Analysis/data_mother/large_network.csv
-./src/SANDBOX/Analysis/data_mother/wgtlabel.csv
+__pycache__
+.deploy
+.history/
+.ipynb_checkpoints
+.vscode
+
