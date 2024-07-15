@@ -12,7 +12,7 @@ from common_import import *
 from async_ddp import *
 
 from engine.models import *
-# from engine.Tmodel import GraphTransformer
+from engine.Tmodel import GraphTransformerV2
 
 from engine.datasets import GraphDataset
 from engine.train import train_model

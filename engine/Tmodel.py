@@ -1,9 +1,9 @@
 from torch.nn import Module, Linear, TransformerEncoderLayer, TransformerEncoder, ModuleList, Dropout, LayerNorm
 import torch
 
-class GraphTransformer(Module):
+class GraphTransformerV2(Module):
     def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim, num_weights=10, use_weights=True, dropout=0.1):
-        super(GraphTransformer, self).__init__()
+        super(GraphTransformerV2, self).__init__()
         self.num_weights = num_weights
         self.use_weights = use_weights
         self.input_linear = Linear(input_dim, d_model)

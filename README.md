@@ -1,12 +1,12 @@
 <h1>
-    <img src="REPO_UTIL/coreRec.svg" style="vertical-align: middle; margin-right: 0px;" width="70" height="70">
+    <img src="docs/images/coreRec.svg" style="vertical-align: middle; margin-right: 0px;" width="70" height="70">
     CoreRec & VishGraphs Manual
 </h1>
 
 Discover the power of graph analysis and recommendation with CoreRec & VishGraphs. Dive into our comprehensive manual and explore the endless possibilities.
 
 <h2>
-    <img src="REPO_UTIL/intro.png" style="vertical-align: middle; margin-right: 8px;" width="30" height="30">
+    <img src="docs/images/intro.png" style="vertical-align: middle; margin-right: 8px;" width="30" height="30">
     Introduction
 </h2>
 
@@ -14,7 +14,7 @@ CoreRec is your all-in-one recommendation engine for graph-based algorithms. Sea
 VishGraphs is your ultimate Python library for graph visualization and analysis. Whether you're a data scientist, researcher, or hobbyist, VishGraphs offers intuitive tools to generate, visualize, and analyze graphs effortlessly.
 
 <h2>
-    <img src="REPO_UTIL/feature.png" style="vertical-align: middle; margin-right: 10px;" width="40" height="38">
+    <img src="docs/images/feature.png" style="vertical-align: middle; margin-right: 10px;" width="40" height="38">
     Features
 </h2>
 
@@ -51,7 +51,7 @@ VishGraphs is your ultimate Python library for graph visualization and analysis.
   - Visualize bipartite relationships with clarity.
 
 <h2>
-    <img src="REPO_UTIL/install.png" style="vertical-align: middle; margin-right: 10px;" width="40" height="38">
+    <img src="docs/images/install.png" style="vertical-align: middle; margin-right: 10px;" width="40" height="38">
     Installation
 </h2>
 
@@ -78,12 +78,12 @@ export PATH="$PATH:/path/to/your/CoreRecRepo"
 
 
 <h2>
-    <img src="REPO_UTIL/coreRec.svg" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
+    <img src="docs/images/coreRec.svg" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
     CoreRec Manual
 </h2>
 
 <h3>
-    <img src="REPO_UTIL/star.png" style="vertical-align: middle; margin-right: 0px;" width="20" height="20">
+    <img src="docs/images/star.png" style="vertical-align: middle; margin-right: 0px;" width="20" height="20">
     Table of Contents
 </h3>
 
@@ -104,7 +104,7 @@ CoreRec is a cutting-edge recommendation engine for graph data analysis and visu
 VishGraphs is a Python library designed for graph visualization and analysis. It offers tools for generating random graphs, drawing graphs in 2D and 3D, and analyzing graph properties.
 
 <h3>
-    <img src="REPO_UTIL/struct.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
+    <img src="docs/images/struct.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
     Directory Structure
 </h3>
 
@@ -245,7 +245,7 @@ vishgraphs.draw_graph(adj_matrix, nodes, top_nodes)
 ```
 
 <h3>
-    <img src="REPO_UTIL/trouble.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
+    <img src="docs/images/trouble.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
     Troubleshooting
 </h3>
 
@@ -263,7 +263,7 @@ For issues with CoreRec and VishGraphs:
 This streamlined approach should help resolve common issues efficiently.
 
 <h3>
-    <img src="REPO_UTIL/cont.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
+    <img src="docs/images/cont.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
     Contributing
 </h3>
 
@@ -283,7 +283,7 @@ We welcome contributions to enhance the functionalities of our graph analysis an
 Your contributions are greatly appreciated and will help make these tools more effective and accessible to everyone!
 
 <h3>
-    <img src="REPO_UTIL/lic.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
+    <img src="docs/images/lic.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
     License
 </h3>
 VishGraphs is distributed under the following terms:
