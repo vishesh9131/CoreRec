@@ -3,7 +3,7 @@
 
 `Here are the questions marked as "Unreleased" written as intervals:
 
-| Unreleased Features |
+| Unreleased Features  |
 |----------------------|
 | Q9 to Q12            |
 | Q16 to Q20           |
