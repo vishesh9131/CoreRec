@@ -40,3 +40,14 @@ Here are the specific imports and their meanings:
 - **Convolution in GNNs**: The term `conv` in the imported algorithms refers to the convolution operation adapted for graph data.
 - **Relation to Known Concepts**: Similar to how convolution in CNNs extracts features from images, graph convolution extracts features from graph structures.
 - **Differences**: Each algorithm (GraphSAGE, GAT, GCN, HAN) has its unique way of aggregating information from a node's neighbors, tailored to different types of graph data and tasks.
+
+### Cite
+- **Title**: "Fast Graph Representation Learning with PyTorch Geometric"
+- **Authors**:
+  - **Family-names**: "Fey"
+  given-names: "Matthias"
+  - **family-names**: "Lenssen"
+  given-names: "Jan Eric"
+- **Date-released**: 2019-05-06
+- **License**: MIT
+- **URL**: "https://github.com/pyg-team/pytorch_geometric"
