@@ -1,4 +1,3 @@
-
 # This is a time capsule module for the corerec 
 # ###############################################################################################################
 #                           --CoreRec: Connecting to the Unseen--                            
@@ -13,6 +12,7 @@
 
 from common_import import *
 from async_ddp import *
+from torch_geometric.data import Data
 
 class GraphTransformer(Module):
     '''
@@ -60,10 +60,12 @@ class GraphDataset(Dataset):
 
     def __getitem__(self, idx):
         node_features = self.adj_matrix[idx]
+        edge_index = torch.nonzero(self.adj_matrix).t().contiguous()
+        data = Data(x=node_features, edge_index=edge_index)
         if self.weight_matrix is not None:
             weights = self.weight_matrix[idx]
-            return node_features, weights
-        return node_features, node_features  # Return node_features as targets if no weights
+            data.weights = weights
+        return data
 
 # Training Loop
 def train_model(model, data_loader, criterion, optimizer, num_epochs):
@@ -259,4 +261,3 @@ def explainable_predict(model, graph, node_index, top_k=5, threshold=0.5):
         explanations.append(explanation)
 
     return recommended_indices, explanations
-

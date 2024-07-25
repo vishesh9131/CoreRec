@@ -40,7 +40,8 @@ Usage:
 """
 from torch.nn import Module, Linear, TransformerEncoderLayer, TransformerEncoder, ReLU, ModuleList, Embedding
 from torch_geometric.utils import degree
-from cr_pkg import sage_conv, gat_conv, gcn_conv, han_conv
+# from cr_pkg import sage_conv, gat_conv, gcn_conv, han_conv
+from torch_geometric.nn import SAGEConv, GATConv, GCNConv, HANConv
 import torch
 
 class GraphTransformer(Module):
@@ -219,5 +220,4 @@ class GraphTransformerV2(Module):
         x = self.output_linear(x)
 
         return x
-
 
