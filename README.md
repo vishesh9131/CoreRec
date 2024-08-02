@@ -1,7 +1,7 @@
-<h1>
-    <img src="docs/images/coreRec.svg" style="vertical-align: middle; margin-right: 0px;" width="70" height="70">
-    CoreRec & VishGraphs Manual
-</h1>
+<div align="center">
+    <img src="docs/images/coreRec.svg" style="vertical-align: middle; margin-right: 0px; margin-bottom: 20px;" width="70" height="70">
+    <h1>CoreRec & VishGraphs Manual</h1>
+</div>
 
 Discover the power of graph analysis and recommendation with CoreRec & VishGraphs. Dive into our comprehensive manual and explore the endless possibilities.
 
