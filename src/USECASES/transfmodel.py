@@ -19,8 +19,8 @@ adj_matrix = np.loadtxt(file_path, delimiter=",")
 # linking labels
 # df = pd.read_csv("pop.csv")
 # col = df.values
-col=[1,2,3,4,5]
-node_labels = {i: label for i, label in enumerate(col)}
+# col=[1,2,3,4,5]
+# node_labels = {i: label for i, label in enumerate(col)}
 
 # Convert adjacency matrix to dataset
 graph_dataset = cs.GraphDataset(adj_matrix)
@@ -41,7 +41,7 @@ optimizer = cs.optim.Adam(model.parameters(), lr=0.001)
 top_nodes = vg.find_top_nodes(adj_matrix, num_nodes=5)
 
     # Train the model
-num_epochs = 10
+num_epochs = 100
 cs.train_model(model, data_loader, criterion, optimizer, num_epochs)
 
 
@@ -52,7 +52,7 @@ print(f"Recommended nodes for node {node_index}: {recommended_nodes}")
 
 
 # Draw the graph
-vg.draw_graph(adj_matrix, top_nodes, recommended_nodes,node_labels,transparent_labeled=False)
+vg.draw_graph_3d(adj_matrix, top_nodes, recommended_nodes,transparent_labeled=False)
 
     # Draw the graph in 3D
 # vg.draw_graph_3d(adj_matrix, top_nodes, recommended_nodes,transparent_labeled=False)
