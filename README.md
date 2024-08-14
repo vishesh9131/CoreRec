@@ -108,35 +108,78 @@ VishGraphs is a Python library designed for graph visualization and analysis. It
     Directory Structure
 </h3>
 
+<table>
+<thead>
+<tr>
+<th> Description </th>
+<th> Quick Access </th>
+</tr>
+</thead>
+<tbody>
+<!-- Row boilerplate (copy-paste the following commented snippet for adding a new row to the table.)
+<tr> <td> <h3> title </h3> 
+description
+</td> <td> <pre>
+folders
+</pre> </td> </tr>
+-->
+<tr> <td> <h3> engine </h3> 
+Contains core engine components and utilities.
+</td> <td> <pre>
+└── engine
+    ├── cr_boosters/
+    ├── cr_pkg/
+    ├── cr_utility/
+    ├── torch_nn/
+    ├── async_dpp.py
+    ├── common_import.py
+    ├── core_rec.py
+    ├── datasets.py
+    ├── metrics.py
+    ├── model.py
+    ├── predict.py
+    ├── timecapsule.py
+    ├── Tmodel.py
+    ├── train.py
+    ├── vish_graphs.py
+    └── visulization.py
+</pre> </td> </tr>
 
-| Directory/File                | Files                                             | Description                                      |
-|------------------------------|---------------------------------------------------|--------------------------------------------------|
-| [engine/](https://github.com/vishesh9131/CoreRec/tree/main/engine) | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/vish_graphs.py) | Graph manipulation and visualization functions   |
-|                              | [common_import.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/common_import.py) | Common imports and setup for the engine          |
-|                              | [core_rec.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/core_rec.py) | Core recommendation engine functionalities       |
-|                              | [timecapsule.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/timecapsule.py) | Time capsule functionalities for CoreRec         |
-|                              | [torch_nn/](https://github.com/vishesh9131/CoreRec/tree/main/engine/torch_nn) | Custom PyTorch neural network modules and utilities |
-|                              | [visualization.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/visualization.py) | Graph visualization functions                    |
-|                              | [models.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/models.py) | Graph Based model definitions for the engine                   |
-|                              | [datasets.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/datasets.py) |  Custom dataset class for handling graph data in PyTorch                   |
-|                              | [async_dpp.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/async_dpp.py) | Distributed Data Parallelism Support                   |
-|                              | [metrics.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/metrics.py) | Evaluation Utilities                    |
-|                              | [train.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/train.py) | Training Loops                   |
-|                              | [predict.py](https://github.com/vishesh9131/CoreRec/blob/main/engine/predict.py) | Prediction definition                   |
-| [CoreRec/](https://github.com/vishesh9131/CoreRec/tree/main/CoreRec) | [REPO_UTIL/](https://github.com/vishesh9131/CoreRec/tree/main/REPO_UTIL) | CoreRec related files and modules                |
-|                              | [coreRec.svg](https://github.com/vishesh9131/CoreRec/blob/main/REPO_UTIL/coreRec.svg) | SVG logo for CoreRec                             |
-| [SANDBOX/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX) | [usecases.md](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/usecases.md) | Sandbox files for testing and experimentation    |
-|                              | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/vish_graphs.py) | Main script for VishGraphs functionalities        |
-|                              | [tempCodeRunnerFile.py](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/tempCodeRunnerFile.py) | Temporary code runner file for testing           |
-|                              | [test.ipynb](https://github.com/vishesh9131/CoreRec/blob/main/SANDBOX/test.ipynb) | Jupyter notebook for testing various functionalities |
-|                              | [Analysis/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX/Analysis) | Analysis scripts and notebooks                   |
-|                              | [optimizaion/](https://github.com/vishesh9131/CoreRec/tree/main/SANDBOX/optimizaion) | Optimization scripts and notebooks               |
-| [USECASES/](https://github.com/vishesh9131/CoreRec/tree/main/USECASES) | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/USECASES/vish_graphs.py) | Specific use cases of VishGraphs                 |
-|                              | [weightG.py](https://github.com/vishesh9131/CoreRec/blob/main/USECASES/weightG.py) | Script for generating weighted graphs            |
-| [UPDATES/](https://github.com/vishesh9131/CoreRec/tree/main/UPDATES) |                                                   | Update-related files                             |
-| [BACKUP/](https://github.com/vishesh9131/CoreRec/tree/main/BACKUP) |                                                   | Backup files                                     |
-| [vish_graphs/](https://github.com/vishesh9131/CoreRec/tree/main/vish_graphs) | [vish_graphs.py](https://github.com/vishesh9131/CoreRec/blob/main/vish_graphs/vish_graphs.py) | VishGraphs related files and modules             |
-| [ROADMAP/](https://github.com/vishesh9131/CoreRec/tree/main/ROADMAP) |                                                   | Roadmap and future updates                       |
+<tr> <td> <h3> Roadmap </h3> 
+Contains documents related to future updates and use cases.
+</td> <td> <pre>
+└── roadmap
+    ├── futureupdates.md
+    ├── Readme.pdf
+    └── usecases.pdf
+</pre> </td> </tr>
+
+<tr> <td> <h3> src </h3> 
+Contains the main source code and use cases.
+</td> <td> <pre>
+└── src
+    ├── backup/
+    ├── CoreRec/
+    ├── SANDBOX/
+    └── USECASES
+        ├── custommodel.py
+        ├── customthreshold.py
+        ├── labels.py
+        └── custommodel.py
+</pre> </td> </tr>
+
+<tr> <td> <h3> Vish Graphs </h3> 
+Contains build and distribution files for Vish Graphs.
+</td> <td> <pre>
+└── vish_graphs
+    ├── build/
+    ├── dist/
+    └── vish_graphs/
+</pre> </td> </tr>
+
+</tbody>
+</table>
+
 
 # Usage
 ### Generating Random Graphs
