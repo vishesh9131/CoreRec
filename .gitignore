@@ -7,3 +7,4 @@ __pycache__
 .ipynb_checkpoints
 .vscode
 .DS_Store
+docs/images/.DS_Store
