@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import time
 from sklearn.metrics.pairwise import cosine_similarity
 from networkx.algorithms.community import greedy_modularity_communities
-import core_rec as cs
+import engine.core_rec as cs
 from scipy.sparse import csr_matrix
 from tqdm import tqdm
 import time
@@ -32,6 +32,7 @@ from memory_profiler import profile
 from scipy.sparse import dok_matrix
 import multiprocessing
 from functools import partial
+from engine.optimal_path.optimal_path import *
 
 def generate_random_graph(num_people, file_path="graph_dataset.csv", seed=None):
     np.random.seed(seed)
@@ -442,3 +443,8 @@ for misspelling in possible_misspellings:
 
 # Example usage
 # scale_and_save_matrices('SANDBOX/label.csv', 'SANDBOX/delete', 10)
+graph = []
+start_city = 0
+
+def run_optimal_path():
+    show_path(graph, start_city)

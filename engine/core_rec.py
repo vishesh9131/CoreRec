@@ -8,8 +8,8 @@
 #     5. draw_graph: A function to visualize graphs with options to highlight top nodes and recommended nodes.
 # Note: This module integrates PyTorch for model training and evaluation, and NetworkX for graph manipulation.
 # ###############################################################################################################
-from common_import import *
-from async_ddp import *
+from engine.common_import import *
+from engine.async_ddp import *
 
 # This is the Core of your model
 from engine.models import *
