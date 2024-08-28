@@ -8,3 +8,6 @@ __pycache__
 .vscode
 .DS_Store
 docs/images/.DS_Store
+src/USECASES/tempCodeRunnerFile.py
+docs/images/.DS_Store
+engine/__pycache__/

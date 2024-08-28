@@ -18,7 +18,7 @@ Usage:
     print(explainable_predict(model, graph, node_index))
 """
 
-from common_import import *
+from engine.common_import import *
 
 def predict(model, graph, node_index, top_k=5, threshold=0.5):
     model.eval()
