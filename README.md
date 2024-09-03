@@ -1,3 +1,12 @@
+[![Downloads](https://static.pepy.tech/badge/corerec)](https://pepy.tech/project/corerec)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/vishesh9131/corerec)
+![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/vishesh9131/corerec)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/corerec?label=PyPi%20Downloads)
+![Libraries.io SourceRank](https://img.shields.io/librariesio/sourcerank/PyPI/corerec)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/vishesh9131/corerec)
+![GitHub repo size](https://img.shields.io/github/repo-size/vishesh9131/corerec)
+
+
 <div align="center">
     <img src="docs/images/coreRec.svg" style="vertical-align: middle; margin-right: 0px; margin-bottom: 20px;" width="70" height="70">
     <h1>CoreRec & VishGraphs Manual</h1>
