@@ -64,26 +64,36 @@ VishGraphs is your ultimate Python library for graph visualization and analysis.
     Installation
 </h2>
 
-For security reasons, we are not providing the pip install command at this time.
-
-Simply copy the files "`vish_graphs.py`", "`core_rec.py`", and "`common_imports.py`" to your project folder and import them.
-
-### Or;
-
-### For Windows Users  
-Set the Python path using the `set` command or copy and paste this in the command prompt:
-
+Install sspipe using pip:
+```bash
+pip install --upgrade corerec
 ```
-set PATH "%PATH%;C:\path\to\your\CoreRecRepo"
-```
+Then import it in your scripts.
 
-### For Mac Users
-
-Set the Python path using the `export` command or copy and paste this in the terminal:
-
+```python
+import engine.core_rec as cr
+import engine.vish_graphs as vg
 ```
-export PATH="$PATH:/path/to/your/CoreRecRepo"
+### Optimizers / Boosters
+In case you wanna use optimizers from corerec.
+Eg:
+
+```python
+from engine.cr_boosters.adam import Adam
 ```
+CoreRec has Various in-built optimizers for training models.
+
+#### Available Optimizers:
+- **Adam**
+- **Nadam**
+- **Adamax**
+- **Adadelta**
+- **Adagrad**
+- **ASGD**
+- **LBFGS**
+- **RMSprop**
+- **SGD**
+- **SparseAdam**
 
 
 <h2>
@@ -210,19 +220,20 @@ Welcome to a world of cutting-edge graph analysis and recommendation tools broug
 ```python
 import core_rec as cs
 ```
-### 1. `recommend_similar_nodes(adj_matrix, node)`
 
-Recommends similar nodes based on cosine similarity scores calculated from the adjacency matrix.
+### 1. `GraphTransformer(num_layers, d_model, num_heads, d_feedforward, input_dim)`
+
+Main Algorithm CoreRec Provides Based on Transformer Architecture works fine with PyTorch, CoreRec etc. In Simple terms it uses **DNG Score** to rank prediction of surrondings of Target node Providing a Enhanced way to compute **Attention**.
 
 **Use case:** Providing recommendations for nodes based on their similarity within a graph.
 
-### 2. `GraphTransformer(num_layers, d_model, num_heads, d_feedforward, input_dim)`
+### 2. `GraphTransformerV2(num_layers, d_model, num_heads, d_feedforward, input_dim)`
 
-Defines a Transformer model for graph data with customizable parameters.
+GraphTransformerV2 adds dropout and layer normalization, enhancing robustness compared to GraphTransformer's simpler architecture.
 
-**Use case:** Training machine learning models for graph-related tasks, such as node classification or link prediction.
+**Use case:** More Evolved Training machine learning models for graph-related tasks, such as node classification or link prediction.
 
-### 3. `GraphDataset(adj_matrix)`
+### 3. `GraphDataset(adj_matrix, weight_matrix)`
 
 Defines a PyTorch dataset for graph data, allowing easy integration with DataLoader for model training.
 
@@ -234,10 +245,10 @@ Trains a given model using the provided data loader, loss function, optimizer, a
 
 **Use case:** Training machine learning models for graph-related tasks using graph data.
 
-In the `test.py` file, various functionalities from `vishgraphs.py` and `core_rec.py` are utilized and demonstrated:
+In the `test.py` file, various functionalities from `vish_graphs.py` and `core_rec.py` are utilized and demonstrated:
 - Random graph generation (`generate_random_graph`).
 - Identification of top nodes in a graph (`find_top_nodes`).
-- Training a Transformer model for graph data (`GraphTransformer`, `GraphDataset`, `train_model`).
+- Training a Transformer model for graph data (`GraphTransformerV2`, `GraphDataset`, `train_model`).
 - Recommending similar nodes using a trained model (`recommend_similar_nodes`).
 - Visualization of a graph in 3D (`draw_graph_3d`).
 
