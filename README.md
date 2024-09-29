@@ -213,7 +213,7 @@ graph_file = vg.generate_random_graph(10, "random_graph.csv")
 ## 🔍 Delve into Advanced Graph Analysis and Recommendation with VishGraphs and CoreRec! 🚀
 Welcome to a world of cutting-edge graph analysis and recommendation tools brought to you by VishGraphs and CoreRec. Uncover the potential of data visualization and machine learning in a sophisticated manner.
 
-[🔗 Explore Detailed UseCases Here 🔗](https://github.com/vishesh9131/CoreRec/blob/main/USECASES/usecases.md)
+[🔗 Explore Detailed UseCases Here 🔗](https://github.com/vishesh9131/CoreRec/blob/main/src/USECASES/usecases.md)
 
 ## CoreRec
 
@@ -306,6 +306,24 @@ nodes = list(range(len(adj_matrix)))
 top_nodes = [0, 1, 2] # Example top nodes
 vishgraphs.draw_graph(adj_matrix, nodes, top_nodes)
 ```
+
+
+## Core Team 👨‍💻
+
+These are the humans that form the CoreRec's core team, which runs the project.
+(Team is not yet decided)
+<!-- In alphabetical order: -->
+
+| [@vishesh9131][vishesh9131-user] | 
+| :---: | 
+| [![][vishesh9131-img]][vishesh9131-user] | 
+| **Founder / Creator** | 
+
+[vishesh9131-img]:https://avatars.githubusercontent.com/u/87526302?s=96&v=4
+
+[vishesh9131-user]: https://github.com/vishesh9131
+
+---
 
 <h3>
     <img src="docs/images/trouble.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
