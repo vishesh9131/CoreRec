@@ -24,7 +24,7 @@ from weakref import ref
 
 from torch import inf, Tensor
 
-from .optimizer import Optimizer
+from engine.cr_boosters.optimizer import Optimizer
 
 __all__ = [
     "LambdaLR",

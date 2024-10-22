@@ -3,9 +3,17 @@ from typing import List, Optional, Tuple, Union
 
 import torch
 from torch import Tensor
-from torch.utils._foreach_utils import _get_fused_kernels_supported_devices
-from .optimizer import (
-    _capturable_doc,
+# from torch.utils._foreach_utils import _get_fused_kernels_supported_devices
+def _get_fused_kernels_supported_devices():
+    try:
+        # Attempt to use the potentially missing function
+        return ["mps", "cuda", "xpu", "cpu", torch._C._get_privateuse1_backend_name()]
+    except AttributeError:
+        # Fallback if the function is not available
+        return ["mps", "cuda", "xpu", "cpu"]
+
+
+from engine.cr_boosters.optimizer import (
     _default_to_fused_or_foreach,
     _differentiable_doc,
     _disable_dynamo_if_unsupported,
@@ -25,6 +33,12 @@ from .optimizer import (
 )
 
 __all__ = ["Adam", "adam"]
+
+# Define _capturable_doc if it is meant to be used
+_capturable_doc = """capturable (bool, optional): whether this instance is safe to
+capture in a CUDA graph. Passing True can impair ungraphed performance,
+so if you don't intend to graph capture this instance, leave it False
+(default: False)"""
 
 
 class Adam(Optimizer):
@@ -432,7 +446,8 @@ def _single_tensor_adam(
             else:
                 denom = (exp_avg_sq.sqrt() / bias_correction2_sqrt).add_(eps)
 
-            param.addcdiv_(exp_avg, denom, value=-step_size)
+            # Update the parameter in-place
+            param.data.copy_(param.addcdiv(exp_avg, denom, value=-step_size))
 
         # Lastly, switch back to complex view
         if amsgrad and torch.is_complex(params[i]):
@@ -788,3 +803,8 @@ def adam(
         grad_scale=grad_scale,
         found_inf=found_inf,
     )
+
+
+
+
+

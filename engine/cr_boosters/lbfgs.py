@@ -2,7 +2,7 @@
 from typing import Optional
 
 import torch
-from .optimizer import Optimizer, ParamsT
+from engine.cr_boosters.optimizer import Optimizer, ParamsT
 
 __all__ = ["LBFGS"]
 
