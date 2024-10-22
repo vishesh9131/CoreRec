@@ -25,15 +25,18 @@ from typing import (
 from typing_extensions import ParamSpec, Self, TypeAlias
 
 import torch
-import torch.utils.hooks as hooks
-from torch._utils import is_compiling
-from torch.utils._foreach_utils import (
+import engine.torch_utils as torch_utils
+
+from engine.torch_utils import is_compiling
+
+from engine.torch_utils._foreach_utils import (
     _get_foreach_kernels_supported_devices,
     _get_fused_kernels_supported_devices,
     _group_tensors_by_device_and_dtype,
     Indices,
+    TensorListList,
 )
-from torch.utils.hooks import RemovableHandle
+from engine.torch_utils.hooks import RemovableHandle
 
 Args: TypeAlias = Tuple[Any, ...]
 Kwargs: TypeAlias = Dict[str, Any]
@@ -132,7 +135,9 @@ def _disable_dynamo_if_unsupported(single_tensor_fn=None):
     def wrapper(func):
         import inspect
 
-        disabled_func = torch._disable_dynamo(func)
+        # Remove or comment out the problematic line
+        # disabled_func = torch._disable_dynamo(func)
+
         ps = inspect.signature(func).parameters
         has_state_steps = True
         try:
@@ -140,11 +145,6 @@ def _disable_dynamo_if_unsupported(single_tensor_fn=None):
         except ValueError:
             has_state_steps = False
 
-        # Today, there are cases where we stack state steps
-        # and pass them as the value arg of foreach ops.
-        # Having state steps on cuda as the value arg is not supported in eager,
-        # but this only occurs in the rare case that the user explicitly deletes
-        # the capturable flag. If capturable=True, this is not a problem.
         @functools.wraps(func)
         def maybe_fallback(*args, **kwargs):
             if is_compiling() and (
@@ -157,7 +157,8 @@ def _disable_dynamo_if_unsupported(single_tensor_fn=None):
                     and kwargs["state_steps"][0].is_cuda
                 )
             ):
-                return disabled_func(*args, **kwargs)
+                # Return the original function if the disabled_func is not available
+                return func(*args, **kwargs)
             else:
                 return func(*args, **kwargs)
 
@@ -252,10 +253,11 @@ _fused_doc = r"""fused (bool, optional): whether the fused implementation is use
               we want to give it sufficient bake-in time, so we default to foreach and NOT
               fused when the user has not specified either flag."""
 
-_capturable_doc = r"""capturable (bool, optional): whether this instance is safe to
-            capture in a CUDA graph. Passing True can impair ungraphed performance,
-            so if you don't intend to graph capture this instance, leave it False
-            (default: False)"""
+# Define _capturable_doc if it is meant to be used
+_capturable_doc = """capturable (bool, optional): whether this instance is safe to
+capture in a CUDA graph. Passing True can impair ungraphed performance,
+so if you don't intend to graph capture this instance, leave it False
+(default: False)"""
 
 _differentiable_doc = r"""differentiable (bool, optional): whether autograd should
             occur through the optimizer step in training. Otherwise, the step()
@@ -278,7 +280,7 @@ def register_optimizer_step_pre_hook(hook: GlobalOptimizerPreHook) -> RemovableH
         hook (Callable): A user defined hook which is registered on all optimizers.
 
     Returns:
-        :class:`torch.utils.hooks.RemovableHandle`:
+        :class:`engine.torch_utils.hooks.RemovableHandle`:
             a handle that can be used to remove the added hook by calling
             ``handle.remove()``
     """
@@ -298,7 +300,7 @@ def register_optimizer_step_post_hook(hook: GlobalOptimizerPostHook) -> Removabl
         hook (Callable): A user defined hook which is registered on all optimizers.
 
     Returns:
-        :class:`torch.utils.hooks.RemovableHandle`:
+        :class:`engine.torch_utils.hooks.RemovableHandle`:
             a handle that can be used to remove the added hook by calling
             ``handle.remove()``
     """
@@ -539,7 +541,7 @@ class Optimizer:
             hook (Callable): The user defined hook to be registered.
 
         Returns:
-            :class:`torch.utils.hooks.RemovableHandle`:
+            :class:`engine.torch_utils.hooks.RemovableHandle`:
                 a handle that can be used to remove the added hook by calling
                 ``handle.remove()``
         """
@@ -560,7 +562,7 @@ class Optimizer:
             hook (Callable): The user defined hook to be registered.
 
         Returns:
-            :class:`torch.utils.hooks.RemovableHandle`:
+            :class:`engine.torch_utils.hooks.RemovableHandle`:
                 a handle that can be used to remove the added hook by calling
                 ``handle.remove()``
         """
@@ -590,7 +592,7 @@ class Optimizer:
                 pre-hooks. (default: False)
 
         Returns:
-            :class:`torch.utils.hooks.RemoveableHandle`:
+            :class:`engine.torch_utils.hooks.RemoveableHandle`:
                 a handle that can be used to remove the added hook by calling
                 ``handle.remove()``
         """
@@ -624,7 +626,7 @@ class Optimizer:
                 post-hooks. (default: False)
 
         Returns:
-            :class:`torch.utils.hooks.RemoveableHandle`:
+            :class:`engine.torch_utils.hooks.RemoveableHandle`:
                 a handle that can be used to remove the added hook by calling
                 ``handle.remove()``
         """
@@ -634,7 +636,7 @@ class Optimizer:
             self._optimizer_state_dict_post_hooks.move_to_end(handle.id, last=False)
         return handle
 
-    @torch._disable_dynamo
+    # @torch._disable_dynamo
     def state_dict(self) -> StateDict:
         r"""Return the state of the optimizer as a :class:`dict`.
 
@@ -783,7 +785,7 @@ class Optimizer:
                 pre-hooks. (default: False)
 
         Returns:
-            :class:`torch.utils.hooks.RemoveableHandle`:
+            :class:`engine.torch_utils.hooks.RemoveableHandle`:
                 a handle that can be used to remove the added hook by calling
                 ``handle.remove()``
         """
@@ -817,7 +819,7 @@ class Optimizer:
                 post-hooks. (default: False)
 
         Returns:
-            :class:`torch.utils.hooks.RemoveableHandle`:
+            :class:`engine.torch_utils.hooks.RemoveableHandle`:
                 a handle that can be used to remove the added hook by calling
                 ``handle.remove()``
         """
@@ -827,7 +829,7 @@ class Optimizer:
             self._optimizer_load_state_dict_post_hooks.move_to_end(handle.id, last=False)  # type: ignore[attr-defined]
         return handle
 
-    @torch._disable_dynamo
+    # @torch._disable_dynamo
     def load_state_dict(self, state_dict: StateDict) -> None:
         r"""Load the optimizer state.
 
@@ -913,7 +915,7 @@ class Optimizer:
         for post_hook in self._optimizer_load_state_dict_post_hooks.values():
             post_hook(self)
 
-    @torch._disable_dynamo
+    # @torch._disable_dynamo
     def zero_grad(self, set_to_none: bool = True) -> None:
         r"""Reset the gradients of all optimized :class:`torch.Tensor` s.
 
@@ -989,7 +991,7 @@ class Optimizer:
         """
         raise NotImplementedError
 
-    @torch._disable_dynamo
+    # @torch._disable_dynamo
     def add_param_group(self, param_group: Dict[str, Any]) -> None:
         r"""Add a param group to the :class:`Optimizer` s `param_groups`.
 
@@ -1050,3 +1052,9 @@ class Optimizer:
             raise ValueError("some parameters appear in more than one parameter group")
 
         self.param_groups.append(param_group)
+
+
+
+
+
+

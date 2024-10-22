@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import torch
 from torch import Tensor
-from .optimizer import (
+from engine.cr_boosters.optimizer import (
     _capturable_doc,
     _default_to_fused_or_foreach,
     _differentiable_doc,

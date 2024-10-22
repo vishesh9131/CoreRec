@@ -9,9 +9,9 @@ from typing import Any, Callable, Iterable, List, Literal, Optional, Tuple, Unio
 import torch
 from torch import Tensor
 from torch.nn import Module
-from torch.optim.lr_scheduler import _format_param, LRScheduler
-from torch.utils._foreach_utils import _get_foreach_kernels_supported_devices
-from .optimizer import Optimizer
+from engine.cr_boosters.lr_scheduler import _format_param, LRScheduler
+from engine.torch_utils._foreach_utils import _get_foreach_kernels_supported_devices
+from engine.cr_boosters.optimizer import Optimizer
 
 __all__ = [
     "AveragedModel",

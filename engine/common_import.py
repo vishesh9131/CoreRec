@@ -5,9 +5,9 @@ import torch
 import networkx as nx
 # import torch.nn as nn
 
-import sys
-sys.path.append('/Users/visheshyadav/Documents/GitHub/CoreRec/engine/torch_nn')
-from engine.torch_nn import *
+# import sys
+# sys.path.append('/Users/visheshyadav/Documents/GitHub/CoreRec/engine/torch_nn')
+# from engine.torch_nn import *
 
 
 import torch.optim as optim

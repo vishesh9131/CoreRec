@@ -10,7 +10,7 @@ from torch.utils.data import Dataset, DataLoader
 
 # Generate random graph and load adjacency matrix
 # file_path = vg.generate_random_graph(40, seed=122)
-adj_matrix = np.loadtxt('SANDBOX/adj.csv', delimiter=",")
+adj_matrix = np.loadtxt('src/SANDBOX/dataset/adj.csv', delimiter=",")
 
 # adj_matrix = np.loadtxt(file_path, delimiter=",")
 top_nodes = vg.find_top_nodes(adj_matrix)
@@ -18,7 +18,7 @@ top_nodes = vg.find_top_nodes(adj_matrix)
 
 adj_matrices = []
 for i in range(1, 11):
-    adj_matrices1 = np.loadtxt(f'SANDBOX/delete/label_{i}.csv', delimiter=",")
+    adj_matrices1 = np.loadtxt(f'src/SANDBOX/delete/label_{i}.csv', delimiter=",")
     adj_matrices.append(adj_matrices1)
 
 

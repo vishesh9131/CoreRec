@@ -3,8 +3,8 @@ from typing import List, Tuple
 
 import torch
 from torch import Tensor
-from . import _functional as F
-from .optimizer import _maximize_doc, Optimizer, ParamsT
+from engine.cr_boosters import _functional as F
+from engine.cr_boosters.optimizer import _maximize_doc, Optimizer, ParamsT
 
 __all__ = ["SparseAdam"]
 

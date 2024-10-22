@@ -177,7 +177,7 @@ class GCF(Module):
 
 
 ######################-Work-in-Progress-##################### 
-class GraphTransformerV2(Module):
+class GraphTransformerV2_test(Module):
     def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim):
         super(GraphTransformerV2, self).__init__()
         self.input_dim = input_dim
