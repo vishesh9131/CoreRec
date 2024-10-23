@@ -104,7 +104,7 @@ class TestLabels(unittest.TestCase):
     def setUp(self):
         self.file_path = generate_random_graph(50, seed=122)
         self.adj_matrix = np.loadtxt(self.file_path, delimiter=",")
-        self.df = pd.read_csv("./src/SANDBOX/labelele.csv")
+        self.df = pd.read_csv("./src/SANDBOX/dataset/labelele.csv")
         self.col = self.df.values
         self.node_labels = {i: label for i, label in enumerate(self.col)}
 
