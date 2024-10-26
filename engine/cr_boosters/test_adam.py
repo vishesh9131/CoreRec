@@ -17,7 +17,7 @@ class TestAdam(unittest.TestCase):
         exp_avg_sqs = [torch.zeros_like(params[0])]
         max_exp_avg_sqs = [torch.zeros_like(params[0])]
         state_steps = [torch.tensor(0)]
-           
+        
         adam(params, grads, exp_avgs, exp_avg_sqs, max_exp_avg_sqs, state_steps, amsgrad=False, beta1=0.9, beta2=0.999, lr=0.001, weight_decay=0, eps=1e-8, maximize=False)
            
         # Calculate expected values based on the Adam update rule
