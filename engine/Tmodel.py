@@ -71,8 +71,7 @@ class GraphTransformerV2(Module):
 
 
 
-
-# # Example usage
+# # Example usage (Do not consider it in production -vishesh)
 # input_dim = 4
 # d_model = 8
 # num_layers = 2
@@ -93,6 +92,7 @@ class GraphTransformerV2(Module):
 
 ########################## TestingGraphTransformersAugAttention ########################
 class TestingGraphTransformersAugAttention(Module):
+    # this mentioned method is defined in paper.. [vishesh will provide link to his paper here] 
     def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim, num_weights=10, use_weights=True, dropout=0.1):
         super(TestingGraphTransformersAugAttention, self).__init__()
         self.num_weights = num_weights
@@ -104,7 +104,7 @@ class TestingGraphTransformersAugAttention(Module):
         if self.use_weights:
             self.weight_linears = ModuleList([Linear(input_dim, d_model) for _ in range(num_weights)])
         
-        # Attention components
+        # Attention components (Augumenting KQV(Key Value Pair) matrices)
         self.query_linear = Linear(d_model, d_model)
         self.key_linear = Linear(d_model, d_model)
         self.value_linear = Linear(d_model, d_model)
