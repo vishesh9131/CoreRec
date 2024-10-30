@@ -13,5 +13,5 @@ __all__ = [
     'ContentBasedFilteringEngine',
     'HybridEngine',
     'UF_Engine',
-    'CF_Engine'
+    'CF_Engine',
 ]

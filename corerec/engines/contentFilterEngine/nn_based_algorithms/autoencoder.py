@@ -1,2 +1,3 @@
 # autoencoder implementation
-pass
+class AUTOENCODER:
+    pass

@@ -1,2 +1,3 @@
 # npa implementation
-pass
+class NPA:
+    pass

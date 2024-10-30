@@ -1,2 +1,3 @@
 # cnn implementation
-pass
+class CNN:
+    pass

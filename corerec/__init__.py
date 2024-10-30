@@ -51,3 +51,9 @@ core_rec
 
 import corerec.engines.unionizedFilterEngine as UF_Engine
 import corerec.engines.contentFilterEngine as CF_Engine
+from corerec.engines.contentFilterEngine.context_personalization import CON_CONTEXT_AWARE
+from corerec.engines.contentFilterEngine.context_personalization import CON_USER_PROFILING
+from corerec.engines.contentFilterEngine.context_personalization import CON_ITEM_PROFILING
+from corerec.engines.contentFilterEngine.graph_based_algorithms import GRA_GRAPH_FILTERING
+from corerec.engines.contentFilterEngine.graph_based_algorithms import GRA_GNN
+from corerec.engines.contentFilterEngine.graph_based_algorithms import GRA_SEMANTIC_MODELS

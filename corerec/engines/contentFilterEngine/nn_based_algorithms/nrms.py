@@ -1,2 +1,3 @@
 # nrms implementation
-pass
+class NRMS:
+    pass
