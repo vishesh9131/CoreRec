@@ -1,0 +1,8 @@
+from .graph_based_cf_base import GRAPH_BASED_CF_BASE as GRA_GRAPH_BASED_CF_BASE
+from .multi_view_cf_base import MULTI_VIEW_CF_BASE as GRA_MULTI_VIEW_CF_BASE
+from .edge_aware_cf_base import EDGE_AWARE_CF_BASE as GRA_EDGE_AWARE_CF_BASE
+from .heterogeneous_network_cf_base import HETEROGENEOUS_NETWORK_CF_BASE as GRA_HETEROGENEOUS_NETWORK_CF_BASE
+from .multi_relational_cf_base import MULTI_RELATIONAL_CF_BASE as GRA_MULTI_RELATIONAL_CF_BASE
+from .lightgcn_base import LIGHTGCN_BASE as GRA_LIGHTGCN_BASE
+from .geoimc_base import GEOIMC_BASE as GRA_GEOIMC_BASE
+from .gnn_cf_base import GNN_CF_BASE as GRA_GNN_CF_BASE

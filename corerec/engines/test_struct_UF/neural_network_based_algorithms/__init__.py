@@ -1,0 +1,12 @@
+from .xdeepfm_base import XDEEPFM_BASE as NEU_XDEEPFM_BASE
+from .self_supervised_learning_cf_base import SELF_SUPERVISED_LEARNING_CF_BASE as NEU_SELF_SUPERVISED_LEARNING_CF_BASE
+from .nextitnet_base import NEXTITNET_BASE as NEU_NEXTITNET_BASE
+from .ssept_base import SSEPT_BASE as NEU_SSEPT_BASE
+from .sasrec_base import SASREC_BASE as NEU_SASREC_BASE
+from .ncf_base import NCF_BASE as NEU_NCF_BASE
+from .bivae_base import BIVAE_BASE as NEU_BIVAE_BASE
+from .autoencoder_cf_base import AUTOENCODER_CF_BASE as NEU_AUTOENCODER_CF_BASE
+from .slirec_base import SLIREC_BASE as NEU_SLIREC_BASE
+from .rnn_sequential_recommendation_base import RNN_SEQUENTIAL_RECOMMENDATION_BASE as NEU_RNN_SEQUENTIAL_RECOMMENDATION_BASE
+from .caser_base import CASER_BASE as NEU_CASER_BASE
+from .hybrid_deep_learning_base import HYBRID_DEEP_LEARNING_BASE as NEU_HYBRID_DEEP_LEARNING_BASE

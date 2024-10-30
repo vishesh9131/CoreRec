@@ -4,10 +4,10 @@ import vish_graphs as vg
 import pandas as pd
 import torch
 import torch.nn as nn
-from engine.torch_nn import *
+from corerec.torch_nn import *
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-from engine.Tmodel import GraphTransformerV2 as GraphTransformer
+from corerec.Tmodel import GraphTransformerV2 as GraphTransformer
 
 # # Generate random graph and load adjacency matrix
 # file_path = vg.generate_random_graph(40, seed=122)

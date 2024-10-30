@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import core_rec as cr
 import vish_graphs as vg
-from engine.torch_nn import *
+from corerec.torch_nn import *
 from torch_geometric.datasets import Planetoid
 from torch_geometric.data import DataLoader
 

@@ -11,13 +11,13 @@
 from common_import import *
 from async_ddp import *
 
-from engine.models import *
-from engine.Tmodel import GraphTransformerV2
+from corerec.models import *
+from corerec.Tmodel import GraphTransformerV2
 
-from engine.datasets import GraphDataset
-from engine.train import train_model
-from engine.predict import predict, explainable_predict
-from engine.metrics import jaccard_similarity, adamic_adar_index, aaj_accuracy
+from corerec.datasets import GraphDataset
+from corerec.train import train_model
+from corerec.predict import predict, explainable_predict
+from corerec.metrics import jaccard_similarity, adamic_adar_index, aaj_accuracy
 
 # EXTRAS : visualization functions 
 # from engine.vish_graphs import draw_graph, draw_graph_3d

@@ -4,11 +4,11 @@ import torch
 from torch.utils.data import DataLoader
 import networkx as nx
 import numpy as np
-from engine.datasets import GraphDataset
-from engine.Tmodel import GraphTransformerV2
-from engine.cr_boosters.adam import Adam
-import engine.core_rec as cr
-import engine.vish_graphs as vg
+from corerec.datasets import GraphDataset
+from corerec.Tmodel import GraphTransformerV2
+from corerec.cr_boosters.adam import Adam
+import corerec.core_rec as cr
+import corerec.vish_graphs as vg
 
 # Streamlit app title
 st.title("Video Recommendation System")

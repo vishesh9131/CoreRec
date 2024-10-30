@@ -1,0 +1,2 @@
+# rnn_sequential_recommendation_base implementation
+pass

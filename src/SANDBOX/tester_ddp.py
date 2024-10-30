@@ -1,13 +1,13 @@
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
-from engine.async_ddp import worker, ParameterServer
+from corerec.async_ddp import worker, ParameterServer
 from multiprocessing import Process, freeze_support
 import numpy as np
 import vish_graphs as vg
 import core_rec as cs
 from common_import import *
-from engine.async_ddp import find_free_port  #dpp= distributed data processing
+from corerec.async_ddp import find_free_port  #dpp= distributed data processing
 import os
 
 num_people = 10
