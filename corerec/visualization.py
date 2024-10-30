@@ -32,3 +32,14 @@ def draw_graph(adj_matrix, top_nodes, recommended_nodes=None):
 
     plt.title("Recommended Nodes Highlighted in Blue and Top Nodes in Red")
     plt.show()
+
+
+
+
+good now i wanna use @nn_based_algorithms
+but its classes its are not defined define them deeply 
+
+
+# now make a recys using @graph_based_algorithms 
+# and use this dataset
+# @movies.dat 

@@ -1,2 +1,3 @@
 # lstur implementation
-pass
+class LSTUR:
+    pass

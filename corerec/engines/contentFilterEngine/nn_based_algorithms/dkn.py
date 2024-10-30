@@ -1,2 +1,3 @@
 # dkn implementation
-pass
+class DKN:
+    pass    

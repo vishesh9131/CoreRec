@@ -1,2 +1,3 @@
 # vae implementation
-pass
+class VAE:
+    pass

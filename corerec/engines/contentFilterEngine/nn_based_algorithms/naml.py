@@ -1,2 +1,3 @@
 # naml implementation
-pass
+class NAML:
+    pass
