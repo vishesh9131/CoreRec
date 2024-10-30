@@ -1,0 +1,10 @@
+from .dkn import DKN as NN__DKN
+from .lstur import LSTUR as NN__LSTUR
+from .naml import NAML as NN__NAML
+from .npa import NPA as NN__NPA
+from .nrms import NRMS as NN__NRMS
+from .cnn import CNN as NN__CNN
+from .rnn import RNN as NN__RNN
+from .transformer import TRANSFORMER as NN__TRANSFORMER
+from .autoencoder import AUTOENCODER as NN__AUTOENCODER
+from .vae import VAE as NN__VAE

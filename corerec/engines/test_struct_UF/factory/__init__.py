@@ -1,0 +1,4 @@
+from .cr_unionizedFactory import CR_UNIONIZEDFACTORY as FAC_CR_UNIONIZEDFACTORY
+from .als_recommender import ALS_RECOMMENDER as FAC_ALS_RECOMMENDER
+from .svd_recommender import SVD_RECOMMENDER as FAC_SVD_RECOMMENDER
+from .base_recommender import BASE_RECOMMENDER as FAC_BASE_RECOMMENDER

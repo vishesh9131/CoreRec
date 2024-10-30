@@ -1,0 +1,2 @@
+# hierarchical_poisson_factorization_base implementation
+pass

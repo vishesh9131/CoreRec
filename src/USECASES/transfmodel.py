@@ -4,7 +4,7 @@ import numpy as np
 
 import core_rec as cs
 import vish_graphs as vg
-from engine.torch_nn import *
+from corerec.torch_nn import *
 
 
 # # Generate random graph and load adjacency matrix

@@ -1,4 +1,4 @@
-import engine.vish_graphs as vg
+import corerec.vish_graphs as vg
 import numpy as np
 import pandas as pd
 
