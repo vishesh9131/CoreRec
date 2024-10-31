@@ -1,2 +1,3 @@
 # temporal_filtering implementation
-pass
+class TemporalFilteringRecommender:
+    pass

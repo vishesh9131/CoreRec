@@ -1,0 +1,11 @@
+{
+    "default": {
+        "weather": {
+            "genre_Action": 1.0,
+            "genre_SciFi": 0.8
+        },
+        "time_of_day": {
+            "genre_Drama": 0.9
+        }
+    }
+}
