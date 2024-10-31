@@ -1,3 +1,3 @@
-from .dynamic_filtering import DYNAMIC_FILTERING as SPE_DYNAMIC_FILTERING
-from .temporal_filtering import TEMPORAL_FILTERING as SPE_TEMPORAL_FILTERING
-from .interactive_filtering import INTERACTIVE_FILTERING as SPE_INTERACTIVE_FILTERING
+from .dynamic_filtering import DynamicFilteringRecommender as SPE_DYNAMIC_FILTERING
+from .temporal_filtering import TemporalFilteringRecommender as SPE_TEMPORAL_FILTERING
+from .interactive_filtering import InteractiveFilteringRecommender as SPE_INTERACTIVE_FILTERING

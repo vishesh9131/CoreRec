@@ -1,5 +1,8 @@
 # item_profiling implementation
 from typing import List, Dict, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ItemProfilingRecommender:
     def __init__(self):
@@ -24,17 +27,21 @@ class ItemProfilingRecommender:
                 for feature, value in item_features.get(item_id, {}).items():
                     self.item_profiles[item_id][feature] = self.item_profiles[item_id].get(feature, 0) + 1
 
-    def recommend(self, item_indices: List[int], top_n: int = 10) -> List[int]:
+    def recommend(self, query: str, top_n: int = 10) -> List[int]:
         """
-        Generate top-N item recommendations based on item profiles.
+        Recommend items based on the similarity of the query to the documents.
 
         Parameters:
-        - item_indices (List[int]): List of item indices to base recommendations on.
-        - top_n (int): The number of recommendations to generate.
+        - query (str): The query text for which to generate recommendations.
+        - top_n (int): Number of top recommendations to return.
 
         Returns:
         - List[int]: List of recommended item indices.
         """
-        # Placeholder implementation
-        # Implement similarity-based recommendations or other logic as needed
-        return []
+        logger.info("Generating recommendations using LSA.")
+        query_vec = self.transform([query])
+        doc_vecs = self.lsa_model.transform(self.vectorizer.transform(self.vectorizer.get_feature_names_out()))
+        similarity_scores = (doc_vecs @ query_vec.T).flatten()
+        top_indices = similarity_scores.argsort()[::-1][:top_n]
+        logger.info(f"Top {top_n} recommendations generated using LSA.")
+        return top_indices.tolist()
