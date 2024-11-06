@@ -4,14 +4,68 @@ from typing import List, Dict, Any
 from .word2vec import WORD2VEC
 from .doc2vec import DOC2VEC
 
+"""
+Personalized Embeddings for Content-Based Recommendation
+
+This module combines Word2Vec and Doc2Vec approaches to create personalized embeddings
+for both individual words and complete documents in recommendation systems. It provides
+a unified interface for training and managing both types of embeddings.
+
+Key Features:
+    - Unified Word2Vec and Doc2Vec management
+    - Personalized document and word representations
+    - Flexible parameter configuration
+    - Model persistence capabilities
+    - Thread-safe implementation
+
+Example Usage:
+    >>> embeddings = PERSONALIZED_EMBEDDINGS()
+    >>> words = [['user', 'likes', 'movies'], ['user', 'watches', 'shows']]
+    >>> docs = [['document', 'one', 'content'], ['document', 'two', 'content']]
+    >>> embeddings.train_word2vec(words)
+    >>> embeddings.train_doc2vec(docs)
+    >>> word_vector = embeddings.get_word_embedding('user')
+    >>> doc_vector = embeddings.get_doc_embedding(0)
+
+References:
+    - Mikolov, et al. "Efficient estimation of word representations in vector space." 2013.
+    - Le, Quoc, and Tomas Mikolov. "Distributed representations of sentences and documents." 2014.
+"""
+
 class PERSONALIZED_EMBEDDINGS:
+    """
+    A unified embedding manager combining Word2Vec and Doc2Vec capabilities.
+    
+    This class provides a comprehensive interface for training and managing both word
+    and document embeddings, making it suitable for personalized recommendation systems
+    that need to understand both word-level and document-level semantics.
+
+    Attributes:
+        word2vec (WORD2VEC): Instance of the Word2Vec model for word embeddings
+        doc2vec (DOC2VEC): Instance of the Doc2Vec model for document embeddings
+        
+    Methods:
+        train_word2vec: Trains the Word2Vec model on a corpus of sentences
+        train_doc2vec: Trains the Doc2Vec model on a corpus of documents
+        get_word_embedding: Retrieves word vectors
+        get_doc_embedding: Retrieves document vectors
+        save_models: Persists both models to disk
+        load_models: Loads both models from disk
+    """
+
     def __init__(self, word2vec_params: Dict[str, Any] = None, doc2vec_params: Dict[str, Any] = None):
         """
-        Initialize the Personalized Embeddings recommender by setting up Word2Vec and Doc2Vec models.
+        Initialize both Word2Vec and Doc2Vec models with customizable parameters.
 
-        Parameters:
-        - word2vec_params (dict, optional): Parameters for initializing Word2Vec.
-        - doc2vec_params (dict, optional): Parameters for initializing Doc2Vec.
+        Args:
+            word2vec_params (Dict[str, Any], optional): Configuration parameters for Word2Vec model.
+                                                       Includes vector_size, window, min_count, workers.
+            doc2vec_params (Dict[str, Any], optional): Configuration parameters for Doc2Vec model.
+                                                      Includes vector_size, window, min_count, workers, epochs.
+
+        Note:
+            If no parameters are provided, models will be initialized with default values.
+            See individual model documentation for default parameter details.
         """
         self.word2vec = WORD2VEC(**(word2vec_params if word2vec_params else {}))
         self.doc2vec = DOC2VEC(**(doc2vec_params if doc2vec_params else {}))

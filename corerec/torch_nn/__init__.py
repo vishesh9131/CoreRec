@@ -6,14 +6,11 @@ from torch.nn.parameter import (
 )
 from torch.nn.modules import *  # noqa: F403
 from torch.nn import (
-    attention as attention,
-    functional as functional,
-    init as init,
-    modules as modules,
-    parallel as parallel,
-    parameter as parameter,
-    utils as utils,
+    Linear,
+    ReLU,
+    # Add other necessary imports here
 )
+from torch.nn import MultiheadAttention
 from torch.nn.parallel import DataParallel as DataParallel
 
 

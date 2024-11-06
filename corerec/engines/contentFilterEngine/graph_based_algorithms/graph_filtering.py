@@ -6,6 +6,34 @@ from corerec.vish_graphs import (
 )
 
 class GraphFiltering:
+    """
+    GraphFiltering Class
+
+    This class implements graph-based filtering techniques for recommendation systems.
+    Graph-based filtering leverages the structure of a graph to make recommendations by
+    analyzing the relationships between users and items.
+
+    Attributes:
+        graph (Graph): The graph structure representing users and items.
+        similarity_metric (str): The metric used to calculate similarity between nodes.
+        damping_factor (float): The damping factor used in algorithms like PageRank.
+        max_iterations (int): Maximum number of iterations for convergence in iterative algorithms.
+
+    Methods:
+        build_graph(data):
+            Constructs the graph from the given data, where nodes represent users and items,
+            and edges represent interactions or similarities.
+
+        compute_similarity():
+            Computes similarity scores between nodes using the specified similarity metric.
+
+        recommend(user_id, top_n=10):
+            Generates top-N recommendations for a given user by analyzing the graph structure.
+
+        update_graph(new_data):
+            Updates the graph with new interactions or changes in the data, allowing for
+            dynamic recommendations.
+    """
     def __init__(self):
         self.graph = None
 

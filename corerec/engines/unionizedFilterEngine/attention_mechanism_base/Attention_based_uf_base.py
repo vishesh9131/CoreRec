@@ -1,4 +1,4 @@
-# Attention Based Unionized Filtering
+# Attention Based Unionized Filtering Base Class
 # IMPLEMENTATION IN PROGRESS
 class AttentionBasedUFBase:
     def __init__(self, param1, param2):

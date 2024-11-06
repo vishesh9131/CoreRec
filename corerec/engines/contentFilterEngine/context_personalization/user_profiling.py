@@ -3,6 +3,38 @@ import pandas as pd
 from typing import List, Dict, Any, Optional
 
 class UserProfilingRecommender:
+    """
+    A context-aware recommender system that builds and maintains user profiles for personalized recommendations.
+    
+    This recommender system creates and maintains detailed user profiles that capture user preferences,
+    behavior patterns, and context-dependent interactions. It uses these profiles to generate
+    personalized recommendations that adapt to different contexts.
+    
+    Attributes:
+        user_profiles (Dict[int, Dict]): Detailed profiles for each user containing:
+            - Preference vectors
+            - Historical interactions
+            - Context-dependent behavior patterns
+            - Long-term and short-term interests
+        context_preferences (Dict[int, Dict]): User preferences mapped to different contexts
+        preference_evolution (Dict[int, List]): Temporal evolution of user preferences
+    
+    Methods:
+        update_profile: Updates user profile with new interaction data
+        analyze_context_preferences: Analyzes user preferences in different contexts
+        detect_preference_shifts: Identifies changes in user preferences over time
+        recommend: Generates personalized recommendations based on profile and context
+    
+    Example:
+        >>> profiler = UserProfilingRecommender()
+        >>> profiler.update_profile(user_id=123, interaction_data={...}, context={...})
+        >>> recommendations = profiler.recommend(user_id=123, context={"location": "work"})
+    
+    Note:
+        - Profiles are automatically updated with each user interaction
+        - Supports both explicit (ratings) and implicit (behavior) feedback
+        - Implements drift detection for evolving user preferences
+    """
     def __init__(self, user_attributes: Optional[pd.DataFrame] = None):
         """
         Initialize the user profiling recommender with optional user attributes.

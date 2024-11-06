@@ -37,6 +37,10 @@ try:
 except ModuleNotFoundError:
     np = None
 
+def _add_docstr(func, docstr):
+    if not func.__doc__:
+        func.__doc__ = docstr
+    return func
 
 conv1d = _add_docstr(
     torch.conv1d,
@@ -87,7 +91,12 @@ Examples::
     >>> filters = torch.randn(20, 16, 5)
     >>> F.conv1d(inputs, filters)
 """,
-)
+
+) 
+conv1d_doc = r"""
+conv1d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1) -> Tensor
+"""
+conv1d = _add_docstr(conv1d, conv1d_doc)
 
 conv2d = _add_docstr(
     torch.conv2d,
