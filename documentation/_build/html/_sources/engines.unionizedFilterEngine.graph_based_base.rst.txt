@@ -1,0 +1,93 @@
+engines.unionizedFilterEngine.graph\_based\_base package
+========================================================
+
+Submodules
+----------
+
+engines.unionizedFilterEngine.graph\_based\_base.DeepWalk\_base module
+----------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.graph_based_base.DeepWalk_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.graph\_based\_base.GNN\_base module
+-----------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.graph_based_base.GNN_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.graph\_based\_base.edge\_aware\_ufilter\_base module
+----------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.graph_based_base.edge_aware_ufilter_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.graph\_based\_base.geoimc\_base module
+--------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.graph_based_base.geoimc_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.graph\_based\_base.gnn\_ufilter\_base module
+--------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.graph_based_base.gnn_ufilter_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.graph\_based\_base.graph\_based\_ufilter\_base module
+-----------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.graph_based_base.graph_based_ufilter_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.graph\_based\_base.heterogeneous\_network\_ufilter\_base module
+---------------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.graph_based_base.heterogeneous_network_ufilter_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.graph\_based\_base.lightgcn\_base module
+----------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.graph_based_base.lightgcn_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.graph\_based\_base.multi\_relational\_ufilter\_base module
+----------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.graph_based_base.multi_relational_ufilter_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.graph\_based\_base.multi\_view\_ufilter\_base module
+----------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.graph_based_base.multi_view_ufilter_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: engines.unionizedFilterEngine.graph_based_base
+   :members:
+   :undoc-members:
+   :show-inheritance:

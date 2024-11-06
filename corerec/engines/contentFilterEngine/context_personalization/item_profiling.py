@@ -5,6 +5,32 @@ import logging
 logger = logging.getLogger(__name__)
 
 class ItemProfilingRecommender:
+    """
+    A recommender system that builds and maintains detailed item profiles for context-aware recommendations.
+    
+    This recommender system creates comprehensive profiles for items by analyzing their features,
+    usage patterns, and performance across different contexts. It uses these profiles to make
+    more accurate recommendations based on contextual similarities.
+    
+    Attributes:
+        item_profiles (Dict[int, Dict]): Detailed profiles for each item containing:
+            - Static features (inherent item characteristics)
+            - Dynamic features (usage patterns, ratings)
+            - Contextual performance metrics
+        context_performance (Dict[int, Dict]): Performance metrics for items in different contexts
+        feature_importance (Dict[str, float]): Learned importance of different features
+    
+    Methods:
+        build_profile: Creates or updates an item's profile
+        update_context_performance: Updates item performance metrics for specific contexts
+        get_context_similarity: Calculates similarity between contexts
+        recommend: Generates recommendations using item profiles and current context
+    
+    Example:
+        >>> profiler = ItemProfilingRecommender()
+        >>> profiler.build_profile(item_id=123, features={...}, context_data={...})
+        >>> recommendations = profiler.recommend(user_id=456, context={"time": "evening"})
+    """
     def __init__(self):
         """
         Initialize the item profiling recommender.

@@ -6,6 +6,10 @@ class FAIRNESS_AWARE:
     def __init__(self):
         """
         Initialize the fairness-aware module.
+
+        Attributes:
+            fairness_metrics (dict): A dictionary to store calculated fairness metrics, 
+            such as the distribution of recommendations across different user demographics.
         """
         self.fairness_metrics = {}
 
@@ -14,11 +18,14 @@ class FAIRNESS_AWARE:
         Evaluate the fairness of the recommendations across different user groups.
 
         Parameters:
-        - recommendations (dict): A dictionary mapping user IDs to lists of recommended item IDs.
-        - user_attributes (pd.DataFrame): DataFrame containing user demographic information.
+            recommendations (dict): A dictionary mapping user IDs to lists of recommended item IDs.
+            user_attributes (pd.DataFrame): A DataFrame containing user demographic information, 
+            such as age, gender, and other relevant attributes.
 
         Returns:
-        - dict: A dictionary of fairness metrics.
+            dict: A dictionary of fairness metrics, providing insights into how recommendations 
+            are distributed across different user groups. For example, it may include the 
+            distribution of recommendations by gender or age group.
         """
         # Example: Calculate the distribution of recommendations across gender
         gender_distribution = user_attributes['gender'].value_counts(normalize=True).to_dict()
@@ -30,11 +37,13 @@ class FAIRNESS_AWARE:
         Adjust recommendations to ensure fairness across user groups.
 
         Parameters:
-        - recommendations (dict): A dictionary mapping user IDs to lists of recommended item IDs.
-        - user_attributes (pd.DataFrame): DataFrame containing user demographic information.
+            recommendations (dict): A dictionary mapping user IDs to lists of recommended item IDs.
+            user_attributes (pd.DataFrame): A DataFrame containing user demographic information, 
+            such as age, gender, and other relevant attributes.
 
         Returns:
-        - dict: Adjusted recommendations ensuring fairness.
+            dict: Adjusted recommendations ensuring fairness, potentially modifying the original 
+            recommendations to achieve a more balanced distribution across user groups.
         """
         # Placeholder: Implement logic to adjust recommendations for fairness
         return recommendations

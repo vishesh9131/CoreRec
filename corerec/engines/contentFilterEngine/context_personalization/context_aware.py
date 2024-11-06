@@ -5,6 +5,38 @@ import json
 import os
 
 class ContextAwareRecommender:
+    """
+    A context-aware recommender system that adapts recommendations based on contextual factors.
+    
+    This recommender system incorporates contextual information to provide more relevant 
+    recommendations by adjusting feature weights based on the current context. It considers
+    various contextual factors such as time, location, user state, and other environmental 
+    variables to modify the importance of different item features.
+    
+    Attributes:
+        context_factors (Dict[str, Dict]): Mapping of context factors to their value-specific weights.
+            Format: {
+                "factor_name": {
+                    "value": {
+                        "feature": weight
+                    }
+                }
+            }
+        item_features (Dict[int, Dict]): Mapping of item IDs to their feature dictionaries.
+            Format: {
+                item_id: {
+                    "feature_name": value
+                }
+            }
+        feature_weights (Dict[str, float]): Current active feature weights based on context.
+    
+    Methods:
+        update_context: Updates the current context and recalculates feature weights.
+        recommend: Generates recommendations considering the current context.
+        _initialize_feature_weights: Initializes weights based on context.
+        _encode_item_features: Encodes and weights item features.
+    """
+    
     def __init__(
         self, 
         context_config_path: str, 
@@ -40,13 +72,25 @@ class ContextAwareRecommender:
 
     def _initialize_feature_weights(self, current_context: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
         """
-        Initialize feature weights based on the current context.
-
-        Parameters:
-        - current_context (dict, optional): The current context to consider.
-
+        Initialize and calculate feature weights based on the current context.
+        
+        This method processes the current context to determine appropriate weights for different
+        item features. It combines weights from multiple context factors when they affect the
+        same feature.
+        
+        Args:
+            current_context (Optional[Dict[str, Any]]): Dictionary containing current context
+                information. Keys are context factor names, values are the current factor values.
+                If None, uses default context.
+        
         Returns:
-        - Dict[str, float]: A dictionary mapping feature names to their weights.
+            Dict[str, float]: Dictionary mapping feature names to their calculated weights
+                based on the current context.
+        
+        Example:
+            >>> context = {"time": "evening", "location": "home"}
+            >>> recommender._initialize_feature_weights(context)
+            {"genre_action": 1.2, "genre_drama": 0.8, "length": 1.5}
         """
         weights = {}
         context = current_context or self.context_factors.get("default", {})
@@ -59,13 +103,27 @@ class ContextAwareRecommender:
 
     def _encode_item_features(self, item_id: int) -> Dict[str, float]:
         """
-        Encode item features into a feature vector with applied weights.
-
-        Parameters:
-        - item_id (int): The ID of the item.
-
+        Encode item features into a weighted feature vector based on current context.
+        
+        This method transforms an item's raw features into a weighted feature representation,
+        applying the current context-dependent weights. It handles both categorical and
+        numerical features appropriately.
+        
+        Args:
+            item_id (int): The unique identifier of the item to encode.
+        
         Returns:
-        - Dict[str, float]: A dictionary of weighted feature values.
+            Dict[str, float]: Dictionary containing the encoded and weighted features.
+                For categorical features: {feature_name_value: weight}
+                For numerical features: {feature_name: value * weight}
+        
+        Example:
+            >>> recommender._encode_item_features(123)
+            {"genre_action": 1.2, "duration": 90.5, "rating": 4.5}
+        
+        Note:
+            - Categorical features are encoded as separate binary features
+            - Numerical features are scaled by their corresponding weights
         """
         features = self.item_features.get(item_id, {})
         encoded = {}

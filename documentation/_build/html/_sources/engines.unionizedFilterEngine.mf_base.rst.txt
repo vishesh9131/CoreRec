@@ -1,0 +1,189 @@
+engines.unionizedFilterEngine.mf\_base package
+==============================================
+
+Submodules
+----------
+
+engines.unionizedFilterEngine.mf\_base.A2SVD\_base module
+---------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.A2SVD_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.ALS\_base module
+-------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.ALS_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.Factorization\_Machines\_base module
+---------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.Factorization_Machines_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.Implicit\_feedback\_mf\_base module
+--------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.Implicit_feedback_mf_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.bayesian\_matrix\_factorization\_base module
+-----------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.bayesian_matrix_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.contextual\_matrix\_factorization\_base module
+-------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.contextual_matrix_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.deep\_matrix\_factorization\_base module
+-------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.deep_matrix_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.hierarchical\_poisson\_factorization\_base module
+----------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.hierarchical_poisson_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.hybrid\_matrix\_factorization\_base module
+---------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.hybrid_matrix_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.hybrid\_regularization\_matrix\_factorization\_base module
+-------------------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.hybrid_regularization_matrix_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.incremental\_matrix\_factorization\_base module
+--------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.incremental_matrix_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.kernelized\_matrix\_factorization\_base module
+-------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.kernelized_matrix_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.matrix\_factorization\_base module
+-------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.matrix_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.neural\_matrix\_factorization\_base module
+---------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.neural_matrix_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.nmf\_base module
+-------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.nmf_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.pmf\_base module
+-------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.pmf_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.sgd\_matrix\_factorization\_base module
+------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.sgd_matrix_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.svd\_base module
+-------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.svd_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.svdpp\_base module
+---------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.svdpp_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.temporal\_matrix\_factorization\_base module
+-----------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.temporal_matrix_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.user\_based\_uf module
+-------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.user_based_uf
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.mf\_base.weighted\_matrix\_factorization\_base module
+-----------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base.weighted_matrix_factorization_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: engines.unionizedFilterEngine.mf_base
+   :members:
+   :undoc-members:
+   :show-inheritance:

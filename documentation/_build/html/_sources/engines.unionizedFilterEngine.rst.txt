@@ -1,0 +1,68 @@
+engines.unionizedFilterEngine package
+=====================================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   engines.unionizedFilterEngine.attention_mechanism_base
+   engines.unionizedFilterEngine.bayesian_method_base
+   engines.unionizedFilterEngine.graph_based_base
+   engines.unionizedFilterEngine.mf_base
+   engines.unionizedFilterEngine.nn_base
+   engines.unionizedFilterEngine.regularization_based_base
+   engines.unionizedFilterEngine.sequential_model_base
+   engines.unionizedFilterEngine.variational_encoder_base
+
+Submodules
+----------
+
+engines.unionizedFilterEngine.als\_recommender module
+-----------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.als_recommender
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.base\_recommender module
+------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.base_recommender
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.cr\_unionizedFactory module
+---------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.cr_unionizedFactory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.matrix\_factorization module
+----------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.matrix_factorization
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.svd\_recommender module
+-----------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.svd_recommender
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: engines.unionizedFilterEngine
+   :members:
+   :undoc-members:
+   :show-inheritance:

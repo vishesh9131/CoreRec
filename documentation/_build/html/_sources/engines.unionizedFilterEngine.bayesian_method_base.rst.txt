@@ -1,0 +1,37 @@
+engines.unionizedFilterEngine.bayesian\_method\_base package
+============================================================
+
+Submodules
+----------
+
+engines.unionizedFilterEngine.bayesian\_method\_base.Bayesian\_Personalized\_Ranking\_Extensions\_base module
+-------------------------------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.bayesian_method_base.Bayesian_Personalized_Ranking_Extensions_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.bayesian\_method\_base.Bayesian\_mf\_base module
+------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.bayesian_method_base.Bayesian_mf_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.bayesian\_method\_base.PGM\_uf module
+-------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.bayesian_method_base.PGM_uf
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: engines.unionizedFilterEngine.bayesian_method_base
+   :members:
+   :undoc-members:
+   :show-inheritance:

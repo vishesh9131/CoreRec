@@ -1,0 +1,21 @@
+engines.unionizedFilterEngine.regularization\_based\_base package
+=================================================================
+
+Submodules
+----------
+
+engines.unionizedFilterEngine.regularization\_based\_base.Hybrid\_Regularization\_mf module
+-------------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.regularization_based_base.Hybrid_Regularization_mf
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: engines.unionizedFilterEngine.regularization_based_base
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -136,20 +136,24 @@ class MatrixFactorizationBase(BaseRecommender):
                         break
 
     def _sgd_step(self, interaction_matrix: csr_matrix):
-        def update_user(user):
-            interactions = interaction_matrix[user].indices
-            for item in interactions:
-                prediction = np.dot(self.user_factors[user], self.item_factors[item]) + self.user_bias[user] + self.item_bias[item] + self.global_bias
-                error = interaction_matrix[user, item] - prediction
+        """
+        Perform a single SGD step to update user and item factors and biases.
+        This implementation uses multi-threading to parallelize updates.
 
+        Parameters:
+        - interaction_matrix (csr_matrix): User-item interaction matrix.
+        """
+        def update_user(u):
+            user_interactions = interaction_matrix[u].indices
+            for i in user_interactions:
+                prediction = np.dot(self.user_factors[u], self.item_factors[i]) + self.user_bias[u] + self.item_bias[i] + self.global_bias
+                error = interaction_matrix[u, i] - prediction
                 # Update biases
-                self.user_bias[user] += self.learning_rate * (error - self.reg_user * self.user_bias[user])
-                self.item_bias[item] += self.learning_rate * (error - self.reg_item * self.item_bias[item])
-
-                # Update factors
-                user_factors_old = self.user_factors[user].copy()
-                self.user_factors[user] += self.learning_rate * (error * self.item_factors[item] - self.reg_user * self.user_factors[user])
-                self.item_factors[item] += self.learning_rate * (error * user_factors_old - self.reg_item * self.item_factors[item])
+                self.user_bias[u] += self.learning_rate * (error - self.reg_user * self.user_bias[u])
+                self.item_bias[i] += self.learning_rate * (error - self.reg_item * self.item_bias[i])
+                # Update latent factors
+                self.user_factors[u] += self.learning_rate * (error * self.item_factors[i] - self.reg_user * self.user_factors[u])
+                self.item_factors[i] += self.learning_rate * (error * self.user_factors[u] - self.reg_item * self.item_factors[i])
 
         with ThreadPoolExecutor(max_workers=self.n_threads) as executor:
             executor.map(update_user, range(interaction_matrix.shape[0]))

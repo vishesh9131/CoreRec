@@ -1,7 +1,7 @@
-from .graph_based_ufilter_base import GraphBasedCFBase
-from .multi_view_ufilter_base import MultiViewCFBase
-from .multi_relational_ufilter_base import MultiRelationalCFBase
-from .gnn_ufilter_base import GNNUFBase
-from .edge_aware_ufilter_base import EdgeAwareCFBase
-from .heterogeneous_network_ufilter_base import HeterogeneousNetworkUFBase
-from .geoimc_base import GeoIMCBase
+from .graph_based_ufilter_base import GraphBasedCFBase as GRAPH_BASED_CF
+from .multi_view_ufilter_base import MultiViewCFBase as MULTI_VIEW_CF
+from .multi_relational_ufilter_base import MultiRelationalCFBase as MULTI_RELATIONAL_CF
+from .gnn_ufilter_base import GNNUFBase as GNN_UF
+from .edge_aware_ufilter_base import EdgeAwareCFBase as EDGE_AWARE_CF
+from .heterogeneous_network_ufilter_base import HeterogeneousNetworkUFBase as HETEROGENEOUS_NETWORK_UF
+from .geoimc_base import GeoIMCBase as GEOIMC

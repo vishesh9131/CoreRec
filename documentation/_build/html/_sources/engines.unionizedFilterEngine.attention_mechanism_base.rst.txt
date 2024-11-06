@@ -1,0 +1,37 @@
+engines.unionizedFilterEngine.attention\_mechanism\_base package
+================================================================
+
+Submodules
+----------
+
+engines.unionizedFilterEngine.attention\_mechanism\_base.Attention\_based\_uf\_base module
+------------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.attention_mechanism_base.Attention_based_uf_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.attention\_mechanism\_base.SASRec\_base module
+----------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.attention_mechanism_base.SASRec_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.attention\_mechanism\_base.Transformer\_based\_uf\_base module
+--------------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.attention_mechanism_base.Transformer_based_uf_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: engines.unionizedFilterEngine.attention_mechanism_base
+   :members:
+   :undoc-members:
+   :show-inheritance:

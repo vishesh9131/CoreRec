@@ -5,6 +5,10 @@ class EXPLAINABLE:
     def __init__(self):
         """
         Initialize the explainable module.
+
+        Attributes:
+            explanations (dict): A dictionary to store explanations with keys as 
+            (user_id, item_id) tuples and values as explanation strings.
         """
         self.explanations = {}
 
@@ -13,12 +17,14 @@ class EXPLAINABLE:
         Generate an explanation for why a particular item was recommended to a user.
 
         Parameters:
-        - user_id (int): The ID of the user.
-        - item_id (int): The ID of the recommended item.
-        - context (dict, optional): The context in which the recommendation was made.
+            user_id (int): The ID of the user for whom the recommendation was made.
+            item_id (int): The ID of the recommended item.
+            context (dict, optional): Additional context in which the recommendation was made, 
+            such as user preferences or item features.
 
         Returns:
-        - str: A textual explanation of the recommendation.
+            str: A textual explanation of the recommendation, detailing the factors that 
+            influenced the recommendation decision.
         """
         explanation = f"Item {item_id} was recommended to User {user_id} because "
         if context:
@@ -32,10 +38,11 @@ class EXPLAINABLE:
         Retrieve a previously generated explanation for a recommendation.
 
         Parameters:
-        - user_id (int): The ID of the user.
-        - item_id (int): The ID of the recommended item.
+            user_id (int): The ID of the user for whom the recommendation was made.
+            item_id (int): The ID of the recommended item.
 
         Returns:
-        - str: The explanation of the recommendation.
+            str: The explanation of the recommendation if available, otherwise a default 
+            message indicating that no explanation is available.
         """
         return self.explanations.get((user_id, item_id), "No explanation available.")

@@ -1,0 +1,45 @@
+engines.unionizedFilterEngine.sequential\_model\_base package
+=============================================================
+
+Submodules
+----------
+
+engines.unionizedFilterEngine.sequential\_model\_base.GRU\_based\_ufilter\_base module
+--------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.sequential_model_base.GRU_based_ufilter_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.sequential\_model\_base.NextItNet module
+----------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.sequential_model_base.NextItNet
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.sequential\_model\_base.SASRec\_base module
+-------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.sequential_model_base.SASRec_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+engines.unionizedFilterEngine.sequential\_model\_base.sequence\_aware\_uf\_base module
+--------------------------------------------------------------------------------------
+
+.. automodule:: engines.unionizedFilterEngine.sequential_model_base.sequence_aware_uf_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: engines.unionizedFilterEngine.sequential_model_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
