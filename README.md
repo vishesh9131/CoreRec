@@ -22,6 +22,11 @@ Discover the power of graph analysis and recommendation with CoreRec & VishGraph
 CoreRec is your all-in-one recommendation engine for graph-based algorithms. Seamlessly integrating advanced neural network architectures, CoreRec excels in node recommendations, model training, and graph visualizations, making it the ultimate tool for data scientists and researchers.
 VishGraphs is your ultimate Python library for graph visualization and analysis. Whether you're a data scientist, researcher, or hobbyist, VishGraphs offers intuitive tools to generate, visualize, and analyze graphs effortlessly.
 
+### Our Downloads per month
+<img src="docs/images/g1.png" style="vertical-align: middle; margin-right: 0px; margin-bottom: 20px;" width="400" height="400">
+
+> **Note:**
+> last updated: 2024-11-20
 <h2>
     <img src="docs/images/feature.png" style="vertical-align: middle; margin-right: 10px;" width="40" height="38">
     Features
@@ -130,71 +135,71 @@ VishGraphs is a Python library designed for graph visualization and analysis. It
 <table>
 <thead>
 <tr>
-<th> Description </th>
-<th> Quick Access </th>
+<th>Description</th>
+<th>Quick Access</th>
 </tr>
 </thead>
 <tbody>
-<!-- Row boilerplate (copy-paste the following commented snippet for adding a new row to the table.)
-<tr> <td> <h3> title </h3> 
-description
-</td> <td> <pre>
-folders
-</pre> </td> </tr>
--->
-<tr> <td> <h3> engine </h3> 
-Contains core engine components and utilities.
-</td> <td> <pre>
-└── engine
+
+<tr><td><h3>CoreRec</h3>
+Core recommendation engine components and utilities
+</td><td><pre>
+└── corerec/
     ├── cr_boosters/
+    │   ├── adam.py
+    │   ├── adamax.py
+    │   ├── adadelta.py
+    │   ├── adagrad.py
+    │   ├── asgd.py
+    │   ├── lbfgs.py
+    │   ├── nadam.py
+    │   ├── optimizer.py
+    │   ├── rmsprop.py
+    │   ├── sgd.py
+    │   └── sparse_adam.py
     ├── cr_pkg/
+    │   ├── gat_conv.py
+    │   ├── gcn_conv.py
+    │   ├── han_conv.py
+    │   └── sage_conv.py
+    ├── engines/
+    │   ├── contentFilterEngine/
+    │   │   └── traditional_ml_algorithms/
+    │   │       └── decision_tree.py
+    │   ├── unionizedFilterEngine/
+    │   │   └── nn_base/
+    │   │       └── BST_base.py
+    │   └── test_struct_UF/
+    │       ├── graph_based_algorithms/
+    │       │   ├── geoimc_base.py
+    │       │   └── lightgcn_base.py
+    │       └── neural_network_based_algorithms/
+    │           └── xdeepfm_base.py
+    ├── preprocessing/
+    │   └── __init__.py
+    ├── torch_utils/
+    │   ├── benchmark/
+    │   │   └── examples/
+    │   │       └── prepare_e2e.sh
+    │   ├── model_dump/
+    │   │   ├── code.js
+    │   │   ├── htm.mjs
+    │   │   └── preact.mjs
+    │   ├── viz/
+    │   │   └── MemoryViz.js
+    │   ├── _cxx_pytree.py
+    │   └── _pytree.py
+    ├── output/
+    │   └── __init__.py
     ├── cr_utility/
-    ├── torch_nn/
-    ├── async_dpp.py
-    ├── common_import.py
+    │   ├── dataloader.py
+    │   └── dataset.py
     ├── core_rec.py
     ├── datasets.py
     ├── metrics.py
-    ├── model.py
     ├── predict.py
-    ├── timecapsule.py
-    ├── Tmodel.py
-    ├── train.py
-    ├── vish_graphs.py
-    └── visulization.py
-</pre> </td> </tr>
-
-<tr> <td> <h3> Roadmap </h3> 
-Contains documents related to future updates and use cases.
-</td> <td> <pre>
-└── roadmap
-    ├── futureupdates.md
-    ├── Readme.pdf
-    └── usecases.pdf
-</pre> </td> </tr>
-
-<tr> <td> <h3> src </h3> 
-Contains the main source code and use cases.
-</td> <td> <pre>
-└── src
-    ├── backup/
-    ├── CoreRec/
-    ├── SANDBOX/
-    └── USECASES
-        ├── custommodel.py
-        ├── customthreshold.py
-        ├── labels.py
-        └── custommodel.py
-</pre> </td> </tr>
-
-<tr> <td> <h3> Vish Graphs </h3> 
-Contains build and distribution files for Vish Graphs.
-</td> <td> <pre>
-└── vish_graphs
-    ├── build/
-    ├── dist/
-    └── vish_graphs/
-</pre> </td> </tr>
+    └── train.py
+</pre></td></tr>
 
 </tbody>
 </table>
