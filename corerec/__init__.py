@@ -1,8 +1,9 @@
 """
-Engine
-======
+Corerec
+=======
 Maintainer: Vishesh
 
+<Surya-dev-aye namah>
 
 TL;DR
 ------
@@ -27,7 +28,7 @@ instructions.
 
 The docstring examples assume that `engine` has been imported as ``eng``::
 
-  >>> import engine as eng
+  >>> import engine as eng [depereciated --vishesh]
 
 Code snippets are indicated by three greater-than signs::
 
@@ -50,3 +51,10 @@ core_rec
 """
 
 
+from corerec.engines import CF_Engine,UF_Engine
+
+# from .unionizedFilterEngine import unionizedFilterEngine as UF_Engine
+__all__ = [
+    'CF_Engine',
+    'UF_Engine',
+]

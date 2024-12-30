@@ -1,0 +1,1 @@
+{"trial_id": "00", "hyperparameters": {"space": [{"class_name": "Int", "config": {"name": "embedding_dim", "default": null, "conditions": [], "min_value": 32, "max_value": 128, "step": 32, "sampling": "linear"}}], "values": {"embedding_dim": 64}}, "metrics": {"metrics": {}}, "score": null, "best_step": 0, "status": "RUNNING", "message": null}

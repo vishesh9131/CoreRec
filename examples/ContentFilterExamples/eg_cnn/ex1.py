@@ -85,7 +85,7 @@ def main():
     kernel_sizes = [3, 4, 5]
     num_filters = 100
     dropout = 0.5
-    num_epochs = 50
+    num_epochs = 5
     
     # Initialize CNN model
     cnn_model = NN__CNN(
@@ -105,7 +105,7 @@ def main():
     train_model(cnn_model, dataloader, criterion, optimizer, num_epochs, device)
     
     # Evaluate a sample
-    evaluate_model(cnn_model, dataset, dataset.idx_to_genre, sample_idx=0, threshold=0.5, device=device)
+    evaluate_model(cnn_model, dataset, dataset.idx_to_genre, sample_idx=12, threshold=0.5, device=device)
 
 if __name__ == "__main__":
     main()

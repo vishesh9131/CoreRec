@@ -34,3 +34,6 @@ src/SANDBOX/tempCodeRunnerFile.py
 src/SANDBOX/.DS_Store
 /src/SANDBOX/dataset
 src/SANDBOX/.DS_Store
+examples/ContentFilterExamples/nogo.py
+/CRLearn/CRDS
+/examples/Youtube_MoE/models

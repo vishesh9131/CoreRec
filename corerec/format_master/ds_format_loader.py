@@ -31,10 +31,10 @@ from corerec.format_master.format_library import *
 # Registry for format detection functions
 FORMAT_DETECTORS = []
 
-def register_format_detector(detector):
+def register_format_detector(func):
     """Decorator to register a format detector."""
-    FORMAT_DETECTORS.append(detector)
-    return detector
+    FORMAT_DETECTORS.append(func)
+    return func
 
 def load_data(file_path):
     """Load data from various formats."""
@@ -163,6 +163,16 @@ def load_data(file_path):
             return load_latex(file_path)
         else:
             warnings.warn("Textract is not available. LaTeX files will not be supported.")
+    
+    elif file_extension in ['.txt']:
+        return pd.read_csv(file_path, delimiter='\t')
+    
+    elif file_extension in ['.dat']:
+        return pd.read_csv(file_path, delimiter='::', engine='python', names=['user', 'item', 'rating', 'timestamp'])
+    
+    elif file_extension in ['.yaml']:
+        with open(file_path, 'r') as f:
+            return pd.DataFrame(yaml.safe_load(f))
     
     else:
         warnings.warn(f"Unsupported file format: {file_extension}")
@@ -369,20 +379,6 @@ def detect_user_item_rating_list(df):
     return None
 
 @register_format_detector
-def detect_time_series(df):
-    """Detect if the format is a time series."""
-    if 'timestamp' in df.columns and pd.api.types.is_datetime64_any_dtype(df['timestamp']):
-        return 'time_series'
-    return None
-
-@register_format_detector
-def detect_geospatial(df):
-    """Detect if the format contains geospatial data."""
-    if {'latitude', 'longitude'}.issubset(df.columns):
-        return 'geospatial'
-    return None
-
-@register_format_detector
 def detect_text_data(df):
     """Detect if the format contains text data."""
     if 'text' in df.columns or 'document' in df.columns:
@@ -408,13 +404,6 @@ def detect_video_data(df):
     """Detect if the format contains video data."""
     if 'video_path' in df.columns or 'video_url' in df.columns:
         return 'video_data'
-    return None
-
-@register_format_detector
-def detect_implicit_feedback(df):
-    """Detect if the format is implicit feedback."""
-    if {'user', 'item'}.issubset(df.columns) and 'rating' not in df.columns:
-        return 'implicit_feedback'
     return None
 
 @register_format_detector
@@ -481,14 +470,560 @@ def detect_search_queries(df):
     return None
 
 @register_format_detector
-def detect_book_metadata(df):
-    """Detect if the format is book metadata."""
-    required_columns = {'title', 'authors', 'average_rating', 'isbn'}
-    if required_columns.issubset(df.columns):
-        return 'book_metadata'
+def detect_user_profiles(df):
+    """Detect if the format contains user profiles."""
+    if {'user_id', 'age', 'gender', 'location'}.issubset(df.columns):
+        return 'user_profiles'
     return None
 
-# Add more detectors here up to 100 as needed
+@register_format_detector
+def detect_item_metadata(df):
+    """Detect if the format contains item metadata."""
+    if {'item_id', 'description', 'category'}.issubset(df.columns):
+        return 'item_metadata'
+    return None
+
+@register_format_detector
+def detect_transaction_data(df):
+    """Detect if the format contains transaction data."""
+    if {'user_id', 'item_id', 'transaction_date'}.issubset(df.columns):
+        return 'transaction_data'
+    return None
+
+@register_format_detector
+def detect_ab_test_results(df):
+    """Detect if the format contains A/B test results."""
+    if {'test_id', 'variant', 'conversion_rate'}.issubset(df.columns):
+        return 'ab_test_results'
+    return None
+
+@register_format_detector
+def detect_user_engagement_metrics(df):
+    """Detect if the format contains user engagement metrics."""
+    if {'user_id', 'engagement_score', 'timestamp'}.issubset(df.columns):
+        return 'user_engagement_metrics'
+    return None
+
+@register_format_detector
+def detect_content_features(df):
+    """Detect if the format contains content features."""
+    if {'item_id', 'text_features', 'image_features'}.issubset(df.columns):
+        return 'content_features'
+    return None
+
+@register_format_detector
+def detect_collaborative_filtering_data(df):
+    """Detect if the format contains collaborative filtering data."""
+    if {'user_id', 'item_id', 'rating'}.issubset(df.columns):
+        return 'collaborative_filtering_data'
+    return None
+
+@register_format_detector
+def detect_implicit_feedback_data(df):
+    """Detect if the format contains implicit feedback data."""
+    if {'user_id', 'item_id', 'interaction_strength'}.issubset(df.columns):
+        return 'implicit_feedback_data'
+    return None
+
+@register_format_detector
+def detect_explicit_feedback_data(df):
+    """Detect if the format contains explicit feedback data."""
+    if {'user_id', 'item_id', 'rating'}.issubset(df.columns):
+        return 'explicit_feedback_data'
+    return None
+
+@register_format_detector
+def detect_time_series_data(df):
+    """Detect if the format contains time series data."""
+    if {'timestamp', 'value'}.issubset(df.columns):
+        return 'time_series_data'
+    return None
+
+@register_format_detector
+def detect_geospatial_data(df):
+    """Detect if the format contains geospatial data."""
+    if {'latitude', 'longitude', 'user_id'}.issubset(df.columns):
+        return 'geospatial_data'
+    return None
+
+# Additional detectors to reach 100
+@register_format_detector
+def detect_user_item_interactions(df):
+    """Detect if the format contains user-item interactions."""
+    if {'user_id', 'item_id', 'interaction_type'}.issubset(df.columns):
+        return 'user_item_interactions'
+    return None
+
+@register_format_detector
+def detect_user_item_rating_interactions(df):
+    """Detect if the format contains user-item-rating interactions."""
+    if {'user_id', 'item_id', 'rating', 'interaction_type'}.issubset(df.columns):
+        return 'user_item_rating_interactions'
+    return None
+
+@register_format_detector
+def detect_user_activity_logs(df):
+    """Detect if the format contains user activity logs."""
+    if {'user_id', 'activity_type', 'timestamp'}.issubset(df.columns):
+        return 'user_activity_logs'
+    return None
+
+@register_format_detector
+def detect_item_view_logs(df):
+    """Detect if the format contains item view logs."""
+    if {'user_id', 'item_id', 'view_timestamp'}.issubset(df.columns):
+        return 'item_view_logs'
+    return None
+
+@register_format_detector
+def detect_user_feedback_logs(df):
+    """Detect if the format contains user feedback logs."""
+    if {'user_id', 'item_id', 'feedback', 'timestamp'}.issubset(df.columns):
+        return 'user_feedback_logs'
+    return None
+
+@register_format_detector
+def detect_user_preferences(df):
+    """Detect if the format contains user preferences."""
+    if {'user_id', 'preference_type', 'preference_value'}.issubset(df.columns):
+        return 'user_preferences'
+    return None
+
+@register_format_detector
+def detect_item_recommendations(df):
+    """Detect if the format contains item recommendations."""
+    if {'user_id', 'recommended_item_id', 'recommendation_score'}.issubset(df.columns):
+        return 'item_recommendations'
+    return None
+
+@register_format_detector
+def detect_user_item_similarity(df):
+    """Detect if the format contains user-item similarity scores."""
+    if {'user_id', 'item_id', 'similarity_score'}.issubset(df.columns):
+        return 'user_item_similarity'
+    return None
+
+@register_format_detector
+def detect_item_item_similarity(df):
+    """Detect if the format contains item-item similarity scores."""
+    if {'item_id_1', 'item_id_2', 'similarity_score'}.issubset(df.columns):
+        return 'item_item_similarity'
+    return None
+
+@register_format_detector
+def detect_user_item_rating_distribution(df):
+    """Detect if the format contains user-item rating distributions."""
+    if {'user_id', 'item_id', 'rating_distribution'}.issubset(df.columns):
+        return 'user_item_rating_distribution'
+    return None
+
+@register_format_detector
+def detect_user_item_interaction_counts(df):
+    """Detect if the format contains user-item interaction counts."""
+    if {'user_id', 'item_id', 'interaction_count'}.issubset(df.columns):
+        return 'user_item_interaction_counts'
+    return None
+
+@register_format_detector
+def detect_user_item_engagement(df):
+    """Detect if the format contains user-item engagement metrics."""
+    if {'user_id', 'item_id', 'engagement_score'}.issubset(df.columns):
+        return 'user_item_engagement'
+    return None
+
+@register_format_detector
+def detect_user_item_clicks(df):
+    """Detect if the format contains user-item click data."""
+    if {'user_id', 'item_id', 'click_count'}.issubset(df.columns):
+        return 'user_item_clicks'
+    return None
+
+@register_format_detector
+def detect_user_item_views(df):
+    """Detect if the format contains user-item view data."""
+    if {'user_id', 'item_id', 'view_count'}.issubset(df.columns):
+        return 'user_item_views'
+    return None
+
+@register_format_detector
+def detect_user_item_purchases(df):
+    """Detect if the format contains user-item purchase data."""
+    if {'user_id', 'item_id', 'purchase_count'}.issubset(df.columns):
+        return 'user_item_purchases'
+    return None
+
+@register_format_detector
+def detect_user_item_ratings(df):
+    """Detect if the format is user-item ratings."""
+    if {'user_id', 'item_id', 'rating'}.issubset(df.columns):
+        return 'user_item_ratings'
+    return None
+
+@register_format_detector
+def detect_user_item_feedback(df):
+    """Detect if the format contains user-item feedback."""
+    if {'user_id', 'item_id', 'feedback'}.issubset(df.columns):
+        return 'user_item_feedback'
+    return None
+
+@register_format_detector
+def detect_user_item_recommendations(df):
+    """Detect if the format contains user-item recommendations."""
+    if {'user_id', 'recommended_item_id', 'recommendation_score'}.issubset(df.columns):
+        return 'user_item_recommendations'
+    return None
+
+@register_format_detector
+def detect_user_item_interaction_types(df):
+    """Detect if the format contains user-item interaction types."""
+    if {'user_id', 'item_id', 'interaction_type'}.issubset(df.columns):
+        return 'user_item_interaction_types'
+    return None
+
+@register_format_detector
+def detect_user_item_contextual_data(df):
+    """Detect if the format contains user-item contextual data."""
+    if {'user_id', 'item_id', 'context_type', 'context_value'}.issubset(df.columns):
+        return 'user_item_contextual_data'
+    return None
+
+@register_format_detector
+def detect_user_item_session_data(df):
+    """Detect if the format contains user-item session data."""
+    if {'user_id', 'item_id', 'session_id', 'timestamp'}.issubset(df.columns):
+        return 'user_item_session_data'
+    return None
+
+@register_format_detector
+def detect_user_item_time_series(df):
+    """Detect if the format contains user-item time series data."""
+    if {'user_id', 'item_id', 'timestamp', 'value'}.issubset(df.columns):
+        return 'user_item_time_series'
+    return None
+
+@register_format_detector
+def detect_user_item_geospatial_data(df):
+    """Detect if the format contains user-item geospatial data."""
+    if {'user_id', 'item_id', 'latitude', 'longitude'}.issubset(df.columns):
+        return 'user_item_geospatial_data'
+    return None
+
+@register_format_detector
+def detect_user_item_demographics(df):
+    """Detect if the format contains user-item demographic data."""
+    if {'user_id', 'item_id', 'age', 'gender'}.issubset(df.columns):
+        return 'user_item_demographics'
+    return None
+
+@register_format_detector
+def detect_user_item_social_data(df):
+    """Detect if the format contains user-item social data."""
+    if {'user_id', 'item_id', 'friend_id'}.issubset(df.columns):
+        return 'user_item_social_data'
+    return None
+
+@register_format_detector
+def detect_user_item_purchase_history(df):
+    """Detect if the format contains user-item purchase history."""
+    if {'user_id', 'item_id', 'purchase_date'}.issubset(df.columns):
+        return 'user_item_purchase_history'
+    return None
+
+@register_format_detector
+def detect_user_item_browsing_history(df):
+    """Detect if the format contains user-item browsing history."""
+    if {'user_id', 'item_id', 'browsing_timestamp'}.issubset(df.columns):
+        return 'user_item_browsing_history'
+    return None
+
+@register_format_detector
+def detect_user_item_clickstream(df):
+    """Detect if the format contains user-item clickstream data."""
+    if {'user_id', 'item_id', 'click_timestamp'}.issubset(df.columns):
+        return 'user_item_clickstream'
+    return None
+
+@register_format_detector
+def detect_user_item_search_history(df):
+    """Detect if the format contains user-item search history."""
+    if {'user_id', 'item_id', 'search_query', 'search_timestamp'}.issubset(df.columns):
+        return 'user_item_search_history'
+    return None
+
+@register_format_detector
+def detect_user_item_engagement_metrics(df):
+    """Detect if the format contains user-item engagement metrics."""
+    if {'user_id', 'item_id', 'engagement_score'}.issubset(df.columns):
+        return 'user_item_engagement_metrics'
+    return None
+
+@register_format_detector
+def detect_user_item_recommendation_feedback(df):
+    """Detect if the format contains user-item recommendation feedback."""
+    if {'user_id', 'item_id', 'recommendation_feedback'}.issubset(df.columns):
+        return 'user_item_recommendation_feedback'
+    return None
+
+@register_format_detector
+def detect_user_item_rating_distribution(df):
+    """Detect if the format contains user-item rating distributions."""
+    if {'user_id', 'item_id', 'rating_distribution'}.issubset(df.columns):
+        return 'user_item_rating_distribution'
+    return None
+
+@register_format_detector
+def detect_user_item_interaction_distribution(df):
+    """Detect if the format contains user-item interaction distributions."""
+    if {'user_id', 'item_id', 'interaction_distribution'}.issubset(df.columns):
+        return 'user_item_interaction_distribution'
+    return None
+
+@register_format_detector
+def detect_user_item_engagement_distribution(df):
+    """Detect if the format contains user-item engagement distributions."""
+    if {'user_id', 'item_id', 'engagement_distribution'}.issubset(df.columns):
+        return 'user_item_engagement_distribution'
+    return None
+
+@register_format_detector
+def detect_user_item_click_distribution(df):
+    """Detect if the format contains user-item click distributions."""
+    if {'user_id', 'item_id', 'click_distribution'}.issubset(df.columns):
+        return 'user_item_click_distribution'
+    return None
+
+@register_format_detector
+def detect_user_item_view_distribution(df):
+    """Detect if the format contains user-item view distributions."""
+    if {'user_id', 'item_id', 'view_distribution'}.issubset(df.columns):
+        return 'user_item_view_distribution'
+    return None
+
+@register_format_detector
+def detect_user_item_purchase_distribution(df):
+    """Detect if the format contains user-item purchase distributions."""
+    if {'user_id', 'item_id', 'purchase_distribution'}.issubset(df.columns):
+        return 'user_item_purchase_distribution'
+    return None
+
+@register_format_detector
+def detect_user_item_rating_trends(df):
+    """Detect if the format contains user-item rating trends."""
+    if {'user_id', 'item_id', 'rating_trend'}.issubset(df.columns):
+        return 'user_item_rating_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_engagement_trends(df):
+    """Detect if the format contains user-item engagement trends."""
+    if {'user_id', 'item_id', 'engagement_trend'}.issubset(df.columns):
+        return 'user_item_engagement_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_click_trends(df):
+    """Detect if the format contains user-item click trends."""
+    if {'user_id', 'item_id', 'click_trend'}.issubset(df.columns):
+        return 'user_item_click_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_view_trends(df):
+    """Detect if the format contains user-item view trends."""
+    if {'user_id', 'item_id', 'view_trend'}.issubset(df.columns):
+        return 'user_item_view_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_purchase_trends(df):
+    """Detect if the format contains user-item purchase trends."""
+    if {'user_id', 'item_id', 'purchase_trend'}.issubset(df.columns):
+        return 'user_item_purchase_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_feedback_trends(df):
+    """Detect if the format contains user-item feedback trends."""
+    if {'user_id', 'item_id', 'feedback_trend'}.issubset(df.columns):
+        return 'user_item_feedback_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_recommendation_trends(df):
+    """Detect if the format contains user-item recommendation trends."""
+    if {'user_id', 'item_id', 'recommendation_trend'}.issubset(df.columns):
+        return 'user_item_recommendation_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_engagement_metrics_trends(df):
+    """Detect if the format contains user-item engagement metrics trends."""
+    if {'user_id', 'item_id', 'engagement_metrics_trend'}.issubset(df.columns):
+        return 'user_item_engagement_metrics_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_click_metrics_trends(df):
+    """Detect if the format contains user-item click metrics trends."""
+    if {'user_id', 'item_id', 'click_metrics_trend'}.issubset(df.columns):
+        return 'user_item_click_metrics_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_view_metrics_trends(df):
+    """Detect if the format contains user-item view metrics trends."""
+    if {'user_id', 'item_id', 'view_metrics_trend'}.issubset(df.columns):
+        return 'user_item_view_metrics_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_purchase_metrics_trends(df):
+    """Detect if the format contains user-item purchase metrics trends."""
+    if {'user_id', 'item_id', 'purchase_metrics_trend'}.issubset(df.columns):
+        return 'user_item_purchase_metrics_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_rating_metrics_trends(df):
+    """Detect if the format contains user-item rating metrics trends."""
+    if {'user_id', 'item_id', 'rating_metrics_trend'}.issubset(df.columns):
+        return 'user_item_rating_metrics_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_feedback_metrics_trends(df):
+    """Detect if the format contains user-item feedback metrics trends."""
+    if {'user_id', 'item_id', 'feedback_metrics_trend'}.issubset(df.columns):
+        return 'user_item_feedback_metrics_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_recommendation_metrics_trends(df):
+    """Detect if the format contains user-item recommendation metrics trends."""
+    if {'user_id', 'item_id', 'recommendation_metrics_trend'}.issubset(df.columns):
+        return 'user_item_recommendation_metrics_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_engagement_distribution_trends(df):
+    """Detect if the format contains user-item engagement distribution trends."""
+    if {'user_id', 'item_id', 'engagement_distribution_trend'}.issubset(df.columns):
+        return 'user_item_engagement_distribution_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_click_distribution_trends(df):
+    """Detect if the format contains user-item click distribution trends."""
+    if {'user_id', 'item_id', 'click_distribution_trend'}.issubset(df.columns):
+        return 'user_item_click_distribution_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_view_distribution_trends(df):
+    """Detect if the format contains user-item view distribution trends."""
+    if {'user_id', 'item_id', 'view_distribution_trend'}.issubset(df.columns):
+        return 'user_item_view_distribution_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_purchase_distribution_trends(df):
+    """Detect if the format contains user-item purchase distribution trends."""
+    if {'user_id', 'item_id', 'purchase_distribution_trend'}.issubset(df.columns):
+        return 'user_item_purchase_distribution_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_rating_distribution_trends(df):
+    """Detect if the format contains user-item rating distribution trends."""
+    if {'user_id', 'item_id', 'rating_distribution_trend'}.issubset(df.columns):
+        return 'user_item_rating_distribution_trends'
+    return None
+
+@register_format_detector
+def detect_user_item_engagement_trends_metrics(df):
+    """Detect if the format contains user-item engagement trends metrics."""
+    if {'user_id', 'item_id', 'engagement_trends_metrics'}.issubset(df.columns):
+        return 'user_item_engagement_trends_metrics'
+    return None
+
+@register_format_detector
+def detect_user_item_click_trends_metrics(df):
+    """Detect if the format contains user-item click trends metrics."""
+    if {'user_id', 'item_id', 'click_trends_metrics'}.issubset(df.columns):
+        return 'user_item_click_trends_metrics'
+    return None
+
+@register_format_detector
+def detect_user_item_view_trends_metrics(df):
+    """Detect if the format contains user-item view trends metrics."""
+    if {'user_id', 'item_id', 'view_trends_metrics'}.issubset(df.columns):
+        return 'user_item_view_trends_metrics'
+    return None
+
+@register_format_detector
+def detect_user_item_purchase_trends_metrics(df):
+    """Detect if the format contains user-item purchase trends metrics."""
+    if {'user_id', 'item_id', 'purchase_trends_metrics'}.issubset(df.columns):
+        return 'user_item_purchase_trends_metrics'
+    return None
+
+@register_format_detector
+def detect_user_item_rating_trends_metrics(df):
+    """Detect if the format contains user-item rating trends metrics."""
+    if {'user_id', 'item_id', 'rating_trends_metrics'}.issubset(df.columns):
+        return 'user_item_rating_trends_metrics'
+    return None
+
+@register_format_detector
+def detect_user_item_feedback_trends_metrics(df):
+    """Detect if the format contains user-item feedback trends metrics."""
+    if {'user_id', 'item_id', 'feedback_trends_metrics'}.issubset(df.columns):
+        return 'user_item_feedback_trends_metrics'
+    return None
+
+@register_format_detector
+def detect_user_item_recommendation_trends_metrics(df):
+    """Detect if the format contains user-item recommendation trends metrics."""
+    if {'user_id', 'item_id', 'recommendation_trends_metrics'}.issubset(df.columns):
+        return 'user_item_recommendation_trends_metrics'
+    return None
+
+@register_format_detector
+def detect_user_item_engagement_distribution_trends_metrics(df):
+    """Detect if the format contains user-item engagement distribution trends metrics."""
+    if {'user_id', 'item_id', 'engagement_distribution_trends_metrics'}.issubset(df.columns):
+        return 'user_item_engagement_distribution_trends_metrics'
+    return None
+
+@register_format_detector
+def detect_user_item_click_distribution_trends_metrics(df):
+    """Detect if the format contains user-item click distribution trends metrics."""
+    if {'user_id', 'item_id', 'click_distribution_trends_metrics'}.issubset(df.columns):
+        return 'user_item_click_distribution_trends_metrics'
+    return None
+
+@register_format_detector
+def detect_user_item_view_distribution_trends_metrics(df):
+    """Detect if the format contains user-item view distribution trends metrics."""
+    if {'user_id', 'item_id', 'view_distribution_trends_metrics'}.issubset(df.columns):
+        return 'user_item_view_distribution_trends_metrics'
+    return None
+
+@register_format_detector
+def detect_user_item_purchase_distribution_trends_metrics(df):
+    """Detect if the format contains user-item purchase distribution trends metrics."""
+    if {'user_id', 'item_id', 'purchase_distribution_trends_metrics'}.issubset(df.columns):
+        return 'user_item_purchase_distribution_trends_metrics'
+    return None
+
+@register_format_detector
+def detect_user_item_rating_distribution_trends_metrics(df):
+    """Detect if the format contains user-item rating distribution trends metrics."""
+    if {'user_id', 'item_id', 'rating_distribution_trends_metrics'}.issubset(df.columns):
+        return 'user_item_rating_distribution_trends_metrics'
+    return None
+
+# Add more detectors as needed to reach 100
 
 def detect_format(df):
     """Detect the format of the dataset."""
