@@ -144,62 +144,139 @@ VishGraphs is a Python library designed for graph visualization and analysis. It
 <tr><td><h3>CoreRec</h3>
 Core recommendation engine components and utilities
 </td><td><pre>
-└── corerec/
-    ├── cr_boosters/
-    │   ├── adam.py
-    │   ├── adamax.py
-    │   ├── adadelta.py
-    │   ├── adagrad.py
-    │   ├── asgd.py
-    │   ├── lbfgs.py
-    │   ├── nadam.py
-    │   ├── optimizer.py
-    │   ├── rmsprop.py
-    │   ├── sgd.py
-    │   └── sparse_adam.py
-    ├── cr_pkg/
-    │   ├── gat_conv.py
-    │   ├── gcn_conv.py
-    │   ├── han_conv.py
-    │   └── sage_conv.py
-    ├── engines/
-    │   ├── contentFilterEngine/
-    │   │   └── traditional_ml_algorithms/
-    │   │       └── decision_tree.py
-    │   ├── unionizedFilterEngine/
-    │   │   └── nn_base/
-    │   │       └── BST_base.py
-    │   └── test_struct_UF/
-    │       ├── graph_based_algorithms/
-    │       │   ├── geoimc_base.py
-    │       │   └── lightgcn_base.py
-    │       └── neural_network_based_algorithms/
-    │           └── xdeepfm_base.py
-    ├── preprocessing/
-    │   └── __init__.py
-    ├── torch_utils/
-    │   ├── benchmark/
-    │   │   └── examples/
-    │   │       └── prepare_e2e.sh
-    │   ├── model_dump/
-    │   │   ├── code.js
-    │   │   ├── htm.mjs
-    │   │   └── preact.mjs
-    │   ├── viz/
-    │   │   └── MemoryViz.js
-    │   ├── _cxx_pytree.py
-    │   └── _pytree.py
-    ├── output/
-    │   └── __init__.py
-    ├── cr_utility/
-    │   ├── dataloader.py
-    │   └── dataset.py
-    ├── core_rec.py
-    ├── datasets.py
-    ├── metrics.py
-    ├── predict.py
-    └── train.py
+
+CoreRec/
+├── corerec/              
+│   ├── engines/         
+│   │   ├── contentFilterEngine/
+│   │   ├── unionizedFilterEngine/
+│   │   └── test_struct_UF/
+│   ├── preprocessing/   
+│   ├── torch_nn/       
+│   └── config/         
+│
+├── examples/            
+│   ├── Youtube_MoE/    
+│   └── ContentFilterExamples/  
+│
+├── documentation/       
+│   └── _build/
+│
+├── datasets/          
+│
+├── src/                
+│   ├── CoreRec/
+│   ├── SANDBOX/
+│   └── USECASES/
+│
+├── tests/             
+│
+├── vish_graphs/       
+│
+└── roadmap/             
+
 </pre></td></tr>
+
+<tr><td><h3>Engines</h3>
+Engines Parts and Algorithms it Supports
+</td><td><pre>
+engines/
+├── __init__.py
+├── content_based.py
+├── hybrid.py
+│
+├── contentFilterEngine/
+│   ├── __init__.py
+│   ├── base_recommender.py
+│   ├── cr_contentFilterFactory.py
+│   ├── tfidf_recommender.py
+│   │
+│   ├── traditional_ml_algorithms/
+│   │   ├── LR.py
+│   │   ├── decision_tree.py
+│   │   ├── lightgbm.py
+│   │   ├── svm.py
+│   │   ├── tfidf.py
+│   │   └── vw.py
+│   │
+│   ├── nn_based_algorithms/
+│   │   ├── AITM.py
+│   │   ├── DSSM.py
+│   │   ├── MIND.py
+│   │   ├── TDM.py
+│   │   ├── WidenDeep.py
+│   │   ├── Word2Vec.py
+│   │   ├── Youtube_dnn.py
+│   │   ├── autoencoder.py
+│   │   ├── cnn.py
+│   │   ├── dkn.py
+│   │   ├── lstur.py
+│   │   ├── naml.py
+│   │   ├── npa.py
+│   │   ├── nrms.py
+│   │   ├── rnn.py
+│   │   ├── transformer.py
+│   │   └── vae.py
+│   │
+│   ├── context_personalization/
+│   │   ├── context_aware.py
+│   │   ├── item_profiling.py
+│   │   └── user_profiling.py
+│   │
+│   ├── fairness_explainability/
+│   │   ├── explainable.py
+│   │   ├── fairness_aware.py
+│   │   └── privacy_preserving.py
+│   │
+│   └── [Other specialized modules...]
+│
+├── unionizedFilterEngine/
+│   ├── __init__.py
+│   ├── als_recommender.py
+│   ├── base_recommender.py
+│   ├── cr_unionizedFactory.py
+│   ├── initializer.py
+│   ├── matrix_factorization.py
+│   │
+│   ├── nn_base/
+│   │   ├── AFM_base.py
+│   │   ├── AutoFI_base.py
+│   │   ├── DCN_base.py
+│   │   ├── DIEN_base.py
+│   │   ├── DIN_base.py
+│   │   ├── DeepFM_base.py
+│   │   ├── NFM_base.py
+│   │   └── [Other neural network models...]
+│   │
+│   ├── graph_based_base/
+│   │   ├── DeepWalk_base.py
+│   │   ├── GNN_base.py
+│   │   ├── lightgcn_base.py
+│   │   └── [Other graph-based models...]
+│   │
+│   ├── mf_base/
+│   │   ├── ALS_base.py
+│   │   ├── SVD_base.py
+│   │   ├── nmf_base.py
+│   │   └── [Other matrix factorization models...]
+│   │
+│   └── attention_mechanism_base/
+│       ├── Attention_based_uf_base.py
+│       ├── SASRec_base.py
+│       └── Transformer_based_uf_base.py
+│
+└── test_struct_UF/
+    ├── factory/
+    ├── matrix_factorization_algorithms/
+    ├── neural_network_based_algorithms/
+    ├── graph_based_algorithms/
+    └── attention_mechanism_based_algorithms/
+         
+
+</pre></td></tr>
+
+
+
 
 </tbody>
 </table>
