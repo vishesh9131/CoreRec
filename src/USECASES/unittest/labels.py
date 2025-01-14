@@ -7,7 +7,7 @@ sys.path.append('/Users/visheshyadav/Documents/GitHub/CoreRec/vish_graphs')
 # Add the parent directory to the system path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import networkx as nx
-import core_rec as cs
+import corerec as cs
 import torch
 import torch.nn as nn
 import torch.optim as optim
