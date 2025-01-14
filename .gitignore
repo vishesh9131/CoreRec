@@ -46,4 +46,4 @@ examples/ContentFilterExamples/nogo.py
 ./src/SANDBOX/dataset/Tmall/ijcai2016_taobao.csv
 ./src/SANDBOX/dataset/REES46/events.csv
 ./src/SANDBOX/dataset/REES46/direct_msg/messages-demo.csv
-./corerec/engines/tesr_struct_UF
+./corerec/engines/test_struct_UF
