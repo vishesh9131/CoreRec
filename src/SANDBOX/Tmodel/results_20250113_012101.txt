@@ -1,0 +1,5 @@
+training_time: 145.021207
+eval_time: 39.074945
+training_loss: 15.191224098205566
+hr: 1.0
+ndcg: 0.8819857662342946
