@@ -1,6 +1,6 @@
 # cnn implementation
 import torch
-import corerec.torch_nn as nn  # Use custom module instead of torch.nn
+import corerec.torch_nn as nn 
 
 class CNN(nn.Module):
     def __init__(self, input_dim, num_classes, emb_dim=128, kernel_sizes=[3, 4, 5], num_filters=100, dropout=0.5):

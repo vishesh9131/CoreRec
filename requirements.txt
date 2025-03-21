@@ -12,3 +12,6 @@ torch
 networkx
 matplotlib
 torch_geometric
+textblob
+owlready2
+memory_profiler

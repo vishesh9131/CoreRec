@@ -46,15 +46,12 @@ torch_nn
     Neural network modules and utilities.
 cr_boosters
     Optimizers and boosters for training.
-core_rec
+corerec (replaced core_rec to corerec)
     Core recommendation system components.
 """
 
 
-from corerec.engines import CF_Engine,UF_Engine
+from .cf_engine import *
+from .uf_engine import *
 
 # from .unionizedFilterEngine import unionizedFilterEngine as UF_Engine
-__all__ = [
-    'CF_Engine',
-    'UF_Engine',
-]

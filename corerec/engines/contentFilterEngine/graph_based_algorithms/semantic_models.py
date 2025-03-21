@@ -46,7 +46,15 @@ class SemanticModels:
         """
         run_optimal_path(self.graph, start_city)
 
-# Example usage
+# Define the graph variable
+# graph = [
+#     # Example adjacency list or matrix
+#     [0, 1, 0],
+#     [1, 0, 1],
+#     [0, 1, 0]
+# ]
+
+# # Example usage
 # semantic_model = SemanticModels()
 # semantic_model.set_graph(graph)
 # semantic_model.find_optimal_path(0)

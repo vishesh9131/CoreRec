@@ -12,6 +12,15 @@ Available Classes:
     - SASRecBase: Base implementation of Self-Attentive Sequential Recommendation
 """
 
-from .SASRec_base import SASRecBase as AM_SASREC
 from .Transformer_based_uf_base import TransformerBasedUFBase as AM_TRANSFORMER
 from .Attention_based_uf_base import AttentionBasedUFBase as AM_ATTENTION
+
+from .a2svd import A2SVD as AM_A2SD
+from .sasrec import SASRec as AM_SAS
+
+__all__ = [
+    "AM_TRANSFORMER",
+    "AM_ATTENTION",
+    "AM_A2SD",
+    "AM_SAS",
+]

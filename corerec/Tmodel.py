@@ -12,7 +12,9 @@ from torch.nn import (
 )
 import numpy as np
 
+
 class GraphTransformerV2(nn.Module):
+
     def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim, num_weights=10, use_weights=True, dropout=0.1):
         super(GraphTransformerV2, self).__init__()
         self.num_weights = num_weights

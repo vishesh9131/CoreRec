@@ -3,7 +3,7 @@
 from abc import ABC
 from typing import List
 from scipy.sparse import csr_matrix
-from .base_recommender import BaseRecommender
+from ..base_recommender import BaseRecommender
 
 class NeuralCollaborativeFilteringBase(BaseRecommender, ABC):
     """

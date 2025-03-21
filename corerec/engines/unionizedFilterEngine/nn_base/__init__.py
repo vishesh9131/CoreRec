@@ -14,7 +14,7 @@ from .transformer_ufilter_base import TransformerUFilterBase as NN_TRANSFORMER
 from .variational_autoencoder_ufilter_base import VariationalAutoencoderUFilterBase as NN_VARIATIONAL_AUTOENCODER
 from .slirec_base import SLiRecBase as NN_SLIREC
 from .SSR_base import SSR_base as NN_SSR
-from .deep_mf_base import DeepMFBase as NN_DEEP_MF
+from .deep_mf_base import DeepMF_base as NN_DEEP_MF
 from .bivae_base import BVAE_base as NN_BVAE
 from .neural_mf_base import NeuralMFBase as NN_NEURAL_MF
 from .FM_base import FM_base as NN_FM
@@ -50,7 +50,6 @@ from .MAML_base import MAML_base as NN_MAML
 from .GateNet_base import GateNet_base as NN_GATENET
 from .DIEN_base import DIEN_base as NN_DIEN
 from .FLEN_base import FLEN_base as NN_FLEN
-from .DIN_base import DIN_base as NN_DIN
 from .TiSAS_base import TiSASBase as NN_TISAS
 
 __all__ = [

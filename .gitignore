@@ -47,3 +47,5 @@ examples/ContentFilterExamples/nogo.py
 ./src/SANDBOX/dataset/REES46/events.csv
 ./src/SANDBOX/dataset/REES46/direct_msg/messages-demo.csv
 ./corerec/engines/test_struct_UF
+/cr_learn/cr_learn/CRDS
+cr_learn/cr_learn/CRDS2.zip

@@ -44,7 +44,7 @@ from corerec.cr_boosters.sparse_adam import *
 
 
 #Promoted this script to engine.cr_utility.dataset
-from corerec.datasets import GraphDataset
+# from corerec.datasets import GraphDataset
 
 
 #FormatMaster is the plug for corerec preprocessing to detect dataset format and category
