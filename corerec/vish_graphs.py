@@ -1,4 +1,3 @@
-
 # ###############################################################################################################
 #                                             --vishgraphs--                                                  
 # vish_graph module takes adjmatrix as input and provides various functionalities for graph manipulation and
@@ -378,6 +377,7 @@ def bipartite_matrix_maker(csv_path):
     plt.show()
 
 
+
     # Convert to a sparse CSR matrix if not already in that format
     if not isinstance(adj_matrix, csr_matrix):
         sparse_adj_matrix = csr_matrix(adj_matrix)
@@ -446,5 +446,19 @@ for misspelling in possible_misspellings:
 graph = []
 start_city = 0
 
-def run_optimal_path():
-    show_path(graph, start_city)
+def run_optimal_path(graph, start_city):
+    """
+    Find the optimal path in the given graph starting from the start_city.
+
+    Args:
+        graph (list): The graph represented as an adjacency list or matrix.
+        start_city (int): The starting node for finding the optimal path.
+    """
+    # Implement the logic to find the optimal path
+    # For example, you might use Dijkstra's algorithm or another pathfinding algorithm
+    # This is a placeholder for the actual implementation
+    print(f"Finding optimal path in the graph starting from city {start_city}...")
+    # Example logic (to be replaced with actual pathfinding logic)
+    path = [start_city]  # Start with the starting city
+    # Add logic to compute the path
+    print(f"Optimal path: {path}")

@@ -8,8 +8,7 @@ class MIND(nn.Module):
                  embedding_dim, 
                  num_interests=4, 
                  interest_dim=64, 
-                 dropout=0.5, 
-                 num_classes=1):
+                 dropout=0.5):
         """
         Initialize the Multi-Interest Network for Recommendation (MIND).
 
@@ -19,7 +18,6 @@ class MIND(nn.Module):
             num_interests (int): Number of distinct user interests to capture.
             interest_dim (int): Dimension of each interest representation.
             dropout (float): Dropout rate.
-            num_classes (int): Number of output classes.
         """
         super(MIND, self).__init__()
         
@@ -39,7 +37,7 @@ class MIND(nn.Module):
         self.fusion = nn.Linear(interest_dim * num_interests, 128)
         
         # Output Layer
-        self.fc_out = nn.Linear(128, num_classes)
+        self.fc_out = nn.Linear(128, vocab_size)  # Output scores for each item in the vocabulary
         
         # Dropout
         self.dropout = nn.Dropout(dropout)
@@ -52,7 +50,7 @@ class MIND(nn.Module):
             text (torch.Tensor): Input text tensor of shape (batch_size, seq_length).
 
         Returns:
-            torch.Tensor: Output logits of shape (batch_size, num_classes).
+            torch.Tensor: Output scores for each item in the vocabulary of shape (batch_size, vocab_size).
         """
         # Embedding
         embedded = self.embedding(text)  # (batch_size, seq_length, embedding_dim)
@@ -70,6 +68,6 @@ class MIND(nn.Module):
         fused = self.dropout(fused)
         
         # Output Layer
-        out = self.fc_out(fused)  # (batch_size, num_classes)
+        out = self.fc_out(fused)  # (batch_size, vocab_size)
         
         return out

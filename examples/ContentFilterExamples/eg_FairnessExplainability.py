@@ -12,7 +12,7 @@ from corerec.engines.contentFilterEngine.fairness_explainability import (
     FAI_FAIRNESS_AWARE,
     FAI_PRIVACY_PRESERVING
 )
-from CRLearn import ml_1m as ml
+from cr_learn import ml_1m as ml
 
 data = ml.load()
 cfg = 'examples/ContentFilterExamples/context_config.json'  

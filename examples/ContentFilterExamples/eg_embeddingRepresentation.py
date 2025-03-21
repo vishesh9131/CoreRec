@@ -1,19 +1,23 @@
 import pandas as pd
 from numpy import dot
 from numpy.linalg import norm
-from corerec.engines.contentFilterEngine.context_personalization import (
-    CON_CONTEXT_AWARE,
-    CON_USER_PROFILING,
-    CON_ITEM_PROFILING
-)
-from corerec.engines.contentFilterEngine.embedding_representation_learning import (
-    EMB_PERSONALIZED_EMBEDDINGS
-)
+
+# Old Import technique
+# from corerec.engines.contentFilterEngine.context_personalization import (
+#     cr.CON_CONTEXT_AWARE,
+#     cr.CON_USER_PROFILING,
+#     cr.CON_ITEM_PROFILING
+# )
+# from corerec.engines.contentFilterEngine.embedding_representation_learning import (
+#     cr.cr.EMB_PERSONALIZED_EMBEDDINGS
+# )
 from typing import Dict, List, Any
 import os
 import json
-from CRLearn import ml_1m as ml
+from cr_learn import ml_1m as ml
 
+# New Import technique
+from corerec import cf_engine as cr
 
 data = ml.load()
 cfg = 'examples/ContentFilterExamples/context_config.json'  
@@ -30,16 +34,16 @@ item_features = data['item_features']
 all_items = set(movies_df['movie_id'].tolist())
 
 print("Initializing recommenders...")
-user_recommender = CON_USER_PROFILING(user_attributes=users_df)
-context_recommender = CON_CONTEXT_AWARE(
+user_recommender = cr.CON_USER_PROFILING(user_attributes=users_df)
+context_recommender = cr.CON_CONTEXT_AWARE(
     context_config_path=cfg,
     item_features=item_features
 )
-item_recommender = CON_ITEM_PROFILING()
+item_recommender = cr.CON_ITEM_PROFILING()
 
 # Initialize Embedding Models
 print("Initializing embedding models...")
-embedding_recommender = EMB_PERSONALIZED_EMBEDDINGS()
+embedding_recommender = cr.EMB_PERSONALIZED_EMBEDDINGS()
 
 # Prepare data for embeddings
 print("Preparing data for embeddings...")
