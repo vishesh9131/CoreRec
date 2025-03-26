@@ -7,7 +7,8 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import numpy as np
 
-from corerec.engines.contentFilterEngine.nn_based_algorithms.AITM import AITM
+# from corerec.engines.contentFilterEngine.nn_based_algorithms.AITM import AITM
+import corerec.cf_engine as cf
 
 # Define SourceModel and TargetModel
 class SourceModel(nn.Module):
@@ -125,7 +126,7 @@ def main():
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     
     # Initialize AITM
-    aitm = AITM(input_dim, feature_dim, output_dim)
+    aitm = cf.AITM.AITM(input_dim, feature_dim, output_dim)
     
     # Define Loss and Optimizer
     criterion = nn.MSELoss()

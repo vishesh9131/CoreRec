@@ -35,7 +35,7 @@ src/SANDBOX/.DS_Store
 /src/SANDBOX/dataset
 src/SANDBOX/.DS_Store
 examples/ContentFilterExamples/nogo.py
-/CRLearn/CRDS
+/cr_learn_setup/CRDS
 /examples/Youtube_MoE/models
 ./CRLearn/CRDS/IJCAI-15/user_log_format1.csv
 ./CRLearn/CRDS/Tmall/ijcai2016_taobao.csv
@@ -49,3 +49,4 @@ examples/ContentFilterExamples/nogo.py
 ./corerec/engines/test_struct_UF
 /cr_learn/cr_learn/CRDS
 cr_learn/cr_learn/CRDS2.zip
+/cr_learn_setup

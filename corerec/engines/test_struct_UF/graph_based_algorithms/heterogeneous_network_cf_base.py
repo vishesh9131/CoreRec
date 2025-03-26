@@ -1,2 +1,0 @@
-# heterogeneous_network_cf_base implementation
-pass
