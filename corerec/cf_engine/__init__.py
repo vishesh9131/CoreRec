@@ -19,5 +19,24 @@ from corerec.engines.contentFilterEngine.traditional_ml_algorithms import (decis
 # these mpodules are exposed in super-set
 from corerec.engines.contentFilterEngine import cr_contentFilterFactory
 from corerec.engines.contentFilterEngine import tfidf_recommender
-from corerec.engines.contentFilterEngine import base_recommender
+from corerec.base_recommender import BaseCorerec
 
+# from corerec.engines.unionizedFilterEngine import mf_base__A
+
+
+__all__ = [
+    'context_aware', 'item_profiling', 'user_profiling',
+    'doc2vec', 'personalized_embeddings', 'word2vec',
+    'explainable', 'fairness_aware', 'privacy_preserving',
+    'gnn', 'graph_filtering', 'semantic_models',
+    'attention_mechanisms', 'ensemble_methods', 'hybrid_collaborative',
+    'few_shot', 'meta_learning', 'transfer_learning', 'zero_shot',
+    'cold_start', 'feature_selection', 'noise_handling',
+    'cross_domain', 'cross_lingual', 'multi_modal',
+    'AITM', 'cnn', 'dkn', 'DSSM', 'lstur', 'naml', 'npa', 'nrms', 'rnn', 'TDM', 'transformer', 'vae', 'WidenDeep', 'Word2Vec', 'Youtube_dnn', 'TRA_MIND',
+    'ontology_based', 'rule_based', 'sentiment_analysis',
+    'feature_extraction', 'load_balancing', 'scalable_algorithms',
+    'bayesian', 'fuzzy_logic', 'lda', 'lsa',
+    'decision_tree', 'lightgbm', 'LR', 'svm', 'tfidf', 'vw',
+    'cr_contentFilterFactory', 'tfidf_recommender', 'BaseCorerec'
+]

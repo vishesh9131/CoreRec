@@ -1,7 +1,7 @@
 import numpy as np
-from .base_recommender import BaseRecommender
+from corerec.base_recommender import BaseCorerec
 
-class TFIDFRecommender(BaseRecommender):
+class TFIDFRecommender(BaseCorerec):
     def __init__(self, feature_matrix):
         if hasattr(feature_matrix, "toarray"):
             self.feature_matrix = feature_matrix.toarray()

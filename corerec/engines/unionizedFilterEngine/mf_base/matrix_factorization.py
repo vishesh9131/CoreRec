@@ -16,17 +16,24 @@
 import numpy as np
 from scipy.sparse import csr_matrix, lil_matrix
 from typing import List, Optional, Dict, Any, Tuple
-from ..base_recommender import BaseRecommender
-from ..device_manager import DeviceManager
+from corerec.base_recommender import BaseCorerec
+from corerec.engines.unionizedFilterEngine.device_manager import DeviceManager
 
-class MatrixFactorization(BaseRecommender):
+class MatrixFactorization(BaseCorerec):
     """Matrix Factorization for Unionized Filtering.
 
     Parameters
     ----------
+    name: str, required
+        Name of the recommender model.
+
+    trainable: boolean, optional, default: True
+        When False, the model is not trainable.
+
+    verbose: boolean, optional, default: False
+        When True, running logs are displayed.
     k: int, optional, default: 10
         The dimension of the latent factors.
-
     learning_rate: float, optional, default: 0.01
         The learning rate.
 
@@ -64,13 +71,12 @@ class MatrixFactorization(BaseRecommender):
         device: str = 'auto',
         batch_size: int = 10000
     ):
-        super().__init__(device=device)
+        super().__init__(name="MatrixFactorization", trainable=True, verbose=verbose)
         self.k = k
         self.learning_rate = learning_rate
         self.lambda_reg = lambda_reg
         self.max_iter = max_iter
         self.use_bias = use_bias
-        self.verbose = verbose
         self.seed = seed
         self.batch_size = batch_size
 
@@ -82,10 +88,10 @@ class MatrixFactorization(BaseRecommender):
         self.global_mean = 0.0
 
         # Mappings
-        self.user_map = {}  # Maps user IDs to indices
-        self.item_map = {}  # Maps item IDs to indices
-        self.reverse_user_map = {}  # Maps indices to user IDs
-        self.reverse_item_map = {}  # Maps indices to item IDs
+        self.user_map = {}
+        self.item_map = {}
+        self.reverse_user_map = {}
+        self.reverse_item_map = {}
 
         # User-item interaction matrix
         self.user_item_matrix = None
@@ -97,36 +103,29 @@ class MatrixFactorization(BaseRecommender):
 
     def _create_mappings(self, user_ids: List[int], item_ids: List[int]):
         """Create mappings for user and item IDs."""
-        # Create user mappings
         unique_users = set(user_ids)
         self.user_map = {user_id: idx for idx, user_id in enumerate(unique_users)}
         self.reverse_user_map = {idx: user_id for user_id, idx in self.user_map.items()}
 
-        # Create item mappings
         unique_items = set(item_ids)
         self.item_map = {item_id: idx for idx, item_id in enumerate(unique_items)}
         self.reverse_item_map = {idx: item_id for item_id, idx in self.item_map.items()}
 
     def fit(self, user_ids: List[int], item_ids: List[int], ratings: List[float]):
         """Fit the model to the data."""
-        # Create mappings for user and item IDs
         self._create_mappings(user_ids, item_ids)
 
-        # Initialize user-item interaction matrix
         n_users = len(self.user_map)
         n_items = len(self.item_map)
         self.user_item_matrix = lil_matrix((n_users, n_items), dtype=np.float32)
 
-        # Populate user-item interaction matrix
         for u_id, i_id, rating in zip(user_ids, item_ids, ratings):
             u_idx = self.user_map[u_id]
             i_idx = self.item_map[i_id]
             self.user_item_matrix[u_idx, i_idx] = rating
 
-        # Convert to csr_matrix for efficient operations
         self.user_item_matrix = self.user_item_matrix.tocsr()
 
-        # Initialize model parameters
         self.user_factors = np.random.normal(0, 0.01, (n_users, self.k))
         self.item_factors = np.random.normal(0, 0.01, (n_items, self.k))
         if self.use_bias:
@@ -134,30 +133,25 @@ class MatrixFactorization(BaseRecommender):
             self.item_biases = np.zeros(n_items)
         self.global_mean = np.mean(ratings)
 
-        # Training loop with mini-batch gradient descent
         for iteration in range(self.max_iter):
             total_loss = 0.0
             indices = np.arange(len(user_ids))
-            np.random.shuffle(indices)  # Shuffle for mini-batch training
+            np.random.shuffle(indices)
 
             for start in range(0, len(user_ids), self.batch_size):
                 end = min(start + self.batch_size, len(user_ids))
                 batch_indices = indices[start:end]
 
-                # Get batch data
                 batch_user_ids = [user_ids[i] for i in batch_indices]
                 batch_item_ids = [item_ids[i] for i in batch_indices]
                 batch_ratings = [ratings[i] for i in batch_indices]
 
-                # Convert to indices
                 batch_user_indices = [self.user_map[u_id] for u_id in batch_user_ids]
                 batch_item_indices = [self.item_map[i_id] for i_id in batch_item_ids]
 
-                # Predict ratings
                 preds = self._predict_batch(batch_user_indices, batch_item_indices)
                 errors = np.array(batch_ratings) - preds
 
-                # Update factors
                 self.user_factors[batch_user_indices] += self.learning_rate * (
                     errors[:, np.newaxis] * self.item_factors[batch_item_indices] -
                     self.lambda_reg * self.user_factors[batch_user_indices]
@@ -167,7 +161,6 @@ class MatrixFactorization(BaseRecommender):
                     self.lambda_reg * self.item_factors[batch_item_indices]
                 )
 
-                # Update biases if enabled
                 if self.use_bias:
                     self.user_biases[batch_user_indices] += self.learning_rate * (
                         errors - self.lambda_reg * self.user_biases[batch_user_indices]
@@ -176,10 +169,8 @@ class MatrixFactorization(BaseRecommender):
                         errors - self.lambda_reg * self.item_biases[batch_item_indices]
                     )
 
-                # Compute loss
                 total_loss += np.sum(errors**2)
 
-            # Print progress
             if self.verbose:
                 print(f"Iteration {iteration + 1}/{self.max_iter}, Loss: {total_loss / len(user_ids):.4f}")
 
@@ -209,14 +200,11 @@ class MatrixFactorization(BaseRecommender):
         scores += np.dot(self.user_factors[user_idx], self.item_factors.T)
         
         if exclude_seen:
-            # Get items the user has interacted with (using reverse_item_map to convert indices to IDs)
             user_items = set([self.reverse_item_map[iid] for iid in self.user_item_matrix[user_idx].indices])
-            # Exclude these items by setting their scores to -inf
             for item_id in user_items:
                 if item_id in self.item_map:
                     scores[self.item_map[item_id]] = -np.inf
 
-        # Get top N items
         top_item_indices = np.argsort(scores)[-top_n:][::-1]
         return [self.reverse_item_map[idx] for idx in top_item_indices]
 
