@@ -1,6 +1,9 @@
 # corerec/engines/contentFilterEngine/embedding_representation_learning/word2vec.py
 
-from gensim.models import Word2Vec
+import torch
+# import torch.nn as nn
+import corerec.torch_nn as nn
+import torch.optim as optim
 from typing import List, Dict, Any
 
 """
@@ -27,6 +30,40 @@ References:
     - Mikolov, et al. "Efficient estimation of word representations in vector space." 
       arXiv preprint arXiv:1301.3781 (2013).
 """
+
+class Word2Vec(nn.Module):
+    def __init__(self, vocab_size: int, embedding_dim: int):
+        super(Word2Vec, self).__init__()
+        self.embeddings = nn.Embedding(vocab_size, embedding_dim)
+
+    def forward(self, inputs):
+        return self.embeddings(inputs)
+
+class Word2VecTrainer:
+    def __init__(self, vocab_size: int, embedding_dim: int, learning_rate: float = 0.01):
+        self.model = Word2Vec(vocab_size, embedding_dim)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=learning_rate)
+        self.loss_function = nn.CrossEntropyLoss()
+
+    def train(self, data: List[List[int]], epochs: int = 10):
+        for epoch in range(epochs):
+            total_loss = 0
+            for context, target in data:
+                context_var = torch.tensor([context], dtype=torch.long)
+                target_var = torch.tensor([target], dtype=torch.long)
+
+                self.optimizer.zero_grad()
+                log_probs = self.model(context_var)
+                loss = self.loss_function(log_probs, target_var)
+                loss.backward()
+                self.optimizer.step()
+
+                total_loss += loss.item()
+            print(f'Epoch {epoch}, Loss: {total_loss}')
+
+    def get_embedding(self, word_index: int) -> List[float]:
+        with torch.no_grad():
+            return self.model.embeddings(torch.tensor([word_index])).tolist()[0]
 
 class WORD2VEC:
     """
@@ -64,7 +101,7 @@ class WORD2VEC:
             The model is not trained upon initialization. Call train() with your corpus
             to begin training.
         """
-        self.model = Word2Vec(vector_size=vector_size, window=window, min_count=min_count, workers=workers)
+        self.model = Word2Vec(vector_size=vector_size, embedding_dim=vector_size)
 
     def train(self, sentences: List[List[str]], epochs: int = 10):
         """

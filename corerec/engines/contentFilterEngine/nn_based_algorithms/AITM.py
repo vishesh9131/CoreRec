@@ -1,7 +1,9 @@
 # Adaptive Information Transfer Multi-task
 import torch
 import corerec.torch_nn as nn
-from corerec.cr_utility.dataloader import DataLoader
+# from cr_utility.dataloader import DataLoader
+from torch.utils.data import DataLoader
+
 from corerec.engines.contentFilterEngine.multi_modal_cross_domain_methods import (
     MUL_MULTI_MODAL, MUL_CROSS_DOMAIN, MUL_CROSS_LINGUAL
 )
