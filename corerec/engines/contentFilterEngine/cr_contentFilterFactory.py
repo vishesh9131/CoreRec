@@ -1,11 +1,11 @@
 from typing import Dict, Any
-from .base_recommender import BaseRecommender
+from corerec.base_recommender import BaseCorerec
 from .tfidf_recommender import TFIDFRecommender
 # Import other content-based recommender classes here as they are implemented
 
 class ContentFilterFactory:
     @staticmethod
-    def get_recommender(config: Dict[str, Any]) -> BaseRecommender:
+    def get_recommender(config: Dict[str, Any]) -> BaseCorerec:
         method = config.get("method")
         params = config.get("params", {})
 

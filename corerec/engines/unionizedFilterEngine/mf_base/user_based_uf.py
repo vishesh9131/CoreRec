@@ -1,9 +1,9 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 from typing import List
-from corerec.base_recommender import BaseRecommender
+from corerec.base_recommender import BaseCorerec
 
-class UserBasedUF(BaseRecommender):
+class UserBasedUF(BaseCorerec):
     def __init__(self, similarity_threshold: float = 0.5):
         self.similarity_threshold = similarity_threshold
         self.user_similarity = None
