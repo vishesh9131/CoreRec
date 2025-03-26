@@ -50,3 +50,6 @@ examples/ContentFilterExamples/nogo.py
 /cr_learn/cr_learn/CRDS
 cr_learn/cr_learn/CRDS2.zip
 /cr_learn_setup
+graph_dataset.csv
+tests/test_cf.py
+/~
