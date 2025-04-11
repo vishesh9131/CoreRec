@@ -1311,6 +1311,13 @@ def load(name,
         ...     extra_cflags=['-O2'],
         ...     verbose=True)
     """
+    if extra_include_paths is None:
+        extra_include_paths = []
+    
+    # Add PyTorch include paths
+    torch_include_paths = torch.utils.cpp_extension.include_paths()
+    extra_include_paths.extend(torch_include_paths)
+    
     return _jit_compile(
         name,
         [sources] if isinstance(sources, str) else sources,

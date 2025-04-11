@@ -1,418 +1,522 @@
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Tuple, Union
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
-import tensorflow as tf
-from scipy.sparse import csr_matrix
-from typing import List, Optional, Dict, Any, Tuple
-from ..base_recommender import BaseRecommender
+import os
+import yaml
+import logging
+from pathlib import Path
 
-class DINBase(BaseRecommender):
+class AttentionLayer(nn.Module):
     """
-    Deep Interest Network (DIN) for recommendation.
+    Attention Layer for DIN that computes attention weights between user behaviors and target item.
     
-    Based on the paper:
-    "Deep Interest Network for Click-Through Rate Prediction" by Zhou et al.
+    Architecture:
     
-    This model uses an attention mechanism to adaptively learn user interests
-    from historical behaviors with respect to target items.
-    
-    Parameters:
-    -----------
-    embedding_dim : int
-        Dimension of item embeddings
-    attention_units : List[int]
-        Sizes of attention network layers
-    fc_units : List[int]
-        Sizes of fully connected layers
-    dropout_rate : float
-        Dropout probability
-    learning_rate : float
-        Learning rate for optimizer
-    batch_size : int
-        Training batch size
-    epochs : int
-        Number of training epochs
-    max_history_length : int
-        Maximum number of historical interactions to consider
-    seed : Optional[int]
-        Random seed for reproducibility
+    ┌───────────┐   ┌───────────┐
+    │  User     │   │  Target   │
+    │ Behaviors │   │   Item    │
+    └─────┬─────┘   └─────┬─────┘
+          │               │
+          └───────┬───────┘
+                  │
+            ┌─────▼─────┐
+            │ Attention │
+            │   Layer   │
+            └─────┬─────┘
+                  │
+            ┌─────▼─────┐
+            │  Output   │
+            └───────────┘
+            
+    Author: Vishesh Yadav (mail: sciencely98@gmail.com)
     """
-    def __init__(
-        self,
-        embedding_dim: int = 64,
-        attention_units: List[int] = [80, 40],
-        fc_units: List[int] = [200, 80],
-        dropout_rate: float = 0.2,
-        learning_rate: float = 0.001,
-        batch_size: int = 256,
-        epochs: int = 20,
-        max_history_length: int = 50,
-        seed: Optional[int] = None
-    ):
-        self.embedding_dim = embedding_dim
-        self.attention_units = attention_units
-        self.fc_units = fc_units
-        self.dropout_rate = dropout_rate
-        self.learning_rate = learning_rate
-        self.batch_size = batch_size
-        self.epochs = epochs
-        self.max_history_length = max_history_length
-        self.seed = seed
-        
-        self.user_map = {}
-        self.item_map = {}
-        self.reverse_user_map = {}
-        self.reverse_item_map = {}
-        self.model = None
-        self.prediction_model = None
-        self.user_histories = None
-    
-    def _create_mappings(self, user_ids: List[int], item_ids: List[int]) -> None:
-        """Create mappings between original IDs and matrix indices"""
-        self.user_map = {user_id: idx for idx, user_id in enumerate(user_ids)}
-        self.item_map = {item_id: idx for idx, item_id in enumerate(item_ids)}
-        self.reverse_user_map = {idx: user_id for user_id, idx in self.user_map.items()}
-        self.reverse_item_map = {idx: item_id for item_id, idx in self.item_map.items()}
-    
-    def _attention_layer(self, queries, keys, name):
-        """Build attention layer"""
-        # Concatenate queries and keys
-        attention_input = tf.keras.layers.concatenate([queries, keys, queries - keys, queries * keys])
-        
-        # Attention network
-        for i, units in enumerate(self.attention_units):
-            if i == 0:
-                attention_output = tf.keras.layers.Dense(
-                    units, 
-                    activation='relu',
-                    name=f'{name}_attention_layer_{i}'
-                )(attention_input)
-            else:
-                attention_output = tf.keras.layers.Dense(
-                    units, 
-                    activation='relu',
-                    name=f'{name}_attention_layer_{i}'
-                )(attention_output)
-        
-        # Output layer (scalar attention weight)
-        attention_output = tf.keras.layers.Dense(1, activation='sigmoid', name=f'{name}_attention_weight')(attention_output)
-        
-        return attention_output
-    
-    def _build_model(self, n_items: int) -> tf.keras.Model:
-        """Build the DIN model architecture"""
-        if self.seed is not None:
-            tf.random.set_seed(self.seed)
-            np.random.seed(self.seed)
-        
-        # Input layers
-        item_input = tf.keras.layers.Input(shape=(1,), dtype='int32', name='item_input')
-        history_input = tf.keras.layers.Input(shape=(self.max_history_length,), dtype='int32', name='history_input')
-        history_length = tf.keras.layers.Input(shape=(1,), dtype='int32', name='history_length')
-        
-        # Add 1 to n_items for padding (item_id=0)
-        # Item embedding layer
-        item_embedding_layer = tf.keras.layers.Embedding(
-            input_dim=n_items + 1,
-            output_dim=self.embedding_dim,
-            mask_zero=False,  # We'll handle masking manually
-            name='item_embedding'
+    def __init__(self, embed_dim: int, attention_dim: int):
+        super().__init__()
+        self.attention = nn.Sequential(
+            nn.Linear(embed_dim * 4, attention_dim),
+            nn.ReLU(),
+            nn.Linear(attention_dim, 1),
+            nn.Sigmoid()
         )
         
-        # Embed target item
-        item_embedding = item_embedding_layer(item_input)
-        item_embedding = tf.keras.layers.Flatten()(item_embedding)
-        
-        # Embed history items
-        history_embedding = item_embedding_layer(history_input)
-        
-        # Mask for history items (0 is padding)
-        history_mask = tf.cast(tf.not_equal(history_input, 0), tf.float32)
-        history_mask = tf.expand_dims(history_mask, axis=-1)
-        
-        # Apply attention mechanism
-        # Repeat target item embedding for each history item
-        target_embedding = tf.keras.layers.RepeatVector(self.max_history_length)(item_embedding)
-        
-        # Calculate attention weights
-        attention_weights = self._attention_layer(target_embedding, history_embedding, 'din')
-        
-        # Apply mask to attention weights
-        attention_weights = attention_weights * history_mask
-        
-        # Normalize attention weights
-        attention_sum = tf.reduce_sum(attention_weights, axis=1, keepdims=True) + 1e-10
-        attention_weights = attention_weights / attention_sum
-        
-        # Apply attention weights to history embeddings
-        weighted_history = history_embedding * attention_weights
-        
-        # Sum weighted history embeddings
-        user_interest = tf.reduce_sum(weighted_history, axis=1)
-        
-        # Concatenate user interest and target item embedding
-        concat_output = tf.keras.layers.concatenate([user_interest, item_embedding])
-        
-        # Fully connected layers
-        for i, units in enumerate(self.fc_units):
-            concat_output = tf.keras.layers.Dense(
-                units, 
-                activation='relu',
-                name=f'fc_layer_{i}'
-            )(concat_output)
-            concat_output = tf.keras.layers.Dropout(self.dropout_rate)(concat_output)
-        
-        # Output layer
-        output = tf.keras.layers.Dense(1, activation='sigmoid', name='output')(concat_output)
-        
-        # Create model
-        model = tf.keras.Model(inputs=[item_input, history_input, history_length], outputs=output)
-        
-        # Compile model
-        model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=self.learning_rate),
-            loss='binary_crossentropy',
-            metrics=['accuracy']
-        )
-        
-        return model
-    
-    def fit(self, user_ids: List[int], item_ids: List[int], ratings: List[float], timestamps: Optional[List[int]] = None) -> None:
+    def forward(self, behaviors: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
-        Train the model on the given data.
+        Compute attention weights between behaviors and target item.
         
-        Parameters:
-        -----------
-        user_ids : List[int]
-            List of user IDs
-        item_ids : List[int]
-            List of item IDs
-        ratings : List[float]
-            List of ratings
-        timestamps : Optional[List[int]]
-            List of timestamps (if available)
-        """
-        # Create mappings
-        unique_user_ids = sorted(set(user_ids))
-        unique_item_ids = sorted(set(item_ids))
-        self._create_mappings(unique_user_ids, unique_item_ids)
-        
-        # Map IDs to indices
-        user_indices = [self.user_map[user_id] for user_id in user_ids]
-        item_indices = [self.item_map[item_id] for item_id in item_ids]
-        
-        # Create user-item matrix
-        n_users = len(self.user_map)
-        n_items = len(self.item_map)
-        self.user_item_matrix = csr_matrix((ratings, (user_indices, item_indices)), shape=(n_users, n_items))
-        
-        # Create user histories
-        self.user_histories = {}
-        
-        # If timestamps are provided, sort interactions by time
-        if timestamps is not None:
-            # Create a list of (user_idx, item_idx, timestamp) tuples
-            interactions = list(zip(user_indices, item_indices, timestamps))
-            
-            # Sort by user and timestamp
-            interactions.sort(key=lambda x: (x[0], x[1]))
-            
-            # Build user histories
-            for user_idx, item_idx, _ in interactions:
-                if user_idx not in self.user_histories:
-                    self.user_histories[user_idx] = []
-                
-                # Add item to user history
-                if item_idx + 1 not in self.user_histories[user_idx]:  # +1 to account for padding
-                    self.user_histories[user_idx].append(item_idx + 1)  # +1 to account for padding
-        else:
-            # Without timestamps, just collect all items for each user
-            for user_idx, item_idx in zip(user_indices, item_indices):
-                if user_idx not in self.user_histories:
-                    self.user_histories[user_idx] = []
-                
-                # Add item to user history
-                if item_idx + 1 not in self.user_histories[user_idx]:  # +1 to account for padding
-                    self.user_histories[user_idx].append(item_idx + 1)  # +1 to account for padding
-        
-        # Prepare training data
-        X_item = []
-        X_history = []
-        X_history_length = []
-        y = []
-        
-        # For each positive interaction, create a training sample
-        for user_idx, item_idx in zip(user_indices, item_indices):
-            # Get user history excluding current item
-            history = [h for h in self.user_histories[user_idx] if h != item_idx + 1]
-            
-            # Skip if no history
-            if not history:
-                continue
-            
-            # Truncate or pad history
-            history_length = len(history)
-            if history_length > self.max_history_length:
-                history = history[-self.max_history_length:]
-                history_length = self.max_history_length
-            else:
-                history = [0] * (self.max_history_length - history_length) + history
-            
-            # Add positive sample
-            X_item.append(item_idx + 1)  # +1 to account for padding
-            X_history.append(history)
-            X_history_length.append(history_length)
-            y.append(1)
-            
-            # Add negative samples (randomly sampled items)
-            for _ in range(4):  # 4 negative samples per positive
-                neg_item_idx = np.random.randint(n_items)
-                while self.user_item_matrix[user_idx, neg_item_idx] > 0:
-                    neg_item_idx = np.random.randint(n_items)
-                
-                X_item.append(neg_item_idx + 1)  # +1 to account for padding
-                X_history.append(history)
-                X_history_length.append(history_length)
-                y.append(0)
-        
-        # Convert to numpy arrays
-        X_item = np.array(X_item).reshape(-1, 1)
-        X_history = np.array(X_history)
-        X_history_length = np.array(X_history_length).reshape(-1, 1)
-        y = np.array(y)
-        
-        # Build model
-        self.model = self._build_model(n_items)
-        
-        # Train model
-        self.model.fit(
-            [X_item, X_history, X_history_length], y,
-            batch_size=self.batch_size,
-            epochs=self.epochs,
-            verbose=1
-        )
-        
-        # Create prediction model
-        self.prediction_model = self.model
-    
-    def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
-        """
-        Generate top-N recommendations for a specific user.
-        
-        Parameters:
-        -----------
-        user_id : int
-            ID of the user to generate recommendations for
-        top_n : int
-            Number of recommendations to generate
-        exclude_seen : bool
-            Whether to exclude items the user has already interacted with
+        Args:
+            behaviors: User behavior embeddings [batch_size, seq_len, embed_dim]
+            target: Target item embedding [batch_size, embed_dim]
             
         Returns:
-        --------
-        List[int] : List of recommended item IDs
+            Weighted sum of behavior embeddings [batch_size, embed_dim]
         """
-        if self.prediction_model is None:
-            raise ValueError("Model has not been trained. Call fit() first.")
+        # Reshape target to match sequence length
+        target = target.unsqueeze(1)  # [batch_size, 1, embed_dim]
         
-        # Map user_id to internal index
-        if user_id not in self.user_map:
-            raise ValueError(f"User ID {user_id} not found in training data")
-            
-        user_idx = self.user_map[user_id]
+        # Compute attention weights
+        attention_input = torch.cat([
+            behaviors,
+            target.repeat(1, behaviors.size(1), 1),
+            behaviors * target.repeat(1, behaviors.size(1), 1),
+            behaviors - target.repeat(1, behaviors.size(1), 1)
+        ], dim=-1)
         
-        # Get user history
-        if user_idx not in self.user_histories:
-            raise ValueError(f"User ID {user_id} has no history")
-            
-        history = self.user_histories[user_idx]
+        attention_weights = self.attention(attention_input)
         
-        # Truncate or pad history
-        history_length = len(history)
-        if history_length > self.max_history_length:
-            history = history[-self.max_history_length:]
-            history_length = self.max_history_length
-        else:
-            history = [0] * (self.max_history_length - history_length) + history
+        # Apply attention weights
+        weighted_sum = torch.sum(attention_weights * behaviors, dim=1)
         
-        # Prepare input for all items
-        n_items = len(self.item_map)
-        X_item = np.arange(1, n_items + 1).reshape(-1, 1)  # +1 to account for padding
-        X_history = np.tile(history, (n_items, 1))
-        X_history_length = np.full((n_items, 1), min(history_length, self.max_history_length))
-        
-        # Get predictions
-        predictions = self.prediction_model.predict([X_item, X_history, X_history_length], batch_size=100, verbose=0).flatten()
-        
-        # If requested, exclude items the user has already interacted with
-        if exclude_seen:
-            seen_items = self.user_item_matrix[user_idx].indices
-            for item_idx in seen_items:
-                predictions[item_idx] = -np.inf
-        
-        # Get top-n item indices
-        top_item_indices = np.argsort(-predictions)[:top_n]
-        
-        # Map indices back to original item IDs
-        top_items = [self.reverse_item_map[idx] for idx in top_item_indices]
-        
-        return top_items
+        return weighted_sum
+
+class DIN_base(nn.Module):
+    """
+    Deep Interest Network (DIN) base implementation.
     
-    def save_model(self, filepath: str) -> None:
-        """Save the model to a file"""
-        if self.model is None:
-            raise ValueError("Model has not been trained. Call fit() first.")
-            
-        # Save Keras model
-        self.model.save(f"{filepath}_keras_model")
-        
-        # Save additional model data
-        model_data = {
-            'user_map': self.user_map,
-            'item_map': self.item_map,
-            'reverse_user_map': self.reverse_user_map,
-            'reverse_item_map': self.reverse_item_map,
-            'user_histories': self.user_histories,
-            'params': {
-                'embedding_dim': self.embedding_dim,
-                'attention_units': self.attention_units,
-                'fc_units': self.fc_units,
-                'dropout_rate': self.dropout_rate,
-                'learning_rate': self.learning_rate,
-                'batch_size': self.batch_size,
-                'epochs': self.epochs,
-                'max_history_length': self.max_history_length,
-                'seed': self.seed
-            }
-        }
-        np.save(f"{filepath}_model_data", model_data, allow_pickle=True)
+    Architecture:
     
-    @classmethod
-    def load_model(cls, filepath: str) -> 'DINBase':
-        """Load a model from a file"""
-        # Load model data
-        model_data = np.load(f"{filepath}_model_data.npy", allow_pickle=True).item()
+    ┌───────────┐
+    │  Input    │
+    │  Layer    │
+    └─────┬─────┘
+          │
+    ┌─────▼─────┐
+    │ Embedding │
+    │  Layer    │
+    └─────┬─────┘
+          │
+    ┌─────▼─────┐
+    │ Attention │
+    │  Layer    │
+    └─────┬─────┘
+          │
+    ┌─────▼─────┐
+    │   MLP     │
+    │  Layer    │
+    └─────┬─────┘
+          │
+    ┌─────▼─────┐
+    │  Output   │
+    │  Layer    │
+    └───────────┘
+    
+    Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+    """
+    
+    def __init__(
+        self,
+        embed_dim: int = 64,
+        mlp_dims: List[int] = [128, 64],
+        field_dims: Optional[List[int]] = None,
+        dropout: float = 0.1,
+        attention_dim: int = 32,
+        batch_size: int = 256,
+        learning_rate: float = 0.001,
+        num_epochs: int = 10,
+        seed: int = 42
+    ):
+        """
+        Initialize DIN model.
         
-        # Create an instance with the saved parameters
-        instance = cls(
-            embedding_dim=model_data['params']['embedding_dim'],
-            attention_units=model_data['params']['attention_units'],
-            fc_units=model_data['params']['fc_units'],
-            dropout_rate=model_data['params']['dropout_rate'],
-            learning_rate=model_data['params']['learning_rate'],
-            batch_size=model_data['params']['batch_size'],
-            epochs=model_data['params']['epochs'],
-            max_history_length=model_data['params']['max_history_length'],
-            seed=model_data['params']['seed']
+        Args:
+            embed_dim: Embedding dimension
+            mlp_dims: List of MLP layer dimensions
+            field_dims: List of field dimensions (optional)
+            dropout: Dropout rate
+            attention_dim: Attention layer dimension
+            batch_size: Batch size
+            learning_rate: Learning rate
+            num_epochs: Number of epochs
+            seed: Random seed
+            
+        Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+        """
+        super().__init__()
+        
+        # Set random seed
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        
+        # Store parameters
+        self.embed_dim = embed_dim
+        self.mlp_dims = mlp_dims
+        self.field_dims = field_dims
+        self.dropout = dropout
+        self.attention_dim = attention_dim
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
+        self.seed = seed
+        
+        # Initialize device
+        self.device = torch.device('cpu')
+        
+        # Initialize maps and features
+        self.user_map = {}
+        self.item_map = {}
+        self.feature_names = []
+        self.categorical_features = []
+        self.numerical_features = []
+        self.feature_encoders = {}
+        
+        # Initialize model components
+        self.is_fitted = False
+        self.model = None
+        
+        # Set up logging
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(__name__)
+        
+        # Initialize loss history
+        self.loss_history = []
+    
+    def build_model(self):
+        """
+        Build the DIN model architecture.
+        
+        Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+        """
+        # Create embeddings for each field
+        self.embeddings = nn.ModuleList([
+            nn.Embedding(dim, self.embed_dim)
+            for dim in self.field_dims
+        ])
+        
+        # Attention layer
+        self.attention = AttentionLayer(
+            self.embed_dim,
+            self.attention_dim
         )
         
-        # Restore instance variables
-        instance.user_map = model_data['user_map']
-        instance.item_map = model_data['item_map']
-        instance.reverse_user_map = model_data['reverse_user_map']
-        instance.reverse_item_map = model_data['reverse_item_map']
-        instance.user_histories = model_data['user_histories']
+        # MLP layers
+        self.mlp = nn.ModuleList()
+        input_dim = self.embed_dim * 2  # Concatenated user and item features
         
-        # Load Keras model
-        instance.model = tf.keras.models.load_model(f"{filepath}_keras_model")
-        instance.prediction_model = instance.model
+        for dim in self.mlp_dims:
+            self.mlp.append(nn.Linear(input_dim, dim))
+            self.mlp.append(nn.ReLU())
+            self.mlp.append(nn.Dropout(self.dropout))
+            input_dim = dim
         
-        return instance 
+        # Output layer
+        self.output_layer = nn.Linear(input_dim, 1)
+        self.sigmoid = nn.Sigmoid()
+    
+    def forward(self, user_behaviors: torch.Tensor, target_item: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of DIN model.
+        
+        Args:
+            user_behaviors: User behavior indices [batch_size, seq_len]
+            target_item: Target item indices [batch_size]
+            
+        Returns:
+            Predicted probability
+            
+        Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+        """
+        # Get embeddings
+        user_embed = self.embeddings[0](user_behaviors)  # [batch_size, seq_len, embed_dim]
+        item_embed = self.embeddings[1](target_item)     # [batch_size, embed_dim]
+        
+        # Expand item_embed to match sequence length
+        item_embed_expanded = item_embed.unsqueeze(1).expand(-1, user_embed.size(1), -1)  # [batch_size, seq_len, embed_dim]
+        
+        # Apply attention
+        attended_user = self.attention(user_embed, item_embed_expanded)  # [batch_size, embed_dim]
+        
+        # Concatenate features
+        combined = torch.cat([attended_user, item_embed], dim=-1)  # [batch_size, embed_dim * 2]
+        
+        # MLP layers
+        x = combined
+        for layer in self.mlp:
+            x = layer(x)
+        
+        # Output layer
+        output = self.sigmoid(self.output_layer(x))
+        
+        return output
+    
+    def fit(self, interactions: List[Tuple]):
+        """
+        Fit the DIN model to interactions.
+        
+        Args:
+            interactions: List of (user, item, features) tuples
+            
+        Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+        """
+        # Extract features and create mappings
+        self._extract_features(interactions)
+        
+        # Build model
+        self.build_model()
+        
+        # Move model to device
+        self.to(self.device)
+        
+        # Create optimizer
+        self.optimizer = torch.optim.Adam(
+            self.parameters(),
+            lr=self.learning_rate
+        )
+        
+        # Training loop
+        self.train()
+        for epoch in range(self.num_epochs):
+            total_loss = 0
+            batch_count = 0
+            
+            # Process in batches
+            for i in range(0, len(interactions), self.batch_size):
+                batch = interactions[i:i + self.batch_size]
+                
+                # Prepare batch data
+                user_behaviors, target_item, labels = self._prepare_batch(batch)
+                
+                # Forward pass
+                self.optimizer.zero_grad()
+                outputs = self(user_behaviors, target_item)
+                
+                # Compute loss
+                loss = F.binary_cross_entropy(
+                    outputs.squeeze(),
+                    labels.float()
+                )
+                
+                # Backward pass
+                loss.backward()
+                self.optimizer.step()
+                
+                # Update statistics
+                total_loss += loss.item()
+                batch_count += 1
+            
+            # Record epoch loss
+            avg_loss = total_loss / batch_count
+            self.loss_history.append(avg_loss)
+            
+            self.logger.info(f"Epoch {epoch+1}/{self.num_epochs}, Loss: {avg_loss:.4f}")
+        
+        self.is_fitted = True
+    
+    def predict(self, user: Any, item: Any, features: Dict[str, Any]) -> float:
+        """
+        Predict probability of interaction between user and item.
+        
+        Args:
+            user: User ID
+            item: Item ID
+            features: Features dictionary
+            
+        Returns:
+            Predicted probability
+            
+        Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+        """
+        if not self.is_fitted:
+            raise RuntimeError("Model is not fitted yet")
+        
+        # Check if user and item exist
+        if user not in self.user_map:
+            raise ValueError(f"Unknown user: {user}")
+        if item not in self.item_map:
+            raise ValueError(f"Unknown item: {item}")
+        
+        # Prepare features
+        user_behaviors = torch.tensor([self.user_map[user]], device=self.device)
+        target_item = torch.tensor([self.item_map[item]], device=self.device)
+        
+        # Make prediction
+        self.eval()
+        with torch.no_grad():
+            prediction = self(user_behaviors, target_item)
+        
+        return prediction.item()
+    
+    def recommend(
+        self,
+        user: Any,
+        top_n: int = 10,
+        exclude_seen: bool = True,
+        features: Optional[Dict[str, Any]] = None
+    ) -> List[Tuple[Any, float]]:
+        """
+        Generate recommendations for user.
+        
+        Args:
+            user: User ID
+            top_n: Number of recommendations
+            exclude_seen: Whether to exclude seen items
+            features: Optional features dictionary
+            
+        Returns:
+            List of (item, score) tuples
+            
+        Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+        """
+        if not self.is_fitted:
+            raise RuntimeError("Model is not fitted yet")
+        
+        if user not in self.user_map:
+            return []
+        
+        # Get predictions for all items
+        predictions = []
+        for item in self.item_map:
+            try:
+                score = self.predict(user, item, features or {})
+                predictions.append((item, score))
+            except Exception:
+                continue
+        
+        # Sort by score
+        predictions.sort(key=lambda x: x[1], reverse=True)
+        
+        return predictions[:top_n]
+    
+    def save(self, filepath: str):
+        """
+        Save model to file.
+        
+        Args:
+            filepath: Path to save model
+            
+        Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+        """
+        if not self.is_fitted:
+            raise RuntimeError("Model is not fitted yet")
+        
+        # Create directory if needed
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
+        # Save model state
+        torch.save({
+            'model_state_dict': self.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'user_map': self.user_map,
+            'item_map': self.item_map,
+            'feature_names': self.feature_names,
+            'categorical_features': self.categorical_features,
+            'numerical_features': self.numerical_features,
+            'feature_encoders': self.feature_encoders,
+            'field_dims': self.field_dims,
+            'config': {
+                'embed_dim': self.embed_dim,
+                'mlp_dims': self.mlp_dims,
+                'dropout': self.dropout,
+                'attention_dim': self.attention_dim,
+                'batch_size': self.batch_size,
+                'learning_rate': self.learning_rate,
+                'num_epochs': self.num_epochs,
+                'seed': self.seed
+            }
+        }, filepath)
+    
+    @classmethod
+    def load(cls, filepath: str):
+        """
+        Load model from file.
+        
+        Args:
+            filepath: Path to load model from
+            
+        Returns:
+            Loaded model
+            
+        Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+        """
+        # Load checkpoint
+        checkpoint = torch.load(filepath)
+        
+        # Create new instance
+        instance = cls(
+            embed_dim=checkpoint['config']['embed_dim'],
+            mlp_dims=checkpoint['config']['mlp_dims'],
+            field_dims=checkpoint['field_dims'],
+            dropout=checkpoint['config']['dropout'],
+            attention_dim=checkpoint['config']['attention_dim'],
+            batch_size=checkpoint['config']['batch_size'],
+            learning_rate=checkpoint['config']['learning_rate'],
+            num_epochs=checkpoint['config']['num_epochs'],
+            seed=checkpoint['config']['seed']
+        )
+        
+        # Restore state
+        instance.user_map = checkpoint['user_map']
+        instance.item_map = checkpoint['item_map']
+        instance.feature_names = checkpoint['feature_names']
+        instance.categorical_features = checkpoint['categorical_features']
+        instance.numerical_features = checkpoint['numerical_features']
+        instance.feature_encoders = checkpoint['feature_encoders']
+        
+        # Build model and load state
+        instance.build_model()
+        instance.load_state_dict(checkpoint['model_state_dict'])
+        
+        # Create optimizer and load state
+        instance.optimizer = torch.optim.Adam(
+            instance.parameters(),
+            lr=instance.learning_rate
+        )
+        instance.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        
+        instance.is_fitted = True
+        
+        return instance
+    
+    def _extract_features(self, interactions: List[Tuple]):
+        """
+        Extract features from interactions.
+        
+        Args:
+            interactions: List of (user, item, features) tuples
+            
+        Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+        """
+        # Extract users and items
+        users = set()
+        items = set()
+        for user, item, _ in interactions:
+            users.add(user)
+            items.add(item)
+        
+        # Create mappings
+        self.user_map = {user: idx for idx, user in enumerate(sorted(users))}
+        self.item_map = {item: idx for idx, item in enumerate(sorted(items))}
+        
+        # Set field dimensions
+        self.field_dims = [len(users), len(items)]
+    
+    def _prepare_batch(self, batch: List[Tuple]) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Prepare batch data for training.
+        
+        Args:
+            batch: List of (user, item, features) tuples
+            
+        Returns:
+            Tuple of (user_behaviors, target_item, labels)
+            
+        Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+        """
+        user_behaviors = []
+        target_items = []
+        labels = []
+        
+        # Create sequence of user behaviors
+        for user, item, features in batch:
+            # Create a sequence of user behaviors (repeating the same user for now)
+            user_seq = [self.user_map[user]] * 10  # Fixed sequence length of 10
+            user_behaviors.append(user_seq)
+            target_items.append(self.item_map[item])
+            labels.append(1)  # Assuming all interactions are positive
+        
+        return (
+            torch.tensor(user_behaviors, device=self.device),  # [batch_size, seq_len]
+            torch.tensor(target_items, device=self.device),    # [batch_size]
+            torch.tensor(labels, device=self.device)           # [batch_size]
+        )
