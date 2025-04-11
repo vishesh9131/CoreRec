@@ -15,7 +15,7 @@ from .variational_autoencoder_ufilter_base import VariationalAutoencoderUFilterB
 from .slirec_base import SLiRecBase as NN_SLIREC
 from .SSR_base import SSR_base as NN_SSR
 from .deep_mf_base import DeepMF_base as NN_DEEP_MF
-from .bivae_base import BVAE_base as NN_BVAE
+from .bivae_base import BiVAE_base as NN_BVAE
 from .neural_mf_base import NeuralMFBase as NN_NEURAL_MF
 from .FM_base import FM_base as NN_FM
 from .DeepFM_base import DeepFM_base as NN_DEEPFM
@@ -41,7 +41,7 @@ from .caser_base import Caser_base as NN_CASER
 from .ListWise_base import ListWise_base as NN_LISTWISE
 from .DIFM_base import DIFM_base as NN_DIFM
 from .DeepCrossing_base import DeepCrossing_base as NN_DEEPCROSSING
-from .DCN_base import DCN_base as NN_DCN
+from .DCN_base import DCNModel as NN_DCN
 from .MMOE_base import MMOE_base as NN_MMOE
 from .Fibinet_base import Fibinet_base as NN_FIBINET
 from .DLRM_base import DLRM_base as NN_DLRM

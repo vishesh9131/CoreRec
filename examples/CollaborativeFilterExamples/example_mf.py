@@ -38,82 +38,51 @@ print("Item data loaded with columns:", items_df.columns.tolist())
 
 # Main script
 if __name__ == "__main__":
-    # Load MovieLens dataset
-    print("Loading MovieLens dataset...")
+    print("Loading dataset...")
     ratings_df = data['ratings']
-    print(f"Loaded dataset with {len(ratings_df)} interactions")
-    
-    # Split data into train and test sets
     train_df, test_df = train_test_split(ratings_df, test_size=0.2, random_state=42)
-    print(f"Training set: {len(train_df)} interactions")
-    print(f"Test set: {len(test_df)} interactions")
     
-    # Initialize and train the Matrix Factorization model
-    print("\nTraining Matrix Factorization model...")
-    mf_model = MatrixFactorization(
-        k=10,  # Latent factor dimension
-        learning_rate=0.01,
-        lambda_reg=0.02,
-        max_iter=20,
-        use_bias=True,
-        verbose=True,
-        seed=42
-    )
+    print("Training model...")
+    mf_model = MatrixFactorization(k=10, 
+                                   learning_rate=0.01, 
+                                   lambda_reg=0.02, 
+                                   max_iter=20, 
+                                   use_bias=True, 
+                                   verbose=True, 
+                                   seed=42)
     
-    # Fit the model
-    mf_model.fit(
-        user_ids=train_df['user_id'].tolist(),
-        item_ids=train_df['movie_id'].tolist(),  # Use 'movie_id' instead of 'item_id'
-        ratings=train_df['rating'].tolist()
-    )
+    mf_model.fit(train_df['user_id'].tolist(), 
+                 train_df['movie_id'].tolist(), 
+                 train_df['rating'].tolist())
     
-    # Evaluate the model
-    print("\nEvaluating model on test set...")
+    print("Evaluating model...")
     k_values = [5, 10, 20]
-    hit_ratios = []
-    ndcg_values = []
+    # Group the test data by user_id and get the set of movie_ids for each user
+    relevant_items = test_df.groupby('user_id')['movie_id'].apply(set).to_dict()
     
     for k in k_values:
-        print(f"\nCalculating metrics for k={k}...")
-        # Get relevant items for each user in the test set
-        relevant_items = test_df.groupby('user_id')['movie_id'].apply(set).to_dict()
+        hit_rates = []
+        ndcgs = []
         
-        # Calculate Hit Ratio@k and NDCG@k using judge
-        hr = np.mean([
-            judge.hit_rate_at_k(
-                mf_model.recommend(user_id, top_n=k),
-                relevant_items.get(user_id, set()),
-                k
-            )
-            for user_id in test_df['user_id'].unique()
-        ])
+        for user_id in test_df['user_id'].unique():
+            recommended_items = mf_model.recommend(user_id, top_n=k)
+            user_relevant_items = relevant_items.get(user_id, set())
+            
+            hit_rate = judge.hit_rate_at_k(recommended_items, user_relevant_items, k)
+            ndcg = judge.ndcg_at_k(recommended_items, user_relevant_items, k)
+            
+            hit_rates.append(hit_rate)
+            ndcgs.append(ndcg)
         
-        ndcg = np.mean([
-            judge.ndcg_at_k(
-                mf_model.recommend(user_id, top_n=k),
-                relevant_items.get(user_id, set()),
-                k
-            )
-            for user_id in test_df['user_id'].unique()
-        ])
+        avg_hit_rate = np.mean(hit_rates)
+        avg_ndcg = np.mean(ndcgs)
         
-        hit_ratios.append(hr)
-        ndcg_values.append(ndcg)
-        
-        print(f"Hit Ratio@{k}: {hr:.4f}")
-        print(f"NDCG@{k}: {ndcg:.4f}")
-    
+        print(f"Metrics for k={k}: Hit Ratio={avg_hit_rate:.4f}, NDCG={avg_ndcg:.4f}")
+
     # Save the model
-    print("\nSaving the trained model...")
-    mf_model.save_model("mf_model.pkl")
-    print("Model saved as 'mf_model.pkl'")
+    # mf_model.save_model("mf_model.pkl")
+    # print("Model saved as 'mf_model.pkl'")
     
-    # Generate recommendations for a sample user
     sample_user = test_df['user_id'].iloc[0]
-    print(f"\nGenerating recommendations for user {sample_user}...")
     recommendations = mf_model.recommend(sample_user, top_n=10)
-    print("Top 10 recommendations:")
-    for i, item in enumerate(recommendations):
-        print(f"  {i+1}. Movie ID {item}")
-    
-    print("\nDone!") 
+    print(f"Recommendations for user {sample_user}: {recommendations}")
