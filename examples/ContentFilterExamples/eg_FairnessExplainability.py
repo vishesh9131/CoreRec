@@ -1,6 +1,8 @@
+# [the methods used here is in Maintainence]
+
 # Fairness = Everyone gets treated equally.
 # Explainability = You can see why something was recommended.
-
+ 
 import pandas as pd
 from corerec.engines.contentFilterEngine.context_personalization import (
     CON_CONTEXT_AWARE,

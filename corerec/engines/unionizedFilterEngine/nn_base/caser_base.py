@@ -255,10 +255,7 @@ class Caser_base(BaseCorerec):
             verbose: Whether to print verbose output.
             seed: Random seed for reproducibility.
         """
-        super().__init__()
-        self.name = name
-        self.trainable = trainable
-        self.verbose = verbose
+        super().__init__(name, trainable, verbose)
         self.seed = seed
         
         # Set random seeds
@@ -386,6 +383,34 @@ class Caser_base(BaseCorerec):
         user_sequences = defaultdict(list)
         for user_id, item_id, _ in interactions_sorted:
             if user_id in self.uid_map and item_id in self.iid_map:
+                user_idx = self.uid_map[user_id]
+                item_idx = self.iid_map[item_id]
+                user_sequences[user_idx].append(item_idx)
+            else:
+                # Auto-add users and items not in mappings
+                if user_id not in self.uid_map:
+                    # Add new user
+                    if not self.user_ids:
+                        self.user_ids = [user_id]
+                        self.uid_map = {user_id: 0}
+                        self.num_users = 1
+                    else:
+                        self.user_ids.append(user_id)
+                        self.uid_map[user_id] = len(self.user_ids) - 1
+                        self.num_users = len(self.user_ids)
+                
+                if item_id not in self.iid_map:
+                    # Add new item
+                    if not self.item_ids:
+                        self.item_ids = [item_id]
+                        self.iid_map = {item_id: 1}  # +1 for padding
+                        self.num_items = 1
+                    else:
+                        self.item_ids.append(item_id)
+                        self.iid_map[item_id] = len(self.item_ids)  # +1 for padding since we start at 1
+                        self.num_items = len(self.item_ids)
+                
+                # Add to sequence
                 user_idx = self.uid_map[user_id]
                 item_idx = self.iid_map[item_id]
                 user_sequences[user_idx].append(item_idx)

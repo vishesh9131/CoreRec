@@ -7,6 +7,7 @@
 ![GitHub repo size](https://img.shields.io/github/repo-size/vishesh9131/corerec)
 
 
+
 <div align="center">
     <img src="docs/images/coreRec.svg" style="vertical-align: middle; margin-right: 0px; margin-bottom: 20px;" width="70" height="70">
     <h1>CoreRec & VishGraphs Manual</h1>
@@ -88,7 +89,9 @@ from engine.cr_boosters.adam import Adam
 ```
 CoreRec has Various in-built optimizers for training models.
 
-#### Available Optimizers:
+#### Available Optimizers for the reco :
+ 
+
 - **Adam**
 - **Nadam**
 - **Adamax**

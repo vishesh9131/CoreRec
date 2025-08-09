@@ -74,13 +74,13 @@ class FeaturesEmbedding(nn.Module):
         
         Args:
             field_dims: List of cardinalities of categorical features.
-            embedding_dim: Dimension of embedding vectors.
+            embedding_dim: Dimension of embeddings.
         """
         super().__init__()
         self.embedding_dim = embedding_dim
         self.field_dims = field_dims
         self.num_fields = len(field_dims)
-        self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.long)
+        self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.int64)
         self.embedding = nn.Embedding(sum(field_dims), embedding_dim)
         
         # Initialize embeddings
@@ -118,7 +118,7 @@ class FeaturesLinear(nn.Module):
         super().__init__()
         self.field_dims = field_dims
         self.output_dim = output_dim
-        self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.long)
+        self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.int64)
         self.bias = nn.Parameter(torch.zeros((output_dim,)))
         self.fc = nn.Embedding(sum(field_dims), output_dim)
         

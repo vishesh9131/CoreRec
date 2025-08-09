@@ -1,0 +1,4 @@
+video_id,title,channel_name,category,duration_seconds,views,likes,upload_date,quality_score,engagement_rate,educational_value,entertainment_value,thumbnail_url,description
+vid_001,Amazing AI Tutorial,TechChannel,Technology,600,50000,2500,2024-01-15,0.9,0.7,0.9,0.7,url1,An amazing tutorial
+vid_002,Machine Learning Basics,MLHub,Education,1200,25000,1200,2024-02-01,0.8,0.6,0.95,0.6,url2,Learn ML basics
+vid_003,Deep Learning Demo,AILearning,Technology,900,75000,3800,2024-03-10,0.95,0.8,0.85,0.8,url3,Deep learning made easy

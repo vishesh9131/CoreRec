@@ -1,3 +1,4 @@
+# [the methods used here is in Maintainence]
 import pandas as pd
 from numpy import dot
 from numpy.linalg import norm
@@ -15,7 +16,6 @@ from typing import Dict, List, Any
 import os
 import json
 from cr_learn import ml_1m as ml
-
 # New Import technique
 from corerec import cf_engine as cr
 
@@ -34,16 +34,17 @@ item_features = data['item_features']
 all_items = set(movies_df['movie_id'].tolist())
 
 print("Initializing recommenders...")
-user_recommender = cr.CON_USER_PROFILING(user_attributes=users_df)
-context_recommender = cr.CON_CONTEXT_AWARE(
+user_recommender = cr.user_profiling.UserProfilingRecommender(user_attributes=users_df)
+context_recommender = cr.context_aware.ContextAwareRecommender(
     context_config_path=cfg,
     item_features=item_features
 )
-item_recommender = cr.CON_ITEM_PROFILING()
+item_recommender = cr.item_profiling.ItemProfilingRecommender()
 
 # Initialize Embedding Models
 print("Initializing embedding models...")
-embedding_recommender = cr.EMB_PERSONALIZED_EMBEDDINGS()
+embedding_recommender = cr.personalized_embeddings.PERSONALIZED_EMBEDDINGS()
+# EMB_PERSONALIZED_EMBEDDINGS()
 
 # Prepare data for embeddings
 print("Preparing data for embeddings...")

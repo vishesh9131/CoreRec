@@ -1,5 +1,3 @@
-# examples/ijcai_ncf_example.py
-
 import torch
 import numpy as np
 import pandas as pd
@@ -11,10 +9,10 @@ from collections import defaultdict
 import os
 from pathlib import Path
 
-# Import base NCF model from CoreRec
+# Importing base NCF model from CoreRec
 from corerec.engines.unionizedFilterEngine.nn_base.ncf import NCF as BaseNCF
 
-# Set random seeds for reproducibility
+# seeding for reproduceblty 
 random.seed(42)
 np.random.seed(42)
 torch.manual_seed(42)
@@ -28,7 +26,7 @@ elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
     device = 'cpu'
 print(f"Using device: {device}")
 
-# Custom NCF implementation that fixes the issues with the original one
+# NCF establishg
 class CustomNCF(BaseNCF):
     def __init__(self, num_users, num_items, embedding_dim=64, mlp_layers=None, dropout=0.1):
         """Initialize a custom NCF model with fixed parameters."""
@@ -150,8 +148,7 @@ class CustomNCF(BaseNCF):
         
         return recommendations
 
-
-
+# preprocess dta
 def load_ijcai_data():
     """Load IJCAI dataset using cr_learn"""
     try:
@@ -276,6 +273,7 @@ def plot_metrics(hr_history, ndcg_history):
     plt.savefig('ncf_metrics.png')
     plt.close()
 
+# inferencing
 def main():
     print("Loading IJCAI dataset...")
     data = load_ijcai_data()

@@ -1,10 +1,10 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
 from corerec.cr_utility.dataloader import DataLoader as CRDataLoader
-from corerec.engines.contentFilterEngine.nn_based_algorithms import NN__CNN
+import corerec.cf_engine as cf
 import math
 
-# Set device with proper MPS support
+# mps
 def get_device():
     if torch.cuda.is_available():
         return 'cuda'
@@ -189,9 +189,9 @@ def main():
     num_filters = 100
     dropout = 0.5
     num_epochs = 200
-    
+
     # Initialize CNN model
-    cnn_model = NN__CNN(
+    cnn_model = cf.cnn.CNN(
         input_dim=input_dim,
         num_classes=num_classes,
         emb_dim=emb_dim,
@@ -200,7 +200,6 @@ def main():
         dropout=dropout
     ).to(device)
     
-    # Define Loss and Optimizer
     criterion = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(cnn_model.parameters(), lr=0.001)
     

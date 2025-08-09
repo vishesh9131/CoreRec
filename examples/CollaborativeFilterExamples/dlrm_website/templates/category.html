@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category }} - CoreShop{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/">Home</a> &gt;
+    <span>{{ category }}</span>
+</div>
+
+<div class="category-header">
+    <h1>{{ category }}</h1>
+    <div class="category-controls">
+        <div class="sort-options">
+            <label for="sort">Sort by:</label>
+            <select id="sort">
+                <option value="recommended">Recommended</option>
+                <option value="price_low">Price: Low to High</option>
+                <option value="price_high">Price: High to Low</option>
+                <option value="rating">Customer Rating</option>
+            </select>
+        </div>
+        <div class="view-options">
+            <button id="grid-view" class="active"><i class="fas fa-th"></i></button>
+            <button id="list-view"><i class="fas fa-list"></i></button>
+        </div>
+    </div>
+</div>
+
+<div class="category-layout">
+    <aside class="filters">
+        <div class="filter-section">
+            <h3>Price Range</h3>
+            <div class="price-slider">
+                <input type="range" min="0" max="500" value="250" class="slider" id="price-range">
+                <div class="price-range-labels">
+                    <span>$0</span>
+                    <span id="price-value">$250</span>
+                    <span>$500</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="filter-section">
+            <h3>Rating</h3>
+            <div class="filter-options">
+                <label class="filter-option">
+                    <input type="checkbox" value="4star"> 4★ & above
+                </label>
+                <label class="filter-option">
+                    <input type="checkbox" value="3star"> 3★ & above
+                </label>
+                <label class="filter-option">
+                    <input type="checkbox" value="2star"> 2★ & above
+                </label>
+            </div>
+        </div>
+        
+        <div class="filter-section">
+            <h3>Recommendation Score</h3>
+            <div class="filter-options">
+                <label class="filter-option">
+                    <input type="checkbox" value="high_score"> High (90%+)
+                </label>
+                <label class="filter-option">
+                    <input type="checkbox" value="medium_score"> Medium (70%+)
+                </label>
+                <label class="filter-option">
+                    <input type="checkbox" value="all"> Show All
+                </label>
+            </div>
+        </div>
+        
+        <button id="apply-filters" class="btn btn-primary">Apply Filters</button>
+    </aside>
+
+    <div class="product-listing">
+        <div class="product-grid">
+            {% for product in products %}
+            <div class="product-card">
+                <div class="product-image">
+                    <a href="{{ url_for('product_detail', merchant_id=product.id) }}">
+                        <img src="{{ url_for('static', filename='img/' + product.image) }}" alt="{{ product.name }}">
+                    </a>
+                </div>
+                <div class="product-info">
+                    <h3><a href="{{ url_for('product_detail', merchant_id=product.id) }}">{{ product.name }}</a></h3>
+                    <div class="product-category">{{ product.category }}</div>
+                    <div class="product-rating">
+                        {% for i in range(5) %}
+                        {% if i < product.rating|int %}
+                        <i class="fas fa-star"></i>
+                        {% elif (product.rating - i) >= 0.5 %}
+                        <i class="fas fa-star-half-alt"></i>
+                        {% else %}
+                        <i class="far fa-star"></i>
+                        {% endif %}
+                        {% endfor %}
+                        <span>{{ product.rating }}</span>
+                    </div>
+                    <div class="product-price">${{ product.price }}</div>
+                    <button class="add-to-cart">Add to Cart</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<section class="recommendation-banner">
+    <div class="banner-content">
+        <h2>Personalized Recommendations</h2>
+        <p>Our DLRM recommendation system analyzes your preferences to suggest products you'll love.</p>
+        <a href="/?highlight_rec=true#recommended" class="btn btn-secondary">View Your Recommendations</a>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Price slider
+        const priceSlider = document.getElementById('price-range');
+        const priceValue = document.getElementById('price-value');
+        
+        if (priceSlider && priceValue) {
+            priceSlider.addEventListener('input', function() {
+                priceValue.textContent = '$' + this.value;
+            });
+        }
+        
+        // View switching
+        const gridView = document.getElementById('grid-view');
+        const listView = document.getElementById('list-view');
+        const productListing = document.querySelector('.product-listing');
+        
+        if (gridView && listView && productListing) {
+            gridView.addEventListener('click', function() {
+                productListing.classList.remove('list-view');
+                gridView.classList.add('active');
+                listView.classList.remove('active');
+            });
+            
+            listView.addEventListener('click', function() {
+                productListing.classList.add('list-view');
+                listView.classList.add('active');
+                gridView.classList.remove('active');
+            });
+        }
+        
+        // Filter application (demo - doesn't actually filter)
+        const applyFilters = document.getElementById('apply-filters');
+        if (applyFilters) {
+            applyFilters.addEventListener('click', function() {
+                alert('This is a demo. Filters are not functional.');
+            });
+        }
+        
+        // Sort functionality (demo - doesn't actually sort)
+        const sortSelect = document.getElementById('sort');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', function() {
+                alert(`This is a demo. Sorting by ${this.options[this.selectedIndex].text} is not functional.`);
+            });
+        }
+    });
+</script>
+{% endblock %} 
