@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - CoreShop{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/">Home</a> &gt;
+    <a href="{{ url_for('category', category=product.category) }}">{{ product.category }}</a> &gt;
+    <span>{{ product.name }}</span>
+</div>
+
+<div class="product-detail">
+    <div class="product-detail-image">
+        <img src="{{ url_for('static', filename='img/' + product.image) }}" alt="{{ product.name }}">
+    </div>
+    <div class="product-detail-info">
+        <h1>{{ product.name }}</h1>
+        <div class="product-detail-category">Category: {{ product.category }}</div>
+        <div class="product-detail-rating">
+            {% for i in range(5) %}
+            {% if i < product.rating|int %}
+            <i class="fas fa-star"></i>
+            {% elif (product.rating - i) >= 0.5 %}
+            <i class="fas fa-star-half-alt"></i>
+            {% else %}
+            <i class="far fa-star"></i>
+            {% endif %}
+            {% endfor %}
+            <span>{{ product.rating }}</span>
+        </div>
+        <div class="product-detail-price">${{ product.price }}</div>
+        <div class="product-detail-description">
+            <p>{{ product.description }}</p>
+        </div>
+        <div class="product-detail-actions">
+            <div class="quantity-selector">
+                <label for="quantity">Quantity:</label>
+                <select id="quantity">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+            </div>
+            <button class="add-to-cart btn-large">Add to Cart</button>
+            <button class="buy-now btn-large">Buy Now</button>
+        </div>
+        <div class="product-detail-meta">
+            <div class="merchant-id">Merchant ID: {{ product.id }}</div>
+            <div class="dlrm-info">
+                <i class="fas fa-robot"></i> This product may appear in your recommendations based on DLRM analysis.
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="related-products">
+    <h2>You Might Also Like</h2>
+    <div class="product-row">
+        {% for product in related %}
+        <div class="product-card">
+            <div class="product-image">
+                <a href="{{ url_for('product_detail', merchant_id=product.id) }}">
+                    <img src="{{ url_for('static', filename='img/' + product.image) }}" alt="{{ product.name }}">
+                </a>
+            </div>
+            <div class="product-info">
+                <h3><a href="{{ url_for('product_detail', merchant_id=product.id) }}">{{ product.name }}</a></h3>
+                <div class="product-category">{{ product.category }}</div>
+                <div class="product-price">${{ product.price }}</div>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="recommendation-explanation">
+    <h2>How Our Recommendations Work</h2>
+    <div class="explanation-content">
+        <div class="explanation-item">
+            <div class="explanation-icon"><i class="fas fa-user"></i></div>
+            <div class="explanation-text">
+                <h3>User Profile</h3>
+                <p>DLRM analyzes your demographics (age, gender) and behavior patterns.</p>
+            </div>
+        </div>
+        <div class="explanation-item">
+            <div class="explanation-icon"><i class="fas fa-history"></i></div>
+            <div class="explanation-text">
+                <h3>Interaction History</h3>
+                <p>The model learns from your past interactions with products.</p>
+            </div>
+        </div>
+        <div class="explanation-item">
+            <div class="explanation-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="explanation-text">
+                <h3>Prediction</h3>
+                <p>DLRM predicts products you're likely to be interested in.</p>
+            </div>
+        </div>
+        <div class="explanation-item">
+            <div class="explanation-icon"><i class="fas fa-thumbs-up"></i></div>
+            <div class="explanation-text">
+                <h3>Confidence Score</h3>
+                <p>Each recommendation has a confidence score showing how well it matches your preferences.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Product page enhancements
+    document.addEventListener("DOMContentLoaded", function() {
+        // Add to cart button functionality
+        const addToCartBtn = document.querySelector('.add-to-cart.btn-large');
+        if (addToCartBtn) {
+            addToCartBtn.addEventListener('click', function() {
+                const quantity = document.getElementById('quantity').value;
+                alert(`Added ${quantity} item(s) to cart!`);
+            });
+        }
+        
+        // Buy now button functionality
+        const buyNowBtn = document.querySelector('.buy-now');
+        if (buyNowBtn) {
+            buyNowBtn.addEventListener('click', function() {
+                alert('This is a demo site. No actual purchase will be made.');
+            });
+        }
+    });
+</script>
+{% endblock %} 

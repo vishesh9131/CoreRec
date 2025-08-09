@@ -987,31 +987,54 @@ class BST_base(BaseCorerec):
             }, f)
     
     @classmethod
-    def load(self, model_state):
+    def load(cls, path):
+        """
+        Load the model from a file.
+        
+        Args:
+            path: Path to load the model from.
+            
+        Returns:
+            Loaded model.
+        """
+        # Load model state
+        with open(path, 'rb') as f:
+            model_state = pickle.load(f)
+        
+        # Create new model
+        model = cls(
+            name=model_state.get('name', 'BST'),
+            config=model_state.get('config', {}),
+            trainable=model_state.get('trainable', True),
+            verbose=model_state.get('verbose', False),
+            seed=model_state.get('seed', 42)
+        )
+        
         # Restore model state
-        self.user_ids = model_state['user_ids']
-        self.item_ids = model_state['item_ids']
-        self.uid_map = model_state['uid_map']
-        self.iid_map = model_state['iid_map']
-        self.user_sequences = model_state['user_sequences']
-        self.item_features = model_state['item_features']
-        self.feature_field_dims = model_state['feature_field_dims']
-        self.num_users = len(self.user_ids)
-        self.num_items = len(self.item_ids)
+        model.user_ids = model_state.get('user_ids', [])
+        model.item_ids = model_state.get('item_ids', [])
+        model.uid_map = model_state.get('uid_map', {})
+        model.iid_map = model_state.get('iid_map', {})
+        model.user_sequences = model_state.get('user_sequences', [])
+        model.item_features = model_state.get('item_features', {})
+        model.feature_field_dims = model_state.get('feature_field_dims', [])
+        model.num_users = len(model.user_ids)
+        model.num_items = len(model.item_ids)
         
         if 'feature_value_maps' in model_state:
-            self.feature_value_maps = model_state['feature_value_maps']
+            model.feature_value_maps = model_state['feature_value_maps']
         
         # Build model architecture
-        self._build_model()
+        model._build_model()
         
         # Load model weights
-        self.model.load_state_dict(model_state['state_dict'])
+        if 'state_dict' in model_state and model_state['state_dict'] is not None:
+            model.model.load_state_dict(model_state['state_dict'])
         
         # Set fitted flag
-        self.is_fitted = True
+        model.is_fitted = True
         
-        return self
+        return model
     
     def update_incremental(self, new_interactions, new_user_ids=None, new_item_ids=None, new_item_features=None):
         """

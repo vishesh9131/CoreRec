@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}CoreShop - Personalized Shopping with DLRM{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="hero-content">
+        <h1>Welcome to CoreShop</h1>
+        <p>Discover products tailored just for you with our DLRM recommendation system</p>
+        <div class="hero-buttons">
+            <a href="#recommended" class="btn btn-primary">View Recommendations</a>
+            <a href="{{ url_for('category', category='Electronics') }}" class="btn btn-secondary">Browse Products</a>
+        </div>
+    </div>
+</div>
+
+<section class="featured-section">
+    <h2>Featured Products</h2>
+    <div class="product-grid">
+        {% for product in featured %}
+        <div class="product-card">
+            <div class="product-image">
+                <a href="{{ url_for('product_detail', merchant_id=product.id) }}">
+                    <img src="{{ url_for('static', filename='img/' + product.image) }}" alt="{{ product.name }}">
+                </a>
+            </div>
+            <div class="product-info">
+                <h3><a href="{{ url_for('product_detail', merchant_id=product.id) }}">{{ product.name }}</a></h3>
+                <div class="product-category">{{ product.category }}</div>
+                <div class="product-rating">
+                    {% for i in range(5) %}
+                    {% if i < product.rating|int %}
+                    <i class="fas fa-star"></i>
+                    {% elif (product.rating - i) >= 0.5 %}
+                    <i class="fas fa-star-half-alt"></i>
+                    {% else %}
+                    <i class="far fa-star"></i>
+                    {% endif %}
+                    {% endfor %}
+                    <span>{{ product.rating }}</span>
+                </div>
+                <div class="product-price">${{ product.price }}</div>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section id="recommended" class="recommended-section">
+    <div class="section-header">
+        <h2>Recommended for You</h2>
+        <div class="recommendation-info">
+            <i class="fas fa-info-circle"></i>
+            <span class="tooltip">These recommendations are personalized using the DLRM model based on your browsing history and preferences.</span>
+        </div>
+    </div>
+    <div class="product-grid">
+        {% for product in recommended %}
+        <div class="product-card">
+            <div class="product-image">
+                <a href="{{ url_for('product_detail', merchant_id=product.id) }}">
+                    <img src="{{ url_for('static', filename='img/' + product.image) }}" alt="{{ product.name }}">
+                </a>
+                {% if product.score is defined %}
+                <div class="rec-score">
+                    <span title="Recommendation Score: {{ '%.2f'|format(product.score) }}">
+                        <i class="fas fa-thumbs-up"></i> {{ '%.0f'|format(product.score * 100) }}%
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="product-info">
+                <h3><a href="{{ url_for('product_detail', merchant_id=product.id) }}">{{ product.name }}</a></h3>
+                <div class="product-category">{{ product.category }}</div>
+                <div class="product-rating">
+                    {% for i in range(5) %}
+                    {% if i < product.rating|int %}
+                    <i class="fas fa-star"></i>
+                    {% elif (product.rating - i) >= 0.5 %}
+                    <i class="fas fa-star-half-alt"></i>
+                    {% else %}
+                    <i class="far fa-star"></i>
+                    {% endif %}
+                    {% endfor %}
+                    <span>{{ product.rating }}</span>
+                </div>
+                <div class="product-price">${{ product.price }}</div>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="trending-section">
+    <h2>Trending Now</h2>
+    <div class="product-row">
+        {% for product in trending %}
+        <div class="product-card">
+            <div class="product-image">
+                <a href="{{ url_for('product_detail', merchant_id=product.id) }}">
+                    <img src="{{ url_for('static', filename='img/' + product.image) }}" alt="{{ product.name }}">
+                </a>
+            </div>
+            <div class="product-info">
+                <h3><a href="{{ url_for('product_detail', merchant_id=product.id) }}">{{ product.name }}</a></h3>
+                <div class="product-category">{{ product.category }}</div>
+                <div class="product-price">${{ product.price }}</div>
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="about-recommendations">
+    <div class="about-content">
+        <h2>About DLRM Recommendations</h2>
+        <p>The Deep Learning Recommendation Model (DLRM) powering CoreShop's recommendations is a state-of-the-art machine learning model that combines embedding-based approaches with neural networks to deliver highly personalized product suggestions.</p>
+        <p>Our model analyzes your browsing patterns, purchase history, and preferences to suggest products that match your interests. The percentage score shown with each recommended product indicates how confident the model is that you'll be interested in that item.</p>
+        <a href="#" class="btn btn-outline">Learn More</a>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add highlight effect to recommendation section
+    document.addEventListener("DOMContentLoaded", function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('highlight_rec')) {
+            const recSection = document.getElementById('recommended');
+            recSection.classList.add('highlight');
+            recSection.scrollIntoView({ behavior: 'smooth' });
+            
+            setTimeout(() => {
+                recSection.classList.remove('highlight');
+            }, 2000);
+        }
+    });
+</script>
+{% endblock %} 

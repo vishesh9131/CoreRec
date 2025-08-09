@@ -1,0 +1,49 @@
+# Configuration for Multimodal Recommendation Model
+
+# Data Configuration
+data:
+  interactions_file: "interactions.csv"
+  item_metadata_file: "item_metadata.json"
+  image_dir: "images"
+  train_ratio: 0.8
+  user_id_col: "user_id"
+  item_id_col: "item_id"
+  rating_col: "rating"
+  num_negatives: 4
+  preload_images: true
+
+# Model Configuration
+model:
+  name: "multimodal_fusion_model"
+  
+  # Text encoder configuration
+  text_encoder_config:
+    model_name: "distilbert-base-uncased"
+    pooling: "cls"
+    max_length: 512
+    embedding_dim: 768
+    trainable: false
+  
+  # Vision encoder configuration
+  vision_encoder_config:
+    model_name: "google/vit-base-patch16-224"
+    image_size: 224
+    embedding_dim: 768
+    trainable: false
+  
+  # Fusion configuration
+  fusion_type: "attention"  # Options: concat, attention, gating
+  fusion_output_dim: 512
+  
+  # Prediction head configuration
+  prediction_hidden_dims: [256, 128]
+
+# Training Configuration
+training:
+  batch_size: 32
+  learning_rate: 0.001
+  epochs: 20
+  patience: 5
+  use_scheduler: true
+  num_workers: 4
+  save_interval: 1  # Save model every N epochs 

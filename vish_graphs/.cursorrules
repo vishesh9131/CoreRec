@@ -1,0 +1,174 @@
+# .cursor-rules for CoreRec Framework Development
+# Author: Framework Developer working on CoreRec
+# Purpose: Enforce modular, general, and abstract deep learning recommendation system modules
+# Date: March 30, 2025
+
+# Core Philosophy
+PHILOSOPHY: Modules must be highly general and abstract, capable of handling any kind of information (dataset) for any user (researchers, students, companies, etc.). Follow the "Evolving CoreRec's Deep Learning Modules" principles.
+AND REMEMBER DONT USE temsorflow 
+use pytorch only when needed 
+implement mostly everyting from corerec 
+implemernt everyhting from scratch
+make everyghting very modular and easy to understand and extend
+
+# rule to write docstrings for all functions and classes    
+RULE 1: Write docstrings for all functions and classes
+- Write docstrings for all functions and classes.
+- Use Google-style docstrings.
+- draw architecture diagrams for all classes and functions [here be more creative and /,\,|, and your imagination Using ASCII/Unicode arrows ]
+- Example: `def fit(self, data: Any, config: Dict[str, Any]) -> None`
+- in every docstring mention athor name ie Vishesh Yadav (mail : sciencely98@gmail.com)
+
+# General Evolution Principles
+RULE 1: Standardized Interfaces
+- Enforce consistent APIs across all modules (e.g., `fit()`, `predict()`, `save()`, `load()`).
+- Require type hints and docstrings for all public methods.
+- Example: `def fit(self, data: Any, config: Dict[str, Any]) -> None`
+
+RULE 2: Modular Components
+- Design components (e.g., encoders, attention, heads) as standalone, swappable classes.
+- Use dependency injection or factory patterns for component initialization.
+- Example: `self.encoder = EncoderFactory.create(config["encoder_type"])`.
+
+RULE 3: Configuration-Driven
+- Require all modules to accept a YAML/JSON-compatible config dictionary as an optional parameter.
+- Default to sensible values if config is not provided.
+- Example: `def __init__(self, config: Dict[str, Any] = None)`.
+
+RULE 4: Research-Friendly
+- Add hooks for inspecting model internals (e.g., `register_hook(layer_name, callback)`).
+- Support logging of intermediate outputs via a configurable logger.
+- Example: `self.hooks = HookManager()`.
+
+RULE 5: Production-Ready
+- Implement serialization methods (`to_json()`, `from_json()`, `save_weights()`).
+- Optimize for performance with batch processing and vectorized operations.
+- Example: `def save(self, path: str) -> None`.
+
+# Separation of Concerns
+RULE 6: Model Definition vs. Training Logic
+- Define model architecture in a separate class from training logic.
+- Use a `Trainer` class to handle optimization, loss, and training loops.
+- Example: `trainer = Trainer(model, optimizer, loss_fn)`.
+
+RULE 7: Data Processing vs. Model Architecture
+- Isolate data preprocessing in a `DataProcessor` class, independent of the model.
+- Accept raw data as input and output processed tensors or datasets.
+- Example: `processor = DataProcessor(config["data_schema"])`.
+
+RULE 8: Evaluation Metrics vs. Recommendation Generation
+- Separate metric computation (`Evaluator` class) from prediction logic.
+- Support pluggable metrics via a registry.
+- Example: `evaluator = Evaluator(metrics=["precision", "recall"])`.
+
+# Progressive Disclosure
+RULE 9: Simple Interfaces for Beginners
+- Provide high-level APIs with minimal required parameters.
+- Example: `model.fit(data)` defaults to standard settings.
+
+RULE 10: Advanced Options for Experts
+- Expose detailed configuration options via the config dictionary.
+- Example: `config["attention_layers"] = {"type": "multihead", "heads": 4}`.
+
+RULE 11: Sensible Defaults
+- Set default values for all optional parameters to ensure immediate usability.
+- Example: `embedding_dim: int = 64`.
+
+# Composability
+RULE 12: Small, Reusable Components
+- Break down modules into small classes (e.g., `Encoder`, `Aggregator`, `PredictionHead`).
+- Ensure each component can be used independently.
+- Example: `self.head = PredictionHead(config["head_type"])`.
+
+RULE 13: Mix-and-Match Architectures
+- Allow combining components via config or programmatic composition.
+- Example: `model = CoreRecModel(encoder=TextEncoder(), aggregator=MeanAggregator())`.
+
+RULE 14: Interchangeable Loss and Optimizers
+- Support a registry of loss functions and optimizers, selectable via config.
+- Example: `loss_fn = LossRegistry.get(config["loss"])`.
+
+# Extensibility
+RULE 15: Well-Defined Extension Points
+- Use abstract base classes (ABCs) or interfaces for core components.
+- Example: `class Encoder(ABC): @abstractmethod def encode(self, data): pass`.
+
+RULE 16: Subclassing and Behavior Modification
+- Encourage subclassing with clear documentation of overridable methods.
+- Example: `class CustomEncoder(BaseEncoder): def encode(self, data): ...`.
+
+RULE 17: Hooks for Custom Components
+- Provide hooks or callbacks for injecting custom logic.
+- Example: `self.on_batch_end = CallbackList()`.
+
+# Reproducibility
+RULE 18: Deterministic Behavior
+- Enforce seed setting for random operations (e.g., `tf.random.set_seed(seed)`).
+- Example: `def __init__(self, seed: int = 42)`.
+
+RULE 19: Experiment Tracking
+- Integrate logging of hyperparameters, metrics, and model state.
+- Example: `logger.log_config(config)`.
+
+RULE 20: Configuration Serialization
+- Save full config with model weights for reproducibility.
+- Example: `with open("config.yaml", "w") as f: yaml.dump(config, f)`.
+
+# Recommendation-Specific Principles
+RULE 21: Multi-Modal Flexibility
+- Design input layers to handle text, image, graph, or hybrid data via config.
+- Example: `self.encoder = MultiModalEncoder(config["modalities"])`.
+
+RULE 22: Scalability Patterns
+- Implement mini-batch sampling and negative sampling strategies.
+- Example: `sampler = NegativeSampler(config["neg_ratio"])`.
+
+RULE 23: Evaluation Ecosystem
+- Support offline metrics (e.g., NDCG, precision) and online simulation.
+- Example: `metrics = OfflineMetrics(["ndcg@10", "recall@5"])`.
+
+RULE 24: Bias and Fairness Controls
+- Add methods for popularity bias mitigation and diversity control.
+- Example: `self.debias = PopularityDebias(config["debias_strength"])`.
+
+RULE 25: Production Lifecycle Support
+- Include versioning, incremental updates, and monitoring utilities.
+- Example: `model.version = "v1.0"; model.update_incremental(new_data)`.
+
+# Code Style and Enforcement
+STYLE: Follow PEP 8 with 4-space indentation.
+DOCSTRING: Use Google-style docstrings for all classes and methods.
+TYPE_HINTS: Require type hints for all inputs and outputs.
+ERROR_HANDLING: Include try-except blocks for critical operations with meaningful errors.
+TESTING: Suggest unit tests for each module with pytest (e.g., `test_core_rec.py`).
+
+# Example Template
+TEMPLATE: When generating a new CoreRec module, use this structure:
+```python
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional
+import tensorflow as tf
+
+class CoreRecModule(ABC):
+    def __init__(self, config: Optional[Dict[str, Any]] = None, seed: int = 42):
+        """Initialize the module with a config and seed for reproducibility.
+
+        Args:
+            config: Configuration dictionary (YAML/JSON-compatible).
+            seed: Random seed for deterministic behavior.
+        """
+        self.config = config or {}
+        tf.random.set_seed(seed)
+        self.logger = tf.keras.callbacks.CSVLogger("training.log")
+
+    @abstractmethod
+    def forward(self, inputs: Any) -> Any:
+        """Process inputs and return outputs."""
+        pass
+
+    def save(self, path: str) -> None:
+        """Save model weights and config."""
+        self.save_weights(path)
+        with open(f"{path}/config.yaml", "w") as f:
+            import yaml
+            yaml.dump(self.config, f)

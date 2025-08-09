@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ artist_name }} | Spotify Recommender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        .artist-header {
+            display: flex;
+            margin-bottom: 32px;
+        }
+        
+        .artist-icon {
+            width: 240px;
+            height: 240px;
+            margin-right: 32px;
+            border-radius: 50%;
+            background-color: var(--dark-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .artist-icon i {
+            font-size: 80px;
+            color: var(--primary-color);
+        }
+        
+        .artist-details {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        
+        .artist-details h1 {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+        
+        .artist-details p {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        
+        .artist-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .play-btn {
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 30px;
+            padding: 12px 32px;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        
+        .play-btn i {
+            margin-right: 8px;
+        }
+        
+        .text-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .text-card {
+            background-color: var(--dark-card);
+            border-radius: 8px;
+            padding: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .text-card:hover {
+            background-color: var(--dark-hover);
+        }
+        
+        .text-icon {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80px;
+            margin-bottom: 16px;
+        }
+        
+        .text-icon i {
+            font-size: 48px;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fab fa-spotify"></i>
+                <span>Spotify Recommender</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="{{ url_for('liked_songs') }}"><i class="fas fa-heart"></i> Liked Songs</a></li>
+            </ul>
+            <div class="user-section">
+                <div class="user-selection">
+                    <h3>Switch User</h3>
+                    <div class="user-buttons">
+                        <a href="{{ url_for('switch_user', user_id=1) }}" class="user-btn {% if user_id == 1 %}active{% endif %}">User 1</a>
+                        <a href="{{ url_for('switch_user', user_id=2) }}" class="user-btn {% if user_id == 2 %}active{% endif %}">User 2</a>
+                        <a href="{{ url_for('switch_user', user_id=3) }}" class="user-btn {% if user_id == 3 %}active{% endif %}">User 3</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="top-bar">
+                <div class="search-container">
+                    <form action="{{ url_for('search') }}" method="get">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="q" placeholder="Search for songs or artists">
+                    </form>
+                </div>
+                <div class="user-info">
+                    <span>User {{ user_id }}</span>
+                </div>
+            </div>
+
+            <div class="content-scroll">
+                <!-- Artist Header -->
+                <div class="artist-header">
+                    <div class="artist-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="artist-details">
+                        <h1>{{ artist_name }}</h1>
+                        <p>{{ artist_songs|length }} songs</p>
+                        <div class="artist-actions">
+                            <button class="play-btn">
+                                <i class="fas fa-play"></i> Play
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Popular Songs Section -->
+                <section>
+                    <h2>Popular Songs</h2>
+                    <div class="song-list">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Song</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for song in artist_songs %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td><a href="{{ url_for('song_detail', song_key=song.song_key|replace('&', '_and_')) }}">{{ song.song }}</a></td>
+                                    <td>
+                                        <div class="song-actions">
+                                            {% if song.is_liked %}
+                                            <button class="like-btn liked" data-song-key="{{ song.song_key }}">
+                                                <i class="fas fa-heart"></i>
+                                            </button>
+                                            {% else %}
+                                            <button class="like-btn" data-song-key="{{ song.song_key }}">
+                                                <i class="far fa-heart"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Similar Artists Section -->
+                <section>
+                    <h2>Similar Artists</h2>
+                    <div class="text-cards">
+                        {% for artist in similar_artists %}
+                        <div class="text-card">
+                            <div class="text-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="artist-info">
+                                <h3><a href="{{ url_for('artist_page', artist_name=artist.name|replace('&', '_and_')) }}">{{ artist.name }}</a></h3>
+                                <p>{{ artist.song_count }} songs</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html> 

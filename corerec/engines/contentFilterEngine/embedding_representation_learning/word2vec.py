@@ -32,8 +32,10 @@ References:
 """
 
 class Word2Vec(nn.Module):
-    def __init__(self, vocab_size: int, embedding_dim: int):
+    # def __init__(self, vocab_size: int=100000, embedding_dim: int):
+    def __init__(self, vocab_size: int = 10000, vector_size: int = 100, window: int = 5, min_count: int = 1, workers: int = 4, embedding_dim: int=1000):
         super(Word2Vec, self).__init__()
+        self.model = Word2Vec(vocab_size=vocab_size, embedding_dim=vector_size)
         self.embeddings = nn.Embedding(vocab_size, embedding_dim)
 
     def forward(self, inputs):

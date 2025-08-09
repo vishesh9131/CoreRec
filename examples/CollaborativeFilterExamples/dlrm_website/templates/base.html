@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CoreShop - Powered by DLRM{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="/">
+                        <h1>CoreShop</h1>
+                        <span class="tagline">Powered by DLRM Recommendations</span>
+                    </a>
+                </div>
+                <div class="search-bar">
+                    <input type="text" placeholder="Search for products...">
+                    <button><i class="fas fa-search"></i></button>
+                </div>
+                <div class="user-controls">
+                    <div class="user-menu">
+                        <span>Hi, {{ user.name }}</span>
+                        <div class="user-dropdown">
+                            <button class="dropbtn">Switch User <i class="fas fa-caret-down"></i></button>
+                            <div class="dropdown-content">
+                                {% for u in users %}
+                                <a href="{{ url_for('switch_user', user_id=u.id) }}">{{ u.name }}</a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cart">
+                        <a href="#"><i class="fas fa-shopping-cart"></i> Cart (0)</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <nav class="main-nav">
+        <div class="container">
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="{{ url_for('category', category='Electronics') }}">Electronics</a></li>
+                <li><a href="{{ url_for('category', category='Fashion') }}">Fashion</a></li>
+                <li><a href="{{ url_for('category', category='Home & Kitchen') }}">Home & Kitchen</a></li>
+                <li><a href="{{ url_for('category', category='Books') }}">Books</a></li>
+                <li><a href="{{ url_for('category', category='Sports') }}">Sports</a></li>
+                <li><a href="{{ url_for('category', category='Beauty') }}">Beauty</a></li>
+                <li><a href="{{ url_for('category', category='Toys') }}">Toys</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main>
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>About CoreShop</h3>
+                    <p>A demo e-commerce site showcasing DLRM recommendations. This site demonstrates how personalized recommendations can enhance the shopping experience.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="#">About</a></li>
+                        <li><a href="#">Help</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Recommendation Info</h3>
+                    <p>Personalized recommendations are powered by the Deep Learning Recommendation Model (DLRM).</p>
+                    <p>User ID: {{ user.id }}</p>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2024 CoreShop - DLRM Demo | All Rights Reserved</p>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

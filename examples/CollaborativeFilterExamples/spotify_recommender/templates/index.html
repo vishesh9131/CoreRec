@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Recommender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fab fa-spotify"></i>
+                <span>Spotify Recommender</span>
+            </div>
+            <ul class="nav-links">
+                <li class="active"><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="{{ url_for('liked_songs') }}"><i class="fas fa-heart"></i> Liked Songs</a></li>
+            </ul>
+            <div class="user-section">
+                <div class="user-selection">
+                    <h3>Switch User</h3>
+                    <div class="user-buttons">
+                        <a href="{{ url_for('switch_user', user_id=1) }}" class="user-btn {% if user_id == 1 %}active{% endif %}">User 1</a>
+                        <a href="{{ url_for('switch_user', user_id=2) }}" class="user-btn {% if user_id == 2 %}active{% endif %}">User 2</a>
+                        <a href="{{ url_for('switch_user', user_id=3) }}" class="user-btn {% if user_id == 3 %}active{% endif %}">User 3</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="top-bar">
+                <div class="search-container">
+                    <form action="{{ url_for('search') }}" method="get">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="q" placeholder="Search for songs or artists">
+                    </form>
+                </div>
+                <div class="user-info">
+                    <span>User {{ user_id }}</span>
+                </div>
+            </div>
+
+            <div class="content-scroll">
+                <!-- Recommendations Section -->
+                <section class="recommendations-section">
+                    <h2>Recommended for You</h2>
+                    <div class="text-cards">
+                        {% for song in recommendations %}
+                        <div class="text-card">
+                            <div class="text-icon">
+                                <i class="fas fa-music"></i>
+                            </div>
+                            <div class="song-info">
+                                <h3><a href="{{ url_for('song_detail', song_key=song.song_key|replace('&', '_and_')) }}">{{ song.song }}</a></h3>
+                                <p><a href="{{ url_for('artist_page', artist_name=song.artist|replace('&', '_and_')) }}">{{ song.artist }}</a></p>
+                                <div class="song-meta">
+                                    <span class="confidence">Score: {{ "%.2f"|format(song.score) }}</span>
+                                    <span class="reason">{{ song.reason }}</span>
+                                </div>
+                                <div class="song-actions">
+                                    {% if song.is_liked %}
+                                    <button class="like-btn liked" data-song-key="{{ song.song_key }}">
+                                        <i class="fas fa-heart"></i>
+                                    </button>
+                                    {% else %}
+                                    <button class="like-btn" data-song-key="{{ song.song_key }}">
+                                        <i class="far fa-heart"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <!-- Trending Songs -->
+                <section class="trending-section">
+                    <h2>Trending Now</h2>
+                    <div class="song-list">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Song</th>
+                                    <th>Artist</th>
+                                    <th>Popularity</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for song in trending %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td><a href="{{ url_for('song_detail', song_key=song.song_key|replace('&', '_and_')) }}">{{ song.song }}</a></td>
+                                    <td><a href="{{ url_for('artist_page', artist_name=song.artist|replace('&', '_and_')) }}">{{ song.artist }}</a></td>
+                                    <td>
+                                        <div class="popularity-bar">
+                                            <div class="popularity-fill" style="width: {{ song.popularity }}%;"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="song-actions">
+                                            {% if song.is_liked %}
+                                            <button class="like-btn liked" data-song-key="{{ song.song_key }}">
+                                                <i class="fas fa-heart"></i>
+                                            </button>
+                                            {% else %}
+                                            <button class="like-btn" data-song-key="{{ song.song_key }}">
+                                                <i class="far fa-heart"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- New Releases -->
+                <section class="new-releases-section">
+                    <h2>New Releases</h2>
+                    <div class="text-cards">
+                        {% for song in new_releases %}
+                        <div class="text-card">
+                            <div class="text-icon">
+                                <i class="fas fa-compact-disc"></i>
+                            </div>
+                            <div class="song-info">
+                                <h3><a href="{{ url_for('song_detail', song_key=song.song_key|replace('&', '_and_')) }}">{{ song.song }}</a></h3>
+                                <p><a href="{{ url_for('artist_page', artist_name=song.artist|replace('&', '_and_')) }}">{{ song.artist }}</a></p>
+                                <span class="release-date">{{ song.release_date }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <!-- Popular Artists -->
+                <section class="artists-section">
+                    <h2>Popular Artists</h2>
+                    <div class="text-cards">
+                        {% for artist in sample_artists %}
+                        <div class="text-card">
+                            <div class="text-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="artist-info">
+                                <h3><a href="{{ url_for('artist_page', artist_name=artist.name|replace('&', '_and_')) }}">{{ artist.name }}</a></h3>
+                                <p>{{ artist.song_count }} songs</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html> 

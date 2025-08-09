@@ -1,0 +1,355 @@
+/* Base Styles */
+:root {
+    --primary-color: #1DB954;
+    --dark-bg: #121212;
+    --dark-card: #181818;
+    --dark-hover: #282828;
+    --text-color: #FFFFFF;
+    --text-secondary: #b3b3b3;
+    --sidebar-width: 240px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background-color: var(--dark-bg);
+    color: var(--text-color);
+    line-height: 1.5;
+}
+
+a {
+    text-decoration: none;
+    color: var(--text-color);
+}
+
+a:hover {
+    color: var(--primary-color);
+}
+
+/* Container Layout */
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: var(--sidebar-width);
+    height: 100vh;
+    background-color: #000000;
+    padding: 24px 0;
+    position: fixed;
+    overflow-y: auto;
+}
+
+.logo {
+    padding: 0 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.logo i {
+    color: var(--primary-color);
+    margin-right: 10px;
+    font-size: 32px;
+}
+
+.nav-links {
+    list-style: none;
+    margin-bottom: 32px;
+}
+
+.nav-links li {
+    padding: 8px 24px;
+    margin-bottom: 4px;
+}
+
+.nav-links li:hover {
+    background-color: var(--dark-hover);
+}
+
+.nav-links li.active {
+    border-left: 3px solid var(--primary-color);
+    background-color: var(--dark-hover);
+}
+
+.nav-links li a {
+    display: flex;
+    align-items: center;
+}
+
+.nav-links li a i {
+    margin-right: 16px;
+    font-size: 20px;
+}
+
+.user-section {
+    padding: 16px 24px;
+    border-top: 1px solid #282828;
+}
+
+.user-selection h3 {
+    font-size: 14px;
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+}
+
+.user-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.user-btn {
+    padding: 8px 16px;
+    background-color: var(--dark-hover);
+    border-radius: 20px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.user-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.user-btn.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Main Content */
+.main-content {
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+    height: 100vh;
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.top-bar {
+    height: 64px;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 32px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.search-container {
+    position: relative;
+    width: 40%;
+}
+
+.search-container i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+}
+
+.search-container input {
+    width: 100%;
+    padding: 12px 12px 12px 40px;
+    border-radius: 20px;
+    border: none;
+    background-color: var(--dark-hover);
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.search-container input:focus {
+    outline: none;
+    background-color: #333;
+}
+
+.user-info {
+    background-color: #000;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-weight: 600;
+}
+
+.content-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 32px;
+}
+
+/* Section Styles */
+section {
+    margin-bottom: 48px;
+}
+
+section h2 {
+    margin-bottom: 24px;
+    font-size: 24px;
+}
+
+/* Text Card Styles */
+.text-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.text-card {
+    background-color: var(--dark-card);
+    border-radius: 8px;
+    padding: 16px;
+    transition: background-color 0.3s;
+}
+
+.text-card:hover {
+    background-color: var(--dark-hover);
+}
+
+.text-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80px;
+    margin-bottom: 16px;
+}
+
+.text-icon i {
+    font-size: 48px;
+    color: var(--primary-color);
+}
+
+.song-info h3, .artist-info h3 {
+    font-size: 16px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.song-info h3 a, .artist-info h3 a {
+    color: var(--text-color);
+}
+
+.song-info h3 a:hover, .artist-info h3 a:hover {
+    color: var(--primary-color);
+}
+
+.song-info p, .artist-info p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.song-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.confidence {
+    margin-bottom: 4px;
+    color: var(--primary-color);
+}
+
+.song-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.like-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 4px 8px;
+}
+
+.like-btn:hover {
+    color: var(--primary-color);
+}
+
+.like-btn.liked {
+    color: var(--primary-color);
+}
+
+/* Song List Styles */
+.song-list {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead {
+    border-bottom: 1px solid #333;
+}
+
+th, td {
+    padding: 16px 8px;
+    text-align: left;
+}
+
+tbody tr {
+    transition: background-color 0.3s;
+}
+
+tbody tr:hover {
+    background-color: var(--dark-hover);
+}
+
+.popularity-bar {
+    width: 100%;
+    height: 4px;
+    background-color: #333;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.popularity-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+    border-radius: 2px;
+}
+
+.release-date {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* No Results Styles */
+.no-results, .no-songs {
+    text-align: center;
+    padding: 48px 0;
+    color: var(--text-secondary);
+}
+
+.no-results p, .no-songs p {
+    margin-bottom: 16px;
+}
+
+.no-results a, .no-songs a {
+    display: inline-block;
+    margin-top: 16px;
+} 

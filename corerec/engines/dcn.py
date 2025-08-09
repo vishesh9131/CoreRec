@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 from scipy.sparse import csr_matrix
 from corerec.base_recommender import BaseCorerec
 

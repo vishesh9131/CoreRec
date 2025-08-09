@@ -1,0 +1,1 @@
+# Tests for CoreRec neural network models 

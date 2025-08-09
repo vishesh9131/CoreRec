@@ -1,5 +1,5 @@
 from corerec import cf_engine as cf
-from cr_learn import ml_1m as ml
+from cr_learn_setup.cr_learn import ml_1m as ml
 
 data = ml.load()
 cfg = 'examples/ContentFilterExamples/context_config.json'  

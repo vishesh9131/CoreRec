@@ -367,50 +367,37 @@ class DeepCrossing_base(BaseCorerec):
     def __init__(
         self,
         name: str = "DeepCrossing",
-        embedding_dim: int = 16,
-        hidden_units: List[int] = None,
-        num_residual_units: int = 2,
-        dropout: float = 0.1,
-        activation: str = 'ReLU',
-        batch_size: int = 256,
-        learning_rate: float = 0.001,
-        num_epochs: int = 10,
-        seed: Optional[int] = None,
-        device: Optional[str] = None,
-        verbose: bool = True
+        config: Optional[Dict[str, Any]] = None,
+        trainable: bool = True,
+        verbose: bool = True,
+        seed: int = 42
     ):
         """
-        Initialize the Deep Crossing model.
+        Initialize the DeepCrossing model.
         
         Args:
-            name: Name of the model.
-            embedding_dim: Dimension of feature embeddings.
-            hidden_units: List of hidden unit sizes. Default [64, 32, 16].
-            num_residual_units: Number of residual units per hidden layer.
-            dropout: Dropout rate.
-            activation: Activation function for residual units.
-            batch_size: Batch size for training.
-            learning_rate: Learning rate.
-            num_epochs: Number of training epochs.
+            name: Model name.
+            config: Configuration dictionary.
+            trainable: Whether the model is trainable.
+            verbose: Whether to print verbose output.
             seed: Random seed for reproducibility.
-            device: Device to run on ('cpu' or 'cuda').
-            verbose: Whether to display progress logs.
-            
-        Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
-        super().__init__()
-        self.name = name
-        self.embedding_dim = embedding_dim
-        self.hidden_units = hidden_units or [64, 32, 16]
-        self.num_residual_units = num_residual_units
-        self.dropout = dropout
-        self.activation = activation
-        self.batch_size = batch_size
-        self.learning_rate = learning_rate
-        self.num_epochs = num_epochs
+        super().__init__(name, trainable, verbose)
+        
+        # Set default config if none is provided
+        if config is None:
+            config = {}
+            
+        self.embedding_dim = config.get('embedding_dim', 16)
+        self.hidden_units = config.get('hidden_units', [64, 32, 16])
+        self.num_residual_units = config.get('num_residual_units', 2)
+        self.dropout = config.get('dropout', 0.1)
+        self.activation = config.get('activation', 'ReLU')
+        self.batch_size = config.get('batch_size', 256)
+        self.learning_rate = config.get('learning_rate', 0.001)
+        self.num_epochs = config.get('num_epochs', 10)
         self.seed = seed or np.random.randint(1000000)
-        self.device = torch.device(device if device else ('cuda' if torch.cuda.is_available() else 'cpu'))
-        self.verbose = verbose
+        self.device = torch.device(config.get('device', 'cuda' if torch.cuda.is_available() else 'cpu'))
         
         # For tracking training progress
         self.train_loss_history = []
@@ -895,13 +882,19 @@ class DeepCrossing_base(BaseCorerec):
         # Create instance
         instance = cls(
             name=os.path.basename(filepath).split('.')[0],
-            embedding_dim=model_data['model_config']['embedding_dim'],
-            hidden_units=model_data['model_config']['hidden_units'],
-            num_residual_units=model_data['model_config']['num_residual_units'],
-            dropout=model_data['model_config']['dropout'],
-            activation=model_data['model_config']['activation'],
-            seed=model_data['seed'],
-            device=device
+            config={
+                'embedding_dim': model_data['model_config']['embedding_dim'],
+                'hidden_units': model_data['model_config']['hidden_units'],
+                'num_residual_units': model_data['model_config']['num_residual_units'],
+                'dropout': model_data['model_config']['dropout'],
+                'activation': model_data['model_config']['activation'],
+                'batch_size': model_data['model_config']['batch_size'],
+                'learning_rate': model_data['model_config']['learning_rate'],
+                'num_epochs': model_data['model_config']['num_epochs'],
+                'seed': model_data['seed'],
+                'device': device
+            },
+            verbose=True
         )
         
         # Restore feature information

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoreRec Demo Frontends</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">🚀 CoreRec Demo Frontends</h1>
+                <p class="tagline">Experience your recommendation models through beautiful, platform-authentic interfaces</p>
+            </div>
+            <div class="header-bg"></div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="intro">
+                <h2>Choose Your Platform</h2>
+                <p>Select a platform to demonstrate your recommendation engine in action</p>
+            </div>
+
+            <!-- Platform Cards -->
+            <div class="platforms-grid">
+                <div class="platform-card" data-platform="spotify">
+                    <div class="platform-icon">🎵</div>
+                    <h3 class="platform-name">Spotify</h3>
+                    <p class="platform-description">Music streaming platform with personalized playlists and recommendations</p>
+                    <div class="platform-features">
+                        <span class="feature-tag">Music Discovery</span>
+                        <span class="feature-tag">Audio Features</span>
+                        <span class="feature-tag">Genre Analysis</span>
+                    </div>
+                    <button class="launch-btn" data-platform="spotify">
+                        <span>Launch Spotify Demo</span>
+                        <svg class="arrow" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="platform-card" data-platform="youtube">
+                    <div class="platform-icon">📺</div>
+                    <h3 class="platform-name">YouTube</h3>
+                    <p class="platform-description">Video platform with trending content and personalized video recommendations</p>
+                    <div class="platform-features">
+                        <span class="feature-tag">Video Analytics</span>
+                        <span class="feature-tag">Trending</span>
+                        <span class="feature-tag">Categories</span>
+                    </div>
+                    <button class="launch-btn" data-platform="youtube">
+                        <span>Launch YouTube Demo</span>
+                        <svg class="arrow" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="platform-card" data-platform="netflix">
+                    <div class="platform-icon">🎬</div>
+                    <h3 class="platform-name">Netflix</h3>
+                    <p class="platform-description">Streaming service with movies, TV shows and intelligent content curation</p>
+                    <div class="platform-features">
+                        <span class="feature-tag">Content Curation</span>
+                        <span class="feature-tag">Rating System</span>
+                        <span class="feature-tag">Genres</span>
+                    </div>
+                    <button class="launch-btn" data-platform="netflix">
+                        <span>Launch Netflix Demo</span>
+                        <svg class="arrow" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <section class="features">
+                <h2>Why Use CoreRec Demo Frontends?</h2>
+                <div class="features-grid">
+                    <div class="feature">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Zero Frontend Code</h3>
+                        <p>Focus on your recommendation algorithms, not UI development</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🎨</div>
+                        <h3>Authentic Designs</h3>
+                        <p>Platform-specific interfaces that look and feel like the real thing</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🔧</div>
+                        <h3>Easy Integration</h3>
+                        <p>Drop-in compatibility with any CoreRec recommendation engine</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">📊</div>
+                        <h3>Rich Analytics</h3>
+                        <p>Built-in user interaction tracking and preference learning</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2024 CoreRec. Built for researchers and developers.</p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h3 id="loading-text">Launching Platform...</h3>
+            <p id="loading-details">Setting up your demo environment</p>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html> 

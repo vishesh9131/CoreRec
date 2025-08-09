@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liked Songs | Spotify Recommender</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        .liked-header {
+            display: flex;
+            margin-bottom: 32px;
+            align-items: center;
+        }
+        
+        .liked-icon {
+            width: 240px;
+            height: 240px;
+            margin-right: 32px;
+            background-color: linear-gradient(135deg, #450af5, #c4efd9);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 80px;
+            color: var(--primary-color);
+            background-color: var(--dark-card);
+        }
+        
+        .liked-details {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        
+        .liked-details h1 {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+        
+        .liked-details p {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        
+        .play-all-btn {
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 30px;
+            padding: 12px 32px;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            width: fit-content;
+        }
+        
+        .play-all-btn i {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fab fa-spotify"></i>
+                <span>Spotify Recommender</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a></li>
+                <li class="active"><a href="{{ url_for('liked_songs') }}"><i class="fas fa-heart"></i> Liked Songs</a></li>
+            </ul>
+            <div class="user-section">
+                <div class="user-selection">
+                    <h3>Switch User</h3>
+                    <div class="user-buttons">
+                        <a href="{{ url_for('switch_user', user_id=1) }}" class="user-btn {% if user_id == 1 %}active{% endif %}">User 1</a>
+                        <a href="{{ url_for('switch_user', user_id=2) }}" class="user-btn {% if user_id == 2 %}active{% endif %}">User 2</a>
+                        <a href="{{ url_for('switch_user', user_id=3) }}" class="user-btn {% if user_id == 3 %}active{% endif %}">User 3</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="top-bar">
+                <div class="search-container">
+                    <form action="{{ url_for('search') }}" method="get">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="q" placeholder="Search for songs or artists">
+                    </form>
+                </div>
+                <div class="user-info">
+                    <span>User {{ user_id }}</span>
+                </div>
+            </div>
+
+            <div class="content-scroll">
+                <!-- Liked Songs Header -->
+                <div class="liked-header">
+                    <div class="liked-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="liked-details">
+                        <h1>Liked Songs</h1>
+                        <p>{{ liked_songs|length }} songs</p>
+                        {% if liked_songs %}
+                        <button class="play-all-btn">
+                            <i class="fas fa-play"></i> Play All
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Liked Songs Section -->
+                <section>
+                    {% if liked_songs %}
+                    <div class="song-list">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Song</th>
+                                    <th>Artist</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for song in liked_songs %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td><a href="{{ url_for('song_detail', song_key=song.song_key|replace('&', '_and_')) }}">{{ song.song }}</a></td>
+                                    <td><a href="{{ url_for('artist_page', artist_name=song.artist|replace('&', '_and_')) }}">{{ song.artist }}</a></td>
+                                    <td>
+                                        <div class="song-actions">
+                                            <button class="like-btn liked" data-song-key="{{ song.song_key }}">
+                                                <i class="fas fa-heart"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="no-songs">
+                        <p>You haven't liked any songs yet</p>
+                        <p>Find songs you like and add them to your liked songs</p>
+                        <a href="{{ url_for('index') }}" class="play-all-btn">Explore Songs</a>
+                    </div>
+                    {% endif %}
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html> 

@@ -1,5 +1,3 @@
-# corerec/engines/contentFilterEngine/embedding_representation_learning/doc2vec.py
-
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 """
@@ -52,7 +50,6 @@ class SimpleDoc2Vec:
                              more complex patterns but require more data and computation.
         """
         self.vectorizer = TfidfVectorizer(max_features=vector_size)
-
     def train(self, documents):
         """
         Train the Doc2Vec model on a corpus of documents.
