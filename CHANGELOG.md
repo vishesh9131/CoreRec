@@ -1,108 +1,592 @@
 # CoreRec Changelog
 
-## [v0.5.1.0] - 2025-01-XX
+## [v0.5.1.0] - 2025-08-25
 
 ### Newly Introduced Features
 
 #### Imshow Module - Interactive Visualization System
 - **Imshow Module**: Brand new `imshow/` module for interactive data visualization:
-  - `connector.py` - Data connector utilities for seamless integration
-  - `server.py` - Web server implementation for real-time visualization
-  - `frontends.py` - Multiple frontend interfaces (web, desktop, CLI)
-  - `utils.py` - Visualization utility functions and helpers
-  - `examples.py` - Comprehensive examples demonstrating usage
-  - Interactive plotting and charting capabilities
-  - Real-time data streaming visualization
-  - Customizable dashboard creation
+  - `connector.py` - Data connector utilities for seamless integration with various data sources
+  - `server.py` - Web server implementation for real-time visualization and monitoring
+  - `frontends.py` - Multiple frontend interfaces (web, desktop, CLI) for different use cases
+  - `utils.py` - Visualization utility functions and helpers for common plotting tasks
+  - `examples.py` - Comprehensive examples demonstrating usage patterns and best practices
+  - Interactive plotting and charting capabilities with real-time updates
+  - Real-time data streaming visualization for live monitoring
+  - Customizable dashboard creation for personalized analytics views
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the imshow module
+2. Create a data connector
+3. Start the visualization server
+4. Create interactive plots
+5. Show the plots
+'''
+from corerec.imshow import connector, server, frontends
+
+data_connector = connector.DataConnector()
+data_connector.connect_to_database("postgresql://localhost/mydb")
+
+viz_server = server.VisualizationServer(port=8080)
+viz_server.start()
+
+plot = frontends.WebFrontend()
+plot.create_dashboard(data_connector.get_data())
+plot.show()
+```
 
 #### Core Architecture Overhaul
 - **New Core Module**: Complete restructure with new `core/` directory containing:
-  - `base_model.py` - Unified base model architecture
-  - `embedding_tables/collisionless.py` - Advanced embedding table implementation
-  - `encoders.py` - Flexible encoding system
-  - `losses.py` - Comprehensive loss functions
-  - `towers.py` - Modular tower architecture
+  - `base_model.py` - Unified base model architecture for all recommendation models
+  - `embedding_tables/collisionless.py` - Advanced embedding table implementation with collision-free hashing
+  - `encoders.py` - Flexible encoding system for categorical and numerical features
+  - `losses.py` - Comprehensive loss functions including ranking losses and classification losses
+  - `towers.py` - Modular tower architecture for building complex recommendation models
+
+**Example Usage:**
+```python
+''''
+Steps to do 
+1. Import the core components
+2. Create a base model
+3. Use collision-free embedding tables
+4. Create encoders
+5. Define loss function
+'''
+from corerec.core import base_model, encoders, losses
+from corerec.core.embedding_tables import collisionless
+model = base_model.BaseModel(
+    embedding_dim=128,
+    num_features=1000
+)
+
+embedding_table = collisionless.CollisionlessEmbeddingTable(
+    vocab_size=10000,
+    embedding_dim=128
+)
+
+categorical_encoder = encoders.CategoricalEncoder()
+numerical_encoder = encoders.NumericalEncoder()
+
+loss_fn = losses.RankingLoss(margin=0.1)
+```
 
 #### C++ Extensions & Performance
 - **Native C++ Extensions**: Added `csrc/` directory with:
-  - CMake-based build system for tensor operations
-  - Custom embedding operations (`embedding_ops.cpp/h`)
-  - Python module bindings (`module.cpp/h`)
-  - Tensor manipulation utilities (`tensor.cpp/h`)
-  - Compiled `tensor_ops.so` for high-performance operations
+  - CMake-based build system for tensor operations with optimized compilation
+  - Custom embedding operations (`embedding_ops.cpp/h`) for high-speed embedding lookups
+  - Python module bindings (`module.cpp/h`) for seamless Python integration
+  - Tensor manipulation utilities (`tensor.cpp/h`) for efficient tensor operations
+  - Compiled `tensor_ops.so` for high-performance operations with GPU acceleration support
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the C++ extensions
+2. Use high-performance tensor operations
+3. Build the extensions
+'''
+from corerec.csrc import tensor_ops
+
+result = tensor_ops.fast_embedding_lookup(
+    embedding_table,
+    indices,
+    batch_size=1024
+)
+
+gpu_result = tensor_ops.gpu_tensor_ops(
+    input_tensor,
+    operation="matrix_multiply"
+)
+```
+
+```bash
+# Build the extensions
+python setup.py build_ext --inplace
+```
 
 #### Demo Frontends & Web Interface
 - **Interactive Demo System**: New `demo_frontends/` module featuring:
-  - Multi-platform support (Netflix, Spotify, YouTube)
-  - Web-based frontend with CSS/JS
-  - Backend API (`api.py`)
-  - Frontend manager and launcher
-  - Platform-specific templates and styling
+  - Multi-platform support (Netflix, Spotify, YouTube) with platform-specific interfaces
+  - Web-based frontend with CSS/JS for responsive design and modern UI
+  - Backend API (`api.py`) for RESTful service endpoints
+  - Frontend manager and launcher for easy deployment and management
+  - Platform-specific templates and styling for authentic user experiences
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the demo frontends
+2. Create a Netflix-style frontend
+3. Create a Spotify-style frontend
+4. Use the backend API
+'''
+from corerec.demo_frontends import platforms, backend
+
+netflix_frontend = platforms.NetflixFrontend()
+netflix_frontend.setup_recommendations(movie_data)
+netflix_frontend.launch(port=8000)
+
+spotify_frontend = platforms.SpotifyFrontend()
+spotify_frontend.load_music_data(music_dataset)
+spotify_frontend.start_server(host="0.0.0.0", port=8001)
+
+api = backend.RecommendationAPI()
+api.add_recommendation_engine("collaborative_filtering")
+api.add_recommendation_engine("content_based")
+api.start_api_server(port=5000)
+```
 
 #### Multimodal Support
 - **Multimodal Framework**: Added `multimodal/` module with:
-  - `fusion_model.py` - Multi-modal data fusion capabilities
-  - Example training script (`train_multimodal_model.py`)
-  - Configuration support (`multimodal_config.yaml`)
+  - `fusion_model.py` - Multi-modal data fusion capabilities for text, image, and audio data
+  - Example training script (`train_multimodal_model.py`) for end-to-end multimodal training
+  - Configuration support (`multimodal_config.yaml`) for flexible model configuration
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the multimodal components
+2. Create a multimodal dataset
+3. Create a fusion model
+4. Train the model
+'''
+from corerec.multimodal import fusion_model
+from corerec.data import multimodal_dataset
+
+dataset = multimodal_dataset.MultimodalDataset(
+    text_data=text_files,
+    image_data=image_files,
+    audio_data=audio_files
+)
+
+fusion_model = fusion_model.MultimodalFusionModel(
+    text_encoder="bert",
+    image_encoder="resnet",
+    audio_encoder="wav2vec",
+    fusion_method="attention"
+)
+
+fusion_model.train(
+    dataset,
+    epochs=100,
+    batch_size=32,
+    learning_rate=0.001
+)
+```
 
 #### Hybrid Recommendation Systems
 - **Hybrid Algorithms**: New `hybrid/` module containing:
-  - `prompt_reranker.py` - LLM-based reranking
-  - `retrieval_then_rerank.py` - Two-stage recommendation pipeline
+  - `prompt_reranker.py` - LLM-based reranking using large language models for intelligent reordering
+  - `retrieval_then_rerank.py` - Two-stage recommendation pipeline with retrieval and reranking phases
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the hybrid components
+2. Create a LLM-based reranker
+3. Apply reranking
+4. Use two-stage pipeline
+'''
+from corerec.hybrid import prompt_reranker, retrieval_then_rerank
+
+reranker = prompt_reranker.PromptReranker(
+    model_name="gpt-3.5-turbo",
+    max_tokens=100,
+    temperature=0.7
+)
+
+reranked_items = reranker.rerank(
+    candidate_items=initial_recommendations,
+    user_context=user_profile,
+    reranking_prompt="Rank these items by relevance to user preferences"
+)
+
+pipeline = retrieval_then_rerank.RetrievalThenRerank(
+    retrieval_model="collaborative_filtering",
+    reranking_model="content_based"
+)
+
+final_recommendations = pipeline.recommend(
+    user_id=user_id,
+    top_k=20
+)
+```
 
 #### Retrieval Systems
 - **Retrieval Framework**: Added `retrieval/` module with:
-  - `base_retriever.py` - Abstract retriever interface
-  - `dssm.py` - Deep Structured Semantic Model implementation
+  - `base_retriever.py` - Abstract retriever interface for building custom retrieval systems
+  - `dssm.py` - Deep Structured Semantic Model implementation for semantic search and matching
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the retrieval components
+2. Create a base retriever
+3. Use DSSM for semantic retrieval
+4. Train DSSM
+5. Retrieve similar documents
+'''
+from corerec.retrieval import base_retriever, dssm
+
+class CustomRetriever(base_retriever.BaseRetriever):
+    def retrieve(self, query, top_k=10):
+        return self.search_index.search(query, top_k)
+
+dssm_model = dssm.DSSM(
+    query_encoder="bert",
+    document_encoder="bert",
+    embedding_dim=768
+)
+
+dssm_model.train(
+    query_docs=training_queries,
+    positive_docs=positive_documents,
+    negative_docs=negative_documents
+)
+
+similar_docs = dssm_model.retrieve(
+    query="user search query",
+    top_k=20
+)
+```
 
 #### Tower Architecture
 - **Modular Tower System**: New `towers/` module featuring:
-  - `base_tower.py` - Abstract tower interface
-  - `cnn_tower.py` - CNN-based feature extraction
-  - `fusion_tower.py` - Multi-modal fusion capabilities
-  - `mlp_tower.py` - Multi-layer perceptron tower
-  - `transformer_tower.py` - Transformer-based tower
+  - `base_tower.py` - Abstract tower interface for building custom neural network towers
+  - `cnn_tower.py` - CNN-based feature extraction for image and sequential data processing
+  - `fusion_tower.py` - Multi-modal fusion capabilities for combining different data types
+  - `mlp_tower.py` - Multi-layer perceptron tower for dense feature processing
+  - `transformer_tower.py` - Transformer-based tower for attention-based feature learning
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the tower components
+2. Create a CNN tower
+3. Create a MLP tower
+4. Create a transformer tower
+5. Create a fusion tower
+'''
+from corerec.towers import base_tower, cnn_tower, fusion_tower, mlp_tower, transformer_tower
+
+cnn_tower = cnn_tower.CNNTower(
+    input_channels=3,
+    conv_layers=[64, 128, 256],
+    output_dim=512
+)
+
+mlp_tower = mlp_tower.MLPTower(
+    input_dim=100,
+    hidden_dims=[256, 128, 64],
+    output_dim=32
+)
+
+transformer_tower = transformer_tower.TransformerTower(
+    input_dim=768,
+    num_heads=8,
+    num_layers=6,
+    output_dim=256
+)
+
+fusion_tower = fusion_tower.FusionTower(
+    towers=[cnn_tower, mlp_tower, transformer_tower],
+    fusion_method="concatenate"
+)
+
+combined_features = fusion_tower.forward(
+    image_features=image_data,
+    dense_features=dense_data,
+    text_features=text_data
+)
+```
 
 #### Training Infrastructure
 - **Advanced Training System**: New `trainer/` module with:
-  - `callbacks.py` - Training callbacks and hooks
-  - `metrics.py` - Comprehensive evaluation metrics
-  - `online_trainer.py` - Online learning capabilities
-  - `parameter_sync.py` - Distributed training support
-  - `trainer.py` - Main training orchestration
+  - `callbacks.py` - Training callbacks and hooks for monitoring and intervention during training
+  - `metrics.py` - Comprehensive evaluation metrics including ranking metrics and classification metrics
+  - `online_trainer.py` - Online learning capabilities for real-time model updates
+  - `parameter_sync.py` - Distributed training support for multi-GPU and multi-node training
+  - `trainer.py` - Main training orchestration with advanced scheduling and optimization
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the training components
+2. Create training callbacks
+3. Define evaluation metrics
+4. Create trainer
+5. Train the model
+'''
+from corerec.trainer import trainer, callbacks, metrics, online_trainer
+
+early_stopping = callbacks.EarlyStopping(patience=10, min_delta=0.001)
+model_checkpoint = callbacks.ModelCheckpoint(save_best_only=True)
+tensorboard = callbacks.TensorBoardCallback(log_dir="./logs")
+
+eval_metrics = [
+    metrics.NDCG(k=10),
+    metrics.MAP(k=10),
+    metrics.Precision(k=10),
+    metrics.Recall(k=10)
+]
+
+trainer = trainer.Trainer(
+    model=recommendation_model,
+    optimizer="adam",
+    loss_fn="bpr_loss",
+    callbacks=[early_stopping, model_checkpoint, tensorboard],
+    metrics=eval_metrics
+)
+
+trainer.train(
+    train_dataloader=train_loader,
+    val_dataloader=val_loader,
+    epochs=100,
+    learning_rate=0.001
+)
+
+online_trainer = online_trainer.OnlineTrainer(
+    model=model,
+    update_frequency=1000
+)
+
+online_trainer.update_model(new_data_batch)
+```
 
 #### Data Management
 - **Enhanced Data Pipeline**: New `data/` module containing:
-  - `data.py` - Core data structures
-  - `datasets.py` - Dataset abstractions
-  - `multimodal_dataset.py` - Multi-modal data handling
-  - `see.py` - Data visualization utilities
-  - `streaming_dataloader.py` - Streaming data loading
+  - `data.py` - Core data structures for recommendation data representation and manipulation
+  - `datasets.py` - Dataset abstractions for unified data loading and preprocessing
+  - `multimodal_dataset.py` - Multi-modal data handling for text, image, and audio data
+  - `see.py` - Data visualization utilities for exploratory data analysis
+  - `streaming_dataloader.py` - Streaming data loading for large-scale datasets and real-time processing
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the data components
+2. Create a recommendation dataset
+3. Create a multimodal dataset
+4. Create a streaming dataloader
+5. Process streaming data
+'''
+from corerec.data import data, datasets, multimodal_dataset, streaming_dataloader
+
+dataset = datasets.RecommendationDataset(
+    user_item_interactions=interaction_data,
+    user_features=user_features,
+    item_features=item_features
+)
+
+multimodal_data = multimodal_dataset.MultimodalDataset(
+    text_data=text_files,
+    image_data=image_files,
+    audio_data=audio_files,
+    metadata=metadata
+)
+
+streaming_loader = streaming_dataloader.StreamingDataLoader(
+    data_source="kafka://localhost:9092",
+    batch_size=1024,
+    prefetch_factor=2
+)
+
+for batch in streaming_loader:
+    processed_batch = dataset.preprocess(batch)
+    model.update(processed_batch)
+
+from corerec.data.see import DataVisualizer
+visualizer = DataVisualizer()
+visualizer.plot_user_item_matrix(interaction_matrix)
+visualizer.plot_feature_distributions(feature_data)
+```
 
 #### Utility Framework
 - **Core Utilities**: New `utils/` module with:
-  - `config.py` - Configuration management
-  - `hook_manager.py` - Plugin and hook system
-  - `logging.py` - Advanced logging capabilities
-  - `seed.py` - Reproducibility utilities
+  - `config.py` - Configuration management for model parameters and system settings
+  - `hook_manager.py` - Plugin and hook system for extensible functionality
+  - `logging.py` - Advanced logging capabilities with structured logging and monitoring
+  - `seed.py` - Reproducibility utilities for consistent random number generation and experiment replication
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the utility components
+2. Create a configuration manager
+3. Create a hook manager
+4. Create a logging manager
+5. Create a seed manager
+'''
+from corerec.utils import config, hook_manager, logging, seed
+
+config_manager = config.ConfigManager()
+config_manager.load_config("model_config.yaml")
+model_params = config_manager.get_model_config()
+training_params = config_manager.get_training_config()
+
+hook_manager = hook_manager.HookManager()
+hook_manager.register_hook("pre_training", pre_training_callback)
+hook_manager.register_hook("post_epoch", post_epoch_callback)
+hook_manager.execute_hooks("pre_training", model=model, data=data)
+
+logger = logging.setup_logger(
+    name="recommendation_system",
+    level="INFO",
+    log_file="recommendations.log"
+)
+logger.info("Training started", extra={"epoch": 1, "loss": 0.5})
+
+seed.set_seed(42)  # Set random seed for reproducibility
+random_state = seed.get_random_state()  # Get current random state
+```
 
 #### Optimal Path Module
 - **Optimal Path Framework**: New `optimal_path/` module:
-  - `optimal_path.py` - Path optimization algorithms
-  - Route planning and optimization capabilities
-  - Graph-based path finding
+  - `optimal_path.py` - Path optimization algorithms for recommendation sequence planning
+  - Route planning and optimization capabilities for user journey optimization
+  - Graph-based path finding for recommendation graph traversal and optimization
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the optimal path components
+2. Create a path optimizer
+3. Find optimal path
+4. Plan user journey
+'''
+from corerec.optimal_path import optimal_path
+
+path_optimizer = optimal_path.OptimalPathOptimizer(
+    graph=recommendation_graph,
+    algorithm="dijkstra",
+    weight_function="user_preference"
+)
+
+optimal_path = path_optimizer.find_optimal_path(
+    start_node=user_current_state,
+    end_node=target_recommendation,
+    constraints=user_constraints
+)
+
+journey_planner = optimal_path.UserJourneyPlanner(
+    user_profile=user_profile,
+    available_items=item_catalog
+)
+
+recommended_sequence = journey_planner.plan_journey(
+    max_steps=10,
+    diversity_weight=0.3
+)
+```
 
 #### Judge Module
 - **Model Evaluation System**: New `judge.py` module:
-  - Comprehensive model evaluation framework
-  - Performance benchmarking tools
-  - Model comparison utilities
+  - Comprehensive model evaluation framework for recommendation model assessment
+  - Performance benchmarking tools for comparing different algorithms and configurations
+  - Model comparison utilities for A/B testing and model selection
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the judge components
+2. Create a model evaluator
+3. Evaluate a model
+4. Benchmark models
+5. Compare models
+'''
+from corerec import judge
+
+evaluator = judge.ModelEvaluator(
+    test_data=test_dataset,
+    metrics=["ndcg", "map", "precision", "recall"]
+)
+
+results = evaluator.evaluate_model(
+    model=recommendation_model,
+    test_users=test_users
+)
+
+benchmark_results = evaluator.benchmark_models(
+    models={
+        "collaborative_filtering": cf_model,
+        "content_based": cb_model,
+        "hybrid": hybrid_model
+    },
+    test_data=test_data
+)
+
+comparison = evaluator.compare_models(
+    model_a=model_a,
+    model_b=model_b,
+    significance_level=0.05
+)
+
+report = evaluator.generate_report(
+    results=benchmark_results,
+    output_format="html"
+)
+```
 
 #### SSH Helper
 - **SSH Utilities**: New `sshh.py` module:
-  - SSH connection management
-  - Remote execution capabilities
-  - Secure file transfer utilities
+  - SSH connection management for remote server access and deployment
+  - Remote execution capabilities for distributed training and model deployment
+  - Secure file transfer utilities for model checkpoint synchronization and data transfer
+
+**Example Usage:**
+```python
+'''
+Steps to do 
+1. Import the SSH helper
+2. Create a SSH connection
+3. Execute remote commands
+4. Transfer files
+5. Download files
+'''
+from corerec import sshh
+
+ssh_client = sshh.SSHClient(
+    hostname="remote-server.com",
+    username="user",
+    password="password"
+)
+
+result = ssh_client.execute_command(
+    "python train_model.py --config config.yaml"
+)
+
+ssh_client.upload_file(
+    local_path="model_checkpoint.pth",
+    remote_path="/home/user/models/"
+)
+
+ssh_client.download_file(
+    remote_path="/home/user/results/",
+    local_path="./results/"
+)
+
+deployer = sshh.ModelDeployer(ssh_client)
+deployer.deploy_model(
+    model_path="trained_model.pth",
+    remote_path="/var/www/models/",
+    restart_service=True
+)
+```
 
 ###  Engine Improvements
 
