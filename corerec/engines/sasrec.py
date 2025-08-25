@@ -577,7 +577,7 @@ class SASRec(BaseCorerec):
                                      f"Loss: {loss.item():.4f}")
             
             # Calculate average loss
-            avg_loss = epoch_loss / processed
+            avg_loss = epoch_loss / processed if processed > 0 else float('inf')
             
             # Validation if provided
             metrics = {}

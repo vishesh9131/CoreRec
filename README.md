@@ -455,3 +455,77 @@ Your contributions are greatly appreciated and will help make these tools more e
 VishGraphs is distributed under the following terms:
 
 >The library and utilities are only for research purposes. Please do not use it commercially without the author's (@Vishesh9131) consent.
+
+## Examples and Demos
+
+- **Dataset note (crlearn)**: Examples will try to use the IJCAI dataset via `cr_learn.ijcai.load()` when available. If not available, they fall back to CSVs in `sample_data/`. You don't need to change the scripts; they auto-detect.
+
+- **Deep engines (tiny, runnable demos)**
+
+```bash
+# Deep & Cross Network
+python examples/engines_dcn_example.py
+
+# DeepFM
+python examples/engines_deepfm_example.py
+
+# GNN-based recommender
+python examples/engines_gnnrec_example.py
+
+# MIND (multi-interest) sequential recommender
+python examples/engines_mind_example.py
+
+# NASRec
+python examples/engines_nasrec_example.py
+
+# SASRec (self-attentive sequential)
+python examples/engines_sasrec_example.py
+```
+
+- **UnionizedFilterEngine (collaborative/hybrid)**
+
+```bash
+# FastAI-style embedding dot-bias
+python examples/unionized_fast_example.py
+
+# FastAI-style recommender variant
+python examples/unionized_fast_recommender_example.py
+
+# SAR (item-to-item similarity)
+python examples/unionized_sar_example.py
+
+# RLRMC (Riemannian low-rank)
+python examples/unionized_rlrmc_example.py
+
+# RBM (Restricted Boltzmann Machine)
+python examples/unionized_rbm_example.py
+
+# GeoMLC (geometric matrix completion)
+python examples/unionized_geomlc_example.py
+```
+
+- **Content Filter**
+
+```bash
+# TF-IDF based content filter
+python examples/content_filter_tfidf_example.py
+```
+
+- **Frontends (imshow plug-and-play)**
+
+```bash
+# Minimal plug-and-play frontend server
+python examples/imshow_connector_example.py
+# Then open http://127.0.0.1:8000 in your browser
+```
+
+- **Unified Test Runner**
+
+```bash
+# Discover and run the test suite with a compact report
+python examples/run_all_algo_tests_example.py
+```
+
+Tips
+- All example scripts add the project root to `sys.path` automatically so you can run them directly.
+- If `cr_learn` is installed, examples will prefer it; otherwise they use `sample_data/` CSVs bundled in this repo.
