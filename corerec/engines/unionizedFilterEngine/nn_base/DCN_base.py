@@ -179,20 +179,21 @@ class CrossLayer(nn.Module):
             
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
-        batch_size = x0.size(0)
+        # Convert to float if needed, ensure correct dtype for matmul
+        x0 = x0.float()
+        xl = xl.float()
         
-        # Reshape to perform the cross operation
-        x0_reshaped = x0.unsqueeze(2)  # (batch, input_dim, 1)
-        xl_reshaped = xl.unsqueeze(1)  # (batch, 1, input_dim)
+        # Compute cross term using correct DCN formula: x0 * (xl^T * w) + b + xl
+        # xl^T * w: (batch, input_dim) @ (input_dim, 1) -> (batch, 1)
+        xl_w = torch.matmul(xl, self.weight)  # (batch, 1)
         
-        # Compute the cross term: x0·x_l^T (batch, input_dim, input_dim)
-        cross = torch.bmm(x0_reshaped, xl_reshaped)
+        # x0 * (xl^T * w): element-wise multiply broadcasts correctly
+        cross_term = x0 * xl_w  # (batch, input_dim) * (batch, 1) -> (batch, input_dim)
         
-        # Apply weight and add bias
-        cross_out = torch.matmul(cross.view(batch_size, -1), self.weight) + self.bias.t()
+        # Add bias and residual connection
+        output = cross_term + self.bias.squeeze() + xl  # all (batch, input_dim)
         
-        # Add residual connection
-        return cross_out.view(batch_size, -1) + xl
+        return output
 
 
 class DNN(nn.Module):
@@ -356,6 +357,9 @@ class DCNModel(nn.Module):
             
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
+        # Convert to float to ensure compatibility
+        x = x.float()
+        
         # Cross network
         cross_input = x
         cross_output = x
@@ -559,7 +563,7 @@ class DCN_base(BaseCorerec):
                 feature_type = self.feature_types[col]
             else:
                 # Auto-detect feature type
-                if data[col].dtype == np.object or data[col].nunique() < 10:
+                if data[col].dtype == object or data[col].nunique() < 10:
                     feature_type = 'categorical'
                 else:
                     feature_type = 'numerical'

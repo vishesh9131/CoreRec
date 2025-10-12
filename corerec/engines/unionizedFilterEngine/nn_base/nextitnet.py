@@ -47,6 +47,11 @@ class ResidualBlock(nn.Module):
         self.layer_norm2 = nn.LayerNorm(out_channels)
         
         self.relu = nn.ReLU()
+        
+        # Add projection for residual connection if channel dimensions differ
+        self.downsample = None
+        if in_channels != out_channels:
+            self.downsample = nn.Conv1d(in_channels, out_channels, kernel_size=1)
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -72,8 +77,18 @@ class ResidualBlock(nn.Module):
         out = out.permute(0, 2, 1)  # (batch_size, out_channels, seq_len)
         out = self.relu(out)
         
-        # Residual connection
-        return out + x
+        # Residual connection with dimension matching
+        residual = x
+        if self.downsample is not None:
+            residual = self.downsample(x)
+        
+        # Match sequence length if needed (crop the longer one)
+        if out.size(2) != residual.size(2):
+            min_len = min(out.size(2), residual.size(2))
+            out = out[:, :, :min_len]
+            residual = residual[:, :, :min_len]
+        
+        return out + residual
 
 
 class NextItNetModel(nn.Module):

@@ -142,7 +142,10 @@ class NCFModel(nn.Module):
         mlp_hidden_layers=(128, 64, 32),
         dropout=0.2,
         batch_norm=True,
-        activation='relu'
+        activation='relu',
+        pretrained_user_embeddings=None,
+        pretrained_item_embeddings=None,
+        trainable_embeddings=True
     ):
         """
         Initialize the NCF model.
@@ -167,6 +170,12 @@ class NCFModel(nn.Module):
             Whether to use batch normalization
         activation: str
             Activation function: 'relu', 'leaky_relu', 'tanh', 'sigmoid', or 'gelu'
+        pretrained_user_embeddings: np.ndarray, optional
+            Pretrained user embeddings
+        pretrained_item_embeddings: np.ndarray, optional
+            Pretrained item embeddings
+        trainable_embeddings: bool
+            Whether embeddings are trainable
         """
         super(NCFModel, self).__init__()
         
@@ -181,6 +190,16 @@ class NCFModel(nn.Module):
                 num_items, 
                 embedding_dim=gmf_embedding_dim
             )
+            
+            # Load pretrained embeddings if provided
+            if pretrained_user_embeddings is not None:
+                self.gmf.user_embedding.weight.data.copy_(torch.from_numpy(pretrained_user_embeddings))
+            if pretrained_item_embeddings is not None:
+                self.gmf.item_embedding.weight.data.copy_(torch.from_numpy(pretrained_item_embeddings))
+            
+            # Set trainable status
+            self.gmf.user_embedding.weight.requires_grad = trainable_embeddings
+            self.gmf.item_embedding.weight.requires_grad = trainable_embeddings
         
         # MLP component
         if model_type in ['MLP', 'NeuMF']:
@@ -193,6 +212,16 @@ class NCFModel(nn.Module):
                 batch_norm=batch_norm,
                 activation=activation
             )
+            
+            # Load pretrained embeddings if provided
+            if pretrained_user_embeddings is not None:
+                self.mlp.user_embedding.weight.data.copy_(torch.from_numpy(pretrained_user_embeddings))
+            if pretrained_item_embeddings is not None:
+                self.mlp.item_embedding.weight.data.copy_(torch.from_numpy(pretrained_item_embeddings))
+            
+            # Set trainable status
+            self.mlp.user_embedding.weight.requires_grad = trainable_embeddings
+            self.mlp.item_embedding.weight.requires_grad = trainable_embeddings
         
         # Final prediction layer
         if model_type == 'GMF':
@@ -537,8 +566,10 @@ class NCF(BaseCorerec):
         if self.loss_type == 'bce':
             criterion = nn.BCEWithLogitsLoss()
         elif self.loss_type == 'bpr':
+            import torch.nn.functional as F
             criterion = lambda pos, neg: -F.logsigmoid(pos - neg).mean()
         elif self.loss_type == 'hinge':
+            import torch.nn.functional as F
             criterion = lambda pos, neg: F.relu(1.0 - (pos - neg)).mean()
         else:
             raise ValueError(f"Unsupported loss type: {self.loss_type}")
@@ -574,6 +605,7 @@ class NCF(BaseCorerec):
                 if self.loss_type == 'bce':
                     loss = criterion(predictions, batch_ratings)
                 else:
+                    import torch.nn.functional as F
                     # For BPR and hinge loss, reshape data to have positive and negative pairs
                     loss = 0  # Initialize loss
                     
@@ -613,6 +645,7 @@ class NCF(BaseCorerec):
                     if self.loss_type == 'bce':
                         val_loss = criterion(val_predictions, val_ratings).item()
                     else:
+                        import torch.nn.functional as F
                         # For BPR and hinge loss, we need to compute it differently
                         # This is simplified for validation
                         val_loss = F.binary_cross_entropy_with_logits(

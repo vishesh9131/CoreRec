@@ -194,7 +194,7 @@ class CaserModel(nn.Module):
         fc_dim = num_h_filters * 2 + num_v_filters * embedding_dim
         self.fc1 = nn.Linear(fc_dim, embedding_dim)
         self.dropout = nn.Dropout(dropout_rate)
-        self.fc2 = nn.Linear(embedding_dim, num_items)
+        self.fc2 = nn.Linear(embedding_dim, num_items + 1)  # +1 for padding at index 0
         
     def forward(self, seq_var):
         """
@@ -284,8 +284,9 @@ class Caser_base(BaseCorerec):
             self.config.update(config)
         
         # Initialize model attributes
-        self.user_ids = []
-        self.item_ids = []
+        # Note: user_ids and item_ids are properties in base class, don't set directly
+        self._caser_user_ids = []
+        self._caser_item_ids = []
         self.uid_map = {}
         self.iid_map = {}
         self.num_users = 0
@@ -366,15 +367,15 @@ class Caser_base(BaseCorerec):
         """
         if user_ids is not None:
             # Create mappings
-            self.user_ids = list(user_ids)
-            self.uid_map = {uid: i for i, uid in enumerate(self.user_ids)}
-            self.num_users = len(self.user_ids)
+            self._caser_user_ids = list(user_ids)
+            self.uid_map = {uid: i for i, uid in enumerate(self._caser_user_ids)}
+            self.num_users = len(self._caser_user_ids)
         
         if item_ids is not None:
             # Create mappings
-            self.item_ids = list(item_ids)
-            self.iid_map = {iid: i + 1 for i, iid in enumerate(self.item_ids)}  # +1 for padding at 0
-            self.num_items = len(self.item_ids)
+            self._caser_item_ids = list(item_ids)
+            self.iid_map = {iid: i + 1 for i, iid in enumerate(self._caser_item_ids)}  # +1 for padding at 0
+            self.num_items = len(self._caser_item_ids)
         
         # Sort interactions by timestamp
         interactions_sorted = sorted(interactions, key=lambda x: (x[0], x[2]))
@@ -390,25 +391,25 @@ class Caser_base(BaseCorerec):
                 # Auto-add users and items not in mappings
                 if user_id not in self.uid_map:
                     # Add new user
-                    if not self.user_ids:
-                        self.user_ids = [user_id]
+                    if not self._caser_user_ids:
+                        self._caser_user_ids = [user_id]
                         self.uid_map = {user_id: 0}
                         self.num_users = 1
                     else:
-                        self.user_ids.append(user_id)
-                        self.uid_map[user_id] = len(self.user_ids) - 1
-                        self.num_users = len(self.user_ids)
+                        self._caser_user_ids.append(user_id)
+                        self.uid_map[user_id] = len(self._caser_user_ids) - 1
+                        self.num_users = len(self._caser_user_ids)
                 
                 if item_id not in self.iid_map:
                     # Add new item
-                    if not self.item_ids:
-                        self.item_ids = [item_id]
+                    if not self._caser_item_ids:
+                        self._caser_item_ids = [item_id]
                         self.iid_map = {item_id: 1}  # +1 for padding
                         self.num_items = 1
                     else:
-                        self.item_ids.append(item_id)
-                        self.iid_map[item_id] = len(self.item_ids)  # +1 for padding since we start at 1
-                        self.num_items = len(self.item_ids)
+                        self._caser_item_ids.append(item_id)
+                        self.iid_map[item_id] = len(self._caser_item_ids)  # +1 for padding since we start at 1
+                        self.num_items = len(self._caser_item_ids)
                 
                 # Add to sequence
                 user_idx = self.uid_map[user_id]
@@ -651,7 +652,7 @@ class Caser_base(BaseCorerec):
             scores = torch.sigmoid(logits[0, items_to_score]).cpu().numpy()
         
         # Get item IDs
-        item_ids = [self.item_ids[idx - 1] for idx in items_to_score]
+        item_ids = [self._caser_item_ids[idx - 1] for idx in items_to_score]
         
         # Create (item_id, score) tuples
         item_scores = list(zip(item_ids, scores))
@@ -680,8 +681,8 @@ class Caser_base(BaseCorerec):
         model_state = {
             'model_state_dict': self.model.state_dict(),
             'config': self.config,
-            'user_ids': self.user_ids,
-            'item_ids': self.item_ids,
+            'user_ids': self._caser_user_ids,
+            'item_ids': self._caser_item_ids,
             'uid_map': self.uid_map,
             'iid_map': self.iid_map,
             'user_sequences': self.user_sequences,
@@ -775,8 +776,8 @@ class Caser_base(BaseCorerec):
             new_users = [uid for uid in new_user_ids if uid not in self.uid_map]
             for uid in new_users:
                 self.uid_map[uid] = len(self.uid_map)
-                self.user_ids.append(uid)
-            self.num_users = len(self.user_ids)
+                self._caser_user_ids.append(uid)
+            self.num_users = len(self._caser_user_ids)
             
             # Extend user sequences if needed
             while len(self.user_sequences) < self.num_users:
@@ -793,8 +794,8 @@ class Caser_base(BaseCorerec):
                 # Update item mappings
                 for iid in new_items:
                     self.iid_map[iid] = len(self.iid_map) + 1  # +1 for padding at 0
-                    self.item_ids.append(iid)
-                self.num_items = len(self.item_ids)
+                    self._caser_item_ids.append(iid)
+                self.num_items = len(self._caser_item_ids)
                 
                 # Rebuild model
                 rebuild_model = True
@@ -837,7 +838,7 @@ class Caser_base(BaseCorerec):
         
         # Create mapping from item ID to embedding
         item_embeddings = {}
-        for i, iid in enumerate(self.item_ids):
+        for i, iid in enumerate(self._caser_item_ids):
             item_embeddings[iid] = embeddings[i].tolist()
         
         return item_embeddings
