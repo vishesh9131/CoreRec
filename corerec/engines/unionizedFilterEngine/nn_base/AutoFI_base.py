@@ -80,7 +80,7 @@ class FeaturesEmbedding(nn.Module):
         self.embedding_dim = embedding_dim
         self.field_dims = field_dims
         self.num_fields = len(field_dims)
-        self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.long)
+        self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.int64)
         self.embeddings = nn.ModuleList([
             nn.Embedding(sum(field_dims), embedding_dim)
             for _ in range(self.num_fields)
@@ -135,7 +135,7 @@ class FeaturesLinear(nn.Module):
         self.num_fields = len(field_dims)
         self.fc = nn.Embedding(sum(field_dims), 1)
         self.bias = nn.Parameter(torch.zeros((1,)))
-        self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.long)
+        self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.int64)
         
         # Initialize weights
         nn.init.xavier_uniform_(self.fc.weight.data)

@@ -75,18 +75,23 @@ class DCN(DCN_base):
     ):
         deep_layers = deep_layers or [64, 32, 16]
         
+        # Create config dict for DCN_base
+        config = {
+            'embedding_dim': embedding_dim,
+            'num_cross_layers': num_cross_layers,
+            'deep_layers': deep_layers,
+            'dropout': dropout,
+            'activation': activation,
+            'batch_size': batch_size,
+            'learning_rate': learning_rate,
+            'num_epochs': num_epochs,
+            'device': device
+        }
+        
         super().__init__(
             name=name,
-            embedding_dim=embedding_dim,
-            num_cross_layers=num_cross_layers,
-            deep_layers=deep_layers,
-            dropout=dropout,
-            activation=activation,
-            batch_size=batch_size,
-            learning_rate=learning_rate,
-            num_epochs=num_epochs,
-            seed=seed,
-            device=device
+            config=config,
+            seed=seed
         )
     
     def get_similar_items(self, item_id: str, top_n: int = 10) -> List[Tuple[str, float]]:

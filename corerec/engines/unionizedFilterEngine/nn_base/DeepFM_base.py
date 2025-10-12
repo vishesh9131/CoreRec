@@ -100,7 +100,7 @@ class FeaturesLinear(nn.Module):
         super().__init__()
         self.fc = nn.Embedding(sum(field_dims), 1)
         self.bias = nn.Parameter(torch.zeros((1,)))
-        self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.long)
+        self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.int64)
         
         # Initialize embeddings
         nn.init.xavier_uniform_(self.fc.weight.data)
@@ -140,7 +140,7 @@ class FeaturesEmbedding(nn.Module):
         """
         super().__init__()
         self.embedding = nn.Embedding(sum(field_dims), embed_dim)
-        self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.long)
+        self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.int64)
         
         # Initialize embeddings
         nn.init.xavier_uniform_(self.embedding.weight.data)

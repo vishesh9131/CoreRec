@@ -53,15 +53,18 @@ class AttentionLayer(nn.Module):
         Returns:
             Weighted sum of behavior embeddings [batch_size, embed_dim]
         """
-        # Reshape target to match sequence length
-        target = target.unsqueeze(1)  # [batch_size, 1, embed_dim]
+        # Target is already expanded to [batch_size, seq_len, embed_dim]
+        # No need to unsqueeze if already 3D
+        if target.dim() == 2:
+            target = target.unsqueeze(1)  # [batch_size, 1, embed_dim]
+            target = target.repeat(1, behaviors.size(1), 1)  # [batch_size, seq_len, embed_dim]
         
         # Compute attention weights
         attention_input = torch.cat([
             behaviors,
-            target.repeat(1, behaviors.size(1), 1),
-            behaviors * target.repeat(1, behaviors.size(1), 1),
-            behaviors - target.repeat(1, behaviors.size(1), 1)
+            target,
+            behaviors * target,
+            behaviors - target
         ], dim=-1)
         
         attention_weights = self.attention(attention_input)
