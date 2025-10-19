@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify - CoreRec Demo</title>
+    <link rel="stylesheet" href="css/spotify.css">
+    <link href="https://fonts.googleapis.com/css2?family=Gotham:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fab fa-spotify"></i>
+                <span>Spotify</span>
+            </div>
+        </div>
+        
+        <div class="nav-menu">
+            <ul class="nav-list">
+                <li class="nav-item active">
+                    <a href="#" class="nav-link" data-section="home">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="search">
+                        <i class="fas fa-search"></i>
+                        <span>Search</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-section="library">
+                        <i class="fas fa-book"></i>
+                        <span>Your Library</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="nav-separator"></div>
+            
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-plus-square"></i>
+                        <span>Create Playlist</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-heart"></i>
+                        <span>Liked Songs</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="sidebar-footer">
+            <button class="back-button" onclick="window.history.back()">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Platforms</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="nav-buttons">
+                <button class="nav-btn" disabled>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="nav-btn" disabled>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            
+            <div class="user-menu">
+                <div class="user-profile">
+                    <img src="https://via.placeholder.com/32x32/1db954/ffffff?text=U" alt="User" class="user-avatar">
+                    <span class="user-name">Demo User</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="content-wrapper">
+            <!-- Home Section -->
+            <section id="home-section" class="content-section active">
+                <div class="section-header">
+                    <h1>Good afternoon</h1>
+                </div>
+
+                <!-- Quick Access -->
+                <div class="quick-access">
+                    <div class="quick-item">
+                        <img src="https://via.placeholder.com/80x80/1db954/ffffff?text=♪" alt="Liked Songs" class="quick-image">
+                        <span>Liked Songs</span>
+                    </div>
+                    <div class="quick-item">
+                        <img src="https://via.placeholder.com/80x80/1db954/ffffff?text=♪" alt="Recently Played" class="quick-image">
+                        <span>Recently Played</span>
+                    </div>
+                    <div class="quick-item">
+                        <img src="https://via.placeholder.com/80x80/1db954/ffffff?text=♪" alt="Discover Weekly" class="quick-image">
+                        <span>Discover Weekly</span>
+                    </div>
+                </div>
+
+                <!-- Made for You -->
+                <div class="content-section-wrapper">
+                    <div class="section-title">
+                        <h2>Made for you</h2>
+                        <a href="#" class="show-all">Show all</a>
+                    </div>
+                    <div id="recommendations-grid" class="tracks-grid">
+                        <!-- Recommendations will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Recently Played -->
+                <div class="content-section-wrapper">
+                    <div class="section-title">
+                        <h2>Recently played</h2>
+                        <a href="#" class="show-all">Show all</a>
+                    </div>
+                    <div id="recent-tracks-grid" class="tracks-grid">
+                        <!-- Recent tracks will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Popular Tracks -->
+                <div class="content-section-wrapper">
+                    <div class="section-title">
+                        <h2>Popular right now</h2>
+                        <a href="#" class="show-all">Show all</a>
+                    </div>
+                    <div id="popular-tracks-grid" class="tracks-grid">
+                        <!-- Popular tracks will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Search Section -->
+            <section id="search-section" class="content-section">
+                <div class="search-header">
+                    <h1>Search</h1>
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="search-input" placeholder="What do you want to listen to?" class="search-input">
+                        <button id="clear-search" class="clear-search hidden">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="search-filters">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="genre">Genre</button>
+                    <button class="filter-btn" data-filter="mood">Mood</button>
+                    <button class="filter-btn" data-filter="artist">Artist</button>
+                </div>
+
+                <div id="search-results" class="search-results">
+                    <!-- Search results will be populated by JavaScript -->
+                </div>
+
+                <!-- Browse Categories -->
+                <div class="browse-categories">
+                    <h2>Browse all</h2>
+                    <div class="categories-grid">
+                        <div class="category-card" style="background: linear-gradient(135deg, #1e3264, #8b9dc3);">
+                            <h3>Pop</h3>
+                        </div>
+                        <div class="category-card" style="background: linear-gradient(135deg, #ba5d07, #e8115b);">
+                            <h3>Rock</h3>
+                        </div>
+                        <div class="category-card" style="background: linear-gradient(135deg, #148a08, #b49bc8);">
+                            <h3>Hip-Hop</h3>
+                        </div>
+                        <div class="category-card" style="background: linear-gradient(135deg, #8d67ab, #ba5d07);">
+                            <h3>Electronic</h3>
+                        </div>
+                        <div class="category-card" style="background: linear-gradient(135deg, #e8115b, #509bf5);">
+                            <h3>Jazz</h3>
+                        </div>
+                        <div class="category-card" style="background: linear-gradient(135deg, #b49bc8, #148a08);">
+                            <h3>Classical</h3>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Library Section -->
+            <section id="library-section" class="content-section">
+                <div class="library-header">
+                    <h1>Your Library</h1>
+                    <div class="library-actions">
+                        <button class="library-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button class="library-btn">
+                            <i class="fas fa-sort"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="library-filters">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="playlists">Playlists</button>
+                    <button class="filter-btn" data-filter="artists">Artists</button>
+                    <button class="filter-btn" data-filter="albums">Albums</button>
+                </div>
+
+                <div id="library-content" class="library-content">
+                    <!-- Library content will be populated by JavaScript -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Now Playing Bar -->
+    <footer class="now-playing">
+        <div class="now-playing-track">
+            <div class="track-image">
+                <img id="current-track-image" src="https://via.placeholder.com/56x56/333/fff?text=♪" alt="Current track">
+            </div>
+            <div class="track-info">
+                <div class="track-name" id="current-track-name">Select a track</div>
+                <div class="track-artist" id="current-track-artist">Artist</div>
+            </div>
+            <div class="track-actions">
+                <button class="action-btn">
+                    <i class="far fa-heart"></i>
+                </button>
+                <button class="action-btn">
+                    <i class="fas fa-external-link-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="player-controls">
+            <div class="control-buttons">
+                <button class="control-btn">
+                    <i class="fas fa-random"></i>
+                </button>
+                <button class="control-btn">
+                    <i class="fas fa-step-backward"></i>
+                </button>
+                <button class="control-btn play-btn">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="control-btn">
+                    <i class="fas fa-step-forward"></i>
+                </button>
+                <button class="control-btn">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            <div class="progress-bar">
+                <span class="time-current">0:00</span>
+                <div class="progress-track">
+                    <div class="progress-fill"></div>
+                    <div class="progress-handle"></div>
+                </div>
+                <span class="time-total">0:00</span>
+            </div>
+        </div>
+
+        <div class="volume-controls">
+            <button class="control-btn">
+                <i class="fas fa-list"></i>
+            </button>
+            <button class="control-btn">
+                <i class="fas fa-desktop"></i>
+            </button>
+            <button class="control-btn">
+                <i class="fas fa-volume-up"></i>
+            </button>
+            <div class="volume-bar">
+                <div class="volume-track">
+                    <div class="volume-fill"></div>
+                    <div class="volume-handle"></div>
+                </div>
+            </div>
+            <button class="control-btn">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+    </footer>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="spotify-spinner">
+                <div class="bounce1"></div>
+                <div class="bounce2"></div>
+                <div class="bounce3"></div>
+            </div>
+            <h2>Loading your music...</h2>
+            <p>Getting your personalized recommendations ready</p>
+        </div>
+    </div>
+
+    <script src="js/spotify.js"></script>
+</body>
+</html> 

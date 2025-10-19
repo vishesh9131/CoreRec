@@ -1,0 +1,3 @@
+from .scalable_algorithms import ScalableAlgorithms as PER_SCALABLE_ALGORITHMS
+from .feature_extraction import FeatureExtraction as PER_FEATURE_EXTRACTION
+from .load_balancing import LoadBalancing as PER_LOAD_BALANCING

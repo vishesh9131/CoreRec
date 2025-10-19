@@ -1,0 +1,289 @@
+site_name: CoreRec Documentation
+site_description: Comprehensive documentation for CoreRec - Advanced Recommendation Systems Library
+site_author: Vishesh Yadav
+site_url: https://vishesh9131.github.io/CoreRec/
+
+repo_name: vishesh9131/CoreRec
+repo_url: https://github.com/vishesh9131/CoreRec
+edit_uri: edit/main/docs/
+
+copyright: Copyright &copy; 2024 Vishesh Yadav. For research purposes only.
+
+theme:
+  name: material
+  language: en
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.tabs.link
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+    - content.action.view
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/graph
+    admonition:
+      note: fontawesome/solid/note-sticky
+      abstract: fontawesome/solid/book
+      info: fontawesome/solid/circle-info
+      tip: fontawesome/solid/bullhorn
+      success: fontawesome/solid/check
+      question: fontawesome/solid/circle-question
+      warning: fontawesome/solid/triangle-exclamation
+      failure: fontawesome/solid/bomb
+      danger: fontawesome/solid/skull
+      bug: fontawesome/solid/robot
+      example: fontawesome/solid/flask
+      quote: fontawesome/solid/quote-left
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/vishesh9131/CoreRec
+      name: CoreRec on GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/corerec/
+      name: CoreRec on PyPI
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+  version:
+    provider: mike
+    default: latest
+
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      permalink_title: Anchor link to this section for reference
+  - tables
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/abbreviations.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home:
+    - index.md
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+    - Architecture: getting-started/architecture.md
+  
+  - User Guide:
+    - user-guide/index.md
+    - Basic Concepts: user-guide/basic-concepts.md
+    - Data Preparation: user-guide/data-preparation.md
+    - Model Training: user-guide/model-training.md
+    - Making Predictions: user-guide/making-predictions.md
+    - Model Persistence: user-guide/model-persistence.md
+    - Best Practices: user-guide/best-practices.md
+  
+  - API Reference:
+    - api/index.md
+    - Base Recommender: api/base-recommender.md
+    - Model Interface: api/model-interface.md
+    - Predictor Interface: api/predictor-interface.md
+  
+  - Engines:
+    - engines/index.md
+    - Unionized Filter Engine:
+      - engines/unionized-filter/index.md
+      - Matrix Factorization: engines/unionized-filter/matrix-factorization.md
+      - Neural Network Based: engines/unionized-filter/neural-network.md
+      - Graph Based: engines/unionized-filter/graph-based.md
+      - Attention Mechanisms: engines/unionized-filter/attention-mechanisms.md
+      - Bayesian Methods: engines/unionized-filter/bayesian-methods.md
+      - Sequential Models: engines/unionized-filter/sequential-models.md
+      - Variational Encoders: engines/unionized-filter/variational-encoders.md
+    - Content Filter Engine:
+      - engines/content-filter/index.md
+      - Traditional ML: engines/content-filter/traditional-ml.md
+      - Neural Networks: engines/content-filter/neural-networks.md
+      - Context & Personalization: engines/content-filter/context-personalization.md
+      - Graph-Based: engines/content-filter/graph-based.md
+      - Embedding Learning: engines/content-filter/embedding-learning.md
+      - Hybrid & Ensemble: engines/content-filter/hybrid-ensemble.md
+      - Fairness & Explainability: engines/content-filter/fairness-explainability.md
+      - Learning Paradigms: engines/content-filter/learning-paradigms.md
+      - Special Techniques: engines/content-filter/special-techniques.md
+    - Deep Learning Models:
+      - engines/deep-learning/index.md
+      - DCN (Deep & Cross): engines/deep-learning/dcn.md
+      - DeepFM: engines/deep-learning/deepfm.md
+      - GNNRec: engines/deep-learning/gnnrec.md
+      - MIND: engines/deep-learning/mind.md
+      - NASRec: engines/deep-learning/nasrec.md
+      - SASRec: engines/deep-learning/sasrec.md
+  
+  - Core Components:
+    - core/index.md
+    - Towers:
+      - core/towers/index.md
+      - MLP Tower: core/towers/mlp-tower.md
+      - CNN Tower: core/towers/cnn-tower.md
+      - Transformer Tower: core/towers/transformer-tower.md
+      - Fusion Tower: core/towers/fusion-tower.md
+    - Encoders: core/encoders.md
+    - Embedding Tables: core/embedding-tables.md
+    - Losses: core/losses.md
+    - Base Model: core/base-model.md
+  
+  - Training & Optimization:
+    - training/index.md
+    - Training Pipeline: training/training-pipeline.md
+    - Distributed Training: training/distributed-training.md
+    - Hyperparameter Tuning: training/hyperparameter-tuning.md
+    - Optimizers: training/optimizers.md
+    - Callbacks: training/callbacks.md
+  
+  - Data & Preprocessing:
+    - data/index.md
+    - Data Loading: data/data-loading.md
+    - Feature Engineering: data/feature-engineering.md
+    - Data Transformations: data/transformations.md
+    - Format Master: data/format-master.md
+  
+  - Utilities:
+    - utilities/index.md
+    - Evaluation Metrics: utilities/evaluation-metrics.md
+    - Visualization: utilities/visualization.md
+    - Serialization: utilities/serialization.md
+    - Configuration: utilities/configuration.md
+    - Device Management: utilities/device-management.md
+  
+  - Examples:
+    - examples/index.md
+    - Quick Start Examples:
+      - examples/quickstart/engines-quickstart.md
+      - examples/quickstart/unionized-quickstart.md
+      - examples/quickstart/content-filter-quickstart.md
+    - Engine Examples:
+      - examples/engines/dcn-example.md
+      - examples/engines/deepfm-example.md
+      - examples/engines/gnnrec-example.md
+      - examples/engines/mind-example.md
+      - examples/engines/nasrec-example.md
+      - examples/engines/sasrec-example.md
+    - Unionized Filter Examples:
+      - examples/unionized/fast-example.md
+      - examples/unionized/sar-example.md
+      - examples/unionized/rbm-example.md
+      - examples/unionized/rlrmc-example.md
+      - examples/unionized/geomlc-example.md
+    - Content Filter Examples:
+      - examples/content-filter/tfidf-example.md
+    - Advanced Examples:
+      - examples/advanced/instagram-reels.md
+      - examples/advanced/youtube-moe.md
+      - examples/advanced/dien-example.md
+    - Demo Frontends:
+      - examples/frontends/imshow-connector.md
+  
+  - Testing:
+    - testing/index.md
+    - Unit Tests: testing/unit-tests.md
+    - Integration Tests: testing/integration-tests.md
+    - Smoke Tests: testing/smoke-tests.md
+    - Running Tests: testing/running-tests.md
+  
+  - Advanced Topics:
+    - advanced/index.md
+    - Multi-Modal Learning: advanced/multimodal.md
+    - Hybrid Recommenders: advanced/hybrid.md
+    - Cold Start Problem: advanced/cold-start.md
+    - Scalability: advanced/scalability.md
+    - Production Deployment: advanced/production-deployment.md
+    - Model Serving: advanced/model-serving.md
+  
+  - Contributing:
+    - contributing/index.md
+    - Development Setup: contributing/development-setup.md
+    - Code Style Guide: contributing/code-style.md
+    - Testing Guidelines: contributing/testing-guidelines.md
+    - Documentation: contributing/documentation.md
+    - Pull Request Process: contributing/pull-request.md
+  
+  - About:
+    - about/index.md
+    - Release Notes: about/release-notes.md
+    - Roadmap: about/roadmap.md
+    - FAQ: about/faq.md
+    - License: about/license.md
+    - Contact: about/contact.md
+
