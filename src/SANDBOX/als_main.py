@@ -3,7 +3,6 @@ from collaborative_filtering.als import *
 import vish_graphs as vg
 
 
-
 # Sample ratings matrix (users x items)
 file_path = vg.generate_random_graph(10,file_path='ratings.csv')
 ratings = np.loadtxt(file_path, delimiter=',')
