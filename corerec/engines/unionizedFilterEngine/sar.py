@@ -169,6 +169,9 @@ class SAR(BaseRecommender):
     
     def fit(self, user_ids: List[int], item_ids: List[int], ratings: List[float], 
             timestamps: Optional[List[int]] = None) -> None:
+        
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
         """
         Fit the SAR model.
         
@@ -220,6 +223,11 @@ class SAR(BaseRecommender):
         List[int]
             List of recommended item IDs.
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if user_id not in self.user_to_index:
             return []
         

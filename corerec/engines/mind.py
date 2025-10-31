@@ -5,6 +5,9 @@ import numpy as np
 from typing import List, Dict, Optional, Tuple
 from collections import defaultdict
 from corerec.base_recommender import BaseCorerec
+import logging
+
+logger = logging.getLogger(__name__)
 
 class MIND(BaseCorerec):
     """
@@ -164,6 +167,9 @@ class MIND(BaseCorerec):
     
     def fit(self, user_ids: List[int], item_ids: List[int], timestamps: List[int]) -> None:
         # Create item mapping
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         unique_items = sorted(set(item_ids))
         self.item_map = {item: idx + 1 for idx, item in enumerate(unique_items)}  # +1 for padding
         self.reverse_item_map = {idx: item for item, idx in self.item_map.items()}
@@ -218,7 +224,18 @@ class MIND(BaseCorerec):
         
         # Training loop
         self.model.train()
+        
+        # Check if we have training data
+        if len(train_sequences) == 0:
+            if self.verbose:
+                logger.warning("Warning: No training sequences found. Skipping training.")
+            return
+        
         n_batches = len(train_sequences) // self.batch_size + (1 if len(train_sequences) % self.batch_size != 0 else 0)
+        
+        # Ensure at least 1 batch
+        if n_batches == 0:
+            n_batches = 1
         
         for epoch in range(self.epochs):
             total_loss = 0
@@ -231,6 +248,10 @@ class MIND(BaseCorerec):
             for i in range(n_batches):
                 start_idx = i * self.batch_size
                 end_idx = min((i + 1) * self.batch_size, len(train_sequences))
+                
+                # Skip if batch is empty
+                if start_idx >= end_idx:
+                    continue
                 
                 batch_sequences = shuffled_sequences[start_idx:end_idx]
                 batch_targets = shuffled_targets[start_idx:end_idx]
@@ -261,9 +282,17 @@ class MIND(BaseCorerec):
                 
                 total_loss += loss.item()
             
-            print(f"Epoch {epoch+1}/{self.epochs}, Loss: {total_loss/n_batches:.4f}")
+            # Safe division to avoid ZeroDivisionError
+            avg_loss = total_loss / n_batches if n_batches > 0 else 0
+            if self.verbose:
+                logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
     
     def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if self.model is None:
             raise ValueError("Model has not been trained yet")
         

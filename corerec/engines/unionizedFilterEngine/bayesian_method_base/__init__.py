@@ -5,7 +5,7 @@ from .PGM_uf import PGMUFBase as PGM_UF
 
 from .bpr_base import BPRBase as BAYESIAN_BPR
 from .bprmf_base import BPRMFBase as BAYESIAN_BPRMF
-from .multinomial_vae import MultinomialVAE as BAYESIAN_vae
+# from .multinomial_vae import MultinomialVAE as BAYESIAN_vae  # TODO: Fix implementation
 from .PGM_uf import PGMUFBase as BAYESIAN_PGMUF
 from .vmf_base import VMFBase as BAYESIAN_VMF
 

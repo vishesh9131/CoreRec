@@ -368,6 +368,9 @@ class SASRec(BaseCorerec):
         - item_ids: List of item IDs
         - validation_data: Optional validation data for early stopping
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         self.logger.info(f"Training {self.name} model with {len(user_ids)} users and {len(item_ids)} items")
         
         # Create item mapping
@@ -645,6 +648,11 @@ class SASRec(BaseCorerec):
         Returns:
         - List of recommended item IDs
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if not self.is_fitted:
             raise ValueError("Model has not been trained yet. Call fit() first.")
         

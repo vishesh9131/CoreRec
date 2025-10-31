@@ -1,57 +1,111 @@
 """
-Corerec
-=======
-Maintainer: Vishesh
+CoreRec: Advanced Recommendation Systems Library
+=================================================
 
-<Surya-dev-aye namah>
+CoreRec provides state-of-the-art recommendation algorithms with a unified API.
 
-TL;DR
-------
-  1. If you're using this module, then surely you're in a testing phase for corerec.
-  2. This module is not meant to be used by the end user.
-  3. I'll fix the __init__; it's not yet written well. -Vishesh(Admin)
+Quick Start:
+-----------
+    from corerec import engines
+    
+    # Deep learning models
+    model = engines.DCN(embedding_dim=64)
+    model.fit(user_ids, item_ids, ratings)
+    recs = model.recommend(user_id=123, top_k=10)
+    
+    # Unionized Filter (Collaborative)
+    model = engines.unionized.FastRecommender()
+    
+    # Content Filter
+    model = engines.content.TFIDFRecommender()
 
-Provides
-  1. Graph-based recommendation systems using neural network architectures.
-  2. Various neural network modules and utilities.
-  3. Training and prediction functions for graph data.
+Engine-Level Organization:
+--------------------------
+    from corerec import engines
+    
+    # Deep Learning Models
+    engines.DCN, engines.DeepFM, engines.GNNRec
+    engines.MIND, engines.NASRec, engines.SASRec
+    
+    # Unionized Filter Engine (Collaborative)
+    engines.unionized.FastRecommender
+    engines.unionized.SAR
+    engines.unionized.LightGCN
+    
+    # Content Filter Engine
+    engines.content.TFIDFRecommender
+    engines.content.AttentionMechanisms
+    engines.content.EnsembleRecommender
 
-How to use the documentation
-----------------------------
-Documentation is available in two forms: docstrings provided
-with the code, and a loose standing reference guide.
-
-We recommend exploring the docstrings using
-`IPython <https://ipython.org>`_, an advanced Python shell with
-TAB-completion and introspection capabilities.  See below for further
-instructions.
-
-The docstring examples assume that `engine` has been imported as ``eng``::
-
-  >>> import engine as eng [depereciated --vishesh]
-
-Code snippets are indicated by three greater-than signs::
-
-  >>> x = 42
-  >>> x = x + 1
-
-Use the built-in ``help`` function to view a function's docstring::
-
-  >>> help(eng.train_model)
-  ... # doctest: +SKIP
-
-Available subpackages
----------------------
-torch_nn
-    Neural network modules and utilities.
-cr_boosters
-    Optimizers and boosters for training.
-corerec (replaced core_rec to corerec)
-    Core recommendation system components.
+Author: Vishesh Yadav (sciencely98@gmail.com)
+License: Research purposes only
 """
 
+__version__ = "0.5.1"
+__author__ = "Vishesh Yadav"
+__email__ = "sciencely98@gmail.com"
 
-# from .cf_engine import *
-# from .uf_engine import *
+# ============================================================================
+# HIGH-LEVEL API - Sub-modules for organized access
+# ============================================================================
 
-# from .unionizedFilterEngine import unionizedFilterEngine as UF_Engine
+# Import engines module (provides organized access to all algorithms)
+from . import engines
+
+# Import core components
+from . import core
+
+# Import utilities
+from . import utils
+from . import metrics
+from . import evaluation
+from . import vish_graphs
+from . import visualization
+
+# Import data and training
+from . import data
+from . import training
+from . import trainer
+
+# Import API base classes
+from .api.base_recommender import BaseRecommender
+
+# ============================================================================
+# Backward Compatibility Aliases
+# ============================================================================
+
+# Legacy base class (deprecated but maintained for backward compatibility)
+from .base_recommender import BaseCorerec  # Will show deprecation warning when used
+
+# Legacy imports that some code might depend on
+try:
+    from . import models  # If models module exists
+except ImportError:
+    pass
+
+# ============================================================================
+# __all__ - Controls what gets exported with "from corerec import *"
+# ============================================================================
+
+__all__ = [
+    # Version info
+    '__version__',
+    '__author__',
+    '__email__',
+    
+    # Main modules (Engine-Level Organization)
+    'engines',      # Access all recommendation engines
+    'core',         # Core components (towers, encoders, losses)
+    'training',     # Training utilities
+    'trainer',      # Model trainer
+    'data',         # Data loading and processing
+    'utils',        # Utility functions
+    'metrics',      # Evaluation metrics
+    'evaluation',   # Evaluation tools
+    'vish_graphs',  # Graph visualization
+    'visualization',# Visualization utilities
+    
+    # Base classes
+    'BaseRecommender',
+    'BaseCorerec',  # Deprecated, use BaseRecommender
+]

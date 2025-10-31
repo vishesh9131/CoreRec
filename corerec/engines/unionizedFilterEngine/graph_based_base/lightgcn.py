@@ -9,6 +9,9 @@ import os
 from scipy.sparse import csr_matrix
 
 from ..base_recommender import BaseRecommender
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class LightGCN(BaseRecommender):
@@ -241,6 +244,9 @@ class LightGCN(BaseRecommender):
             user_ids: List of user IDs
             item_ids: List of item IDs
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         # Create mappings
         self._create_mappings(user_ids, item_ids)
         
@@ -295,7 +301,8 @@ class LightGCN(BaseRecommender):
             avg_loss = total_loss / n_batches
             
             if self.verbose and (epoch + 1) % 10 == 0:
-                print(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
+                if self.verbose:
+                    logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
             
             # Early stopping
             if avg_loss < best_loss:
@@ -306,7 +313,7 @@ class LightGCN(BaseRecommender):
                 
             if patience_counter >= self.early_stopping_patience:
                 if self.verbose:
-                    print(f"Early stopping at epoch {epoch+1}")
+                    logger.info(f"Early stopping at epoch {epoch+1}")
                 break
         
         # Get final embeddings
@@ -325,6 +332,11 @@ class LightGCN(BaseRecommender):
         Returns:
             List of recommended item IDs
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if self.user_embedding is None or self.item_embedding is None:
             raise ValueError("Model has not been trained yet")
         

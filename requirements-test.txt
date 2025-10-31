@@ -1,0 +1,17 @@
+# CoreRec Testing Dependencies
+# Minimal set for CI/CD testing
+
+# Core requirements
+-r requirements.txt
+
+# Testing framework
+pytest>=7.0.0,<9.0.0
+pytest-cov>=3.0.0,<6.0.0
+pytest-xdist>=2.5.0,<4.0.0
+pytest-mock>=3.6.0,<4.0.0
+pytest-timeout>=2.1.0,<3.0.0
+
+# For testing specific features
+responses>=0.20.0,<1.0.0  # Mock HTTP requests
+freezegun>=1.2.0,<2.0.0  # Mock datetime
+

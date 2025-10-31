@@ -14,7 +14,12 @@ from corerec.sshh import *
 
 
 class BaseCorerec(ABC):
-    """Generic class for a recommender model. All recommendation models should inherit from this class.
+    """
+    DEPRECATED: Use corerec.api.base_recommender.BaseRecommender instead.
+    
+    This class is maintained for backward compatibility but will be removed in v1.0.0.
+    
+    Generic class for a recommender model. All recommendation models should inherit from this class.
 
     Parameters
     ----------------
@@ -60,6 +65,14 @@ class BaseCorerec(ABC):
     """
 
     def __init__(self, name: str, trainable: bool = True, verbose: bool = False):
+        # Issue deprecation warning
+        warnings.warn(
+            "BaseCorerec is deprecated and will be removed in v1.0.0. "
+            "Please use corerec.api.base_recommender.BaseRecommender instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        
         self.name = name
         self.trainable = trainable
         self.verbose = verbose

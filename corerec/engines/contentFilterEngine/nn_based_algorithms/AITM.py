@@ -8,6 +8,9 @@ from corerec.engines.contentFilterEngine.multi_modal_cross_domain_methods import
     MUL_MULTI_MODAL, MUL_CROSS_DOMAIN, MUL_CROSS_LINGUAL
 )
 from corerec.engines.contentFilterEngine.learning_paradigms.transfer_learning import TransferLearningLearner
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Define SourceModel and TargetModel
 class SourceModel(nn.Module):
@@ -71,7 +74,8 @@ class AITM:
                 loss = criterion(target_output, y)
                 loss.backward()
                 optimizer.step()
-            print(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss.item()}")
+            if self.verbose:
+                logger.info(f"Epoch {epoch+1}/{num_epochs}, Loss: {loss.item()}")
 
     def evaluate(self, data_loader, criterion):
         self.source_model.eval()
@@ -83,7 +87,8 @@ class AITM:
                 target_output = self.target_model(source_output)
                 loss = criterion(target_output, y)
                 total_loss += loss.item()
-        print(f"Evaluation Loss: {total_loss / len(data_loader)}")
+        if self.verbose:
+            logger.info(f"Evaluation Loss: {total_loss / len(data_loader)}")
 
     def transfer_knowledge(self, data_loader, criterion, optimizer, num_epochs):
         transfer_learner = TransferLearningLearner(self.target_model, data_loader, criterion, optimizer, num_epochs)

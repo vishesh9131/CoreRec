@@ -7,6 +7,9 @@ import pickle
 from scipy.sparse import csr_matrix
 
 from .base_recommender import BaseRecommender
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class RBM(BaseRecommender):
@@ -272,6 +275,9 @@ class RBM(BaseRecommender):
         item_ids : List[int]
             List of item IDs
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         # Create mappings
         self._create_mappings(user_ids, item_ids)
         
@@ -309,7 +315,8 @@ class RBM(BaseRecommender):
             self.train_errors.append(epoch_error)
             
             if self.verbose and (epoch + 1) % 5 == 0:
-                print(f"Epoch {epoch + 1}/{self.n_epochs}, Reconstruction Error: {epoch_error:.4f}")
+                if self.verbose:
+                    logger.error(f"Epoch {epoch + 1}/{self.n_epochs}, Reconstruction Error: {epoch_error:.4f}")
     
     def _predict_user(self, user_id: int) -> torch.Tensor:
         """
@@ -359,6 +366,11 @@ class RBM(BaseRecommender):
         List[int]
             List of recommended item IDs
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if user_id not in self.user_to_index:
             raise ValueError(f"User ID {user_id} not found in training data")
         

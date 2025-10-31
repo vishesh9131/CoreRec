@@ -27,6 +27,9 @@ class COLD_START:
             item_features: Content features of items
             interaction_matrix: User-item interaction matrix (optional)
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         self.item_features = self.scaler.fit_transform(item_features)
         
         if interaction_matrix is not None:

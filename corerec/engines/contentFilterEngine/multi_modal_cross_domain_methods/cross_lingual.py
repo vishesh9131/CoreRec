@@ -1,6 +1,9 @@
 # cross_lingual implementation
 import torch
 import torch.nn as nn
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CROSS_LINGUAL:
     def __init__(self, multilingual_model):
@@ -44,7 +47,8 @@ class CROSS_LINGUAL:
                 loss = criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
-            print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}")
+            if self.verbose:
+                logger.info(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}")
 
     def evaluate(self, data_loader, criterion):
         """
@@ -63,4 +67,5 @@ class CROSS_LINGUAL:
                 loss = criterion(outputs, labels)
                 total_loss += loss.item()
         
-        print(f"Evaluation Loss: {total_loss / len(data_loader):.4f}")
+        if self.verbose:
+            logger.info(f"Evaluation Loss: {total_loss / len(data_loader):.4f}")

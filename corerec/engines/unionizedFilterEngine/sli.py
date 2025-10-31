@@ -9,6 +9,9 @@ import pickle
 import json
 
 from .base_recommender import BaseRecommender
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SLiRec(BaseRecommender):
@@ -330,6 +333,9 @@ class SLiRec(BaseRecommender):
         item_ids : List[int]
             List of item IDs
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         # Create mappings
         self._create_mappings(user_ids, item_ids)
         
@@ -382,7 +388,8 @@ class SLiRec(BaseRecommender):
                 total_loss += loss.item()
             
             avg_loss = total_loss / n_batches
-            print(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
+            if self.verbose:
+                logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
     
     def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
         """
@@ -402,6 +409,11 @@ class SLiRec(BaseRecommender):
         List[int]
             List of recommended item IDs
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if user_id not in self.user_id_map:
             return []  # User not in training data
         

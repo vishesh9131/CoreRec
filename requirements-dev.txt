@@ -1,0 +1,40 @@
+# CoreRec Development Dependencies
+# Install with: pip install -r requirements-dev.txt
+
+# First install core requirements
+-r requirements.txt
+
+# Testing
+pytest>=7.0.0,<9.0.0
+pytest-cov>=3.0.0,<6.0.0
+pytest-xdist>=2.5.0,<4.0.0  # For parallel test execution
+pytest-mock>=3.6.0,<4.0.0
+
+# Code Quality
+black>=22.0.0,<25.0.0  # Code formatter
+flake8>=4.0.0,<8.0.0  # Linter
+mypy>=0.950,<2.0.0  # Type checker
+isort>=5.10.0,<6.0.0  # Import sorter
+pylint>=2.12.0,<4.0.0  # Additional linter
+
+# Documentation
+mkdocs>=1.4.0,<2.0.0
+mkdocs-material>=9.0.0,<10.0.0
+mkdocstrings[python]>=0.19.0,<1.0.0
+
+# Security
+bandit>=1.7.0,<2.0.0  # Security linter
+safety>=2.0.0,<4.0.0  # Dependency vulnerability scanner
+
+# Build tools
+build>=0.8.0,<2.0.0
+twine>=4.0.0,<6.0.0  # For PyPI uploads
+wheel>=0.37.0,<1.0.0
+
+# Pre-commit hooks
+pre-commit>=2.15.0,<4.0.0
+
+# Jupyter (for development notebooks)
+jupyter>=1.0.0,<2.0.0
+ipykernel>=6.0.0,<7.0.0
+

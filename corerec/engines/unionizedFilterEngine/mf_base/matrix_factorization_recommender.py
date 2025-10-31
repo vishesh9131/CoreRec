@@ -4,6 +4,15 @@ from typing import List , Optional
 from scipy.sparse import csr_matrix
 from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_base import MatrixFactorizationBase
 
+from corerec.utils.validation import (
+    validate_fit_inputs,
+    validate_user_id,
+    validate_item_id,
+    validate_top_k,
+    validate_model_fitted,
+    ValidationError
+)
+
 class MatrixFactorizationRecommender(MatrixFactorizationBase):
     def __init__(self, num_factors: int = 20, learning_rate: float = 0.01, 
                  reg_user: float = 0.02, reg_item: float = 0.02, 
@@ -23,6 +32,11 @@ class MatrixFactorizationRecommender(MatrixFactorizationBase):
         Returns:
         - List[int]: List of recommended item IDs.
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if self.user_factors is None or self.item_factors is None:
             raise ValueError("The model has not been trained yet. Please call the 'fit' method first.")
         

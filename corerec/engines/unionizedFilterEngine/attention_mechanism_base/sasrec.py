@@ -9,6 +9,9 @@ import pickle
 import math
 
 from ..base_recommender import BaseRecommender
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PointWiseFeedForward(nn.Module):
     """
@@ -322,6 +325,9 @@ class SASRec(BaseRecommender):
         timestamps : List[int]
             List of timestamps.
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         # Create mappings and user sequences
         self._create_mappings(user_ids, item_ids, timestamps)
         
@@ -388,7 +394,8 @@ class SASRec(BaseRecommender):
             
             # Print progress
             if (epoch + 1) % 10 == 0:
-                print(f"Epoch {epoch + 1}/{self.num_epochs}, Loss: {epoch_loss / n_train:.4f}")
+                if self.verbose:
+                    logger.info(f"Epoch {epoch + 1}/{self.num_epochs}, Loss: {epoch_loss / n_train:.4f}")
     
     def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
         """
@@ -409,6 +416,11 @@ class SASRec(BaseRecommender):
         List[int]
             List of recommended item IDs.
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if user_id not in self.user_sequences:
             return []
         

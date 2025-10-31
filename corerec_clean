@@ -1,0 +1,7 @@
+#!/bin/bash
+# CoreRec CLI wrapper that suppresses all warnings
+export MKL_THREADING_LAYER=GNU
+export MKL_SERVICE_FORCE_INTEL=1
+export TF_CPP_MIN_LOG_LEVEL=3
+corerec "$@" 2>/dev/null
+

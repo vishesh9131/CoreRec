@@ -11,6 +11,9 @@ import math
 
 from .base_recommender import BaseRecommender
 from .device_manager import DeviceManager
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SUMModel(BaseRecommender):
@@ -371,7 +374,11 @@ class SUMModel(BaseRecommender):
         timestamps : List[int]
             List of timestamps
         """
-        print(f"Training SUM model on device: {self.device}")
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
+        if self.verbose:
+            logger.info(f"Training SUM model on device: {self.device}")
         
         # Create mappings
         self._create_mappings(user_ids, item_ids)
@@ -458,15 +465,17 @@ class SUMModel(BaseRecommender):
                     total_loss += loss.item() * len(batch_data)
                 
                 avg_loss = total_loss / n_train
-                print(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
+                if self.verbose:
+                    logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
             
             # Store user sequences for recommendation
             self.user_sequences = user_sequences
             
         except RuntimeError as e:
             if "MPS" in str(e):
-                print(f"MPS error encountered: {str(e)}")
-                print("Falling back to CPU...")
+                if self.verbose:
+                    logger.error(f"MPS error encountered: {str(e)}")
+                logger.info("Falling back to CPU...")
                 self.device = 'cpu'
                 self.torch_device = torch.device('cpu')
                 self._build_model()  # Rebuild model on CPU
@@ -492,6 +501,11 @@ class SUMModel(BaseRecommender):
         List[int]
             List of recommended item IDs
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if user_id not in self.user_id_map:
             return []  # User not in training data
         

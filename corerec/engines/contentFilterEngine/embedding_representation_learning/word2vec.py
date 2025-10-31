@@ -5,6 +5,9 @@ import torch
 import corerec.torch_nn as nn
 import torch.optim as optim
 from typing import List, Dict, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 """
 Word2Vec Implementation for Word Embedding Generation
@@ -61,7 +64,8 @@ class Word2VecTrainer:
                 self.optimizer.step()
 
                 total_loss += loss.item()
-            print(f'Epoch {epoch}, Loss: {total_loss}')
+            if self.verbose:
+                logger.info(f'Epoch {epoch}, Loss: {total_loss}')
 
     def get_embedding(self, word_index: int) -> List[float]:
         with torch.no_grad():

@@ -70,26 +70,51 @@ VishGraphs is your ultimate Python library for graph visualization and analysis.
     Installation
 </h2>
 
-Install sspipe using pip:
+Install CoreRec using pip:
 ```bash
 pip install --upgrade corerec
 ```
-Then import it in your scripts.
+
+### Quick Start Examples
 
 ```python
-import engine.core_rec as cr
-import engine.vish_graphs as vg
+# Modern API (Recommended)
+from corerec import engines
+
+# Example 1: Deep Learning Models
+model = engines.DCN(embedding_dim=64)
+model.fit(user_ids, item_ids, ratings)
+recommendations = model.recommend(user_id=123, top_k=10)
+
+# Example 2: Collaborative Filtering
+from corerec.engines import unionized
+collab_model = unionized.FastRecommender()
+collab_model.fit(user_ids, item_ids, ratings)
+
+# Example 3: Content-Based Filtering
+from corerec.engines import content
+content_model = content.TFIDFRecommender()
+content_model.fit(item_features)
+
+# Example 4: Graph-Based Recommendations
+from corerec import core_rec
+# For graph neural network models
+from corerec.core_rec import GraphTransformerV2, train_model, predict
 ```
-### Optimizers / Boosters
-In case you wanna use optimizers from corerec.
-Eg:
+
+### Using Optimizers / Boosters
+CoreRec provides various optimizers for training models:
 
 ```python
-from engine.cr_boosters.adam import Adam
-```
-CoreRec has Various in-built optimizers for training models.
+from corerec.cr_boosters.adam import Adam
+from corerec.cr_boosters.nadam import NAdam
 
-#### Available Optimizers for the reco :
+# Use with your model
+optimizer = Adam(model.parameters(), lr=0.001)
+```
+CoreRec has various in-built optimizers for training models.
+
+### Available Optimizers
  
 
 - **Adam**

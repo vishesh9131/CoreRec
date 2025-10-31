@@ -1,9 +1,23 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import logging
 from typing import List, Dict, Optional, Tuple, Any
 from scipy.sparse import csr_matrix
+from tqdm import tqdm
+
 from corerec.base_recommender import BaseCorerec
+from corerec.utils.validation import (
+    validate_fit_inputs,
+    validate_user_id,
+    validate_top_k,
+    validate_model_fitted,
+    validate_embeddings_dim,
+    ValidationError
+)
+from corerec.utils.training_utils import EarlyStopping, ModelCheckpoint
+
+logger = logging.getLogger(__name__)
 
 class DCN(BaseCorerec):
     """
@@ -15,6 +29,26 @@ class DCN(BaseCorerec):
     
     Reference:
     Wang et al. "Deep & Cross Network for Ad Click Predictions" (2017)
+    
+    Args:
+        name: Model name for identification
+        embedding_dim: Dimension of feature embeddings (default: 16)
+        num_cross_layers: Number of cross network layers (default: 3)
+        deep_layers: List of hidden layer sizes for deep network (default: [128, 64])
+        dropout: Dropout rate (default: 0.2)
+        learning_rate: Learning rate for optimizer (default: 0.001)
+        batch_size: Training batch size (default: 256)
+        epochs: Number of training epochs (default: 20)
+        early_stopping_patience: Patience for early stopping, None to disable (default: 5)
+        checkpoint_dir: Directory to save checkpoints, None to disable (default: None)
+        trainable: Whether model is trainable (default: True)
+        verbose: Whether to print training progress (default: False)
+        device: Device for computation ('cuda' or 'cpu', default: auto-detect)
+        
+    Example:
+        >>> model = DCN(embedding_dim=64, epochs=20, verbose=True)
+        >>> model.fit(user_ids=[1,2,3], item_ids=[10,20,30], ratings=[5.0,4.0,3.0])
+        >>> recommendations = model.recommend(user_id=1, top_k=10)
     """
     
     def __init__(
@@ -27,11 +61,35 @@ class DCN(BaseCorerec):
         learning_rate: float = 0.001,
         batch_size: int = 256,
         epochs: int = 20,
+        early_stopping_patience: Optional[int] = 5,
+        checkpoint_dir: Optional[str] = None,
         trainable: bool = True,
         verbose: bool = False,
         device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
     ):
         super().__init__(name=name, trainable=trainable, verbose=verbose)
+        
+        # Validate parameters
+        validate_embeddings_dim(embedding_dim)
+        
+        if num_cross_layers < 1:
+            raise ValidationError("num_cross_layers must be at least 1")
+        
+        if not deep_layers or len(deep_layers) == 0:
+            raise ValidationError("deep_layers must contain at least one layer")
+        
+        if not (0.0 <= dropout < 1.0):
+            raise ValidationError("dropout must be in range [0.0, 1.0)")
+        
+        if learning_rate <= 0:
+            raise ValidationError("learning_rate must be positive")
+        
+        if batch_size < 1:
+            raise ValidationError("batch_size must be at least 1")
+        
+        if epochs < 1:
+            raise ValidationError("epochs must be at least 1")
+        
         self.embedding_dim = embedding_dim
         self.num_cross_layers = num_cross_layers
         self.deep_layers = deep_layers
@@ -39,6 +97,8 @@ class DCN(BaseCorerec):
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.epochs = epochs
+        self.early_stopping_patience = early_stopping_patience
+        self.checkpoint_dir = checkpoint_dir
         self.device = device
         
         self.user_map = {}
@@ -50,7 +110,7 @@ class DCN(BaseCorerec):
         self.item_features = {}
         self.model = None
         
-    def _build_model(self, num_features: int):
+    def _build_model(self, num_features: int, max_features: int = 2):
         class CrossLayer(nn.Module):
             def __init__(self, input_dim: int):
                 super().__init__()
@@ -59,15 +119,17 @@ class DCN(BaseCorerec):
                 
             def forward(self, x0, x):
                 # x0 is the input, x is the current layer's input
-                return x0 * (x @ self.weight) + self.bias + x
+                # Cross network formula: x0 * (x^T w) + b + x
+                xw = (x * self.weight).sum(dim=1, keepdim=True)  # [batch, 1]
+                return x0 * xw + self.bias + x
         
         class DeepCrossNetworkModel(nn.Module):
-            def __init__(self, num_features, embedding_dim, num_cross_layers, deep_layers, dropout):
+            def __init__(self, num_features, embedding_dim, num_cross_layers, deep_layers, dropout, max_features):
                 super().__init__()
                 self.embedding = nn.Embedding(num_features, embedding_dim)
                 
-                # Input dimension after embedding
-                self.input_dim = num_features * embedding_dim
+                # Input dimension after embedding (features per sample * embedding_dim)
+                self.input_dim = max_features * embedding_dim
                 
                 # Cross Network
                 self.cross_layers = nn.ModuleList([
@@ -108,7 +170,7 @@ class DCN(BaseCorerec):
                 return torch.sigmoid(output).squeeze(1)
         
         return DeepCrossNetworkModel(num_features, self.embedding_dim, self.num_cross_layers, 
-                                     self.deep_layers, self.dropout).to(self.device)
+                                     self.deep_layers, self.dropout, max_features).to(self.device)
     
     def fit(self, 
             user_ids: List[int], 
@@ -116,6 +178,9 @@ class DCN(BaseCorerec):
             ratings: List[float], 
             user_features: Optional[Dict[int, Dict[str, Any]]] = None,
             item_features: Optional[Dict[int, Dict[str, Any]]] = None) -> None:
+        
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
         
         # Create mappings
         unique_users = sorted(set(user_ids))
@@ -156,11 +221,7 @@ class DCN(BaseCorerec):
                         self.feature_map[feature_key] = len(self.feature_map) + len(unique_users) + len(unique_items)
                     feature_values.add(self.feature_map[feature_key])
         
-        # Build model
-        num_features = len(feature_values) + 1  # +1 for padding/unknown
-        self.model = self._build_model(num_features)
-        
-        # Create training data
+        # Create training data first to determine max_features
         train_features = []
         train_labels = []
         
@@ -191,8 +252,12 @@ class DCN(BaseCorerec):
             train_labels.append(1.0 if rating > 0 else 0.0)  # Convert to binary for implicit feedback
         
         # Pad feature lists to the same length
-        max_features = max(len(features) for features in train_features)
+        max_features = max(len(features) for features in train_features) if train_features else 2
         train_features = [features + [0] * (max_features - len(features)) for features in train_features]
+        
+        # Build model with correct dimensions (after we know max_features)
+        num_features = len(feature_values) + 1  # +1 for padding/unknown
+        self.model = self._build_model(num_features, max_features)
         
         # Convert to tensors
         train_features = torch.LongTensor(train_features).to(self.device)
@@ -234,9 +299,15 @@ class DCN(BaseCorerec):
                 
                 total_loss += loss.item()
             
-            print(f"Epoch {epoch+1}/{self.epochs}, Loss: {total_loss/n_batches:.4f}")
+            if self.verbose:
+                logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {total_loss/n_batches:.4f}")
     
     def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if self.model is None:
             raise ValueError("Model has not been trained yet")
         

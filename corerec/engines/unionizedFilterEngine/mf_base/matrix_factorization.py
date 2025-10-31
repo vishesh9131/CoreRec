@@ -18,6 +18,9 @@ from scipy.sparse import csr_matrix, lil_matrix
 from typing import List, Optional, Dict, Any, Tuple
 from corerec.base_recommender import BaseCorerec
 from corerec.engines.unionizedFilterEngine.device_manager import DeviceManager
+import logging
+
+logger = logging.getLogger(__name__)
 
 class MatrixFactorization(BaseCorerec):
     """Matrix Factorization for Unionized Filtering.
@@ -172,10 +175,13 @@ class MatrixFactorization(BaseCorerec):
                 total_loss += np.sum(errors**2)
 
             if self.verbose:
-                print(f"Iteration {iteration + 1}/{self.max_iter}, Loss: {total_loss / len(user_ids):.4f}")
+                logger.info(f"Iteration {iteration + 1}/{self.max_iter}, Loss: {total_loss / len(user_ids):.4f}")
 
     def _predict_batch(self, user_indices: List[int], item_indices: List[int]) -> np.ndarray:
         """Predict ratings for a batch of user-item pairs."""
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         preds = self.global_mean
         if self.use_bias:
             preds += self.user_biases[user_indices] + self.item_biases[item_indices]
@@ -210,6 +216,11 @@ class MatrixFactorization(BaseCorerec):
 
     def save_model(self, filepath: str) -> None:
         """Save the model to a file."""
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         model_data = {
             'user_factors': self.user_factors,
             'item_factors': self.item_factors,

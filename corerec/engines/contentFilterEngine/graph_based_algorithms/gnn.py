@@ -455,6 +455,9 @@ class GNNRecommender(BaseCorerec):
         --------
         self
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         self.logger.info(f"Starting training of {self.name}")
         
         # Build interaction graph
@@ -584,6 +587,11 @@ class GNNRecommender(BaseCorerec):
         list
             List of recommended item IDs (or tuples of (item_id, score) if include_scores=True)
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if not self.is_fitted:
             raise ValueError("Model is not fitted yet. Call fit() first.")
             

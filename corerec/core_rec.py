@@ -8,46 +8,85 @@
 #     5. draw_graph: A function to visualize graphs with options to highlight top nodes and recommended nodes.
 # Note: This module integrates PyTorch for model training and evaluation, and NetworkX for graph manipulation.
 # ###############################################################################################################
-from corerec.common_import import *
-from corerec.async_ddp import *
 
-# This is the Core of your model
-from corerec.models import *
+# Core libraries (previously from common_import)
+import numpy as np
+import pandas as pd
+import torch
+import torch.optim as optim
+import networkx as nx
+from sklearn.metrics.pairwise import cosine_similarity
+from torch.utils.data import Dataset, DataLoader
+from networkx.algorithms.community import greedy_modularity_communities
+import matplotlib.pyplot as plt
+import os
+
+# Distributed training
+import torch.distributed as dist
+from torch.multiprocessing import Process
+
+# Async DDP functions (previously from async_ddp)
+from corerec.async_ddp import setup, cleanup
+
+# Models
 from corerec.Tmodel import GraphTransformerV2
-from corerec.cr_pkg.gat_conv import *
-from corerec.cr_pkg.gcn_conv import *
-from corerec.cr_pkg.han_conv import *
-from corerec.cr_pkg.sage_conv import *
 
+# Graph convolutions
+from corerec.cr_pkg.gat_conv import GATConv
+from corerec.cr_pkg.gcn_conv import GCNConv
+from corerec.cr_pkg.han_conv import HANConv
+from corerec.cr_pkg.sage_conv import SAGEConv
 
-# In Emergence this will act as Organs to your model
+# Training and prediction
 from corerec.train import train_model
 from corerec.predict import predict, explainable_predict
 from corerec.metrics import jaccard_similarity, adamic_adar_index, aaj_accuracy
 
-# Importing dataloaders,dataset
-from corerec.cr_utility.dataloader import *
-from corerec.cr_utility.dataset import *    #dont call this its not working rn use GraphDataset ookk
+# Data utilities
+from corerec.cr_utility.dataloader import DataLoader
+# Note: GraphDataset may need to be imported differently depending on implementation
+try:
+    from corerec.cr_utility.dataset import GraphDataset
+except ImportError:
+    # GraphDataset might be defined elsewhere or needs custom implementation
+    GraphDataset = None
 
-# Importing Boosters AKA Optimizers (Note: _funtional and _init_ is commented)
-from corerec.cr_boosters.adam import *
-from corerec.cr_boosters.nadam import *
-from corerec.cr_boosters.adamax import *
-from corerec.cr_boosters.optimizer import *
-from corerec.cr_boosters.adadelta import *
-from corerec.cr_boosters.adagrad import *
-from corerec.cr_boosters.asgd import *
-from corerec.cr_boosters.lbfgs import *
-from corerec.cr_boosters.rmsprop import *
-from corerec.cr_boosters.sgd import *
-from corerec.cr_boosters.sparse_adam import *
+# Optimizers (Boosters)
+from corerec.cr_boosters.adam import Adam
+from corerec.cr_boosters.nadam import NAdam
+from corerec.cr_boosters.adamax import Adamax
+from corerec.cr_boosters.optimizer import Optimizer
+from corerec.cr_boosters.adadelta import Adadelta
+from corerec.cr_boosters.adagrad import Adagrad
+from corerec.cr_boosters.asgd import ASGD
+from corerec.cr_boosters.lbfgs import LBFGS
+from corerec.cr_boosters.rmsprop import RMSprop
+from corerec.cr_boosters.sgd import SGD
+from corerec.cr_boosters.sparse_adam import SparseAdam
 
 
-#Promoted this script to engine.cr_utility.dataset
-# from corerec.datasets import GraphDataset
+# __all__ export list for clean imports
+__all__ = [
+    # Core libraries
+    'np', 'pd', 'torch', 'nx', 'optim', 'plt',
+    # Data utilities
+    'Dataset', 'DataLoader', 'GraphDataset',
+    # Models
+    'GraphTransformerV2',
+    # Graph convolutions
+    'GATConv', 'GCNConv', 'HANConv', 'SAGEConv',
+    # Training
+    'train_model',
+    # Prediction
+    'predict', 'explainable_predict',
+    # Metrics
+    'jaccard_similarity', 'adamic_adar_index', 'aaj_accuracy',
+    # Optimizers
+    'Adam', 'NAdam', 'Adamax', 'Optimizer', 'Adadelta', 
+    'Adagrad', 'ASGD', 'LBFGS', 'RMSprop', 'SGD', 'SparseAdam',
+    # Distributed training
+    'setup', 'cleanup', 'dist', 'Process',
+]
 
-
-#FormatMaster is the plug for corerec preprocessing to detect dataset format and category
-# from engine.format_master.ds_format_loader import *
-# from engine.format_master.cr_formatMaster import *
-# from engine.format_master.format_library import *
+# Note: FormatMaster is available separately via:
+# from corerec.format_master import ds_format_loader, cr_formatMaster, format_library

@@ -124,6 +124,9 @@ class A2SVD(BaseRecommender):
         ratings : List[float]
             List of ratings
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         # Create mappings
         self._create_mappings(user_ids, item_ids)
         
@@ -209,6 +212,11 @@ class A2SVD(BaseRecommender):
         List[int]
             List of recommended item IDs
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if self.user_factors is None or self.item_factors is None:
             raise ValueError("Model has not been trained. Call fit() first.")
         

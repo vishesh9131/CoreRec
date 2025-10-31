@@ -27,6 +27,9 @@ class LDA:
         Parameters:
         - documents (List[str]): List of documents to train the model.
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         logger.info("Fitting LDA model on documents.")
         count_matrix = self.vectorizer.fit_transform(documents)
         self.lda_model.fit(count_matrix)
@@ -57,6 +60,11 @@ class LDA:
         Returns:
         - List[int]: List of recommended item indices.
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         logger.info("Generating recommendations using LDA.")
         query_vec = self.transform([query])
         topic_distribution = self.lda_model.transform(self.vectorizer.transform([query]))

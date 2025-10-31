@@ -65,6 +65,9 @@ class MINDRecommender(BaseCorerec):
     This model represents a user with multiple interest vectors and
     uses a dynamic routing mechanism to extract user's diverse interests
     from their interaction history.
+import logging
+
+logger = logging.getLogger(__name__)
     
     Features:
     - Multiple interest representation for users
@@ -251,6 +254,9 @@ class MINDRecommender(BaseCorerec):
         - user_ids: List of user IDs
         - item_ids: List of item IDs
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         self.num_items = len(item_ids)
         
         # Create user history dictionary
@@ -363,7 +369,7 @@ class MINDRecommender(BaseCorerec):
             avg_loss = total_loss / len(train_sequences)
             
             if self.verbose:
-                print(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
+                logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
                 
             # Early stopping check
             if avg_loss < best_loss:
@@ -373,7 +379,7 @@ class MINDRecommender(BaseCorerec):
                 patience_counter += 1
                 if patience_counter >= self.early_stopping_patience:
                     if self.verbose:
-                        print(f"Early stopping at epoch {epoch+1}")
+                        logger.info(f"Early stopping at epoch {epoch+1}")
                     break
         
         self.is_fitted = True
@@ -390,6 +396,11 @@ class MINDRecommender(BaseCorerec):
         Returns:
         - List of recommended item IDs
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if not self.is_fitted:
             raise ValueError("Model has not been trained yet. Call fit() first.")
             

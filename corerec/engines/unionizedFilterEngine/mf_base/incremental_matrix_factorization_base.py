@@ -1,11 +1,31 @@
-# Incremental Matrix Factorization
-# IMPLEMENTATION IN PROGRESS
-class IncrementalMatrixFactorizationBase:
-    def __init__(self, param1, param2):
-        # Initialize your class with parameters
-        self.param1 = param1
-        self.param2 = param2
+"""
+Incrementalmatrixfactorization - NOT YET IMPLEMENTED
 
-    def some_method(self):
-        # Implement your method
-        pass
+WARNING: This feature is currently under development and not ready for production use.
+
+For similar functionality, please use: MatrixFactorizationBase with warm_start
+
+Expected implementation: CoreRec v0.6.0 or later
+Track progress: https://github.com/vishesh9131/CoreRec/issues
+"""
+
+
+class IncrementalMatrixFactorizationBase:
+    """
+    Incrementalmatrixfactorization - Placeholder for future implementation.
+    
+    This class will raise NotImplementedError when instantiated.
+    Please use the recommended alternatives listed in the module docstring.
+    
+    Raises:
+        NotImplementedError: This feature is not yet implemented
+    """
+    
+    def __init__(self, *args, **kwargs):
+        raise NotImplementedError(
+            f"\n\nIncrementalMatrixFactorizationBase is not yet implemented.\n\n"
+            f"This feature is planned for CoreRec v0.6.0 or later.\n\n"
+            f"For similar functionality, please use: MatrixFactorizationBase with warm_start\n\n"
+            f"Track implementation progress:\n"
+            f"https://github.com/vishesh9131/CoreRec/issues"
+        )
