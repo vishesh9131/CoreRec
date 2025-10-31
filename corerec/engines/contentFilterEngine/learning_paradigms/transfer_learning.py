@@ -2,6 +2,9 @@
 import torch
 from corerec.train import train_model
 from corerec.predict import predict
+import logging
+
+logger = logging.getLogger(__name__)
 
 class TransferLearningLearner:
     def __init__(self, model, data_loader, criterion, optimizer, num_epochs):
@@ -28,7 +31,8 @@ class TransferLearningLearner:
         This method iterates over the data provided by the data_loader for a specified number of epochs,
         updating the model's weights using the optimizer and evaluating its performance using the criterion.
         """
-        print("Training with Transfer Learning...")
+        if self.verbose:
+            logger.info("Training with Transfer Learning...")
         train_model(self.model, self.data_loader, self.criterion, self.optimizer, self.num_epochs)
 
     def predict(self, graph, node_index, top_k=5, threshold=0.5):
@@ -44,5 +48,6 @@ class TransferLearningLearner:
         Returns:
             List[int]: A list of indices representing the top-k predicted items.
         """
-        print("Predicting with Transfer Learning...")
+        if self.verbose:
+            logger.info("Predicting with Transfer Learning...")
         return predict(self.model, graph, node_index, top_k, threshold)

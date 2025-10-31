@@ -24,6 +24,9 @@ class BAYESIAN:
         - documents (List[str]): List of documents to train the model.
         - labels (List[int]): Corresponding labels for the documents.
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         logger.info("Fitting Bayesian classifier on documents.")
         count_matrix = self.vectorizer.fit_transform(documents)
         self.model.fit(count_matrix, labels)
@@ -56,6 +59,11 @@ class BAYESIAN:
         Returns:
         - List[int]: List of recommended item indices.
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         logger.info("Generating recommendations using Bayesian classifier.")
         predicted_label = self.predict(query)
         # Example: Recommend items with the same label

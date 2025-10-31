@@ -27,6 +27,9 @@ class LSA:
         Parameters:
         - documents (List[str]): List of documents to train the model.
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         logger.info("Fitting LSA model on documents.")
         tfidf_matrix = self.vectorizer.fit_transform(documents)
         self.lsa_model.fit(tfidf_matrix)
@@ -57,6 +60,11 @@ class LSA:
         Returns:
         - List[int]: List of recommended item indices.
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         logger.info("Generating recommendations using LSA.")
         query_vec = self.transform([query])
         doc_vecs = self.lsa_model.transform(self.vectorizer.transform(self.vectorizer.get_feature_names_out()))

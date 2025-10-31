@@ -4,6 +4,9 @@ import torch.nn.functional as F
 import numpy as np
 from typing import List, Dict, Optional, Tuple, Any
 from corerec.base_recommender import BaseCorerec
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DeepFM(BaseCorerec):
     """
@@ -108,6 +111,9 @@ class DeepFM(BaseCorerec):
             ratings: List[float], 
             user_features: Optional[Dict[int, Dict[str, Any]]] = None,
             item_features: Optional[Dict[int, Dict[str, Any]]] = None) -> None:
+        
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
         
         # Create feature mapping
         # First field: user IDs
@@ -225,9 +231,15 @@ class DeepFM(BaseCorerec):
                 
                 total_loss += loss.item()
             
-            print(f"Epoch {epoch+1}/{self.epochs}, Loss: {total_loss/n_batches:.4f}")
+            if self.verbose:
+                logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {total_loss/n_batches:.4f}")
     
     def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if self.model is None:
             raise ValueError("Model has not been trained yet")
         

@@ -1,55 +1,255 @@
-# Analysis_large_databases
-src/SANDBOX/Analysis/data_mother
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-__pycache__
-.deploy
-.history/
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Jupyter Notebook
 .ipynb_checkpoints
-.vscode
+*.ipynb_checkpoints/
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pytest
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.cover
+.hypothesis/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# macOS
 .DS_Store
-docs/images/.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Build artifacts (C/C++)
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+*.dSYM/
+*.su
+*.idb
+*.pdb
+*.obj
+*.ilk
+*.manifest
+*.res
+*.rc
+*.def
+*.exp
+*.lib
+*.sbr
+*.bsc
+*.pch
+*.cache
+*.suo
+*.opensdf
+*.sdf
+*.user
+*.ncb
+*.aps
+*.plg
+*.opt
+*.idb
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.make
+*.cmake
+
+# Data files (large datasets)
+*.csv
+!sample_data/*.csv
+*.dat
+*.pkl
+*.joblib
+*.h5
+*.hdf5
+*.npz
+
+# Model checkpoints
+*.pth
+*.ckpt
+*.pt
+*.safetensors
+models/
+checkpoints/
+
+# Documentation build
+docs/_build/
+docs/.buildinfo
+site/
+
+# Distribution / packaging
+.Python
+production/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# History
+.history/
+.deploy
+
+# Project-specific ignores
+src/SANDBOX/Analysis/data_mother/
+src/SANDBOX/dataset/
 src/USECASES/tempCodeRunnerFile.py
-docs/images/.DS_Store
 engine/__pycache__/
-docs/images/.DS_Store
-engine/__pycache__/async_ddp.cpython-311.pyc
-engine/__pycache__/common_import.cpython-311.pyc
-engine/__pycache__/core_rec.cpython-311.pyc
-engine/__pycache__/predict.cpython-311.pyc
-engine/__pycache__/vish_graphs.cpython-311.pyc
-src/USECASES/tempCodeRunnerFile.py
-docs/images/.DS_Store
-docs/images/.DS_Store
-docs/images/.DS_Store
-./src/SANDBOX/Analysis/data_mother/large_network.csv
-./src/SANDBOX/Analysis/data_mother/wgtlabel.csv
-docs/images/.DS_Store
-src/SANDBOX/tempCodeRunnerFile.py
-./src/SANDBOX/Analysis/data_mother/large_network.csv
-./src/SANDBOX/Analysis/data_mother/wgtlabel.csv
-./src/SANDBOX/dataset/dressipi/train_sessions.csv
-./src/SANDBOX/recsys/hanconv/src/SANDBOX/dataset/./src/SANDBOX/Analysis/data_mother/large_network.csv
-./src/SANDBOX/Analysis/data_mother/wgtlabel.csv
-./src/SANDBOX/recsys/hanconv/src/SANDBOX/dataset/IMDB.csv/processed/data.pt
-src/SANDBOX/.DS_Store
-/src/SANDBOX/dataset
-src/SANDBOX/.DS_Store
 examples/ContentFilterExamples/nogo.py
-/cr_learn_setup/CRDS
-/examples/Youtube_MoE/models
-./CRLearn/CRDS/IJCAI-15/user_log_format1.csv
-./CRLearn/CRDS/Tmall/ijcai2016_taobao.csv
-./CRLearn/CRDS/REES46/events.csv
-./CRLearn/CRDS/REES46/direct_msg/messages-demo.csv
-./examples/Youtube_MoE/models/hybrid_engine.joblib
-./src/SANDBOX/dataset/IJCAI-15/user_log_format1.csv
-./src/SANDBOX/dataset/Tmall/ijcai2016_taobao.csv
-./src/SANDBOX/dataset/REES46/events.csv
-./src/SANDBOX/dataset/REES46/direct_msg/messages-demo.csv
-./corerec/engines/test_struct_UF
-/cr_learn/cr_learn/CRDS
+examples/Youtube_MoE/models/
+cr_learn_setup/CRDS/
+cr_learn/cr_learn/CRDS
 cr_learn/cr_learn/CRDS2.zip
-/cr_learn_setup
-graph_dataset.csv
+CRLearn/CRDS/
+corerec/engines/test_struct_UF/
 tests/test_cf.py
-/~
+graph_dataset.csv
+documentation.zip
+
+# Ignore production setup (we have it in root now)
+./production
+
+# Don't ignore these specific files
+!.gitignore
+!.github/
+!docs/images/*.png
+!docs/images/*.svg
+/cr_learn_setup

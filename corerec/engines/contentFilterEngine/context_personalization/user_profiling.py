@@ -52,6 +52,9 @@ class UserProfilingRecommender:
         Parameters:
         - user_interactions (dict): Dictionary mapping user IDs to lists of interacted item IDs.
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         for user_id, items in user_interactions.items():
             profile = {}
 
@@ -80,6 +83,11 @@ class UserProfilingRecommender:
         Returns:
         - List[int]: List of recommended item IDs.
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if user_id not in self.user_profiles:
             return []
 

@@ -1,8 +1,17 @@
 """
-Base model class for all CoreRec models.
+Base model class for all CoreRec PyTorch models.
 
-This module provides the BaseModel class which handles forward pass,
-model saving and loading, and other common functionality.
+This module provides the BaseModel class which serves as the foundation
+for all PyTorch nn.Module based models in CoreRec. It handles:
+- Forward pass (abstract method)
+- Model saving and loading
+- Training and validation steps
+- Parameter management
+
+NOTE: For high-level recommendation API (fit, predict, recommend),
+use TorchRecommender which combines BaseModel with BaseRecommender.
+
+Author: Vishesh Yadav (mail: sciencely98@gmail.com)
 """
 
 import os
@@ -15,14 +24,26 @@ import time
 
 class BaseModel(nn.Module):
     """
-    Base class for all CoreRec models.
+    Base class for all CoreRec PyTorch models (nn.Module level).
     
-    This class provides common functionality for model forward pass,
-    saving, loading, and other utilities.
+    This class provides low-level PyTorch functionality:
+    - forward() - must be implemented by subclasses
+    - save/load for PyTorch checkpoints
+    - train_step/validate_step for training loops
+    - Parameter utilities (freeze, unfreeze, count)
+    
+    Architecture Position:
+        BaseModel (nn.Module)
+            ↓
+        Specific Models (e.g., DeepFMModel, DCNModel)
+            ↓
+        TorchRecommender (wraps model + provides API)
     
     Attributes:
         name (str): Name of the model
         config (Dict[str, Any]): Model configuration
+    
+    Author: Vishesh Yadav (mail: sciencely98@gmail.com)
     """
     
     def __init__(self, name: str, config: Dict[str, Any]):
@@ -111,6 +132,22 @@ class BaseModel(nn.Module):
             int: Number of parameters in the model
         """
         return sum(p.numel() for p in self.parameters())
+    
+    def get_num_parameters(self) -> int:
+        """Get total number of trainable parameters.
+        
+        Returns:
+            int: Number of trainable parameters
+        """
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+    
+    def get_embedding_dim(self) -> Optional[int]:
+        """Get embedding dimension if applicable.
+        
+        Returns:
+            int or None: Embedding dimension if defined
+        """
+        return getattr(self, 'embedding_dim', None)
     
     def freeze(self):
         """Freeze all model parameters."""

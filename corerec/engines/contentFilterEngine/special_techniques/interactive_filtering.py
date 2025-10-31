@@ -3,6 +3,15 @@
 import logging
 from typing import Dict, List, Any
 
+from corerec.utils.validation import (
+    validate_fit_inputs,
+    validate_user_id,
+    validate_item_id,
+    validate_top_k,
+    validate_model_fitted,
+    ValidationError
+)
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -68,6 +77,11 @@ class InteractiveFilteringRecommender:
         Returns:
         - List[int]: List of recommended item IDs.
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         logger.info(f"Generating recommendations for user {user_id} with query '{query}' using InteractiveFilteringRecommender.")
         # Get base recommendations
         base_recommendations = self.base_recommender.recommend(user_id, query, top_n=top_n * 2)

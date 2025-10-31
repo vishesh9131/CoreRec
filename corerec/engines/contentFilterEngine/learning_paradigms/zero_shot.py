@@ -1,6 +1,9 @@
 # zero_shot implementation
 import torch
 from corerec.predict import predict
+import logging
+
+logger = logging.getLogger(__name__)
 class ZeroShotLearner:
     def __init__(self, model):
         """
@@ -24,5 +27,6 @@ class ZeroShotLearner:
         Returns:
             List[int]: A list of indices representing the top-k predicted items.
         """
-        print("Predicting with Zero-Shot Learning...")
+        if self.verbose:
+            logger.info("Predicting with Zero-Shot Learning...")
         return predict(self.model, graph, node_index, top_k, threshold)

@@ -2,6 +2,9 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from typing import List, Optional, Dict, Any, Tuple
 from ..base_recommender import BaseRecommender
+import logging
+
+logger = logging.getLogger(__name__)
 
 class FactorizationMachineBase(BaseRecommender):
     """
@@ -140,6 +143,9 @@ class FactorizationMachineBase(BaseRecommender):
         item_ids : List[int]
             List of item IDs corresponding to columns in the interaction matrix
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         # Create mappings
         self._create_mappings(user_ids, item_ids)
         
@@ -201,7 +207,8 @@ class FactorizationMachineBase(BaseRecommender):
             # Print progress
             avg_loss = total_loss / n_samples
             if (iteration + 1) % 10 == 0 or iteration == 0:
-                print(f"Iteration {iteration+1}/{self.iterations}, Loss: {avg_loss:.4f}")
+                if self.verbose:
+                    logger.info(f"Iteration {iteration+1}/{self.iterations}, Loss: {avg_loss:.4f}")
     
     def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
         """
@@ -220,6 +227,11 @@ class FactorizationMachineBase(BaseRecommender):
         --------
         List[int] : List of recommended item IDs
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if self.w is None or self.v is None:
             raise ValueError("Model has not been trained. Call fit() first.")
         

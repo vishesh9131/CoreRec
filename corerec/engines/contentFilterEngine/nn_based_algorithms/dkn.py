@@ -2,6 +2,9 @@
 import torch
 import corerec.torch_nn as nn  # Use custom module instead of torch.nn
 import torch.nn.functional as F
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_divisible_num_heads(embed_dim, max_heads=8):
     """
@@ -61,7 +64,8 @@ class DKN(nn.Module):
         # Attention Mechanism
         embed_dim = text_num_filters * len(text_kernel_sizes)  # 100 * 3 = 300
         num_heads = get_divisible_num_heads(embed_dim, max_heads=8)
-        print(f"Initializing MultiheadAttention with embed_dim={embed_dim} and num_heads={num_heads}")
+        if self.verbose:
+            logger.info(f"Initializing MultiheadAttention with embed_dim={embed_dim} and num_heads={num_heads}")
         assert embed_dim % num_heads == 0, "embed_dim must be divisible by num_heads"
         
         self.attention = nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads, dropout=0.1)

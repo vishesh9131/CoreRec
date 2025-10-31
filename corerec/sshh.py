@@ -20,7 +20,7 @@ logging.getLogger('torch').setLevel(logging.WARNING)
 logging.getLogger('numpy').setLevel(logging.WARNING)
 
 
-print("[corerec-dev/sshh.py] All warnings are sshhhh!!!")
+# print("[corerec-dev/sshh.py] All warnings are sshhhh!!!") # Commented out for CLI
 # by importing this file, all the warnings are turned off
 # usage: from corerec.sshh import * 
 

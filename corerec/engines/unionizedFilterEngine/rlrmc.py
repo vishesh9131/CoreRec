@@ -7,6 +7,9 @@ import pickle
 from scipy.sparse import csr_matrix
 
 from .base_recommender import BaseRecommender
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class RLRMC(BaseRecommender):
@@ -272,6 +275,9 @@ class RLRMC(BaseRecommender):
         item_ids : List[int]
             List of item IDs
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         # Create mappings
         self._create_mappings(user_ids, item_ids)
         
@@ -292,7 +298,7 @@ class RLRMC(BaseRecommender):
             # Check convergence
             if prev_loss - loss < self.tol:
                 if self.verbose:
-                    print(f"Converged at iteration {iteration + 1} with loss {loss:.6f}")
+                    logger.info(f"Converged at iteration {iteration + 1} with loss {loss:.6f}")
                 break
             
             prev_loss = loss
@@ -311,7 +317,8 @@ class RLRMC(BaseRecommender):
             self.V = self._retraction(self.V, self.V_momentum, -self.learning_rate)
             
             if self.verbose and (iteration + 1) % 10 == 0:
-                print(f"Iteration {iteration + 1}/{self.max_iter}, Loss: {loss:.6f}")
+                if self.verbose:
+                    logger.info(f"Iteration {iteration + 1}/{self.max_iter}, Loss: {loss:.6f}")
     
     def predict(self, user_id: int, item_id: int) -> float:
         """
@@ -359,6 +366,11 @@ class RLRMC(BaseRecommender):
         List[int]
             List of recommended item IDs
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if user_id not in self.user_to_index:
             # Return empty list for unknown users
             return []

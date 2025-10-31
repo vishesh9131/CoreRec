@@ -1,16 +1,31 @@
-# corerec/engines/unionizedFilterEngine/graph_based_base/gnn_cf_base.py
+"""
+Graphdcf - NOT YET IMPLEMENTED
 
-from abc import ABC
-from typing import List
-from scipy.sparse import csr_matrix
-from ..base_recommender import BaseRecommender
+WARNING: This feature is currently under development and not ready for production use.
 
-class GraphBasedCFBase(BaseRecommender, ABC):
-    def __init__(self, graph_layers: int = 3, learning_rate: float = 0.01):
-        self.graph_layers = graph_layers
-        self.learning_rate = learning_rate
-        # Initialize graph-specific parameters
+For similar functionality, please use: GNNRec
 
-    def build_graph(self, interaction_matrix: csr_matrix):
-        # Implement graph construction from interaction matrix
-        pass
+Expected implementation: CoreRec v0.6.0 or later
+Track progress: https://github.com/vishesh9131/CoreRec/issues
+"""
+
+
+class GraphBasedCFBase:
+    """
+    Graphdcf - Placeholder for future implementation.
+    
+    This class will raise NotImplementedError when instantiated.
+    Please use the recommended alternatives listed in the module docstring.
+    
+    Raises:
+        NotImplementedError: This feature is not yet implemented
+    """
+    
+    def __init__(self, *args, **kwargs):
+        raise NotImplementedError(
+            f"\n\nGraphBasedCFBase is not yet implemented.\n\n"
+            f"This feature is planned for CoreRec v0.6.0 or later.\n\n"
+            f"For similar functionality, please use: GNNRec\n\n"
+            f"Track implementation progress:\n"
+            f"https://github.com/vishesh9131/CoreRec/issues"
+        )

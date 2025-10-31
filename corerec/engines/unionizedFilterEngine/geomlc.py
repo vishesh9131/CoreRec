@@ -9,6 +9,9 @@ import pickle
 from scipy.sparse import csr_matrix
 
 from .base_recommender import BaseRecommender
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class GeoMLC(BaseRecommender):
@@ -167,6 +170,9 @@ class GeoMLC(BaseRecommender):
         ratings : List[float]
             List of ratings
         """
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         # Create mappings
         self._create_mappings(user_ids, item_ids)
         
@@ -202,7 +208,8 @@ class GeoMLC(BaseRecommender):
                 epoch_loss += loss.item() * len(batch_ratings)
             
             avg_epoch_loss = epoch_loss / len(dataloader.dataset)
-            print(f"Epoch {epoch+1}/{self.n_epochs}, Loss: {avg_epoch_loss:.4f}")
+            if self.verbose:
+                logger.info(f"Epoch {epoch+1}/{self.n_epochs}, Loss: {avg_epoch_loss:.4f}")
     
     def fit_from_matrix(self, interaction_matrix: csr_matrix, user_ids: List[int], item_ids: List[int]) -> None:
         """
@@ -245,6 +252,11 @@ class GeoMLC(BaseRecommender):
         List[int]
             List of recommended item IDs
         """
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         if user_id not in self.user_mapping:
             return []
         

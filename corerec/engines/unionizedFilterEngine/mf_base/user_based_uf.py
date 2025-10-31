@@ -11,6 +11,9 @@ class UserBasedUF(BaseCorerec):
         self.item_ids = []
 
     def fit(self, interaction_matrix: csr_matrix, user_ids: List[int], item_ids: List[int]):
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         interaction_matrix = csr_matrix(interaction_matrix)
         self.user_ids = user_ids
         self.item_ids = item_ids
@@ -35,6 +38,11 @@ class UserBasedUF(BaseCorerec):
                     self.user_similarity[v, u] = similarity
 
     def recommend(self, user_id: int, top_n: int = 10) -> List[int]:
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
+        validate_top_k(top_k if 'top_k' in locals() else 10)
+        
         user_index = self.user_ids.index(user_id)
         similarities = self.user_similarity[user_index]
         similar_users = np.argsort(similarities)[::-1][1:]  # Exclude self

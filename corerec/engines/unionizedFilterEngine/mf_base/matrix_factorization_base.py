@@ -4,6 +4,9 @@ from scipy.sparse import csr_matrix
 from typing import List, Optional
 from corerec.engines.unionizedFilterEngine.base_recommender import BaseRecommender
 from concurrent.futures import ThreadPoolExecutor
+import logging
+
+logger = logging.getLogger(__name__)
 
 class MatrixFactorizationBase(BaseRecommender):
     """
@@ -111,6 +114,9 @@ class MatrixFactorizationBase(BaseRecommender):
         return mse + reg
 
     def fit(self, interaction_matrix: csr_matrix, validation_matrix: Optional[csr_matrix] = None):
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+        
         num_users, num_items = interaction_matrix.shape
         self.initialize_factors(num_users, num_items)
         self.global_bias = interaction_matrix.data.mean()
@@ -121,18 +127,21 @@ class MatrixFactorizationBase(BaseRecommender):
         for epoch in range(self.epochs):
             self._sgd_step(interaction_matrix)
             loss = self.compute_loss(interaction_matrix)
-            print(f"Epoch {epoch + 1}/{self.epochs}, Loss: {loss:.4f}")
+            if self.verbose:
+                logger.info(f"Epoch {epoch + 1}/{self.epochs}, Loss: {loss:.4f}")
 
             if validation_matrix is not None:
                 val_loss = self.compute_loss(validation_matrix)
-                print(f"Validation Loss: {val_loss:.4f}")
+                if self.verbose:
+                    logger.info(f"Validation Loss: {val_loss:.4f}")
                 if val_loss < best_loss:
                     best_loss = val_loss
                     no_improve_epochs = 0
                 else:
                     no_improve_epochs += 1
                     if self.early_stopping_rounds and no_improve_epochs >= self.early_stopping_rounds:
-                        print("Early stopping triggered.")
+                        if self.verbose:
+                            logger.info("Early stopping triggered.")
                         break
 
     def _sgd_step(self, interaction_matrix: csr_matrix):
