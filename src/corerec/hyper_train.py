@@ -22,14 +22,17 @@ import logging
 from torch.utils.data import DataLoader
 from typing import Any
 
-def train_model(model: torch.nn.Module,
-               data_loader: DataLoader,
-               criterion: torch.nn.Module,
-               optimizer: torch.optim.Optimizer,
-               num_epochs: int,
-               device: torch.device = torch.device('cpu'),
-               gradient_clip_value: float = 1.0,
-               early_stopping_patience: int = 5) -> None:
+
+def train_model(
+    model: torch.nn.Module,
+    data_loader: DataLoader,
+    criterion: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    num_epochs: int,
+    device: torch.device = torch.device("cpu"),
+    gradient_clip_value: float = 1.0,
+    early_stopping_patience: int = 5,
+) -> None:
     """
     Trains the given model using the provided data loader, criterion, and optimizer.
     Includes comprehensive error handling, gradient clipping, and early stopping.
@@ -47,7 +50,7 @@ def train_model(model: torch.nn.Module,
     print("Starting training process")
     model.to(device)
 
-    best_loss = float('inf')
+    best_loss = float("inf")
     epochs_no_improve = 0
 
     try:
@@ -71,7 +74,9 @@ def train_model(model: torch.nn.Module,
                     optimizer.zero_grad()
 
                     # Forward pass with all required arguments
-                    outputs = model(inputs, batch_adj, batch_adj)  # Assuming graph_metrics = batch_adj
+                    outputs = model(
+                        inputs, batch_adj, batch_adj
+                    )  # Assuming graph_metrics = batch_adj
 
                     # Check output dimensions
                     if outputs.shape != targets.shape:
@@ -120,7 +125,7 @@ def train_model(model: torch.nn.Module,
                     best_loss = avg_epoch_loss
                     epochs_no_improve = 0
                     # Save the best model
-                    torch.save(model.state_dict(), 'model_best.pth')
+                    torch.save(model.state_dict(), "model_best.pth")
                     print(f"New best loss: {best_loss:.4f}. Model saved.")
                 else:
                     epochs_no_improve += 1
@@ -142,7 +147,7 @@ def train_model(model: torch.nn.Module,
     finally:
         # Save the final model state at the end of training
         try:
-            torch.save(model.state_dict(), 'model_final.pth')
+            torch.save(model.state_dict(), "model_final.pth")
             print("Final model state saved successfully.")
         except Exception as save_exc:
             print(f"Failed to save the final model state: {str(save_exc)}")

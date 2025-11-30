@@ -579,8 +579,7 @@ def map_only(
     You can also directly use 'tree_map_only'
     """
     if isinstance(__type_or_types_or_pred, (type, tuple)) or (
-        sys.version_info >= (3, 10)
-        and isinstance(__type_or_types_or_pred, types.UnionType)
+        sys.version_info >= (3, 10) and isinstance(__type_or_types_or_pred, types.UnionType)
     ):
 
         def pred(x: Any) -> bool:

@@ -1,19 +1,21 @@
 # DISTRIBUTED TRAINING DDP -> ASHNYCHRONOUS (STATUS : IN PROGRESS)
-# DDP has two major types sync and a-sync and it has 4 major blocks 
-# setup, cleanup, Parameterserver, worker 
+# DDP has two major types sync and a-sync and it has 4 major blocks
+# setup, cleanup, Parameterserver, worker
 
 
 from corerec.common_import import *
 from torch.nn import MSELoss
-    
+
 import socket
+
 
 def find_free_port():
     s = socket.socket()
-    s.bind(('', 0))  # Bind to a free port provided by the host.
+    s.bind(("", 0))  # Bind to a free port provided by the host.
     port = s.getsockname()[1]  # Get the port number
     s.close()
     return port
+
 
 # def setup(rank, world_size, port=None):
 #     """Setup PyTorch environment for distributed training."""
@@ -25,6 +27,7 @@ def find_free_port():
 #     os.environ['MASTER_ADDR'] = 'localhost'
 #     os.environ['MASTER_PORT'] = str(port)
 #     dist.init_process_group("gloo", rank=rank, world_size=world_size)
+
 
 def setup(rank, world_size, port=None):
     """Setup PyTorch environment for distributed training."""
@@ -38,8 +41,8 @@ def setup(rank, world_size, port=None):
         raise ValueError("Port must be specified for worker processes")
 
     # Set environment variables
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = str(port)
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = str(port)
 
     # Initialize the process group
     try:
@@ -48,9 +51,12 @@ def setup(rank, world_size, port=None):
     except Exception as e:
         print(f"Failed to initialize process group for rank {rank}: {e}")  # Error handling
         raise
+
+
 def cleanup():
-    """ Cleanup PyTorch distributed environment. """
+    """Cleanup PyTorch distributed environment."""
     dist.destroy_process_group()
+
 
 class ParameterServer:
     def __init__(self, model, world_size):
@@ -68,7 +74,10 @@ class ParameterServer:
                 with torch.no_grad():
                     param.data += grad / (self.world_size - 1)  # Average the gradients
         cleanup()  # Clean up the distributed environment after updating the model
+
+
 loss_function = MSELoss()
+
 
 def worker(rank, model, data_loader, optimizer, num_epochs, world_size, port):
     setup(rank, world_size, port)  # Initialize the process group for each worker

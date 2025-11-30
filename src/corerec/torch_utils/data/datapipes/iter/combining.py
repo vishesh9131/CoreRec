@@ -203,10 +203,7 @@ class _ForkerIterDataPipe(IterDataPipe, _ContainerTemplate):
         try:
             while not self._child_stop[instance_id]:
                 self.child_pointers[instance_id] += 1
-                if (
-                    self.end_ptr is not None
-                    and self.child_pointers[instance_id] == self.end_ptr
-                ):
+                if self.end_ptr is not None and self.child_pointers[instance_id] == self.end_ptr:
                     self._child_stop[instance_id] = True
                     break
                 # Use buffer
@@ -224,16 +221,11 @@ class _ForkerIterDataPipe(IterDataPipe, _ContainerTemplate):
                         self.end_ptr = self.leading_ptr
                         continue
                 if self.child_pointers[instance_id] == self.slowest_ptr + 1:
-                    new_min = min(
-                        self.child_pointers
-                    )  # Can optimize by avoiding the call to min()
+                    new_min = min(self.child_pointers)  # Can optimize by avoiding the call to min()
                     if self.slowest_ptr < new_min:
                         self.slowest_ptr = new_min
                         self.buffer.popleft()
-                if (
-                    self.buffer_size >= 0
-                    and self.leading_ptr > self.buffer_size + self.slowest_ptr
-                ):
+                if self.buffer_size >= 0 and self.leading_ptr > self.buffer_size + self.slowest_ptr:
                     raise BufferError(
                         "ForkerIterDataPipe buffer overflow,"
                         + f"buffer size {self.buffer_size} is insufficient."
@@ -489,11 +481,7 @@ class _DemultiplexerIterDataPipe(IterDataPipe, _ContainerTemplate):
             if classification is None and self.drop_none:
                 StreamWrapper.close_streams(value)
                 continue
-            if (
-                classification is None
-                or classification >= self.num_instances
-                or classification < 0
-            ):
+            if classification is None or classification >= self.num_instances or classification < 0:
                 raise ValueError(
                     f"Output of the classification fn should be between 0 and {self.num_instances - 1}. "
                     + f"{classification} is returned."
@@ -619,9 +607,7 @@ class MultiplexerIterDataPipe(IterDataPipe):
 
     def __init__(self, *datapipes):
         self.datapipes = datapipes
-        self.buffer: List = (
-            []
-        )  # Store values to be yielded only when every iterator provides one
+        self.buffer: List = []  # Store values to be yielded only when every iterator provides one
 
     def __iter__(self):
         iterators = [iter(x) for x in self.datapipes]

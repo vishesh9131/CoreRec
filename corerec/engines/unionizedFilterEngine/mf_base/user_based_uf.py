@@ -1,9 +1,13 @@
 import numpy as np
 from scipy.sparse import csr_matrix
-from typing import List
-from corerec.base_recommender import BaseCorerec
+from typing import Union, List
+from pathlib import Path
+from corerec.api.base_recommender import BaseRecommender
+from corerec.utils.validation import validate_fit_inputs, validate_user_id, validate_top_k, validate_model_fitted
+from corerec.api.exceptions import ModelNotFittedError
 
-class UserBasedUF(BaseCorerec):
+
+class UserBasedUF(BaseRecommender):
     def __init__(self, similarity_threshold: float = 0.5):
         self.similarity_threshold = similarity_threshold
         self.user_similarity = None
@@ -37,15 +41,30 @@ class UserBasedUF(BaseCorerec):
                     self.user_similarity[u, v] = similarity
                     self.user_similarity[v, u] = similarity
 
-    def recommend(self, user_id: int, top_n: int = 10) -> List[int]:
-        # Validate inputs
-        validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
-        validate_top_k(top_k if 'top_k' in locals() else 10)
+    def recommend(self, user_id: int, top_n: int = 10, interaction_matrix: csr_matrix = None) -> List[int]:
+        """
+        Generate recommendations for a user based on similar users.
+        
+        Parameters:
+        -----------
+        user_id : int
+            ID of the user to generate recommendations for
+        top_n : int
+            Number of recommendations to generate
+        interaction_matrix : csr_matrix
+            User-item interaction matrix
+            
+        Returns:
+        --------
+        List[int]
+            List of recommended item IDs
+        """
+        if user_id not in self.user_ids:
+            return []
         
         user_index = self.user_ids.index(user_id)
         similarities = self.user_similarity[user_index]
-        similar_users = np.argsort(similarities)[::-1][1:]  # Exclude self
+        similar_users = np.argsort(similarities)[::-1][1:]
 
         scores = {}
         for similar_user in similar_users:

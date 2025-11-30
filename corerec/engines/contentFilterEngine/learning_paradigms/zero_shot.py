@@ -4,15 +4,19 @@ from corerec.predict import predict
 import logging
 
 logger = logging.getLogger(__name__)
+
+
 class ZeroShotLearner:
-    def __init__(self, model):
+    def __init__(self, model, verbose=True):
         """
         Initializes the ZeroShotLearner with the given model.
 
         Parameters:
             model (torch.nn.Module): The model to be used for predictions.
+            verbose (bool): Whether to print prediction progress. Defaults to True.
         """
         self.model = model
+        self.verbose = verbose
 
     def predict(self, graph, node_index, top_k=5, threshold=0.5):
         """

@@ -49,14 +49,18 @@ def run(n, stmt, fuzzer_cls):
 
         descriptions = []
         for name in float_tensors:
-            shape_str = "(" + ", ".join([
-                f"2 ** {int(np.log2(i))}"
-                if 2 ** int(np.log2(i)) == i and i > 1
-                else str(i)
-                for i in float_tensors[name].shape
-            ]) + ")"
+            shape_str = (
+                "("
+                + ", ".join(
+                    [
+                        f"2 ** {int(np.log2(i))}" if 2 ** int(np.log2(i)) == i and i > 1 else str(i)
+                        for i in float_tensors[name].shape
+                    ]
+                )
+                + ")"
+            )
             order = float_tensor_params[name]["order"]
-            order_str = ("" if all(order == np.arange(len(order))) else str(tuple(order)))
+            order_str = "" if all(order == np.arange(len(order))) else str(tuple(order))
             steps = float_tensor_params[name]["steps"]
             steps_str = str(steps) if sum(steps) > len(steps) else ""
             descriptions.append((name, shape_str, order_str, steps_str))

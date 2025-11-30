@@ -1,6 +1,7 @@
 import math
 from collections import defaultdict
 
+
 class TFIDFExtractor:
     def __init__(self, text_column, max_features=1000):
         self.text_column = text_column
@@ -15,7 +16,7 @@ class TFIDFExtractor:
         term_document_counts = defaultdict(int)
 
         for text in data[self.text_column]:
-            terms = text.split('|')
+            terms = text.split("|")
             term_freq = defaultdict(int)
             unique_terms = set()
             for term in terms:
@@ -31,7 +32,7 @@ class TFIDFExtractor:
 
         # Build Vocabulary
         all_terms = sorted(self.idf.keys(), key=lambda x: self.idf[x], reverse=True)
-        self.vocabulary = {term: idx for idx, term in enumerate(all_terms[:self.max_features])}
+        self.vocabulary = {term: idx for idx, term in enumerate(all_terms[: self.max_features])}
 
         # Calculate TF-IDF
         tfidf_matrix = []

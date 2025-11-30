@@ -17,11 +17,15 @@ import numpy as np
 from typing import List, Dict, Set
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
+
 class judge:
     """Class to compute evaluation metrics for recommender systems."""
 
     @staticmethod
-    def precision_at_k(recommended_items: List[int], relevant_items: Set[int], k: int) -> float:
+    def precision_at_k(
+            recommended_items: List[int],
+            relevant_items: Set[int],
+            k: int) -> float:
         """
         Compute Precision@K.
 
@@ -40,11 +44,15 @@ class judge:
             Precision@K score.
         """
         top_k = recommended_items[:k]
-        relevant_count = len([item for item in top_k if item in relevant_items])
+        relevant_count = len(
+            [item for item in top_k if item in relevant_items])
         return relevant_count / k
 
     @staticmethod
-    def recall_at_k(recommended_items: List[int], relevant_items: Set[int], k: int) -> float:
+    def recall_at_k(
+            recommended_items: List[int],
+            relevant_items: Set[int],
+            k: int) -> float:
         """
         Compute Recall@K.
 
@@ -63,11 +71,16 @@ class judge:
             Recall@K score.
         """
         top_k = recommended_items[:k]
-        relevant_count = len([item for item in top_k if item in relevant_items])
-        return relevant_count / len(relevant_items) if len(relevant_items) > 0 else 0.0
+        relevant_count = len(
+            [item for item in top_k if item in relevant_items])
+        return relevant_count / \
+            len(relevant_items) if len(relevant_items) > 0 else 0.0
 
     @staticmethod
-    def f1_score_at_k(recommended_items: List[int], relevant_items: Set[int], k: int) -> float:
+    def f1_score_at_k(
+            recommended_items: List[int],
+            relevant_items: Set[int],
+            k: int) -> float:
         """
         Compute F1-Score@K.
 
@@ -85,14 +98,19 @@ class judge:
         float
             F1-Score@K score.
         """
-        precision = EvaluationMetrics.precision_at_k(recommended_items, relevant_items, k)
-        recall = EvaluationMetrics.recall_at_k(recommended_items, relevant_items, k)
+        precision = EvaluationMetrics.precision_at_k(
+            recommended_items, relevant_items, k)
+        recall = EvaluationMetrics.recall_at_k(
+            recommended_items, relevant_items, k)
         if precision + recall == 0:
             return 0.0
         return 2 * (precision * recall) / (precision + recall)
 
     @staticmethod
-    def ndcg_at_k(recommended_items: List[int], relevant_items: Set[int], k: int) -> float:
+    def ndcg_at_k(
+            recommended_items: List[int],
+            relevant_items: Set[int],
+            k: int) -> float:
         """
         Compute Normalized Discounted Cumulative Gain (NDCG)@K.
 
@@ -114,12 +132,17 @@ class judge:
         dcg = 0.0
         for i, item in enumerate(top_k):
             if item in relevant_items:
-                dcg += 1 / np.log2(i + 2)  # log2(i + 2) because indexing starts at 0
-        idcg = sum(1 / np.log2(i + 2) for i in range(min(len(relevant_items), k)))
+                # log2(i + 2) because indexing starts at 0
+                dcg += 1 / np.log2(i + 2)
+        idcg = sum(1 / np.log2(i + 2)
+                   for i in range(min(len(relevant_items), k)))
         return dcg / idcg if idcg > 0 else 0.0
 
     @staticmethod
-    def hit_rate_at_k(recommended_items: List[int], relevant_items: Set[int], k: int) -> float:
+    def hit_rate_at_k(
+            recommended_items: List[int],
+            relevant_items: Set[int],
+            k: int) -> float:
         """
         Compute Hit Rate@K.
 
@@ -141,7 +164,8 @@ class judge:
         return 1.0 if any(item in relevant_items for item in top_k) else 0.0
 
     @staticmethod
-    def mse(predicted_ratings: List[float], actual_ratings: List[float]) -> float:
+    def mse(predicted_ratings: List[float],
+            actual_ratings: List[float]) -> float:
         """
         Compute Mean Squared Error (MSE).
 
@@ -160,7 +184,8 @@ class judge:
         return mean_squared_error(actual_ratings, predicted_ratings)
 
     @staticmethod
-    def mae(predicted_ratings: List[float], actual_ratings: List[float]) -> float:
+    def mae(predicted_ratings: List[float],
+            actual_ratings: List[float]) -> float:
         """
         Compute Mean Absolute Error (MAE).
 
@@ -179,7 +204,8 @@ class judge:
         return mean_absolute_error(actual_ratings, predicted_ratings)
 
     @staticmethod
-    def rmse(predicted_ratings: List[float], actual_ratings: List[float]) -> float:
+    def rmse(predicted_ratings: List[float],
+             actual_ratings: List[float]) -> float:
         """
         Compute Root Mean Squared Error (RMSE).
 
@@ -215,10 +241,13 @@ class judge:
             Coverage score.
         """
         unique_recommended = set(recommended_items)
-        return len(unique_recommended) / len(all_items) if len(all_items) > 0 else 0.0
+        return len(unique_recommended) / \
+            len(all_items) if len(all_items) > 0 else 0.0
 
     @staticmethod
-    def diversity(recommended_items: List[int], item_similarity_matrix: np.ndarray) -> float:
+    def diversity(
+            recommended_items: List[int],
+            item_similarity_matrix: np.ndarray) -> float:
         """
         Compute Diversity.
 
@@ -239,11 +268,14 @@ class judge:
         similarities = []
         for i in range(len(recommended_items)):
             for j in range(i + 1, len(recommended_items)):
-                similarities.append(item_similarity_matrix[recommended_items[i], recommended_items[j]])
+                similarities.append(
+                    item_similarity_matrix[recommended_items[i], recommended_items[j]]
+                )
         return 1 - np.mean(similarities) if similarities else 0.0
 
     @staticmethod
-    def novelty(recommended_items: List[int], item_popularity: Dict[int, float]) -> float:
+    def novelty(recommended_items: List[int],
+                item_popularity: Dict[int, float]) -> float:
         """
         Compute Novelty.
 
@@ -261,4 +293,5 @@ class judge:
         """
         if not recommended_items:
             return 0.0
-        return np.mean([-np.log2(item_popularity.get(item, 1e-10)) for item in recommended_items])
+        return np.mean([-np.log2(item_popularity.get(item, 1e-10))
+                       for item in recommended_items])

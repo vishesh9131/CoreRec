@@ -2,12 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class DSSM(nn.Module):
-    def __init__(self, 
-                 vocab_size, 
-                 embedding_dim, 
-                 hidden_dims=[256, 128],
-                 dropout=0.5):
+    def __init__(self, vocab_size, embedding_dim, hidden_dims=[256, 128], dropout=0.5):
         """
         Initialize the DSSM model.
 
@@ -18,10 +15,12 @@ class DSSM(nn.Module):
             dropout (float): Dropout rate.
         """
         super(DSSM, self).__init__()
-        
+
         # Text Embedding Layer
-        self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embedding_dim, padding_idx=0)
-        
+        self.embedding = nn.Embedding(
+            num_embeddings=vocab_size, embedding_dim=embedding_dim, padding_idx=0
+        )
+
         # Fully Connected Layers
         layers = []
         input_dim = embedding_dim
@@ -31,10 +30,10 @@ class DSSM(nn.Module):
             layers.append(nn.Dropout(dropout))
             input_dim = hidden_dim
         self.fc = nn.Sequential(*layers)
-        
+
         # Output Embedding Layer
         self.output = nn.Linear(input_dim, hidden_dim)  # Final embedding
-        
+
     def forward(self, text):
         """
         Forward pass of the DSSM model.
@@ -48,14 +47,14 @@ class DSSM(nn.Module):
         # Text Embedding
         embedded = self.embedding(text)  # (batch_size, seq_length, embedding_dim)
         embedded = torch.mean(embedded, dim=1)  # (batch_size, embedding_dim)
-        
+
         # Fully Connected Layers
         features = self.fc(embedded)  # (batch_size, hidden_dims[-1])
-        
+
         # Output Embedding
         output = self.output(features)  # (batch_size, hidden_dim)
-        
+
         # Normalize embeddings
         output = F.normalize(output, p=2, dim=1)
-        
+
         return output

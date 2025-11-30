@@ -155,9 +155,7 @@ class Fold(Module):
     def extra_repr(self) -> str:
         return (
             "output_size={output_size}, kernel_size={kernel_size}, "
-            "dilation={dilation}, padding={padding}, stride={stride}".format(
-                **self.__dict__
-            )
+            "dilation={dilation}, padding={padding}, stride={stride}".format(**self.__dict__)
         )
 
 
@@ -304,9 +302,7 @@ class Unfold(Module):
         self.stride = stride
 
     def forward(self, input: Tensor) -> Tensor:
-        return F.unfold(
-            input, self.kernel_size, self.dilation, self.padding, self.stride
-        )
+        return F.unfold(input, self.kernel_size, self.dilation, self.padding, self.stride)
 
     def extra_repr(self) -> str:
         return (

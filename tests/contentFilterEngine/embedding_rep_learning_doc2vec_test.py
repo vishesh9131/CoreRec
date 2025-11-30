@@ -16,7 +16,9 @@ def load_module(rel_path: str):
 class TestSimpleDoc2Vec(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load_module("corerec/engines/contentFilterEngine/embedding_representation_learning/doc2vec.py")
+        cls.mod = load_module(
+            "corerec/engines/contentFilterEngine/embedding_representation_learning/doc2vec.py"
+        )
         cls.SimpleDoc2Vec = cls.mod.SimpleDoc2Vec
 
     def test_train_and_get_embedding(self):
@@ -30,4 +32,4 @@ class TestSimpleDoc2Vec(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

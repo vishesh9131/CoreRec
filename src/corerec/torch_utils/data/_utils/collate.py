@@ -87,9 +87,7 @@ def default_convert(data):
         return elem_type(*(default_convert(d) for d in data))
     elif isinstance(data, tuple):
         return [default_convert(d) for d in data]  # Backwards compatibility.
-    elif isinstance(data, collections.abc.Sequence) and not isinstance(
-        data, (str, bytes)
-    ):
+    elif isinstance(data, collections.abc.Sequence) and not isinstance(data, (str, bytes)):
         try:
             if isinstance(data, collections.abc.MutableSequence):
                 # The sequence type may have extra properties, so we can't just
@@ -156,9 +154,7 @@ def collate(
 
         for collate_type in collate_fn_map:
             if isinstance(elem, collate_type):
-                return collate_fn_map[collate_type](
-                    batch, collate_fn_map=collate_fn_map
-                )
+                return collate_fn_map[collate_type](batch, collate_fn_map=collate_fn_map)
 
     if isinstance(elem, collections.abc.Mapping):
         try:
@@ -169,9 +165,7 @@ def collate(
                 clone = copy.copy(elem)
                 clone.update(
                     {
-                        key: collate(
-                            [d[key] for d in batch], collate_fn_map=collate_fn_map
-                        )
+                        key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
                         for key in elem
                     }
                 )
@@ -179,9 +173,7 @@ def collate(
             else:
                 return elem_type(
                     {
-                        key: collate(
-                            [d[key] for d in batch], collate_fn_map=collate_fn_map
-                        )
+                        key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
                         for key in elem
                     }
                 )
@@ -189,15 +181,11 @@ def collate(
             # The mapping type may not support `copy()` / `update(mapping)`
             # or `__init__(iterable)`.
             return {
-                key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
-                for key in elem
+                key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map) for key in elem
             }
     elif isinstance(elem, tuple) and hasattr(elem, "_fields"):  # namedtuple
         return elem_type(
-            *(
-                collate(samples, collate_fn_map=collate_fn_map)
-                for samples in zip(*batch)
-            )
+            *(collate(samples, collate_fn_map=collate_fn_map) for samples in zip(*batch))
         )
     elif isinstance(elem, collections.abc.Sequence):
         # check to make sure that the elements in batch have consistent size
@@ -209,8 +197,7 @@ def collate(
 
         if isinstance(elem, tuple):
             return [
-                collate(samples, collate_fn_map=collate_fn_map)
-                for samples in transposed
+                collate(samples, collate_fn_map=collate_fn_map) for samples in transposed
             ]  # Backwards compatibility.
         else:
             try:
@@ -224,18 +211,12 @@ def collate(
                     return clone
                 else:
                     return elem_type(
-                        [
-                            collate(samples, collate_fn_map=collate_fn_map)
-                            for samples in transposed
-                        ]
+                        [collate(samples, collate_fn_map=collate_fn_map) for samples in transposed]
                     )
             except TypeError:
                 # The sequence type may not support `copy()` / `__setitem__(index, item)`
                 # or `__init__(iterable)` (e.g., `range`).
-                return [
-                    collate(samples, collate_fn_map=collate_fn_map)
-                    for samples in transposed
-                ]
+                return [collate(samples, collate_fn_map=collate_fn_map) for samples in transposed]
 
     raise TypeError(default_collate_err_msg_format.format(elem_type))
 

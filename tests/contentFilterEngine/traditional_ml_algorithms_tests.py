@@ -2,7 +2,13 @@ import unittest
 from pathlib import Path
 from importlib.util import spec_from_file_location, module_from_spec
 
-BASE = Path(__file__).resolve().parents[2] / "corerec" / "engines" / "contentFilterEngine" / "traditional_ml_algorithms"
+BASE = (
+    Path(__file__).resolve().parents[2]
+    / "corerec"
+    / "engines"
+    / "contentFilterEngine"
+    / "traditional_ml_algorithms"
+)
 
 
 def load(fname: str):
@@ -15,7 +21,13 @@ def load(fname: str):
 
 class TestTraditionalMLImports(unittest.TestCase):
     def test_imports(self):
-        for fname in ["tfidf.py", "vw.py", "decision_tree.py", "lightgbm.py", "svm.py", "LR.py"]:
+        for fname in [
+            "tfidf.py",
+            "vw.py",
+            "decision_tree.py",
+            "lightgbm.py",
+            "svm.py",
+                "LR.py"]:
             try:
                 load(fname)
             except Exception as e:
@@ -23,4 +35,4 @@ class TestTraditionalMLImports(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

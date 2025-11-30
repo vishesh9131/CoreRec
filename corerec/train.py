@@ -17,6 +17,7 @@ Usage:
     train_model(model, data_loader, criterion, optimizer, num_epochs=10)
 """
 
+
 def train_model(model, data_loader, criterion, optimizer, num_epochs):
     model.train()
     for epoch in range(num_epochs):

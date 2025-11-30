@@ -2,7 +2,13 @@ import unittest
 from pathlib import Path
 from importlib.util import spec_from_file_location, module_from_spec
 
-BASE = Path(__file__).resolve().parents[2] / "corerec" / "engines" / "contentFilterEngine" / "probabilistic_statistical_methods"
+BASE = (
+    Path(__file__).resolve().parents[2]
+    / "corerec"
+    / "engines"
+    / "contentFilterEngine"
+    / "probabilistic_statistical_methods"
+)
 
 
 def load(fname: str):
@@ -41,17 +47,24 @@ class TestProbabilisticStatisticalMethods(unittest.TestCase):
 
     def test_fuzzy_logic_evaluate(self):
         m = load("fuzzy_logic.py")
+
         # Simple fuzzification and defuzzification
         def fuzz_x(v):
             return {"low": 1.0 if v < 5 else 0.0}
+
         def defuzz_out(fs):
             return 0.0 if fs.get("low", 0) > 0.5 else 1.0
+
         def rule(fs):
             return {"out": fs["x"]["low"]}
-        fl = m.FUZZY_LOGIC(input_vars={"x": fuzz_x}, output_vars={"out": defuzz_out}, rules=[rule])
+
+        fl = m.FUZZY_LOGIC(
+            input_vars={
+                "x": fuzz_x}, output_vars={
+                "out": defuzz_out}, rules=[rule])
         out = fl.evaluate({"x": 3})
         self.assertIn("out", out)
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

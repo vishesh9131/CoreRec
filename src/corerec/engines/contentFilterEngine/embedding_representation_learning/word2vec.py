@@ -1,6 +1,7 @@
 # corerec/engines/contentFilterEngine/embedding_representation_learning/word2vec.py
 
 import torch
+
 # import torch.nn as nn
 import corerec.torch_nn as nn
 import torch.optim as optim
@@ -31,15 +32,25 @@ References:
       arXiv preprint arXiv:1301.3781 (2013).
 """
 
+
 class Word2Vec(nn.Module):
     # def __init__(self, vocab_size: int=100000, embedding_dim: int):
-    def __init__(self, vocab_size: int = 10000, vector_size: int = 100, window: int = 5, min_count: int = 1, workers: int = 4, embedding_dim: int=1000):
+    def __init__(
+        self,
+        vocab_size: int = 10000,
+        vector_size: int = 100,
+        window: int = 5,
+        min_count: int = 1,
+        workers: int = 4,
+        embedding_dim: int = 1000,
+    ):
         super(Word2Vec, self).__init__()
         self.model = Word2Vec(vocab_size=vocab_size, embedding_dim=vector_size)
         self.embeddings = nn.Embedding(vocab_size, embedding_dim)
 
     def forward(self, inputs):
         return self.embeddings(inputs)
+
 
 class Word2VecTrainer:
     def __init__(self, vocab_size: int, embedding_dim: int, learning_rate: float = 0.01):
@@ -61,23 +72,24 @@ class Word2VecTrainer:
                 self.optimizer.step()
 
                 total_loss += loss.item()
-            print(f'Epoch {epoch}, Loss: {total_loss}')
+            print(f"Epoch {epoch}, Loss: {total_loss}")
 
     def get_embedding(self, word_index: int) -> List[float]:
         with torch.no_grad():
             return self.model.embeddings(torch.tensor([word_index])).tolist()[0]
 
+
 class WORD2VEC:
     """
     A Word2Vec model implementation for generating word embeddings.
-    
+
     This class provides methods for training word embeddings and managing model
     persistence. It's particularly useful for recommendation systems that need
     to understand word-level semantics.
 
     Attributes:
         model (Word2Vec): The underlying Gensim Word2Vec model instance
-        
+
     Methods:
         train: Trains the Word2Vec model on a corpus of sentences
         get_embedding: Retrieves the embedding vector for a specific word
@@ -85,7 +97,9 @@ class WORD2VEC:
         load_model: Loads a previously trained model from disk
     """
 
-    def __init__(self, vector_size: int = 100, window: int = 5, min_count: int = 1, workers: int = 4):
+    def __init__(
+        self, vector_size: int = 100, window: int = 5, min_count: int = 1, workers: int = 4
+    ):
         """
         Initialize a new Word2Vec model with specified parameters.
 

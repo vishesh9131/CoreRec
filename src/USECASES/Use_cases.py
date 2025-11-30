@@ -1,16 +1,17 @@
 #######################################################################################################
 #                                              COREREC X VISHGRAPHS
 #######################################################################################################
-#                                               SOME USE CASES 
+#                                               SOME USE CASES
 #######################################################################################################
 import sys
 import os
+
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 
-'''
+"""
 problem statement :
 Q.1) Generate a random dataset of graph(nodes=72) 
 and visulize it 2d and 3d (mandatory to use seed=332)
@@ -22,11 +23,12 @@ Q.3) Generate a Bipartite Graph of that dataset
 visulize it with cosine similarity.
 
 Q.4) Recommend Nodes to Node 7 and visulize it.
-'''
+"""
 
 import vish_graphs as vg
 import core_rec as cs
-from common_import import * 
+from common_import import *
+
 #######################################################################################################
 # Q1
 # file_path = vg.generate_random_graph(72, seed=332)
@@ -43,7 +45,7 @@ from common_import import *
 # top_nodes=vg.find_top_nodes(adj_matrix)
 # vg.draw_graph(adj_matrix,top_nodes=top_nodes)
 #######################################################################################################
-# Q3  Generate a Bipartite Graph of that dataset 
+# Q3  Generate a Bipartite Graph of that dataset
 #     visulize it with cosine similarity.
 # file_path = vg.generate_random_graph(72, seed=332)
 # matrix=vg.bipartite_matrix_maker(file_path)
@@ -55,7 +57,7 @@ from common_import import *
 # import torch.optim as optim
 # from torch.utils.data import Dataset, DataLoader
 # import core_rec as cs
-# # in 5 steps 
+# # in 5 steps
 # # 1.Generate random graph and load adjacency matrix
 # # 2. Initialize Transformer Model
 # # 3. Define your loss function, optimizer, and other training parameters

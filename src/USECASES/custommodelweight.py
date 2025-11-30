@@ -10,7 +10,7 @@ from torch.utils.data import Dataset, DataLoader
 
 # Generate random graph and load adjacency matrix
 # file_path = vg.generate_random_graph(40, seed=122)
-adj_matrix = np.loadtxt('src/SANDBOX/dataset/adj.csv', delimiter=",")
+adj_matrix = np.loadtxt("src/SANDBOX/dataset/adj.csv", delimiter=",")
 
 # adj_matrix = np.loadtxt(file_path, delimiter=",")
 top_nodes = vg.find_top_nodes(adj_matrix)
@@ -18,9 +18,8 @@ top_nodes = vg.find_top_nodes(adj_matrix)
 
 adj_matrices = []
 for i in range(1, 11):
-    adj_matrices1 = np.loadtxt(f'src/SANDBOX/delete/label_{i}.csv', delimiter=",")
+    adj_matrices1 = np.loadtxt(f"src/SANDBOX/delete/label_{i}.csv", delimiter=",")
     adj_matrices.append(adj_matrices1)
-
 
 
 # # Initialize Transformer Model
@@ -31,7 +30,9 @@ d_feedforward = 256
 input_dim = adj_matrix.shape[1]  # Input dimension should match the number of features per node
 hidden_dim = 64  # Define hidden layer dimension
 output_dim = adj_matrix.shape[1]  # Output dimension should match the input dimension
-n_matrices=10
+n_matrices = 10
+
+
 # Define the SimpleNN model
 class SimpleNN(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
@@ -44,17 +45,22 @@ class SimpleNN(nn.Module):
         if len(x.shape) == 3:
             # Training mode: x is of shape (batch_size, n_matrices, input_dim)
             batch_size, n_matrices, input_dim = x.shape
-            x = x.view(batch_size * n_matrices, input_dim)  # Flatten the matrices into the batch dimension
+            x = x.view(
+                batch_size * n_matrices, input_dim
+            )  # Flatten the matrices into the batch dimension
             x = self.fc1(x)
             x = self.relu(x)
             x = self.fc2(x)
-            x = x.view(batch_size, n_matrices, -1)  # Reshape back to (batch_size, n_matrices, output_dim)
+            x = x.view(
+                batch_size, n_matrices, -1
+            )  # Reshape back to (batch_size, n_matrices, output_dim)
         else:
             # Prediction mode: x is of shape (batch_size, input_dim)
             x = self.fc1(x)
             x = self.relu(x)
             x = self.fc2(x)
         return x
+
 
 # Convert adjacency matrix to a PyTorch tensor of dtype float32
 adj_matrix = torch.tensor(adj_matrix, dtype=torch.float32)
@@ -84,8 +90,17 @@ cs.train_model(model, data_loader, criterion, optimizer, num_epochs)
 
 # Labels for nodes (restricted to specified labels)
 node_labels = [
-    "vishesh", "shrestha", "biswajeet", "priyanka", "poonam", 
-    "adhiraaj", "yash", "sachin", "vinayak", "kranti", "sai"
+    "vishesh",
+    "shrestha",
+    "biswajeet",
+    "priyanka",
+    "poonam",
+    "adhiraaj",
+    "yash",
+    "sachin",
+    "vinayak",
+    "kranti",
+    "sai",
 ]
 for i in range(10):
     # Use the trained model for node recommendations
@@ -93,7 +108,9 @@ for i in range(10):
     predictions = cs.predict(model, adj_matrix, node_index, top_k=5)
 
     # Ensure predictions are within the valid range
-    predictions = [int(pred) % len(node_labels) for pred in predictions if 0 <= pred < len(node_labels)]
+    predictions = [
+        int(pred) % len(node_labels) for pred in predictions if 0 <= pred < len(node_labels)
+    ]
 
     # Get the names of the recommended nodes
     recommended_names = [node_labels[i] for i in predictions]
@@ -103,4 +120,3 @@ for i in range(10):
     # print("Popular Nodes are:", [node_labels[i % len(node_labels)] for i in top_nodes])
 
     # vg.draw_graph_3d(adj_matrix, top_nodes=top_nodes, recommended_nodes=predictions, transparent_labeled=False)
-

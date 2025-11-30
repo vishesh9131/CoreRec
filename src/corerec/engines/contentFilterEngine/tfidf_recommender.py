@@ -1,13 +1,14 @@
 import numpy as np
 from corerec.base_recommender import BaseCorerec
 
+
 class TFIDFRecommender(BaseCorerec):
     def __init__(self, feature_matrix):
         if hasattr(feature_matrix, "toarray"):
             self.feature_matrix = feature_matrix.toarray()
         else:
             self.feature_matrix = np.array(feature_matrix)
-        
+
         self.similarity_matrix = self.compute_similarity_matrix()
 
     def compute_similarity_matrix(self):

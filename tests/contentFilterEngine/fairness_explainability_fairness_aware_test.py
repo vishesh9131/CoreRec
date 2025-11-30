@@ -17,7 +17,9 @@ def load_module(rel_path: str):
 class TestFairnessAware(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load_module("corerec/engines/contentFilterEngine/fairness_explainability/fairness_aware.py")
+        cls.mod = load_module(
+            "corerec/engines/contentFilterEngine/fairness_explainability/fairness_aware.py"
+        )
         cls.FAIRNESS_AWARE = cls.mod.FAIRNESS_AWARE
 
     def test_evaluate_and_ensure(self):
@@ -32,4 +34,4 @@ class TestFairnessAware(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

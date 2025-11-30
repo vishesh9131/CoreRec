@@ -94,17 +94,13 @@ def try_solve(
     return None
 
 
-def _try_isolate_lhs(
-    e: sympy.Basic, thing: sympy.Basic, floordiv_inequality: bool
-) -> sympy.Basic:
+def _try_isolate_lhs(e: sympy.Basic, thing: sympy.Basic, floordiv_inequality: bool) -> sympy.Basic:
     op = type(e)
 
     if isinstance(e, sympy.Rel):
         # Move any constants in the left-hand side to the right-hand side.
         lhs_not_thing = (
-            sum(a for a in e.lhs.args if not a.has(thing))
-            if isinstance(e.lhs, sympy.Add)
-            else 0
+            sum(a for a in e.lhs.args if not a.has(thing)) if isinstance(e.lhs, sympy.Add) else 0
         )
         e = op(e.lhs - lhs_not_thing, e.rhs - lhs_not_thing)  # type: ignore[attr-defined]
 

@@ -97,9 +97,7 @@ class Adagrad(Optimizer):
                     if torch.is_complex(p)
                     else initial_accumulator_value
                 )
-                state["sum"] = torch.full_like(
-                    p, init_value, memory_format=torch.preserve_format
-                )
+                state["sum"] = torch.full_like(p, init_value, memory_format=torch.preserve_format)
 
     def __setstate__(self, state):
         super().__setstate__(state)
@@ -113,14 +111,10 @@ class Adagrad(Optimizer):
             fused = group.setdefault("fused", None)
 
         state_values = list(self.state.values())
-        step_is_tensor = (len(state_values) != 0) and torch.is_tensor(
-            state_values[0]["step"]
-        )
+        step_is_tensor = (len(state_values) != 0) and torch.is_tensor(state_values[0]["step"])
         if not step_is_tensor:
             for s in state_values:
-                s["step"] = torch.tensor(
-                    float(s["step"]), dtype=_get_scalar_dtype(is_fused=fused)
-                )
+                s["step"] = torch.tensor(float(s["step"]), dtype=_get_scalar_dtype(is_fused=fused))
 
     def share_memory(self):
         for group in self.param_groups:
@@ -275,9 +269,7 @@ def adagrad(
     # and pass False to use_fused. This is not a mistake--we want to give the fused impl
     # bake-in time before making it the default, even if it is typically faster.
     if fused is None and foreach is None:
-        _, foreach = _default_to_fused_or_foreach(
-            params, differentiable, use_fused=False
-        )
+        _, foreach = _default_to_fused_or_foreach(params, differentiable, use_fused=False)
 
     if fused is None:
         fused = False
@@ -345,9 +337,7 @@ def _single_tensor_adagrad(
 
         if weight_decay != 0:
             if grad.is_sparse:
-                raise RuntimeError(
-                    "weight_decay option is not compatible with sparse gradients"
-                )
+                raise RuntimeError("weight_decay option is not compatible with sparse gradients")
             grad = grad.add(param, alpha=weight_decay)
 
         clr = lr / (1 + (step - 1) * lr_decay)
@@ -360,9 +350,7 @@ def _single_tensor_adagrad(
             state_sum.add_(_make_sparse(grad, grad_indices, grad_values.pow(2)))
             std = state_sum.sparse_mask(grad)
             std_values = std._values().sqrt_().add_(eps)
-            param.add_(
-                _make_sparse(grad, grad_indices, grad_values / std_values), alpha=-clr
-            )
+            param.add_(_make_sparse(grad, grad_indices, grad_values / std_values), alpha=-clr)
         else:
             is_complex = torch.is_complex(param)
             if is_complex:
@@ -413,9 +401,7 @@ def _multi_tensor_adagrad(
         device_state_sums,
         device_state_steps,
     ), _ in grouped_tensorlists.values():
-        device_has_sparse_grad = has_sparse_grad and any(
-            grad.is_sparse for grad in device_grads
-        )
+        device_has_sparse_grad = has_sparse_grad and any(grad.is_sparse for grad in device_grads)
 
         if device_has_sparse_grad:
             _single_tensor_adagrad(
@@ -448,9 +434,7 @@ def _multi_tensor_adagrad(
         # and over. 1 will then be wrapped into a Tensor over and over again, which is slower than if we just
         # wrapped it once now. The alpha is required to assure we go to the right overload.
         if device_state_steps[0].is_cpu:
-            torch._foreach_add_(
-                device_state_steps, torch.tensor(1.0, device="cpu"), alpha=1.0
-            )
+            torch._foreach_add_(device_state_steps, torch.tensor(1.0, device="cpu"), alpha=1.0)
         else:
             torch._foreach_add_(device_state_steps, 1)
 
@@ -463,9 +447,7 @@ def _multi_tensor_adagrad(
                     device_grads, device_params, alpha=weight_decay
                 )
 
-        minus_clr = [
-            -lr / (1 + (_get_value(step) - 1) * lr_decay) for step in device_state_steps
-        ]
+        minus_clr = [-lr / (1 + (_get_value(step) - 1) * lr_decay) for step in device_state_steps]
 
         torch._foreach_addcmul_(device_state_sums, device_grads, device_grads, value=1)
 
@@ -505,13 +487,9 @@ def _fused_adagrad(
         raise RuntimeError("`fused` does not support sparse grad or complex param")
 
     if differentiable:
-        raise RuntimeError(
-            "adagrad with fused=True does not support differentiable=True"
-        )
+        raise RuntimeError("adagrad with fused=True does not support differentiable=True")
 
-    grad_scale_dict = (
-        {grad_scale.device: grad_scale} if grad_scale is not None else None
-    )
+    grad_scale_dict = {grad_scale.device: grad_scale} if grad_scale is not None else None
     found_inf_dict = {found_inf.device: found_inf} if found_inf is not None else None
 
     grouped_tensors = Optimizer._group_tensors_by_device_and_dtype(
@@ -550,6 +528,4 @@ def _fused_adagrad(
             found_inf=device_found_inf,
         )
         if device_found_inf is not None:
-            torch._foreach_sub_(
-                device_state_steps, [device_found_inf] * len(device_state_steps)
-            )
+            torch._foreach_sub_(device_state_steps, [device_found_inf] * len(device_state_steps))

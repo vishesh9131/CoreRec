@@ -117,9 +117,7 @@ class SGD(Optimizer):  # noqa: D101
             grads: List[Tensor] = []
             momentum_buffer_list: List[Optional[Tensor]] = []
 
-            has_sparse_grad = self._init_group(
-                group, params, grads, momentum_buffer_list
-            )
+            has_sparse_grad = self._init_group(group, params, grads, momentum_buffer_list)
 
             sgd(
                 params,
@@ -380,9 +378,7 @@ def _multi_tensor_sgd(
         device_grads,
         device_momentum_buffer_list,
     ), indices in grouped_tensors.values():
-        device_has_sparse_grad = has_sparse_grad and any(
-            grad.is_sparse for grad in device_grads
-        )
+        device_has_sparse_grad = has_sparse_grad and any(grad.is_sparse for grad in device_grads)
 
         if maximize:
             device_grads = torch._foreach_neg(device_grads)  # type: ignore[assignment]
@@ -460,17 +456,11 @@ def _fused_sgd(
         return
     if has_sparse_grad:
         raise RuntimeError("`_fused_sgd` does not support sparse gradients")
-    grad_scale_dict: DeviceDict = (
-        {grad_scale.device: grad_scale} if grad_scale is not None else {}
-    )
-    found_inf_dict: DeviceDict = (
-        {found_inf.device: found_inf} if found_inf is not None else {}
-    )
+    grad_scale_dict: DeviceDict = {grad_scale.device: grad_scale} if grad_scale is not None else {}
+    found_inf_dict: DeviceDict = {found_inf.device: found_inf} if found_inf is not None else {}
 
     no_momentum_buffer = momentum == 0
-    is_first_step = (
-        all(t is None for t in momentum_buffer_list) and not no_momentum_buffer
-    )
+    is_first_step = all(t is None for t in momentum_buffer_list) and not no_momentum_buffer
     if is_first_step:
         for i, g in enumerate(grads):
             momentum_buffer_list[i] = torch.empty_like(g)
@@ -483,9 +473,7 @@ def _fused_sgd(
     ) in grouped_tensors.items():
         device_grad_scale, device_found_inf = None, None
         if grad_scale is not None:
-            device_grad_scale = grad_scale_dict.setdefault(
-                device, grad_scale.to(device)
-            )
+            device_grad_scale = grad_scale_dict.setdefault(device, grad_scale.to(device))
         if found_inf_dict is not None and found_inf is not None:
             device_found_inf = found_inf_dict.setdefault(device, found_inf.to(device))
         torch._fused_sgd_(

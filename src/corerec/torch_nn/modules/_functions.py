@@ -51,9 +51,7 @@ class SyncBatchNorm(Function):
             # zero count will be filtered out later when computing global mean
             # & invstd, but they still needs to participate the all_gather
             # collective communication to unblock other peer processes.
-            combined = torch.zeros(
-                2 * num_channels + 1, dtype=input.dtype, device=input.device
-            )
+            combined = torch.zeros(2 * num_channels + 1, dtype=input.dtype, device=input.device)
 
         # Use allgather instead of allreduce because count could be different across
         # ranks, simple all reduce op can not give correct results.
@@ -70,9 +68,7 @@ class SyncBatchNorm(Function):
                 dtype=combined.dtype,
                 device=combined.device,
             )
-            dist.all_gather_into_tensor(
-                combined_flat, combined, process_group, async_op=False
-            )
+            dist.all_gather_into_tensor(combined_flat, combined, process_group, async_op=False)
             combined = torch.reshape(combined_flat, (world_size, combined_size))
             # world_size * (2C + 1) -> world_size * C, world_size * C, world_size * 1
             mean_all, invstd_all, count_all = torch.split(combined, num_channels, dim=1)
@@ -218,9 +214,7 @@ class CrossMapLRN2d(Function):
         ctx.scale = None
 
         if input.dim() != 4:
-            raise ValueError(
-                f"CrossMapLRN2d: Expected input to be 4D, got {input.dim()}D instead."
-            )
+            raise ValueError(f"CrossMapLRN2d: Expected input to be 4D, got {input.dim()}D instead.")
 
         ctx.scale = ctx.scale or input.new()
         output = input.new()
@@ -300,9 +294,7 @@ class CrossMapLRN2d(Function):
             )
             for c in range(channels):
                 accum_ratio.add_(paddded_ratio[c + ctx.size - 1])
-                grad_input[n][c].addcmul_(
-                    input[n][c], accum_ratio, value=-cache_ratio_value
-                )
+                grad_input[n][c].addcmul_(input[n][c], accum_ratio, value=-cache_ratio_value)
                 accum_ratio.add_(paddded_ratio[c], alpha=-1)
 
         return grad_input, None, None, None, None

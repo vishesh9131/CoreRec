@@ -76,9 +76,7 @@ class RMSprop(Optimizer):  # noqa: D101
                 if len(p_state) != 0 and not torch.is_tensor(p_state["step"]):
                     step_val = float(p_state["step"])
                     p_state["step"] = (
-                        torch.tensor(
-                            step_val, dtype=_get_scalar_dtype(), device=p.device
-                        )
+                        torch.tensor(step_val, dtype=_get_scalar_dtype(), device=p.device)
                         if group["capturable"]
                         else torch.tensor(step_val, dtype=_get_scalar_dtype())
                     )
@@ -113,17 +111,13 @@ class RMSprop(Optimizer):  # noqa: D101
                     if group["capturable"]
                     else torch.zeros((), dtype=_get_scalar_dtype())
                 )
-                state["square_avg"] = torch.zeros_like(
-                    p, memory_format=torch.preserve_format
-                )
+                state["square_avg"] = torch.zeros_like(p, memory_format=torch.preserve_format)
                 if group["momentum"] > 0:
                     state["momentum_buffer"] = torch.zeros_like(
                         p, memory_format=torch.preserve_format
                     )
                 if group["centered"]:
-                    state["grad_avg"] = torch.zeros_like(
-                        p, memory_format=torch.preserve_format
-                    )
+                    state["grad_avg"] = torch.zeros_like(p, memory_format=torch.preserve_format)
             square_avgs.append(state["square_avg"])
             state_steps.append(state["step"])
 
@@ -354,8 +348,7 @@ def _multi_tensor_rmsprop(
     if not torch._utils.is_compiling() and capturable:
         capturable_supported_devices = _get_capturable_supported_devices()
         assert all(
-            p.device.type == step.device.type
-            and p.device.type in capturable_supported_devices
+            p.device.type == step.device.type and p.device.type in capturable_supported_devices
             for p, step in zip(params, state_steps)
         ), f"If capturable=True, params and state_steps must be on supported devices: {capturable_supported_devices}."
 
@@ -388,9 +381,7 @@ def _multi_tensor_rmsprop(
         # and over. 1 will then be wrapped into a Tensor over and over again, which is slower than if we just
         # wrapped it once now. The alpha is required to assure we go to the right overload.
         if grouped_state_steps[0].is_cpu:
-            torch._foreach_add_(
-                grouped_state_steps, torch.tensor(1.0, device="cpu"), alpha=1.0
-            )
+            torch._foreach_add_(grouped_state_steps, torch.tensor(1.0, device="cpu"), alpha=1.0)
         else:
             torch._foreach_add_(grouped_state_steps, 1)
 
@@ -404,9 +395,7 @@ def _multi_tensor_rmsprop(
                 )
 
         torch._foreach_mul_(grouped_square_avgs, alpha)
-        torch._foreach_addcmul_(
-            grouped_square_avgs, grouped_grads, grouped_grads, value=1 - alpha
-        )
+        torch._foreach_addcmul_(grouped_square_avgs, grouped_grads, grouped_grads, value=1 - alpha)
 
         if centered:
             torch._foreach_lerp_(grouped_grad_avgs, grouped_grads, 1 - alpha)
@@ -428,9 +417,7 @@ def _multi_tensor_rmsprop(
                 momentum_lr = torch._foreach_mul(grouped_momentum_buffer_list, -lr)
                 torch._foreach_add_(grouped_params, momentum_lr)
             else:
-                torch._foreach_add_(
-                    grouped_params, grouped_momentum_buffer_list, alpha=-lr
-                )
+                torch._foreach_add_(grouped_params, grouped_momentum_buffer_list, alpha=-lr)
         else:
             # If LR is a tensor, the else branch will internally call item()
             # which will cause silent incorrectness if we are capturing
@@ -478,9 +465,7 @@ def rmsprop(
         )
 
     if foreach is None:
-        _, foreach = _default_to_fused_or_foreach(
-            params, differentiable, use_fused=False
-        )
+        _, foreach = _default_to_fused_or_foreach(params, differentiable, use_fused=False)
 
     if foreach and torch.jit.is_scripting():
         raise RuntimeError("torch.jit.script not supported with foreach optimizers")

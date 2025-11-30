@@ -5,12 +5,13 @@ from typing import List
 from scipy.sparse import csr_matrix
 from ..base_recommender import BaseRecommender
 
+
 class NeuralCollaborativeFilteringBase(BaseRecommender, ABC):
     """
     Neural Collaborative Filtering (NCF) Base Implementation.
 
     A generalized framework for neural network-based collaborative filtering that can learn
-    arbitrary function from data by leveraging neural networks' capacity of non-linear 
+    arbitrary function from data by leveraging neural networks' capacity of non-linear
     transformation and deep representation learning.
 
     Attributes:
@@ -64,6 +65,8 @@ class NeuralCollaborativeFilteringBase(BaseRecommender, ABC):
         self.epochs = epochs
         # Add additional initialization as needed
 
-    def preprocess_data(self, interaction_matrix: csr_matrix, user_ids: List[int], item_ids: List[int]):
+    def preprocess_data(
+        self, interaction_matrix: csr_matrix, user_ids: List[int], item_ids: List[int]
+    ):
         # Implement any preprocessing steps specific to neural CF
         pass

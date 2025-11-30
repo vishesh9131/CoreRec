@@ -128,14 +128,10 @@ def sympy_interp(
         return env[expr]
 
     # Special cases
-    if isinstance(expr, sympy.Pow) and isinstance(
-        expr.args[1], sympy.core.numbers.Half
-    ):
+    if isinstance(expr, sympy.Pow) and isinstance(expr.args[1], sympy.core.numbers.Half):
         return analysis.sqrt(sympy_interp(analysis, env, expr.args[0]))
     if isinstance(expr, ToFloat):
-        return analysis.to_dtype(
-            sympy_interp(analysis, env, expr.args[0]), torch.float64
-        )
+        return analysis.to_dtype(sympy_interp(analysis, env, expr.args[0]), torch.float64)
 
     # Recursive case
     args = [sympy_interp(analysis, env, arg) for arg in expr.args]  # type: ignore[arg-type]

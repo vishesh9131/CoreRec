@@ -103,7 +103,7 @@
 #             x = conv(x, edge_index)
 #             x = self.relu(x)
 #         return x
-    
+
 # class GNN(Module):
 #     def __init__(self, in_channels, hidden_channels, out_channels, num_layers):
 #         super(GNN, self).__init__()
@@ -165,18 +165,9 @@
 #         user_indices = user_indices + num_nodes // 2
 #         edge_index = torch.stack([torch.cat([user_indices, item_indices]), torch.cat([item_indices, user_indices])], dim=0)
 #         return edge_index
-    
 
 
-
-
-
-
-
-
-
-
-# ######################-Work-in-Progress-##################### 
+# ######################-Work-in-Progress-#####################
 # class GraphTransformerV2_test(Module):
 #     def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim):
 #         super(GraphTransformerV2, self).__init__()
@@ -220,4 +211,3 @@
 #         x = self.output_linear(x)
 
 #         return x
-

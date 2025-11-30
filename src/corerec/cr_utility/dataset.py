@@ -338,9 +338,7 @@ class ConcatDataset(Dataset[_T_co]):
     def __getitem__(self, idx):
         if idx < 0:
             if -idx > len(self):
-                raise ValueError(
-                    "absolute value of index should not exceed dataset length"
-                )
+                raise ValueError("absolute value of index should not exceed dataset length")
             idx = len(self) + idx
         dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
         if dataset_idx == 0:
@@ -375,17 +373,13 @@ class ChainDataset(IterableDataset):
 
     def __iter__(self):
         for d in self.datasets:
-            assert isinstance(
-                d, IterableDataset
-            ), "ChainDataset only supports IterableDataset"
+            assert isinstance(d, IterableDataset), "ChainDataset only supports IterableDataset"
             yield from d
 
     def __len__(self):
         total = 0
         for d in self.datasets:
-            assert isinstance(
-                d, IterableDataset
-            ), "ChainDataset only supports IterableDataset"
+            assert isinstance(d, IterableDataset), "ChainDataset only supports IterableDataset"
             total += len(d)  # type: ignore[arg-type]
         return total
 
@@ -458,9 +452,7 @@ def random_split(
         for i, frac in enumerate(lengths):
             if frac < 0 or frac > 1:
                 raise ValueError(f"Fraction at index {i} is not between 0 and 1")
-            n_items_in_split = int(
-                math.floor(len(dataset) * frac)  # type: ignore[arg-type]
-            )
+            n_items_in_split = int(math.floor(len(dataset) * frac))  # type: ignore[arg-type]
             subset_lengths.append(n_items_in_split)
         remainder = len(dataset) - sum(subset_lengths)  # type: ignore[arg-type]
         # add 1 to all the lengths in round-robin fashion until the remainder is 0
@@ -471,15 +463,12 @@ def random_split(
         for i, length in enumerate(lengths):
             if length == 0:
                 warnings.warn(
-                    f"Length of split at index {i} is 0. "
-                    f"This might result in an empty dataset."
+                    f"Length of split at index {i} is 0. " f"This might result in an empty dataset."
                 )
 
     # Cannot verify that dataset is Sized
     if sum(lengths) != len(dataset):  # type: ignore[arg-type]
-        raise ValueError(
-            "Sum of input lengths does not equal the length of the input dataset!"
-        )
+        raise ValueError("Sum of input lengths does not equal the length of the input dataset!")
 
     indices = randperm(sum(lengths), generator=generator).tolist()  # type: ignore[arg-type, call-overload]
     lengths = cast(Sequence[int], lengths)

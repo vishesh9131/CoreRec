@@ -152,7 +152,7 @@ class BaseCorerec(ABC):
 
         saved_model = copy.deepcopy(self)
         pickle.dump(saved_model, open(model_file, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
-        
+
         if self.verbose:
             print("{} model is saved to {}".format(self.name, model_file))
 
@@ -187,7 +187,7 @@ class BaseCorerec(ABC):
     def fit(self, interaction_matrix, user_ids: List[int], item_ids: List[int]):
         """
         Train the recommender system using the provided interaction matrix.
-        
+
         Parameters:
         - interaction_matrix (scipy.sparse matrix): User-item interaction matrix.
         - user_ids (List[int]): List of user IDs.
@@ -199,11 +199,11 @@ class BaseCorerec(ABC):
     def recommend(self, user_id: int, top_n: int = 10) -> List[int]:
         """
         Generate top-N item recommendations for a given user.
-        
+
         Parameters:
         - user_id (int): The ID of the user.
         - top_n (int): The number of recommendations to generate.
-        
+
         Returns:
         - List[int]: List of recommended item IDs.
         """
@@ -248,6 +248,8 @@ class BaseCorerec(ABC):
         if self.stopped_epoch > 0:
             print("Early stopping:")
             print(f"- best epoch = {self.best_epoch}, stopped epoch = {self.stopped_epoch}")
-            print(f"- best monitored value = {self.best_value:.6f} (delta = {current_value - self.best_value:.6f})")
+            print(
+                f"- best monitored value = {self.best_value:.6f} (delta = {current_value - self.best_value:.6f})"
+            )
             return True
-        return False 
+        return False

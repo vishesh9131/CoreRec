@@ -7,6 +7,9 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 
 logger = logging.getLogger(__name__)
+from corerec.api.exceptions import ModelNotFittedError
+from corerec.utils.validation import validate_fit_inputs
+
 
 class MatrixFactorizationBase(BaseRecommender):
     """

@@ -45,7 +45,7 @@ except ImportError:
 # ============================================================================
 
 __all__ = [
-    'Word2VecRecommender',
-    'Doc2VecRecommender',
-    'PersonalizedEmbeddings',
+    "Word2VecRecommender",
+    "Doc2VecRecommender",
+    "PersonalizedEmbeddings",
 ]

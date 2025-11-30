@@ -168,12 +168,8 @@ class IterDataPipe(IterableDataset[_T_co], metaclass=_IterDataPipeMeta):
 
             return result_pipe
 
-        function = functools.partial(
-            class_function, cls_to_register, enable_df_api_tracing
-        )
-        functools.update_wrapper(
-            wrapper=function, wrapped=cls_to_register, assigned=("__doc__",)
-        )
+        function = functools.partial(class_function, cls_to_register, enable_df_api_tracing)
+        functools.update_wrapper(wrapper=function, wrapped=cls_to_register, assigned=("__doc__",))
         cls.functions[function_name] = function
 
     def __getstate__(self):
@@ -311,9 +307,7 @@ class MapDataPipe(Dataset[_T_co], metaclass=_DataPipeMeta):
             return result_pipe
 
         function = functools.partial(class_function, cls_to_register)
-        functools.update_wrapper(
-            wrapper=function, wrapped=cls_to_register, assigned=("__doc__",)
-        )
+        functools.update_wrapper(wrapper=function, wrapped=cls_to_register, assigned=("__doc__",))
         cls.functions[function_name] = function
 
     def __getstate__(self):
@@ -392,9 +386,7 @@ class _DataPipeSerializationWrapper:
         try:
             return len(self._datapipe)
         except Exception as e:
-            raise TypeError(
-                f"{type(self).__name__} instance doesn't have valid length"
-            ) from e
+            raise TypeError(f"{type(self).__name__} instance doesn't have valid length") from e
 
 
 class _IterDataPipeSerializationWrapper(_DataPipeSerializationWrapper, IterDataPipe):

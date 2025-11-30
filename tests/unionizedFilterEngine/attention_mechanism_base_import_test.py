@@ -2,7 +2,13 @@ import unittest
 from pathlib import Path
 from importlib.util import spec_from_file_location, module_from_spec
 
-BASE = Path(__file__).resolve().parents[2] / "corerec" / "engines" / "unionizedFilterEngine" / "attention_mechanism_base"
+BASE = (
+    Path(__file__).resolve().parents[2]
+    / "corerec"
+    / "engines"
+    / "unionizedFilterEngine"
+    / "attention_mechanism_base"
+)
 
 EXCLUDE = {"__init__.py"}
 
@@ -36,4 +42,4 @@ class TestAttentionMechanismBaseImports(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

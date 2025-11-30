@@ -1,6 +1,7 @@
 # multi_modal implementation
 import numpy as np
 
+
 class MULTI_MODAL:
     def __init__(self, text_model, genre_model, audio_model=None):
         """
@@ -29,10 +30,10 @@ class MULTI_MODAL:
         """
         # Transform text data
         title_features = self.text_model.transform(title_inputs).toarray()
-        
+
         # Transform genre data
         genre_features = self.genre_model.transform(genre_inputs)
-        
+
         if self.audio_model and audio_inputs is not None:
             # Example: If you have audio features, process them accordingly
             # For simplicity, let's assume audio_model is a transformer that returns numpy arrays
@@ -40,7 +41,7 @@ class MULTI_MODAL:
             combined_features = np.hstack((title_features, genre_features, audio_features))
         else:
             combined_features = np.hstack((title_features, genre_features))
-        
+
         return combined_features
 
     def train(self, data_loader, criterion, optimizer, num_epochs):

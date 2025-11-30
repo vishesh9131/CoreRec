@@ -1,5 +1,6 @@
 from corerec.vish_graphs import run_optimal_path
 
+
 class SemanticModels:
     """
     SemanticModels Class
@@ -31,6 +32,7 @@ class SemanticModels:
             Updates the semantic information in the graph, allowing for dynamic and
             context-aware recommendations.
     """
+
     def __init__(self):
         self.graph = []
 
@@ -45,6 +47,7 @@ class SemanticModels:
         Find the optimal path using the run_optimal_path function.
         """
         run_optimal_path(self.graph, start_city)
+
 
 # Define the graph variable
 # graph = [

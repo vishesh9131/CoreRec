@@ -3,7 +3,8 @@ from pathlib import Path
 from importlib.util import spec_from_file_location, module_from_spec
 
 SUBDIR = "embedding_representation_learning"
-ROOT = Path(__file__).resolve().parents[2] / "corerec" / "engines" / "contentFilterEngine" / SUBDIR
+ROOT = Path(__file__).resolve(
+).parents[2] / "corerec" / "engines" / "contentFilterEngine" / SUBDIR
 
 EXCLUDE_DIRS = {"__pycache__"}
 EXCLUDE_FILES = {"__init__.py"}
@@ -35,10 +36,12 @@ class TestImportEmbeddingRepresentation(unittest.TestCase):
                 try:
                     import_file(file_path)
                 except ImportError as e:
-                    self.skipTest(f"Optional dep missing for {file_path.name}: {e}")
+                    self.skipTest(
+                        f"Optional dep missing for {
+                            file_path.name}: {e}")
                 except Exception as e:
                     self.fail(f"Failed importing {file_path}: {e}")
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

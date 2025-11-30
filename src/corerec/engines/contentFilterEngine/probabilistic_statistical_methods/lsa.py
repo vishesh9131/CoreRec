@@ -7,6 +7,7 @@ from typing import List, Any, Dict
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class LSA:
     def __init__(self, n_components: int = 100):
         """
@@ -15,7 +16,7 @@ class LSA:
         Parameters:
         - n_components (int): Number of latent components to extract.
         """
-        self.vectorizer = TfidfVectorizer(stop_words='english', max_features=1000)
+        self.vectorizer = TfidfVectorizer(stop_words="english", max_features=1000)
         self.lsa_model = TruncatedSVD(n_components=n_components, random_state=42)
         self.item_ids = []
         logger.info(f"LSA initialized with {n_components} components.")
@@ -59,7 +60,9 @@ class LSA:
         """
         logger.info("Generating recommendations using LSA.")
         query_vec = self.transform([query])
-        doc_vecs = self.lsa_model.transform(self.vectorizer.transform(self.vectorizer.get_feature_names_out()))
+        doc_vecs = self.lsa_model.transform(
+            self.vectorizer.transform(self.vectorizer.get_feature_names_out())
+        )
         similarity_scores = (doc_vecs @ query_vec.T).flatten()
         top_indices = similarity_scores.argsort()[::-1][:top_n]
         logger.info(f"Top {top_n} recommendations generated using LSA.")
@@ -68,7 +71,7 @@ class LSA:
     def add_item(self, item_id: int, item_features: Dict[str, Any]):
         logger.info(f"Adding item {item_id} to LSA.")
         # Assuming item_features contains 'genres' as a list
-        genres = ' '.join(item_features.get('genres', []))
+        genres = " ".join(item_features.get("genres", []))
         new_tfidf = self.vectorizer.transform([genres])  # Use transform, not fit
         new_vec = self.lsa_model.transform(new_tfidf)
         # You would need to handle incorporating the new_vec into the existing model

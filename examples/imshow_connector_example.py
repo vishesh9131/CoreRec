@@ -30,7 +30,9 @@ CATALOG = [
 ]
 
 
-def predict(user_id: Any, k: int = 10, context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+def predict(
+    user_id: Any, k: int = 10, context: Optional[Dict[str, Any]] = None
+) -> List[Dict[str, Any]]:
     """
     Minimal predict function format for imshow Connector.
     Returns a ranked list of item dicts with at least: id, title, thumbnail, url.
@@ -53,4 +55,4 @@ if __name__ == "__main__":
     # start a tiny local server to preview the UI
     # tip: open http://127.0.0.1:8000 in browser
     print(f"Starting quick demo with frontend='{frontend}'. Available frontends: {available}")
-    quick_demo(predict, frontend=frontend, host="127.0.0.1", port=8000) 
+    quick_demo(predict, frontend=frontend, host="127.0.0.1", port=8000)

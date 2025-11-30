@@ -1,11 +1,15 @@
 import numpy as np
 from scipy.sparse import csr_matrix
-from typing import List, Optional, Dict, Any, Tuple
+from typing import Union, List, Optional, Dict
+from pathlib import Path
 from ..base_recommender import BaseRecommender
+from corerec.api.exceptions import ModelNotFittedError
+import pickle
 import logging
 
 logger = logging.getLogger(__name__)
 
+        
 class FactorizationMachineBase(BaseRecommender):
     """
     Factorization Machine (FM) for collaborative filtering.
@@ -31,6 +35,7 @@ class FactorizationMachineBase(BaseRecommender):
     seed : Optional[int]
         Random seed for reproducibility
     """
+    
     def __init__(
         self,
         factors: int = 10,
@@ -38,8 +43,10 @@ class FactorizationMachineBase(BaseRecommender):
         regularization: float = 0.01,
         iterations: int = 100,
         batch_size: int = 1000,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        device: str = "auto"
     ):
+        super().__init__(device=device)
         self.factors = factors
         self.learning_rate = learning_rate
         self.regularization = regularization
@@ -51,86 +58,69 @@ class FactorizationMachineBase(BaseRecommender):
         self.item_map = {}
         self.reverse_user_map = {}
         self.reverse_item_map = {}
-        self.w0 = None  # Global bias
-        self.w = None   # Feature weights
-        self.v = None   # Feature factor matrix
-    
-    def _create_mappings(self, user_ids: List[int], item_ids: List[int]) -> None:
-        """Create mappings between original IDs and matrix indices"""
-        self.user_map = {user_id: idx for idx, user_id in enumerate(user_ids)}
-        self.item_map = {item_id: idx for idx, item_id in enumerate(item_ids)}
-        self.reverse_user_map = {idx: user_id for user_id, idx in self.user_map.items()}
-        self.reverse_item_map = {idx: item_id for item_id, idx in self.item_map.items()}
-    
-    def _init_params(self, n_users: int, n_items: int) -> None:
-        """Initialize model parameters"""
+        self.w0 = None
+        self.w = None
+        self.v = None
+        
         if self.seed is not None:
             np.random.seed(self.seed)
+    
+    def _create_mappings(self, user_ids: List[int], item_ids: List[int]) -> None:
+        """
+        Create mappings between user/item IDs and indices.
         
-        # Number of features: user_id + item_id
+        Parameters:
+        -----------
+        user_ids : List[int]
+            List of unique user IDs
+        item_ids : List[int]
+            List of unique item IDs
+        """
+        self.user_map = {user_id: i for i, user_id in enumerate(user_ids)}
+        self.item_map = {item_id: i for i, item_id in enumerate(item_ids)}
+        self.reverse_user_map = {i: user_id for user_id, i in self.user_map.items()}
+        self.reverse_item_map = {i: item_id for item_id, i in self.item_map.items()}
+    
+    def _build_feature_vector(self, user_id: int, item_id: int) -> np.ndarray:
+        """
+        Build feature vector for a user-item pair.
+        
+        For collaborative filtering, features are one-hot encoded:
+        - First n_users positions: user one-hot
+        - Next n_items positions: item one-hot
+        
+        Parameters:
+        -----------
+        user_id : int
+            User ID
+        item_id : int
+            Item ID
+            
+        Returns:
+        --------
+        np.ndarray
+            Feature vector (sparse, mostly zeros)
+        """
+        n_users = len(self.user_map)
+        n_items = len(self.item_map)
         n_features = n_users + n_items
         
-        # Initialize parameters
-        self.w0 = 0.0  # Global bias
-        self.w = np.zeros(n_features)  # Linear terms
-        self.v = np.random.normal(0, 0.1, (n_features, self.factors))  # Interaction factors
-    
-    def _create_feature_vector(self, user_idx: int, item_idx: int, n_users: int) -> np.ndarray:
-        """Create one-hot encoded feature vector for user-item pair"""
-        # Feature vector: [user_1, user_2, ..., item_1, item_2, ...]
-        x = np.zeros(n_users + self.user_item_matrix.shape[1])
-        x[user_idx] = 1.0  # One-hot encode user
-        x[n_users + item_idx] = 1.0  # One-hot encode item
+        x = np.zeros(n_features)
+        
+        if user_id in self.user_map:
+            x[self.user_map[user_id]] = 1.0
+        
+        if item_id in self.item_map:
+            x[n_users + self.item_map[item_id]] = 1.0
+        
         return x
     
-    def _predict(self, x: np.ndarray) -> float:
-        """Make prediction using FM model for a feature vector"""
-        # First order term: w0 + sum(w_i * x_i)
-        pred = self.w0 + np.dot(self.w, x)
-        
-        # Second order term: sum_f( (sum_i(v_i,f * x_i))^2 - sum_i(v_i,f^2 * x_i^2) ) / 2
-        sum_square = np.zeros(self.factors)
-        square_sum = np.zeros(self.factors)
-        
-        # Calculate interaction terms efficiently
-        for i in range(len(x)):
-            if x[i] != 0:
-                sum_square += self.v[i] * x[i]
-                square_sum += (self.v[i] * x[i]) ** 2
-        
-        # Add interaction term to prediction
-        pred += 0.5 * np.sum(sum_square ** 2 - square_sum)
-        
-        return pred
-    
-    def _sgd_update(self, x: np.ndarray, y: float, pred: float) -> None:
-        """Update parameters using SGD for a single sample"""
-        # Calculate error
-        error = pred - y
-        
-        # Update global bias
-        self.w0 -= self.learning_rate * (error + self.regularization * self.w0)
-        
-        # Update feature weights and factors
-        for i in range(len(x)):
-            if x[i] == 0:
-                continue
-                
-            # Update linear term
-            grad_w = error * x[i] + self.regularization * self.w[i]
-            self.w[i] -= self.learning_rate * grad_w
-            
-            # Calculate sum term for interaction factors
-            sum_term = np.zeros(self.factors)
-            for j in range(len(x)):
-                if x[j] != 0 and j != i:
-                    sum_term += self.v[j] * x[j]
-            
-            # Update interaction factors
-            grad_v = error * x[i] * sum_term + self.regularization * self.v[i]
-            self.v[i] -= self.learning_rate * grad_v
-    
-    def fit(self, interaction_matrix: csr_matrix, user_ids: List[int], item_ids: List[int]) -> None:
+    def fit(
+        self,
+        interaction_matrix: csr_matrix,
+        user_ids: List[int],
+        item_ids: List[int]
+    ) -> 'FactorizationMachineBase':
         """
         Train the FM model on the given interaction data.
         
@@ -142,176 +132,213 @@ class FactorizationMachineBase(BaseRecommender):
             List of user IDs corresponding to rows in the interaction matrix
         item_ids : List[int]
             List of item IDs corresponding to columns in the interaction matrix
-        """
-        # Validate inputs
-        validate_fit_inputs(user_ids, item_ids, ratings)
-        
-        # Create mappings
-        self._create_mappings(user_ids, item_ids)
-        
-        # Store interaction matrix for later use
-        self.user_item_matrix = interaction_matrix
-        
-        # Get dimensions
-        n_users, n_items = interaction_matrix.shape
-        
-        # Initialize model parameters
-        self._init_params(n_users, n_items)
-        
-        # Create training data
-        user_indices, item_indices, ratings = [], [], []
-        for user_idx in range(n_users):
-            for item_idx in interaction_matrix[user_idx].indices:
-                user_indices.append(user_idx)
-                item_indices.append(item_idx)
-                ratings.append(1.0)  # Assuming binary interactions
-        
-        # Training loop
-        n_samples = len(user_indices)
-        for iteration in range(self.iterations):
-            # Shuffle training data
-            indices = np.random.permutation(n_samples)
-            user_indices_shuffled = [user_indices[i] for i in indices]
-            item_indices_shuffled = [item_indices[i] for i in indices]
-            ratings_shuffled = [ratings[i] for i in indices]
-            
-            total_loss = 0.0
-            
-            # Mini-batch training
-            for batch_start in range(0, n_samples, self.batch_size):
-                batch_end = min(batch_start + self.batch_size, n_samples)
-                
-                batch_loss = 0.0
-                
-                # Process each sample in the batch
-                for i in range(batch_start, batch_end):
-                    user_idx = user_indices_shuffled[i]
-                    item_idx = item_indices_shuffled[i]
-                    rating = ratings_shuffled[i]
-                    
-                    # Create feature vector
-                    x = self._create_feature_vector(user_idx, item_idx, n_users)
-                    
-                    # Make prediction
-                    pred = self._predict(x)
-                    
-                    # Calculate loss
-                    error = pred - rating
-                    batch_loss += error ** 2
-                    
-                    # Update parameters
-                    self._sgd_update(x, rating, pred)
-                
-                total_loss += batch_loss
-            
-            # Print progress
-            avg_loss = total_loss / n_samples
-            if (iteration + 1) % 10 == 0 or iteration == 0:
-                if self.verbose:
-                    logger.info(f"Iteration {iteration+1}/{self.iterations}, Loss: {avg_loss:.4f}")
-    
-    def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
-        """
-        Generate top-N recommendations for a specific user.
-        
-        Parameters:
-        -----------
-        user_id : int
-            ID of the user to generate recommendations for
-        top_n : int
-            Number of recommendations to generate
-        exclude_seen : bool
-            Whether to exclude items the user has already interacted with
             
         Returns:
         --------
-        List[int] : List of recommended item IDs
+        self
         """
-        # Validate inputs
-        validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
-        validate_top_k(top_k if 'top_k' in locals() else 10)
+        self._create_mappings(user_ids, item_ids)
         
-        if self.w is None or self.v is None:
-            raise ValueError("Model has not been trained. Call fit() first.")
+        n_users = len(user_ids)
+        n_items = len(item_ids)
+        n_features = n_users + n_items
         
-        # Map user_id to internal index
-        if user_id not in self.user_map:
-            raise ValueError(f"User ID {user_id} not found in training data")
+        # Initialize parameters
+        self.w0 = 0.0
+        self.w = np.zeros(n_features)
+        self.v = np.random.normal(0, 0.1, (n_features, self.factors))
+        
+        # Training loop using SGD
+        for iteration in range(self.iterations):
+            # Sample random interactions
+            user_indices, item_indices = interaction_matrix.nonzero()
             
-        user_idx = self.user_map[user_id]
-        n_users = len(self.user_map)
-        n_items = len(self.item_map)
-        
-        # Calculate scores for all items
-        scores = np.zeros(n_items)
-        for item_idx in range(n_items):
-            # Create feature vector
-            x = self._create_feature_vector(user_idx, item_idx, n_users)
+            if len(user_indices) == 0:
+                break
             
-            # Make prediction
-            scores[item_idx] = self._predict(x)
+            indices = np.random.choice(
+                len(user_indices),
+                size=min(self.batch_size, len(user_indices)),
+                replace=False
+            )
+            
+            batch_users = user_indices[indices]
+            batch_items = item_indices[indices]
+            
+            # Process batch
+            for u_idx, i_idx in zip(batch_users, batch_items):
+                user_id = user_ids[u_idx]
+                item_id = item_ids[i_idx]
+                rating = interaction_matrix[u_idx, i_idx]
+                
+                x = self._build_feature_vector(user_id, item_id)
+                pred = self._predict_internal(x)
+                
+                error = rating - pred
+                
+                # Update global bias
+                self.w0 += self.learning_rate * error
+                
+                # Update linear terms
+                for i in range(len(x)):
+                    if x[i] != 0:
+                        grad = error * x[i] - self.regularization * self.w[i]
+                        self.w[i] += self.learning_rate * grad
+                
+                # Update interaction factors
+                for f in range(self.factors):
+                    sum_vf = np.sum(self.v[:, f] * x)
+                    for i in range(len(x)):
+                        if x[i] != 0:
+                            grad = error * (sum_vf - self.v[i, f] * x[i]) * x[i] - self.regularization * self.v[i, f]
+                            self.v[i, f] += self.learning_rate * grad
         
-        # If requested, exclude items the user has already interacted with
-        if exclude_seen:
-            seen_items = self.user_item_matrix[user_idx].indices
-            scores[seen_items] = float('-inf')
+        if self.verbose:
+            logger.info(f"FM training completed after {self.iterations} iterations")
         
-        # Get top-n item indices
-        top_item_indices = np.argsort(-scores)[:top_n]
-        
-        # Map indices back to original item IDs
-        top_items = [self.reverse_item_map[idx] for idx in top_item_indices]
-        
-        return top_items
+        return self
     
-    def save_model(self, filepath: str) -> None:
-        """Save the model to a file"""
-        if self.w is None or self.v is None:
-            raise ValueError("Model has not been trained. Call fit() first.")
+    def _predict_internal(self, x: np.ndarray) -> float:
+        """
+        Internal prediction method using feature vector.
+        
+        Parameters:
+        -----------
+        x : np.ndarray
+            Feature vector
             
-        # Save model data
-        model_data = {
-            'w0': self.w0,
-            'w': self.w,
-            'v': self.v,
-            'user_map': self.user_map,
-            'item_map': self.item_map,
-            'reverse_user_map': self.reverse_user_map,
-            'reverse_item_map': self.reverse_item_map,
-            'params': {
-                'factors': self.factors,
-                'learning_rate': self.learning_rate,
-                'regularization': self.regularization,
-                'iterations': self.iterations,
-                'batch_size': self.batch_size,
-                'seed': self.seed
-            }
-        }
-        np.save(filepath, model_data, allow_pickle=True)
+            Returns:
+        --------
+        float
+            Prediction score
+        """
+        if self.w is None or self.v is None:
+            raise ModelNotFittedError("Model must be fitted before making predictions.")
+        
+        # First order term
+            pred = self.w0 + np.dot(self.w, x)
+        
+        # Second order term
+            sum_square = np.zeros(self.factors)
+            square_sum = np.zeros(self.factors)
+        
+            for i in range(len(x)):
+                if x[i] != 0:
+                    sum_square += self.v[i] * x[i]
+                    square_sum += (self.v[i] * x[i]) ** 2
+        
+            pred += 0.5 * np.sum(sum_square ** 2 - square_sum)
+        
+            return pred
+    
+    def predict(self, user_id: int, item_id: int) -> float:
+        """
+        Predict rating for a user-item pair.
+        
+            Parameters:
+            -----------
+        user_id : int
+            User ID
+        item_id : int
+            Item ID
+            
+        Returns:
+        --------
+        float
+            Predicted rating
+        """
+        x = self._build_feature_vector(user_id, item_id)
+        return self._predict_internal(x)
+    
+    def recommend(
+        self,
+        user_id: int,
+        top_n: int = 10,
+        exclude_seen: bool = True
+    ) -> List[int]:
+        """
+            Generate top-N recommendations for a specific user.
+        
+            Parameters:
+            -----------
+            user_id : int
+                ID of the user to generate recommendations for
+            top_n : int
+                Number of recommendations to generate
+            exclude_seen : bool
+                Whether to exclude items the user has already interacted with
+            
+            Returns:
+            --------
+        List[int]
+            List of recommended item IDs
+        """
+        if self.w is None or self.v is None:
+            raise ModelNotFittedError("Model must be fitted before making recommendations.")
+        
+        if user_id not in self.user_map:
+            return []
+        
+        scores = []
+        
+        for item_id in self.item_map.keys():
+            score = self.predict(user_id, item_id)
+            scores.append((item_id, score))
+        
+        scores.sort(key=lambda x: x[1], reverse=True)
+        
+        recommendations = [item_id for item_id, _ in scores[:top_n]]
+        
+        return recommendations
+    
+    def save(self, path: Union[str, Path], **kwargs) -> None:
+        """
+        Save model to disk using pickle.
+        
+        Parameters:
+        -----------
+        path : Union[str, Path]
+            File path to save the model
+        **kwargs : dict
+            Additional arguments (unused)
+        """
+        if self.w is None or self.v is None:
+            raise ModelNotFittedError("Model must be fitted before saving.")
+        
+        path_obj = Path(path)
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(path_obj, 'wb') as f:
+            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+        
+        if self.verbose:
+            logger.info(f"FactorizationMachine model saved to {path}")
     
     @classmethod
-    def load_model(cls, filepath: str) -> 'FactorizationMachineBase':
-        """Load a model from a file"""
-        model_data = np.load(filepath, allow_pickle=True).item()
+    def load(cls, path: Union[str, Path], **kwargs) -> 'FactorizationMachineBase':
+        """
+        Load model from disk.
         
-        # Create an instance with the saved parameters
-        instance = cls(
-            factors=model_data['params']['factors'],
-            learning_rate=model_data['params']['learning_rate'],
-            regularization=model_data['params']['regularization'],
-            iterations=model_data['params']['iterations'],
-            batch_size=model_data['params']['batch_size'],
-            seed=model_data['params']['seed']
-        )
+        Parameters:
+        -----------
+        path : Union[str, Path]
+            File path to load the model from
+        **kwargs : dict
+            Additional arguments (unused)
+            
+        Returns:
+        --------
+        Loaded model instance
+        """
+        path_obj = Path(path)
         
-        # Restore instance variables
-        instance.w0 = model_data['w0']
-        instance.w = model_data['w']
-        instance.v = model_data['v']
-        instance.user_map = model_data['user_map']
-        instance.item_map = model_data['item_map']
-        instance.reverse_user_map = model_data['reverse_user_map']
-        instance.reverse_item_map = model_data['reverse_item_map']
+        with open(path_obj, 'rb') as f:
+            model = pickle.load(f)
         
-        return instance 
+        if not isinstance(model, cls):
+            raise ValueError(f"Loaded object is not instance of {cls.__name__}")
+        
+        if model.verbose:
+            logger.info(f"FactorizationMachine model loaded from {path}")
+        
+        return model

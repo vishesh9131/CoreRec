@@ -6,6 +6,7 @@ from typing import Dict, List, Any
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class DynamicFilteringRecommender:
     def __init__(self, base_recommender: Any):
         """
@@ -29,7 +30,7 @@ class DynamicFilteringRecommender:
         - item_features (Dict[str, Any]): The features of the new item.
         """
         logger.info(f"Adding item {item_id} to the base recommender.")
-        if hasattr(self.base_recommender, 'add_item'):
+        if hasattr(self.base_recommender, "add_item"):
             self.base_recommender.add_item(item_id, item_features)
             self.added_items.append(item_id)
             logger.info(f"Item {item_id} added to the base recommender successfully.")
@@ -44,7 +45,7 @@ class DynamicFilteringRecommender:
         - item_id (int): The ID of the item to remove.
         """
         logger.info(f"Removing item {item_id} from the base recommender.")
-        if hasattr(self.base_recommender, 'remove_item'):
+        if hasattr(self.base_recommender, "remove_item"):
             self.base_recommender.remove_item(item_id)
             self.removed_items.append(item_id)
             logger.info(f"Item {item_id} removed from the base recommender successfully.")
@@ -60,11 +61,13 @@ class DynamicFilteringRecommender:
         - new_features (Dict[str, Any]): The updated features of the item.
         """
         try:
-            if hasattr(self.base_recommender, 'update_item_features'):
+            if hasattr(self.base_recommender, "update_item_features"):
                 self.base_recommender.update_item_features(item_id, new_features)
                 logger.info(f"Updated features for item {item_id} in the base recommender.")
             else:
-                logger.warning("Base recommender does not support updating item features dynamically.")
+                logger.warning(
+                    "Base recommender does not support updating item features dynamically."
+                )
         except Exception as e:
             logger.error(f"Error updating features for item {item_id}: {e}")
 
@@ -81,13 +84,13 @@ class DynamicFilteringRecommender:
               'item_features': {'genre': 'Comedy', 'duration': 120}
           }
         """
-        action = event.get('action')
-        if action == 'add':
-            self.add_item(event['item_id'], event['item_features'])
-        elif action == 'remove':
-            self.remove_item(event['item_id'])
-        elif action == 'update':
-            self.update_item_features(event['item_id'], event['item_features'])
+        action = event.get("action")
+        if action == "add":
+            self.add_item(event["item_id"], event["item_features"])
+        elif action == "remove":
+            self.remove_item(event["item_id"])
+        elif action == "update":
+            self.update_item_features(event["item_id"], event["item_features"])
         else:
             logger.warning(f"Unsupported event action: {action}")
 
@@ -103,5 +106,7 @@ class DynamicFilteringRecommender:
         Returns:
         - List[int]: List of recommended item IDs.
         """
-        logger.info(f"Generating recommendations for user {user_id} with query '{query}' using DynamicFilteringRecommender.")
+        logger.info(
+            f"Generating recommendations for user {user_id} with query '{query}' using DynamicFilteringRecommender."
+        )
         return self.base_recommender.recommend(query, top_n=top_n)

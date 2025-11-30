@@ -75,9 +75,7 @@ def main() -> None:
             files = glob.glob(p + "/**/*.py", recursive=True)
             for file_path in sorted(files):
                 # strip the absolute path
-                write_to_zip(
-                    file_path, strip_file_dir + "/", zf, prepend_str=prepend_str
-                )
+                write_to_zip(file_path, strip_file_dir + "/", zf, prepend_str=prepend_str)
         else:
             write_to_zip(p, strip_file_dir + "/", zf, prepend_str=prepend_str)
 

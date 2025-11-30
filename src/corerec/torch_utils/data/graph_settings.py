@@ -25,9 +25,7 @@ def get_all_graph_pipes(graph: DataPipeGraph) -> List[DataPipe]:
     return _get_all_graph_pipes_helper(graph, set())
 
 
-def _get_all_graph_pipes_helper(
-    graph: DataPipeGraph, id_cache: Set[int]
-) -> List[DataPipe]:
+def _get_all_graph_pipes_helper(graph: DataPipeGraph, id_cache: Set[int]) -> List[DataPipe]:
     results: List[DataPipe] = []
     for dp_id, (datapipe, sub_graph) in graph.items():
         if dp_id in id_cache:
@@ -41,9 +39,7 @@ def _get_all_graph_pipes_helper(
 def _is_sharding_datapipe(datapipe: DataPipe) -> bool:
     if isinstance(datapipe, _ShardingIterDataPipe):
         return True
-    if hasattr(datapipe, "apply_sharding") and inspect.ismethod(
-        datapipe.apply_sharding
-    ):
+    if hasattr(datapipe, "apply_sharding") and inspect.ismethod(datapipe.apply_sharding):
         return True
     return False
 
@@ -75,9 +71,7 @@ def apply_sharding(
                 if len(sig.parameters) < 3:
                     dp.apply_sharding(num_of_instances, instance_id)
                 else:
-                    dp.apply_sharding(
-                        num_of_instances, instance_id, sharding_group=sharding_group
-                    )
+                    dp.apply_sharding(num_of_instances, instance_id, sharding_group=sharding_group)
                 applied = dp
             if applied is None:
                 applied = prev_applied
@@ -91,16 +85,12 @@ def apply_sharding(
 def _is_shuffle_datapipe(datapipe: DataPipe) -> bool:
     if not hasattr(datapipe, "set_shuffle") or not hasattr(datapipe, "set_seed"):
         return False
-    if not inspect.ismethod(datapipe.set_shuffle) or not inspect.ismethod(
-        datapipe.set_seed
-    ):
+    if not inspect.ismethod(datapipe.set_shuffle) or not inspect.ismethod(datapipe.set_seed):
         return False
     return True
 
 
-def apply_shuffle_settings(
-    datapipe: DataPipe, shuffle: Optional[bool] = None
-) -> DataPipe:
+def apply_shuffle_settings(datapipe: DataPipe, shuffle: Optional[bool] = None) -> DataPipe:
     r"""
     Traverse the graph of ``DataPipes`` to find and set shuffle attribute.
 
@@ -172,9 +162,7 @@ def apply_random_seed(datapipe: DataPipe, rng: torch.Generator) -> DataPipe:
             cache.add(id(pipe))
 
     for pipe in random_datapipes:
-        random_seed = int(
-            torch.empty((), dtype=torch.int64).random_(generator=rng).item()
-        )
+        random_seed = int(torch.empty((), dtype=torch.int64).random_(generator=rng).item())
         pipe.set_seed(random_seed)
 
     return datapipe

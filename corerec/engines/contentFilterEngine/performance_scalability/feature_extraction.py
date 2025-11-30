@@ -10,8 +10,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Download NLTK resources if not already present
-nltk.download('punkt', quiet=True)
-nltk.download('wordnet', quiet=True)
+nltk.download("punkt", quiet=True)
+nltk.download("wordnet", quiet=True)
+
 
 class FeatureExtraction:
     def __init__(self, max_features=5000):
@@ -25,8 +26,8 @@ class FeatureExtraction:
         self.lemmatizer = WordNetLemmatizer()
         self.vectorizer = TfidfVectorizer(
             max_features=self.max_features,
-            stop_words='english',  # Use built-in stop words
-            tokenizer=self.tokenize
+            stop_words="english",  # Use built-in stop words
+            tokenizer=self.tokenize,
         )
         logger.info(f"FeatureExtraction initialized with max_features={self.max_features}.")
 
@@ -41,11 +42,7 @@ class FeatureExtraction:
         - list: A list of processed tokens.
         """
         tokens = nltk.word_tokenize(text.lower())
-        lemmatized = [
-            self.lemmatizer.lemmatize(token)
-            for token in tokens
-            if token.isalpha()
-        ]
+        lemmatized = [self.lemmatizer.lemmatize(token) for token in tokens if token.isalpha()]
         logger.debug(f"Tokenized text: {lemmatized}")
         return lemmatized
 
@@ -72,9 +69,11 @@ class FeatureExtraction:
         Returns:
         - sparse matrix: The TF-IDF feature matrix.
         """
-        logger.info("Transforming documents into LSA latent space.")
+        logger.info("Transforming documents into TF-IDF features.")
+        if not hasattr(self.vectorizer, 'vocabulary_'):
+            raise ValueError("Vectorizer must be fitted before transform. Call fit_transform first.")
         tfidf_matrix = self.vectorizer.transform(documents)  # Use transform, not fit
-        return self.lsa_model.transform(tfidf_matrix)
+        return tfidf_matrix
 
     def get_feature_names(self) -> List[str]:
         """

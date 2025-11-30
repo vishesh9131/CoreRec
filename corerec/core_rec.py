@@ -1,5 +1,5 @@
 # ###############################################################################################################
-#                           --CoreRec: Connecting to the Unseen--                            
+#                           --CoreRec: Connecting to the Unseen--
 # CoreRec module is designed for graph-based recommendation systems using neural network architectures. It includes:
 #     1. GraphTransformer: A neural network model using Transformer architecture for processing graph data.
 #     2. GraphDataset: A custom dataset class for handling graph data.
@@ -44,7 +44,9 @@ from corerec.metrics import jaccard_similarity, adamic_adar_index, aaj_accuracy
 
 # Data utilities
 from corerec.cr_utility.dataloader import DataLoader
-# Note: GraphDataset may need to be imported differently depending on implementation
+
+# Note: GraphDataset may need to be imported differently depending on
+# implementation
 try:
     from corerec.cr_utility.dataset import GraphDataset
 except ImportError:
@@ -68,24 +70,49 @@ from corerec.cr_boosters.sparse_adam import SparseAdam
 # __all__ export list for clean imports
 __all__ = [
     # Core libraries
-    'np', 'pd', 'torch', 'nx', 'optim', 'plt',
+    "np",
+    "pd",
+    "torch",
+    "nx",
+    "optim",
+    "plt",
     # Data utilities
-    'Dataset', 'DataLoader', 'GraphDataset',
+    "Dataset",
+    "DataLoader",
+    "GraphDataset",
     # Models
-    'GraphTransformerV2',
+    "GraphTransformerV2",
     # Graph convolutions
-    'GATConv', 'GCNConv', 'HANConv', 'SAGEConv',
+    "GATConv",
+    "GCNConv",
+    "HANConv",
+    "SAGEConv",
     # Training
-    'train_model',
+    "train_model",
     # Prediction
-    'predict', 'explainable_predict',
+    "predict",
+    "explainable_predict",
     # Metrics
-    'jaccard_similarity', 'adamic_adar_index', 'aaj_accuracy',
+    "jaccard_similarity",
+    "adamic_adar_index",
+    "aaj_accuracy",
     # Optimizers
-    'Adam', 'NAdam', 'Adamax', 'Optimizer', 'Adadelta', 
-    'Adagrad', 'ASGD', 'LBFGS', 'RMSprop', 'SGD', 'SparseAdam',
+    "Adam",
+    "NAdam",
+    "Adamax",
+    "Optimizer",
+    "Adadelta",
+    "Adagrad",
+    "ASGD",
+    "LBFGS",
+    "RMSprop",
+    "SGD",
+    "SparseAdam",
     # Distributed training
-    'setup', 'cleanup', 'dist', 'Process',
+    "setup",
+    "cleanup",
+    "dist",
+    "Process",
 ]
 
 # Note: FormatMaster is available separately via:

@@ -5,7 +5,8 @@ from pathlib import Path
 from importlib.util import spec_from_file_location, module_from_spec
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-BASE_DIR = REPO_ROOT / "corerec" / "engines" / "contentFilterEngine" / "graph_based_algorithms"
+BASE_DIR = REPO_ROOT / "corerec" / "engines" / \
+    "contentFilterEngine" / "graph_based_algorithms"
 
 
 def ensure_fake_module(name: str):
@@ -15,7 +16,9 @@ def ensure_fake_module(name: str):
 
 
 def load_module():
-    spec = spec_from_file_location("semantic_models", str(BASE_DIR / "semantic_models.py"))
+    spec = spec_from_file_location(
+        "semantic_models", str(
+            BASE_DIR / "semantic_models.py"))
     module = module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
@@ -28,10 +31,12 @@ class TestSemanticModels(unittest.TestCase):
         pkg = ensure_fake_module("corerec")
         subpkg = ensure_fake_module("corerec.vish_graphs")
         calls = {}
+
         def run_optimal_path(graph, start_city):
             calls["graph"] = graph
             calls["start_city"] = start_city
             return [start_city]
+
         subpkg.run_optimal_path = run_optimal_path
         self.calls = calls
         # Load target module after stubbing
@@ -48,4 +53,4 @@ class TestSemanticModels(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

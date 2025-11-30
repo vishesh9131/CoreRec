@@ -7,7 +7,8 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
 # Add the parent directory to the system path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 
 # Create the missing GraphDataset class
 class GraphDataset(Dataset):
@@ -19,6 +20,7 @@ class GraphDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.adj_matrix[idx]
+
 
 class SimpleNN(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
@@ -63,5 +65,6 @@ class TestSimpleNN(unittest.TestCase):
                 self.optimizer.step()
         self.assertTrue(True)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

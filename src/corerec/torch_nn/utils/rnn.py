@@ -67,14 +67,10 @@ class PackedSequence(PackedSequence_):
 
     """
 
-    def __new__(
-        cls, data, batch_sizes=None, sorted_indices=None, unsorted_indices=None
-    ):
+    def __new__(cls, data, batch_sizes=None, sorted_indices=None, unsorted_indices=None):
         return super().__new__(
             cls,
-            *_packed_sequence_init_args(
-                data, batch_sizes, sorted_indices, unsorted_indices
-            ),
+            *_packed_sequence_init_args(data, batch_sizes, sorted_indices, unsorted_indices),
         )
 
     # NOTE [ device and dtype of a PackedSequence ]
@@ -93,17 +89,13 @@ class PackedSequence(PackedSequence_):
 
     def cuda(self, *args, **kwargs):
         # Tests to see if 'cuda' should be added to kwargs
-        ex = torch.tensor((), dtype=self.data.dtype, device=self.data.device).to(
-            *args, **kwargs
-        )
+        ex = torch.tensor((), dtype=self.data.dtype, device=self.data.device).to(*args, **kwargs)
         if ex.is_cuda:
             return self.to(*args, **kwargs)
         return self.to(*args, device="cuda", **kwargs)
 
     def cpu(self, *args, **kwargs):
-        ex = torch.tensor((), dtype=self.data.dtype, device=self.data.device).to(
-            *args, **kwargs
-        )
+        ex = torch.tensor((), dtype=self.data.dtype, device=self.data.device).to(*args, **kwargs)
         if ex.device.type == "cpu":
             return self.to(*args, **kwargs)
         return self.to(*args, device="cpu", **kwargs)
@@ -152,15 +144,9 @@ class PackedSequence(PackedSequence_):
             return self
         else:
             # Does not forward device or dtype arg/kwargs, device is set from data.device
-            kwargs = dict(
-                filter(lambda t: t[0] != "device" and t[0] != "dtype", kwargs.items())
-            )
-            sorted_indices = bind(
-                self.sorted_indices, lambda t: t.to(data.device, **kwargs)
-            )
-            unsorted_indices = bind(
-                self.unsorted_indices, lambda t: t.to(data.device, **kwargs)
-            )
+            kwargs = dict(filter(lambda t: t[0] != "device" and t[0] != "dtype", kwargs.items()))
+            sorted_indices = bind(self.sorted_indices, lambda t: t.to(data.device, **kwargs))
+            unsorted_indices = bind(self.unsorted_indices, lambda t: t.to(data.device, **kwargs))
             return type(self)(data, self.batch_sizes, sorted_indices, unsorted_indices)
 
     @property
@@ -223,9 +209,7 @@ def invert_permutation(permutation: Optional[Tensor]) -> Optional[Tensor]:
     if permutation is None:
         return None
     output = torch.empty_like(permutation, memory_format=torch.legacy_contiguous_format)
-    output.scatter_(
-        0, permutation, torch.arange(0, permutation.numel(), device=permutation.device)
-    )
+    output.scatter_(0, permutation, torch.arange(0, permutation.numel(), device=permutation.device))
     return output
 
 
@@ -516,9 +500,7 @@ def pack_sequence(
         a :class:`PackedSequence` object
     """
     lengths = torch.as_tensor([v.size(0) for v in sequences])
-    return pack_padded_sequence(
-        pad_sequence(sequences), lengths, enforce_sorted=enforce_sorted
-    )
+    return pack_padded_sequence(pad_sequence(sequences), lengths, enforce_sorted=enforce_sorted)
 
 
 def unpack_sequence(packed_sequences: PackedSequence) -> List[Tensor]:

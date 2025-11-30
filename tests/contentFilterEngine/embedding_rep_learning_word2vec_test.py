@@ -18,7 +18,9 @@ def load_module(rel_path: str):
 class TestWord2VecMinimal(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load_module("corerec/engines/contentFilterEngine/embedding_representation_learning/word2vec.py")
+        cls.mod = load_module(
+            "corerec/engines/contentFilterEngine/embedding_representation_learning/word2vec.py"
+        )
         cls.Word2Vec = cls.mod.Word2Vec
 
     def test_forward_embedding_shape(self):
@@ -29,4 +31,4 @@ class TestWord2VecMinimal(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

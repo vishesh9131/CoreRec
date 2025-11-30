@@ -18,9 +18,7 @@ from .expanded_weights_utils import forward_helper
 class ConvPerSampleGrad(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwarg_names, conv_fn, *expanded_args_and_kwargs):
-        expanded_args, expanded_kwargs = conv_args_and_kwargs(
-            kwarg_names, expanded_args_and_kwargs
-        )
+        expanded_args, expanded_kwargs = conv_args_and_kwargs(kwarg_names, expanded_args_and_kwargs)
         orig_input = expanded_args[0]
         was_same_padding = expanded_kwargs["padding"] == "same"
 

@@ -5,22 +5,25 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class CROSS_DOMAIN:
-    def __init__(self, source_model, target_model):
+    def __init__(self, source_model, target_model, verbose=True):
         """
         Initialize cross-domain learning.
-        
+
         Args:
             source_model: Model trained on the source domain
             target_model: Model to be trained on the target domain
+            verbose (bool): Whether to print training progress. Defaults to True.
         """
         self.source_model = source_model
         self.target_model = target_model
+        self.verbose = verbose
 
     def transfer_knowledge(self, data_loader, criterion, optimizer, num_epochs):
         """
         Transfer knowledge from source to target domain.
-        
+
         Args:
             data_loader: DataLoader for target domain data
             criterion: Loss function
@@ -45,7 +48,7 @@ class CROSS_DOMAIN:
     def evaluate(self, data_loader, criterion):
         """
         Evaluate the target model on the target domain.
-        
+
         Args:
             data_loader: DataLoader for evaluation data
             criterion: Loss function
@@ -58,6 +61,6 @@ class CROSS_DOMAIN:
                 outputs = self.target_model(inputs)
                 loss = criterion(outputs, labels)
                 total_loss += loss.item()
-        
+
         if self.verbose:
             logger.info(f"Evaluation Loss: {total_loss / len(data_loader):.4f}")

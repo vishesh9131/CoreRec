@@ -3,9 +3,10 @@ import numpy as np
 import sys
 import os
 import unittest
-sys.path.append('/Users/visheshyadav/Documents/GitHub/CoreRec/vish_graphs')
+
+sys.path.append("/Users/visheshyadav/Documents/GitHub/CoreRec/vish_graphs")
 # Add the parent directory to the system path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import networkx as nx
 import corerec as cs
 import torch
@@ -16,7 +17,15 @@ import vish_graphs as vg
 from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
 
-def draw_graph_3d(adj_matrix, top_nodes=None, recommended_nodes=None, node_labels=None, transparent_labeled=True, edge_weights=None):
+
+def draw_graph_3d(
+    adj_matrix,
+    top_nodes=None,
+    recommended_nodes=None,
+    node_labels=None,
+    transparent_labeled=True,
+    edge_weights=None,
+):
     G = nx.Graph()
     num_nodes = adj_matrix.shape[0]
 
@@ -30,13 +39,13 @@ def draw_graph_3d(adj_matrix, top_nodes=None, recommended_nodes=None, node_label
             if adj_matrix[i, j] == 1:
                 G.add_edge(i, j)
                 if edge_weights is not None and i < len(edge_weights) and j < len(edge_weights[i]):
-                    G[i][j]['weight'] = edge_weights[i][j]
+                    G[i][j]["weight"] = edge_weights[i][j]
 
     pos = nx.spring_layout(G, dim=3)  # Ensure pos is in 3D
 
     # Draw nodes
     fig = plt.figure(figsize=(12, 8))
-    ax = fig.add_subplot(111, projection='3d')
+    ax = fig.add_subplot(111, projection="3d")
 
     # Chunking logic
     num_chunks = num_nodes // 1000 + 1
@@ -51,29 +60,65 @@ def draw_graph_3d(adj_matrix, top_nodes=None, recommended_nodes=None, node_label
         for i in chunk_nodes:
             for j in chunk_nodes:
                 if G.has_edge(i, j):
-                    edge_alpha = 0.1 if transparent_labeled and (node_labels is None or i not in node_labels or j not in node_labels) else 1.0
-                    edge_color = 'gray'
-                    ax.plot([pos[i][0], pos[j][0]], [pos[i][1], pos[j][1]], [pos[i][2], pos[j][2]], color=edge_color, alpha=edge_alpha)
-                    
+                    edge_alpha = (
+                        0.1
+                        if transparent_labeled
+                        and (node_labels is None or i not in node_labels or j not in node_labels)
+                        else 1.0
+                    )
+                    edge_color = "gray"
+                    ax.plot(
+                        [pos[i][0], pos[j][0]],
+                        [pos[i][1], pos[j][1]],
+                        [pos[i][2], pos[j][2]],
+                        color=edge_color,
+                        alpha=edge_alpha,
+                    )
+
                     # Display edge weights if available
-                    if 'weight' in G[i][j]:
+                    if "weight" in G[i][j]:
                         mid_x = (pos[i][0] + pos[j][0]) / 2
                         mid_y = (pos[i][1] + pos[j][1]) / 2
                         mid_z = (pos[i][2] + pos[j][2]) / 2
-                        ax.text(mid_x, mid_y, mid_z, str(G[i][j]['weight']), color='red', fontsize=8)
+                        ax.text(
+                            mid_x, mid_y, mid_z, str(G[i][j]["weight"]), color="red", fontsize=8
+                        )
 
         for n in chunk_nodes:
-            color = 'red' if top_nodes is not None and n in top_nodes else 'green' if recommended_nodes is not None and n in recommended_nodes else 'blue'
-            node_alpha = 0.1 if transparent_labeled and (node_labels is None or n not in node_labels) else 1.0
+            color = (
+                "red"
+                if top_nodes is not None and n in top_nodes
+                else "green"
+                if recommended_nodes is not None and n in recommended_nodes
+                else "blue"
+            )
+            node_alpha = (
+                0.1
+                if transparent_labeled and (node_labels is None or n not in node_labels)
+                else 1.0
+            )
             ax.scatter(pos[n][0], pos[n][1], pos[n][2], color=color, alpha=node_alpha)
 
             if node_labels is not None and n in node_labels:
                 ax.text(pos[n][0], pos[n][1], pos[n][2], node_labels[n], fontsize=9)
 
-    ax.text2D(0.95, 0.05, 'vishGraphs_use_in_labs', fontsize=8, color='gray', ha='right', va='bottom', transform=ax.transAxes)
+    ax.text2D(
+        0.95,
+        0.05,
+        "vishGraphs_use_in_labs",
+        fontsize=8,
+        color="gray",
+        ha="right",
+        va="bottom",
+        transform=ax.transAxes,
+    )
 
-    plt.title("3D Graph Visualization with Recommended Nodes Highlighted in Red and Top Nodes in Green")
+    plt.title(
+        "3D Graph Visualization with Recommended Nodes Highlighted in Red and Top Nodes in Green"
+    )
     plt.show()
+
+
 def find_top_nodes(matrix, num_nodes=3):
     relation_counts = [0] * len(matrix)
     for i in range(len(matrix)):
@@ -81,6 +126,8 @@ def find_top_nodes(matrix, num_nodes=3):
             if matrix[i, j] == matrix[j, i] == 1:
                 relation_counts[i] += 1
                 relation_counts[j] += 1
+
+
 def generate_random_graph(num_people, file_path="graph_dataset.csv", seed=None):
     np.random.seed(seed)
     adj_matrix = np.zeros((num_people, num_people))
@@ -100,6 +147,7 @@ def generate_random_graph(num_people, file_path="graph_dataset.csv", seed=None):
     np.savetxt(file_path, adj_matrix, delimiter=",")
     return file_path
 
+
 class TestLabels(unittest.TestCase):
     def setUp(self):
         self.file_path = generate_random_graph(50, seed=122)
@@ -116,5 +164,6 @@ class TestLabels(unittest.TestCase):
         draw_graph_3d(self.adj_matrix, top_nodes=top_nodes, node_labels=self.node_labels)
         self.assertTrue(True)  # If drawing completes without error, the test passes
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

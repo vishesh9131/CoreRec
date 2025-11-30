@@ -25,17 +25,18 @@ References:
       International conference on machine learning. PMLR, 2014.
 """
 
+
 class SimpleDoc2Vec:
     """
     A Doc2Vec model implementation for generating document embeddings.
-    
+
     This class provides methods for training document embeddings, retrieving vectors,
     and managing model persistence. It's particularly useful for recommendation systems
     that need to understand document-level semantics.
 
     Attributes:
         vectorizer (TfidfVectorizer): The underlying scikit-learn TfidfVectorizer instance
-        
+
     Methods:
         train: Trains the Doc2Vec model on a corpus of documents
         get_embedding: Retrieves the embedding vector for a specific document
@@ -50,6 +51,7 @@ class SimpleDoc2Vec:
                              more complex patterns but require more data and computation.
         """
         self.vectorizer = TfidfVectorizer(max_features=vector_size)
+
     def train(self, documents):
         """
         Train the Doc2Vec model on a corpus of documents.
@@ -72,7 +74,7 @@ class SimpleDoc2Vec:
             - Progress can be monitored through Gensim's logging
         """
         # Flatten the list of tokenized documents into strings
-        documents = [' '.join(doc) for doc in documents]
+        documents = [" ".join(doc) for doc in documents]
         self.vectorizer.fit(documents)
 
     def get_embedding(self, document):
@@ -95,4 +97,4 @@ class SimpleDoc2Vec:
             downstream tasks.
         """
         # Convert a single document to a TF-IDF vector
-        return self.vectorizer.transform([' '.join(document)]).toarray()[0]
+        return self.vectorizer.transform([" ".join(document)]).toarray()[0]

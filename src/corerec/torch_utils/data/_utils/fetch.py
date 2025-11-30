@@ -34,9 +34,7 @@ class _IterableDatasetFetcher(_BaseDatasetFetcher):
                 except StopIteration:
                     self.ended = True
                     break
-            if len(data) == 0 or (
-                self.drop_last and len(data) < len(possibly_batched_index)
-            ):
+            if len(data) == 0 or (self.drop_last and len(data) < len(possibly_batched_index)):
                 raise StopIteration
         else:
             data = next(self.dataset_iter)

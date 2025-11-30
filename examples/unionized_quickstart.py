@@ -106,7 +106,7 @@ def run_geomlc():
     users = [1, 1, 2, 3]
     items = [10, 20, 10, 30]
     ratings = [1.0, 1.0, 1.0, 1.0]
-    model = GeoMLC(n_factors=4, n_epochs=1, batch_size=2, device='cpu')
+    model = GeoMLC(n_factors=4, n_epochs=1, batch_size=2, device="cpu")
     model.fit(users, items, ratings)
     print("GeoMLC recs:", model.recommend(1, top_n=2))
 
@@ -117,4 +117,4 @@ if __name__ == "__main__":
     run_sar()
     run_rlrmc()
     run_rbm()
-    run_geomlc() 
+    run_geomlc()

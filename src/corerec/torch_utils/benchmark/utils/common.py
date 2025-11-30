@@ -14,7 +14,15 @@ import uuid
 import torch
 
 
-__all__ = ["TaskSpec", "Measurement", "select_unit", "unit_to_english", "trim_sigfig", "ordered_unique", "set_torch_threads"]
+__all__ = [
+    "TaskSpec",
+    "Measurement",
+    "select_unit",
+    "unit_to_english",
+    "trim_sigfig",
+    "ordered_unique",
+    "set_torch_threads",
+]
 
 
 _MAX_SIGNIFICANT_FIGURES = 4
@@ -30,6 +38,7 @@ _IQR_GROSS_WARN_THRESHOLD = 0.25
 @dataclasses.dataclass(init=True, repr=False, eq=True, frozen=True)
 class TaskSpec:
     """Container for information used to define a Timer. (except globals)"""
+
     stmt: str
     setup: str
     global_setup: str = ""
@@ -53,8 +62,10 @@ class TaskSpec:
 
     def setup_str(self) -> str:
         return (
-            "" if (self.setup == "pass" or not self.setup)
-            else f"setup:\n{textwrap.indent(self.setup, '  ')}" if "\n" in self.setup
+            ""
+            if (self.setup == "pass" or not self.setup)
+            else f"setup:\n{textwrap.indent(self.setup, '  ')}"
+            if "\n" in self.setup
             else f"setup: {self.setup}"
         )
 
@@ -67,6 +78,7 @@ class TaskSpec:
         ]
         return "\n".join([f"{i}\n" if "\n" in i else i for i in sections if i])
 
+
 _TASKSPEC_FIELDS = tuple(i.name for i in dataclasses.fields(TaskSpec))
 
 
@@ -78,6 +90,7 @@ class Measurement:
     serializable and provides several convenience methods
     (including a detailed __repr__) for downstream consumers.
     """
+
     number_per_run: int
     raw_times: List[float]
     task_spec: TaskSpec
@@ -163,10 +176,10 @@ class Measurement:
         if self.raw_times and not self._sorted_times:
             self._sorted_times = tuple(sorted(self.times))
             _sorted_times = torch.tensor(self._sorted_times, dtype=torch.float64)
-            self._median = _sorted_times.quantile(.5).item()
+            self._median = _sorted_times.quantile(0.5).item()
             self._mean = _sorted_times.mean().item()
-            self._p25 = _sorted_times.quantile(.25).item()
-            self._p75 = _sorted_times.quantile(.75).item()
+            self._p25 = _sorted_times.quantile(0.25).item()
+            self._p75 = _sorted_times.quantile(0.75).item()
 
             def add_warning(msg: str) -> None:
                 rel_iqr = self.iqr / self.median * 100
@@ -180,7 +193,6 @@ class Measurement:
             elif not self.meets_confidence(_IQR_WARN_THRESHOLD):
                 add_warning("This could indicate system fluctuation.")
 
-
     def meets_confidence(self, threshold: float = _IQR_WARN_THRESHOLD) -> bool:
         return self.iqr / self.median < threshold
 
@@ -190,10 +202,7 @@ class Measurement:
 
     @property
     def env(self) -> str:
-        return (
-            "Unspecified env" if self.taskspec.env is None
-            else cast(str, self.taskspec.env)
-        )
+        return "Unspecified env" if self.taskspec.env is None else cast(str, self.taskspec.env)
 
     @property
     def as_row_name(self) -> str:
@@ -214,7 +223,7 @@ class Measurement:
         skip_line, newline = "MEASUREMENT_REPR_SKIP_LINE", "\n"
         n = len(self._sorted_times)
         time_unit, time_scale = select_unit(self._median)
-        iqr_filter = '' if n >= 4 else skip_line
+        iqr_filter = "" if n >= 4 else skip_line
 
         repr_str = f"""
 {super().__repr__()}
@@ -233,7 +242,9 @@ class Measurement:
         Merge will extrapolate times to `number_per_run=1` and will not
         transfer any metadata. (Since it might differ between replicates)
         """
-        grouped_measurements: DefaultDict[TaskSpec, List[Measurement]] = collections.defaultdict(list)
+        grouped_measurements: DefaultDict[TaskSpec, List[Measurement]] = collections.defaultdict(
+            list
+        )
         for m in measurements:
             grouped_measurements[m.task_spec].append(m)
 
@@ -312,7 +323,9 @@ def _make_temp_dir(prefix: Optional[str] = None, gc_dev_shm: bool = False) -> st
     if use_dev_shm:
         root = "/dev/shm/pytorch_benchmark_utils"
         assert os.name == "posix", f"tmpfs (/dev/shm) is POSIX only, current platform is {os.name}"
-        assert os.path.exists("/dev/shm"), "This system does not appear to support tmpfs (/dev/shm)."
+        assert os.path.exists(
+            "/dev/shm"
+        ), "This system does not appear to support tmpfs (/dev/shm)."
         os.makedirs(root, exist_ok=True)
 
         # Because we're working in shared memory, it is more important than
@@ -336,7 +349,9 @@ def _make_temp_dir(prefix: Optional[str] = None, gc_dev_shm: bool = False) -> st
                     os.kill(owner_pid, 0)
 
                 except OSError:
-                    print(f"Detected that {os.path.join(root, i)} was orphaned in shared memory. Cleaning up.")
+                    print(
+                        f"Detected that {os.path.join(root, i)} was orphaned in shared memory. Cleaning up."
+                    )
                     shutil.rmtree(os.path.join(root, i))
 
     else:

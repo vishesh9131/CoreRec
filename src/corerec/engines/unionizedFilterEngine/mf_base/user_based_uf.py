@@ -3,6 +3,7 @@ from scipy.sparse import csr_matrix
 from typing import List
 from corerec.base_recommender import BaseCorerec
 
+
 class UserBasedUF(BaseCorerec):
     def __init__(self, similarity_threshold: float = 0.5):
         self.similarity_threshold = similarity_threshold

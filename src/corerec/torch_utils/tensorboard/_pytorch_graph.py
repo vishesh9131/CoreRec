@@ -57,9 +57,7 @@ class NodeBase:
         repr.append(str(type(self)))
         for m in dir(self):
             if "__" not in m:
-                repr.append(
-                    m + ": " + str(getattr(self, m)) + str(type(getattr(self, m)))
-                )
+                repr.append(m + ": " + str(getattr(self, m)) + str(type(getattr(self, m))))
         return "\n".join(repr) + "\n\n"
 
 
@@ -190,9 +188,7 @@ class GraphPy:
             if type(node) == NodeBase:
                 self.unique_name_to_scoped_name[key] = node.scope + "/" + node.debugName
             if hasattr(node, "input_or_output"):
-                self.unique_name_to_scoped_name[key] = (
-                    node.input_or_output + "/" + node.debugName
-                )
+                self.unique_name_to_scoped_name[key] = node.input_or_output + "/" + node.debugName
 
             if hasattr(node, "scope") and node.scope is not None:
                 self.unique_name_to_scoped_name[key] = node.scope + "/" + node.debugName
@@ -204,13 +200,10 @@ class GraphPy:
         # replace name
         for key, node in self.nodes_io.items():
             self.nodes_io[key].inputs = [
-                self.unique_name_to_scoped_name[node_input_id]
-                for node_input_id in node.inputs
+                self.unique_name_to_scoped_name[node_input_id] for node_input_id in node.inputs
             ]
             if node.debugName in self.unique_name_to_scoped_name:
-                self.nodes_io[key].debugName = self.unique_name_to_scoped_name[
-                    node.debugName
-                ]
+                self.nodes_io[key].debugName = self.unique_name_to_scoped_name[node.debugName]
 
     def to_proto(self):
         """Convert graph representation of GraphPy object to TensorBoard required format."""
@@ -247,9 +240,7 @@ def parse(graph, trace, args=None, omit_useless_nodes=True):
     nodes_py = GraphPy()
     for node in graph.inputs():
         if omit_useless_nodes:
-            if (
-                len(node.uses()) == 0
-            ):  # number of user of the node (= number of outputs/ fanout)
+            if len(node.uses()) == 0:  # number of user of the node (= number of outputs/ fanout)
                 continue
 
         if node.type().kind() != CLASSTYPE_KIND:
@@ -261,9 +252,7 @@ def parse(graph, trace, args=None, omit_useless_nodes=True):
             attr_name = node.s("name")
             attr_key = node.output().debugName()
             parent = node.input().node()
-            if (
-                parent.kind() == GETATTR_KIND
-            ):  # If the parent node is not the top-level "self" node
+            if parent.kind() == GETATTR_KIND:  # If the parent node is not the top-level "self" node
                 parent_attr_name = parent.s("name")
                 parent_attr_key = parent.output().debugName()
                 parent_scope = attr_to_scope[parent_attr_key]

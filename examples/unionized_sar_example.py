@@ -17,7 +17,7 @@ if __name__ == "__main__":
     users, items, ratings = data["users"], data["items"], data["ratings"]
 
     # New API: Direct access to SAR from unionized
-    model = unionized.SAR(similarity_type='jaccard')
+    model = unionized.SAR(similarity_type="jaccard")
     model.fit(users, items, ratings)
     recs = model.recommend(users[0], top_n=10, exclude_seen=True)
     print("SAR recommendations for", users[0], ":", recs)

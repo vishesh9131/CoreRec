@@ -1,2 +1,2 @@
-class HybridRegularizationMF :
+class HybridRegularizationMF:
     pass

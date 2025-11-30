@@ -3,11 +3,12 @@ import numpy as np
 from sklearn.feature_selection import SelectKBest, chi2
 from sklearn.preprocessing import MinMaxScaler
 
+
 class FEATURE_SELECTION:
-    def __init__(self, k=10, method='chi2'):
+    def __init__(self, k=10, method="chi2"):
         """
         Initialize feature selection.
-        
+
         Args:
             k (int): Number of top features to select
             method (str): Feature selection method ('chi2', 'variance', 'correlation')
@@ -21,12 +22,12 @@ class FEATURE_SELECTION:
     def fit_transform(self, X, y=None):
         """
         Fit the feature selector and transform the data.
-        
+
         Args:
             X: Input features
             y: Target variables (optional for some methods)
         """
-        if self.method == 'chi2':
+        if self.method == "chi2":
             # Scale features to non-negative for chi2
             X_scaled = self.scaler.fit_transform(X)
             selector = SelectKBest(chi2, k=self.k)
@@ -34,20 +35,20 @@ class FEATURE_SELECTION:
             self.feature_scores = selector.scores_
             self.selected_features = selector.get_support()
             return X_selected
-            
-        elif self.method == 'variance':
+
+        elif self.method == "variance":
             # Select features based on variance
             variances = np.var(X, axis=0)
-            top_k_idx = np.argsort(variances)[-self.k:]
+            top_k_idx = np.argsort(variances)[-self.k :]
             self.selected_features = np.zeros(X.shape[1], dtype=bool)
             self.selected_features[top_k_idx] = True
             self.feature_scores = variances
             return X[:, top_k_idx]
-            
-        elif self.method == 'correlation':
+
+        elif self.method == "correlation":
             # Select features based on correlation with target
             correlations = np.array([np.corrcoef(X[:, i], y)[0, 1] for i in range(X.shape[1])])
-            top_k_idx = np.argsort(np.abs(correlations))[-self.k:]
+            top_k_idx = np.argsort(np.abs(correlations))[-self.k :]
             self.selected_features = np.zeros(X.shape[1], dtype=bool)
             self.selected_features[top_k_idx] = True
             self.feature_scores = correlations

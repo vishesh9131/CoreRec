@@ -125,6 +125,7 @@ class GATConv(MessagePassing):
           or :math:`((|\mathcal{V_t}|, H * F_{out}), ((2, |\mathcal{E}|),
           (|\mathcal{E}|, H)))` if bipartite
     """
+
     def __init__(
         self,
         in_channels: Union[int, Tuple[int, int]],
@@ -135,11 +136,11 @@ class GATConv(MessagePassing):
         dropout: float = 0.0,
         add_self_loops: bool = True,
         edge_dim: Optional[int] = None,
-        fill_value: Union[float, Tensor, str] = 'mean',
+        fill_value: Union[float, Tensor, str] = "mean",
         bias: bool = True,
         **kwargs,
     ):
-        kwargs.setdefault('aggr', 'add')
+        kwargs.setdefault("aggr", "add")
         super().__init__(node_dim=0, **kwargs)
 
         self.in_channels = in_channels
@@ -156,32 +157,36 @@ class GATConv(MessagePassing):
         # transformations 'lin_src' and 'lin_dst' to source and target nodes:
         self.lin = self.lin_src = self.lin_dst = None
         if isinstance(in_channels, int):
-            self.lin = Linear(in_channels, heads * out_channels, bias=False,
-                              weight_initializer='glorot')
+            self.lin = Linear(
+                in_channels, heads * out_channels, bias=False, weight_initializer="glorot"
+            )
         else:
-            self.lin_src = Linear(in_channels[0], heads * out_channels, False,
-                                  weight_initializer='glorot')
-            self.lin_dst = Linear(in_channels[1], heads * out_channels, False,
-                                  weight_initializer='glorot')
+            self.lin_src = Linear(
+                in_channels[0], heads * out_channels, False, weight_initializer="glorot"
+            )
+            self.lin_dst = Linear(
+                in_channels[1], heads * out_channels, False, weight_initializer="glorot"
+            )
 
         # The learnable parameters to compute attention coefficients:
         self.att_src = Parameter(torch.empty(1, heads, out_channels))
         self.att_dst = Parameter(torch.empty(1, heads, out_channels))
 
         if edge_dim is not None:
-            self.lin_edge = Linear(edge_dim, heads * out_channels, bias=False,
-                                   weight_initializer='glorot')
+            self.lin_edge = Linear(
+                edge_dim, heads * out_channels, bias=False, weight_initializer="glorot"
+            )
             self.att_edge = Parameter(torch.empty(1, heads, out_channels))
         else:
             self.lin_edge = None
-            self.register_parameter('att_edge', None)
+            self.register_parameter("att_edge", None)
 
         if bias and concat:
             self.bias = Parameter(torch.empty(heads * out_channels))
         elif bias and not concat:
             self.bias = Parameter(torch.empty(out_channels))
         else:
-            self.register_parameter('bias', None)
+            self.register_parameter("bias", None)
 
         self.reset_parameters()
 
@@ -240,11 +245,7 @@ class GATConv(MessagePassing):
         edge_attr: OptTensor = None,
         size: Size = None,
         return_attention_weights: Optional[bool] = None,
-    ) -> Union[
-            Tensor,
-            Tuple[Tensor, Tuple[Tensor, Tensor]],
-            Tuple[Tensor, SparseTensor],
-    ]:
+    ) -> Union[Tensor, Tuple[Tensor, Tuple[Tensor, Tensor]], Tuple[Tensor, SparseTensor],]:
         r"""Runs the forward pass of the module.
 
         Args:
@@ -318,11 +319,10 @@ class GATConv(MessagePassing):
                 if x_dst is not None:
                     num_nodes = min(num_nodes, x_dst.size(0))
                 num_nodes = min(size) if size is not None else num_nodes
-                edge_index, edge_attr = remove_self_loops(
-                    edge_index, edge_attr)
+                edge_index, edge_attr = remove_self_loops(edge_index, edge_attr)
                 edge_index, edge_attr = add_self_loops(
-                    edge_index, edge_attr, fill_value=self.fill_value,
-                    num_nodes=num_nodes)
+                    edge_index, edge_attr, fill_value=self.fill_value, num_nodes=num_nodes
+                )
             elif isinstance(edge_index, SparseTensor):
                 if self.edge_dim is None:
                     edge_index = torch_sparse.set_diag(edge_index)
@@ -330,11 +330,11 @@ class GATConv(MessagePassing):
                     raise NotImplementedError(
                         "The usage of 'edge_attr' and 'add_self_loops' "
                         "simultaneously is currently not yet supported for "
-                        "'edge_index' in a 'SparseTensor' form")
+                        "'edge_index' in a 'SparseTensor' form"
+                    )
 
         # edge_updater_type: (alpha: OptPairTensor, edge_attr: OptTensor)
-        alpha = self.edge_updater(edge_index, alpha=alpha, edge_attr=edge_attr,
-                                  size=size)
+        alpha = self.edge_updater(edge_index, alpha=alpha, edge_attr=edge_attr, size=size)
 
         # propagate_type: (x: OptPairTensor, alpha: Tensor)
         out = self.propagate(edge_index, x=x, alpha=alpha, size=size)
@@ -356,13 +356,19 @@ class GATConv(MessagePassing):
                 else:
                     return out, (edge_index, alpha)
             elif isinstance(edge_index, SparseTensor):
-                return out, edge_index.set_value(alpha, layout='coo')
+                return out, edge_index.set_value(alpha, layout="coo")
         else:
             return out
 
-    def edge_update(self, alpha_j: Tensor, alpha_i: OptTensor,
-                    edge_attr: OptTensor, index: Tensor, ptr: OptTensor,
-                    dim_size: Optional[int]) -> Tensor:
+    def edge_update(
+        self,
+        alpha_j: Tensor,
+        alpha_i: OptTensor,
+        edge_attr: OptTensor,
+        index: Tensor,
+        ptr: OptTensor,
+        dim_size: Optional[int],
+    ) -> Tensor:
         # Given edge-level attention coefficients for source and target nodes,
         # we simply need to sum them up to "emulate" concatenation:
         alpha = alpha_j if alpha_i is None else alpha_j + alpha_i
@@ -385,5 +391,7 @@ class GATConv(MessagePassing):
         return alpha.unsqueeze(-1) * x_j
 
     def __repr__(self) -> str:
-        return (f'{self.__class__.__name__}({self.in_channels}, '
-                f'{self.out_channels}, heads={self.heads})')
+        return (
+            f"{self.__class__.__name__}({self.in_channels}, "
+            f"{self.out_channels}, heads={self.heads})"
+        )

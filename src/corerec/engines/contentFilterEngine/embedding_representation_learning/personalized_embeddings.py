@@ -1,12 +1,13 @@
 # # corerec/engines/contentFilterEngine/embedding_representation_learning/personalized_embeddings.py
-'''
+"""
 Maintainence UPDATE try1
-'''
+"""
 from typing import List, Dict, Any
-from corerec.engines.contentFilterEngine.embedding_representation_learning.word2vec import (
-WORD2VEC)
+from corerec.engines.contentFilterEngine.embedding_representation_learning.word2vec import WORD2VEC
 from corerec.engines.contentFilterEngine.embedding_representation_learning.doc2vec import (
-SimpleDoc2Vec)
+    SimpleDoc2Vec,
+)
+
 """
 Personalized Embeddings for Content-Based Recommendation
 
@@ -35,10 +36,11 @@ References:
     - Le, Quoc, and Tomas Mikolov. "Distributed representations of sentences and documents." 2014.
 """
 
+
 class PERSONALIZED_EMBEDDINGS:
     """
     A unified embedding manager combining Word2Vec and Doc2Vec capabilities.
-    
+
     This class provides a comprehensive interface for training and managing both word
     and document embeddings, making it suitable for personalized recommendation systems
     that need to understand both word-level and document-level semantics.
@@ -46,7 +48,7 @@ class PERSONALIZED_EMBEDDINGS:
     Attributes:
         word2vec (WORD2VEC): Instance of the Word2Vec model for word embeddings
         doc2vec (DOC2VEC): Instance of the Doc2Vec model for document embeddings
-        
+
     Methods:
         train_word2vec: Trains the Word2Vec model on a corpus of sentences
         train_doc2vec: Trains the Doc2Vec model on a corpus of documents
@@ -56,7 +58,9 @@ class PERSONALIZED_EMBEDDINGS:
         load_models: Loads both models from disk
     """
 
-    def __init__(self, word2vec_params: Dict[str, Any] = None, doc2vec_params: Dict[str, Any] = None):
+    def __init__(
+        self, word2vec_params: Dict[str, Any] = None, doc2vec_params: Dict[str, Any] = None
+    ):
         """
         Initialize both Word2Vec and Doc2Vec models with customizable parameters.
 

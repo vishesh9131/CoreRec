@@ -193,13 +193,9 @@ class Sequential(Module):
 
     def __mul__(self, other: int) -> "Sequential":
         if not isinstance(other, int):
-            raise TypeError(
-                f"unsupported operand type(s) for *: {type(self)} and {type(other)}"
-            )
+            raise TypeError(f"unsupported operand type(s) for *: {type(self)} and {type(other)}")
         elif other <= 0:
-            raise ValueError(
-                f"Non-positive multiplication factor {other} for {type(self)}"
-            )
+            raise ValueError(f"Non-positive multiplication factor {other} for {type(self)}")
         else:
             combined = Sequential()
             offset = 0
@@ -214,13 +210,9 @@ class Sequential(Module):
 
     def __imul__(self, other: int) -> Self:
         if not isinstance(other, int):
-            raise TypeError(
-                f"unsupported operand type(s) for *: {type(self)} and {type(other)}"
-            )
+            raise TypeError(f"unsupported operand type(s) for *: {type(self)} and {type(other)}")
         elif other <= 0:
-            raise ValueError(
-                f"Non-positive multiplication factor {other} for {type(self)}"
-            )
+            raise ValueError(f"Non-positive multiplication factor {other} for {type(self)}")
         else:
             len_original = len(self)
             offset = len(self)
@@ -684,9 +676,7 @@ class ParameterList(Module):
             values (iterable): iterable of values to append
         """
         # Tensor is an iterable but we never want to unpack it here
-        if not isinstance(values, container_abcs.Iterable) or isinstance(
-            values, torch.Tensor
-        ):
+        if not isinstance(values, container_abcs.Iterable) or isinstance(values, torch.Tensor):
             raise TypeError(
                 "ParameterList.extend should be called with an "
                 "iterable, but got " + type(values).__name__
@@ -712,9 +702,7 @@ class ParameterList(Module):
                 )
                 child_lines.append("  (" + str(k) + "): " + parastr)
             else:
-                child_lines.append(
-                    "  (" + str(k) + "): Object of type: " + type(p).__name__
-                )
+                child_lines.append("  (" + str(k) + "): Object of type: " + type(p).__name__)
 
         tmpstr = "\n".join(child_lines)
         return tmpstr
@@ -864,9 +852,7 @@ class ParameterDict(Module):
         """
         return self[key] if key in self else default
 
-    def fromkeys(
-        self, keys: Iterable[str], default: Optional[Any] = None
-    ) -> "ParameterDict":
+    def fromkeys(self, keys: Iterable[str], default: Optional[Any] = None) -> "ParameterDict":
         r"""Return a new ParameterDict with the keys provided.
 
         Args:
@@ -943,9 +929,7 @@ class ParameterDict(Module):
                 )
                 child_lines.append("  (" + str(k) + "): " + parastr)
             else:
-                child_lines.append(
-                    "  (" + str(k) + "): Object of type: " + type(p).__name__
-                )
+                child_lines.append("  (" + str(k) + "): Object of type: " + type(p).__name__)
         tmpstr = "\n".join(child_lines)
         return tmpstr
 

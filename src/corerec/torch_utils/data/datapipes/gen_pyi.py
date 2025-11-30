@@ -28,9 +28,7 @@ def gen_from_template(
         content = f.read()
     for placeholder, lines, indentation in replacements:
         with open(output_path, "w") as f:
-            content = content.replace(
-                placeholder, materialize_lines(lines, indentation)
-            )
+            content = content.replace(placeholder, materialize_lines(lines, indentation))
             f.write(content)
 
 
@@ -44,9 +42,7 @@ def find_file_paths(dir_paths: List[str], files_to_exclude: Set[str]) -> Set[str
     for dir_path in dir_paths:
         all_files = os.listdir(dir_path)
         python_files = {fname for fname in all_files if ".py" == fname[-3:]}
-        filter_files = {
-            fname for fname in python_files if fname not in files_to_exclude
-        }
+        filter_files = {fname for fname in python_files if fname not in files_to_exclude}
         paths.update({os.path.join(dir_path, fname) for fname in filter_files})
     return paths
 
@@ -58,9 +54,7 @@ def extract_method_name(line: str) -> str:
     elif "('" in line:
         start_token, end_token = "('", "')"
     else:
-        raise RuntimeError(
-            f"Unable to find appropriate method name within line:\n{line}"
-        )
+        raise RuntimeError(f"Unable to find appropriate method name within line:\n{line}")
     start, end = line.find(start_token) + len(start_token), line.find(end_token)
     return line[start:end]
 
@@ -112,9 +106,7 @@ def parse_datapipe_file(
                     method_to_class_name[method_name] = class_name
                     method_name, class_name, signature = "", "", ""
                 elif open_paren_count < 0:
-                    raise RuntimeError(
-                        "open parenthesis count < 0. This shouldn't be possible."
-                    )
+                    raise RuntimeError("open parenthesis count < 0. This shouldn't be possible.")
                 else:
                     signature += line.strip("\n").strip(" ")
     return (
@@ -243,9 +235,7 @@ def get_method_definitions(
             f"def {method_name}({arguments}) -> {output_type}:\n"
             f"{doc_string}"
         )
-    method_definitions.sort(
-        key=lambda s: s.split("\n")[1]
-    )  # sorting based on method_name
+    method_definitions.sort(key=lambda s: s.split("\n")[1])  # sorting based on method_name
 
     return method_definitions
 

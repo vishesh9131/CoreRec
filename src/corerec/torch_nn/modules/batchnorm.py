@@ -59,12 +59,8 @@ class _NormBase(Module):
             self.register_parameter("weight", None)
             self.register_parameter("bias", None)
         if self.track_running_stats:
-            self.register_buffer(
-                "running_mean", torch.zeros(num_features, **factory_kwargs)
-            )
-            self.register_buffer(
-                "running_var", torch.ones(num_features, **factory_kwargs)
-            )
+            self.register_buffer("running_mean", torch.zeros(num_features, **factory_kwargs))
+            self.register_buffer("running_var", torch.ones(num_features, **factory_kwargs))
             self.running_mean: Optional[Tensor]
             self.running_var: Optional[Tensor]
             self.register_buffer(
@@ -152,9 +148,7 @@ class _BatchNorm(_NormBase):
         dtype=None,
     ) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
-        super().__init__(
-            num_features, eps, momentum, affine, track_running_stats, **factory_kwargs
-        )
+        super().__init__(num_features, eps, momentum, affine, track_running_stats, **factory_kwargs)
 
     def forward(self, input: Tensor) -> Tensor:
         self._check_input_dim(input)
@@ -193,9 +187,7 @@ class _BatchNorm(_NormBase):
         return F.batch_norm(
             input,
             # If buffers are not to be tracked, ensure that they won't be updated
-            self.running_mean
-            if not self.training or self.track_running_stats
-            else None,
+            self.running_mean if not self.training or self.track_running_stats else None,
             self.running_var if not self.training or self.track_running_stats else None,
             self.weight,
             self.bias,
@@ -712,9 +704,7 @@ class SyncBatchNorm(_BatchNorm):
         dtype=None,
     ) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
-        super().__init__(
-            num_features, eps, momentum, affine, track_running_stats, **factory_kwargs
-        )
+        super().__init__(num_features, eps, momentum, affine, track_running_stats, **factory_kwargs)
         self.process_group = process_group
 
     def _check_input_dim(self, input):
@@ -723,9 +713,7 @@ class SyncBatchNorm(_BatchNorm):
 
     def _check_non_zero_input_channels(self, input):
         if input.size(1) == 0:
-            raise ValueError(
-                "SyncBatchNorm number of input channels should be non-zero"
-            )
+            raise ValueError("SyncBatchNorm number of input channels should be non-zero")
 
     def forward(self, input: Tensor) -> Tensor:
         self._check_input_dim(input)
@@ -762,12 +750,8 @@ class SyncBatchNorm(_BatchNorm):
         used for normalization (i.e. in eval mode when buffers are not None).
         """
         # If buffers are not to be tracked, ensure that they won't be updated
-        running_mean = (
-            self.running_mean if not self.training or self.track_running_stats else None
-        )
-        running_var = (
-            self.running_var if not self.training or self.track_running_stats else None
-        )
+        running_mean = self.running_mean if not self.training or self.track_running_stats else None
+        running_var = self.running_var if not self.training or self.track_running_stats else None
 
         # Don't sync batchnorm stats in inference mode (model.eval()).
         need_sync = (
@@ -876,8 +860,6 @@ class SyncBatchNorm(_BatchNorm):
             if hasattr(module, "qconfig"):
                 module_output.qconfig = module.qconfig
         for name, child in module.named_children():
-            module_output.add_module(
-                name, cls.convert_sync_batchnorm(child, process_group)
-            )
+            module_output.add_module(name, cls.convert_sync_batchnorm(child, process_group))
         del module
         return module_output

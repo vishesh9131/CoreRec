@@ -9,7 +9,7 @@ Features:
     - Deserialize models dynamically without hardcoded imports
     - Registry pattern for class management
     - Full state preservation including nested objects
-    
+
 Author: Vishesh Yadav (mail: sciencely98@gmail.com)
 """
 
@@ -26,4 +26,3 @@ __all__ = [
     "save_to_file",
     "load_from_file",
 ]
-

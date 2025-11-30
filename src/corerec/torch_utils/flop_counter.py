@@ -11,24 +11,28 @@ from functools import wraps
 import warnings
 
 
-
 __all__ = ["FlopCounterMode", "register_flop_formula"]
 
 aten = torch.ops.aten
+
 
 def get_shape(i):
     if isinstance(i, torch.Tensor):
         return i.shape
     return i
 
+
 flop_registry: Dict[Any, Any] = {}
+
 
 def shape_wrapper(f):
     @wraps(f)
     def nf(*args, out_val=None, **kwargs):
         args, kwargs, out_shape = tree_map(get_shape, (args, kwargs, out_val))
         return f(*args, out_shape=out_shape, **kwargs)
+
     return nf
+
 
 def register_flop_formula(targets, get_raw=False):
     def register_fun(flop_formula):
@@ -38,6 +42,7 @@ def register_flop_formula(targets, get_raw=False):
         return flop_formula
 
     return register_fun
+
 
 @register_flop_formula(aten.mm)
 def mm_flop(a_shape, b_shape, *args, out_shape=None, **kwargs) -> int:
@@ -50,10 +55,12 @@ def mm_flop(a_shape, b_shape, *args, out_shape=None, **kwargs) -> int:
     # NB(chilli): Should be 2 * k - 1 technically for FLOPs.
     return m * n * 2 * k
 
+
 @register_flop_formula(aten.addmm)
 def addmm_flop(self_shape, a_shape, b_shape, out_shape=None, **kwargs) -> int:
     """Count flops for addmm."""
     return mm_flop(a_shape, b_shape)
+
 
 @register_flop_formula(aten.bmm)
 def bmm_flop(a_shape, b_shape, out_shape=None, **kwargs) -> int:
@@ -67,6 +74,7 @@ def bmm_flop(a_shape, b_shape, out_shape=None, **kwargs) -> int:
     # NB(chilli): Should be 2 * k - 1 technically for FLOPs.
     flop = b * m * n * 2 * k
     return flop
+
 
 @register_flop_formula(aten.baddbmm)
 def baddbmm_flop(self_shape, a_shape, b_shape, out_shape=None, **kwargs) -> int:
@@ -115,29 +123,42 @@ def conv_flop_count(
     flop = prod(conv_shape) * prod(filter_size) * batch_size * c_out * c_in * 2
     return flop
 
+
 @register_flop_formula([aten.convolution, aten._convolution])
-def conv_flop(x_shape, w_shape, _bias, _stride, _padding, _dilation, transposed, *args, out_shape=None, **kwargs) -> int:
+def conv_flop(
+    x_shape,
+    w_shape,
+    _bias,
+    _stride,
+    _padding,
+    _dilation,
+    transposed,
+    *args,
+    out_shape=None,
+    **kwargs,
+) -> int:
     """Count flops for convolution."""
     return conv_flop_count(x_shape, w_shape, out_shape, transposed=transposed)
 
 
 @register_flop_formula(aten.convolution_backward)
 def conv_backward_flop(
-        grad_out_shape,
-        x_shape,
-        w_shape,
-        _bias,
-        _stride,
-        _padding,
-        _dilation,
-        transposed,
-        _output_padding,
-        _groups,
-        output_mask,
-        out_shape) -> int:
-
+    grad_out_shape,
+    x_shape,
+    w_shape,
+    _bias,
+    _stride,
+    _padding,
+    _dilation,
+    transposed,
+    _output_padding,
+    _groups,
+    output_mask,
+    out_shape,
+) -> int:
     def t(shape):
         return [shape[1], shape[0]] + list(shape[2:])
+
     flop_count = 0
 
     """
@@ -218,12 +239,17 @@ def conv_backward_flop(
         grad_weight_shape = get_shape(out_shape[1])
         if transposed:
             # grad_weight of transposed conv as conv(grad_out, inp)
-            flop_count += conv_flop_count(t(grad_out_shape), t(x_shape), t(grad_weight_shape), transposed=False)
+            flop_count += conv_flop_count(
+                t(grad_out_shape), t(x_shape), t(grad_weight_shape), transposed=False
+            )
         else:
             # grad_weight as conv(inp, grad_out)
-            flop_count += conv_flop_count(t(x_shape), t(grad_out_shape), t(grad_weight_shape), transposed=False)
+            flop_count += conv_flop_count(
+                t(x_shape), t(grad_out_shape), t(grad_weight_shape), transposed=False
+            )
 
     return flop_count
+
 
 def sdpa_flop_count(query_shape, key_shape, value_shape):
     """
@@ -243,9 +269,13 @@ def sdpa_flop_count(query_shape, key_shape, value_shape):
     return total_flops
 
 
-@register_flop_formula([aten._scaled_dot_product_efficient_attention,
-                        aten._scaled_dot_product_flash_attention,
-                        aten._scaled_dot_product_cudnn_attention])
+@register_flop_formula(
+    [
+        aten._scaled_dot_product_efficient_attention,
+        aten._scaled_dot_product_flash_attention,
+        aten._scaled_dot_product_cudnn_attention,
+    ]
+)
 def sdpa_flop(query_shape, key_shape, value_shape, *args, out_shape=None, **kwargs) -> int:
     """Count flops for self-attention."""
     # NB: We aren't accounting for causal attention here
@@ -287,7 +317,7 @@ def _unpack_flash_attention_nested_shapes(
         assert cum_seq_q.shape == cum_seq_k.shape
         seq_q_lengths = (cum_seq_q[1:] - cum_seq_q[:-1]).tolist()
         seq_k_lengths = (cum_seq_k[1:] - cum_seq_k[:-1]).tolist()
-        for (seq_q_len, seq_k_len) in zip(seq_q_lengths, seq_k_lengths):
+        for seq_q_len, seq_k_len in zip(seq_q_lengths, seq_k_lengths):
             new_query_shape = (1, h_q, seq_q_len, d_q)
             new_key_shape = (1, h_k, seq_k_len, d_k)
             new_value_shape = (1, h_v, seq_k_len, d_v)
@@ -348,16 +378,7 @@ def _unpack_efficient_attention_nested_shapes(
 
 @register_flop_formula(aten._flash_attention_forward, get_raw=True)
 def _flash_attention_forward_flop(
-    query,
-    key,
-    value,
-    cum_seq_q,
-    cum_seq_k,
-    max_q,
-    max_k,
-    *args,
-    out_shape=None,
-    **kwargs
+    query, key, value, cum_seq_q, cum_seq_k, max_q, max_k, *args, out_shape=None, **kwargs
 ) -> int:
     """Count flops for self-attention."""
     # NB: We aren't accounting for causal attention here
@@ -380,16 +401,7 @@ def _flash_attention_forward_flop(
 
 @register_flop_formula(aten._efficient_attention_forward, get_raw=True)
 def _efficient_attention_forward_flop(
-    query,
-    key,
-    value,
-    bias,
-    cu_seqlens_q,
-    cu_seqlens_k,
-    max_seqlen_q,
-    max_seqlen_k,
-    *args,
-    **kwargs
+    query, key, value, bias, cu_seqlens_q, cu_seqlens_k, max_seqlen_q, max_seqlen_k, *args, **kwargs
 ) -> int:
     """Count flops for self-attention."""
     # NB: We aren't accounting for causal attention here
@@ -437,12 +449,19 @@ def sdpa_backward_flop_count(grad_out_shape, query_shape, key_shape, value_shape
     return total_flops
 
 
-@register_flop_formula([aten._scaled_dot_product_efficient_attention_backward,
-                        aten._scaled_dot_product_flash_attention_backward,
-                        aten._scaled_dot_product_cudnn_attention_backward])
-def sdpa_backward_flop(grad_out_shape, query_shape, key_shape, value_shape, *args, out_shape=None, **kwargs) -> int:
+@register_flop_formula(
+    [
+        aten._scaled_dot_product_efficient_attention_backward,
+        aten._scaled_dot_product_flash_attention_backward,
+        aten._scaled_dot_product_cudnn_attention_backward,
+    ]
+)
+def sdpa_backward_flop(
+    grad_out_shape, query_shape, key_shape, value_shape, *args, out_shape=None, **kwargs
+) -> int:
     """Count flops for self-attention backward."""
     return sdpa_backward_flop_count(grad_out_shape, query_shape, key_shape, value_shape)
+
 
 @register_flop_formula(aten._flash_attention_backward, get_raw=True)
 def _flash_attention_backward_flop(
@@ -530,6 +549,7 @@ flop_registry = {
     aten._efficient_attention_backward: _efficient_attention_backward_flop,
 }
 
+
 def normalize_tuple(x):
     if not isinstance(x, tuple):
         return (x,)
@@ -538,6 +558,8 @@ def normalize_tuple(x):
 
 # Define the suffixes for different orders of magnitude
 suffixes = ["", "K", "M", "B", "T"]
+
+
 # Thanks BingChat!
 def get_suffix_str(number):
     # Find the index of the appropriate suffix based on the number of digits
@@ -546,6 +568,7 @@ def get_suffix_str(number):
     index = max(0, min(len(suffixes) - 1, (len(str(number)) - 2) // 3))
     return suffixes[index]
 
+
 def convert_num_with_suffix(number, suffix):
     index = suffixes.index(suffix)
     # Divide the number by 1000^index and format it to two decimal places
@@ -553,10 +576,12 @@ def convert_num_with_suffix(number, suffix):
     # Return the value and the suffix as a string
     return value + suffixes[index]
 
+
 def convert_to_percent_str(num, denom):
     if denom == 0:
         return "0%"
     return f"{num / denom:.2%}"
+
 
 def _pytreeify_preserve_structure(f):
     @wraps(f)
@@ -589,26 +614,32 @@ class FlopCounterMode(TorchDispatchMode):
     """
 
     def __init__(
-            self,
-            mods: Optional[Union[torch.nn.Module, List[torch.nn.Module]]] = None,
-            depth: int = 2,
-            display: bool = True,
-            custom_mapping: Optional[Dict[Any, Any]] = None):
+        self,
+        mods: Optional[Union[torch.nn.Module, List[torch.nn.Module]]] = None,
+        depth: int = 2,
+        display: bool = True,
+        custom_mapping: Optional[Dict[Any, Any]] = None,
+    ):
         self.flop_counts: Dict[str, Dict[Any, int]] = defaultdict(lambda: defaultdict(int))
         self.depth = depth
         self.display = display
         if custom_mapping is None:
             custom_mapping = {}
         if mods is not None:
-            warnings.warn("mods argument is not needed anymore, you can stop passing it", stacklevel=2)
+            warnings.warn(
+                "mods argument is not needed anymore, you can stop passing it", stacklevel=2
+            )
         self.flop_registry = {
             **flop_registry,
-            **{k: v if getattr(v, "_get_raw", False) else shape_wrapper(v) for k, v in custom_mapping.items()}
+            **{
+                k: v if getattr(v, "_get_raw", False) else shape_wrapper(v)
+                for k, v in custom_mapping.items()
+            },
         }
         self.mod_tracker = ModuleTracker()
 
     def get_total_flops(self) -> int:
-        return sum(self.flop_counts['Global'].values())
+        return sum(self.flop_counts["Global"].values())
 
     def get_flop_counts(self) -> Dict[str, Dict[Any, int]]:
         """Return the flop counts as a dictionary of dictionaries.
@@ -629,6 +660,7 @@ class FlopCounterMode(TorchDispatchMode):
             depth = 999999
 
         import tabulate
+
         tabulate.PRESERVE_WHITESPACE = True
         header = ["Module", "FLOP", "% Total"]
         values = []
@@ -645,21 +677,25 @@ class FlopCounterMode(TorchDispatchMode):
 
             padding = " " * depth
             values = []
-            values.append([
-                padding + mod_name,
-                convert_num_with_suffix(total_flops, global_suffix),
-                convert_to_percent_str(total_flops, global_flops)
-            ])
+            values.append(
+                [
+                    padding + mod_name,
+                    convert_num_with_suffix(total_flops, global_suffix),
+                    convert_to_percent_str(total_flops, global_flops),
+                ]
+            )
             for k, v in self.flop_counts[mod_name].items():
-                values.append([
-                    padding + " - " + str(k),
-                    convert_num_with_suffix(v, global_suffix),
-                    convert_to_percent_str(v, global_flops)
-                ])
+                values.append(
+                    [
+                        padding + " - " + str(k),
+                        convert_num_with_suffix(v, global_suffix),
+                        convert_to_percent_str(v, global_flops),
+                    ]
+                )
             return values
 
         for mod in sorted(self.flop_counts.keys()):
-            if mod == 'Global':
+            if mod == "Global":
                 continue
             mod_depth = mod.count(".") + 1
             if mod_depth > depth:
@@ -671,11 +707,11 @@ class FlopCounterMode(TorchDispatchMode):
         # We do a bit of messing around here to only output the "Global" value
         # if there are any FLOPs in there that aren't already fully contained by
         # a module.
-        if 'Global' in self.flop_counts and not is_global_subsumed:
+        if "Global" in self.flop_counts and not is_global_subsumed:
             for idx, value in enumerate(values):
                 values[idx][0] = " " + values[idx][0]
 
-            values = process_mod('Global', 0) + values
+            values = process_mod("Global", 0) + values
 
         if len(values) == 0:
             values = [["Global", "0", "0%"]]

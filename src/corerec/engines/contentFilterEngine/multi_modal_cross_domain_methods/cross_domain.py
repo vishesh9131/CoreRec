@@ -2,11 +2,12 @@
 import torch
 import torch.nn as nn
 
+
 class CROSS_DOMAIN:
     def __init__(self, source_model, target_model):
         """
         Initialize cross-domain learning.
-        
+
         Args:
             source_model: Model trained on the source domain
             target_model: Model to be trained on the target domain
@@ -17,7 +18,7 @@ class CROSS_DOMAIN:
     def transfer_knowledge(self, data_loader, criterion, optimizer, num_epochs):
         """
         Transfer knowledge from source to target domain.
-        
+
         Args:
             data_loader: DataLoader for target domain data
             criterion: Loss function
@@ -41,7 +42,7 @@ class CROSS_DOMAIN:
     def evaluate(self, data_loader, criterion):
         """
         Evaluate the target model on the target domain.
-        
+
         Args:
             data_loader: DataLoader for evaluation data
             criterion: Loss function
@@ -54,5 +55,5 @@ class CROSS_DOMAIN:
                 outputs = self.target_model(inputs)
                 loss = criterion(outputs, labels)
                 total_loss += loss.item()
-        
+
         print(f"Evaluation Loss: {total_loss / len(data_loader):.4f}")

@@ -7,12 +7,13 @@ from typing import List
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class BAYESIAN:
     def __init__(self):
         """
         Initialize the Bayesian classifier using Multinomial Naive Bayes.
         """
-        self.vectorizer = CountVectorizer(stop_words='english')
+        self.vectorizer = CountVectorizer(stop_words="english")
         self.model = MultinomialNB()
         logger.info("Bayesian classifier initialized.")
 
@@ -24,9 +25,13 @@ class BAYESIAN:
         - documents (List[str]): List of documents to train the model.
         - labels (List[int]): Corresponding labels for the documents.
         """
-        # Validate inputs
-        validate_fit_inputs(user_ids, item_ids, ratings)
-        
+        if not documents:
+            raise ValueError("Documents list cannot be empty.")
+        if not labels:
+            raise ValueError("Labels list cannot be empty.")
+        if len(documents) != len(labels):
+            raise ValueError("Documents and labels must have the same length.")
+
         logger.info("Fitting Bayesian classifier on documents.")
         count_matrix = self.vectorizer.fit_transform(documents)
         self.model.fit(count_matrix, labels)
@@ -59,15 +64,16 @@ class BAYESIAN:
         Returns:
         - List[int]: List of recommended item indices.
         """
-        # Validate inputs
-        validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
-        validate_top_k(top_k if 'top_k' in locals() else 10)
-        
+        if top_n <= 0:
+            raise ValueError("top_n must be positive")
+
+        if not hasattr(self.model, 'classes_'):
+            raise ValueError("Model must be fitted before calling recommend.")
+
         logger.info("Generating recommendations using Bayesian classifier.")
         predicted_label = self.predict(query)
-        # Example: Recommend items with the same label
-        # This requires access to labeled items; here we return an empty list as a placeholder
-        recommendations = []  # Implement logic based on the application
+        # Note: This is a placeholder implementation
+        # Full recommendation logic would require access to labeled items
+        recommendations = []
         logger.info(f"Top {top_n} recommendations generated using Bayesian classifier.")
         return recommendations[:top_n]

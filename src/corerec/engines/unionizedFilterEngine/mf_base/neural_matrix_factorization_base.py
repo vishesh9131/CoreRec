@@ -22,8 +22,8 @@ class NeuralMatrixFactorizationBase:
         - Fusion of latent features
 
     References:
-        He, X., Liao, L., Zhang, H., Nie, L., Hu, X., & Chua, T. S. (2017). 
-        Neural collaborative filtering. In Proceedings of the 26th international 
+        He, X., Liao, L., Zhang, H., Nie, L., Hu, X., & Chua, T. S. (2017).
+        Neural collaborative filtering. In Proceedings of the 26th international
         conference on world wide web (pp. 173-182).
     """
 

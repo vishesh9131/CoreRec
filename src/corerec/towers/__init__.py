@@ -7,12 +7,7 @@ in recommendation systems.
 
 from corerec.towers.base_tower import AbstractTower
 from corerec.towers.mlp_tower import MLPTower
-from corerec.towers.transformer_tower import (
-    TransformerTower,
-    BERTTower,
-    RoBERTaTower,
-    T5Tower
-)
+from corerec.towers.transformer_tower import TransformerTower, BERTTower, RoBERTaTower, T5Tower
 from corerec.towers.cnn_tower import CNNTower, AttentionPool2d
 from corerec.towers.fusion_tower import (
     FusionTower,
@@ -20,31 +15,27 @@ from corerec.towers.fusion_tower import (
     AttentionFusion,
     GatingFusion,
     SumFusion,
-    BilinearFusion
+    BilinearFusion,
 )
 
 __all__ = [
     # Base classes
-    'AbstractTower',
-    
+    "AbstractTower",
     # MLP Tower
-    'MLPTower',
-    
+    "MLPTower",
     # Transformer Towers
-    'TransformerTower',
-    'BERTTower',
-    'RoBERTaTower',
-    'T5Tower',
-    
+    "TransformerTower",
+    "BERTTower",
+    "RoBERTaTower",
+    "T5Tower",
     # CNN Tower
-    'CNNTower',
-    'AttentionPool2d',
-    
+    "CNNTower",
+    "AttentionPool2d",
     # Fusion Tower
-    'FusionTower',
-    'ConcatFusion',
-    'AttentionFusion',
-    'GatingFusion',
-    'SumFusion',
-    'BilinearFusion'
-] 
+    "FusionTower",
+    "ConcatFusion",
+    "AttentionFusion",
+    "GatingFusion",
+    "SumFusion",
+    "BilinearFusion",
+]

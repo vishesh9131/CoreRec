@@ -22,9 +22,7 @@ class _DropoutNd(Module):
     def __init__(self, p: float = 0.5, inplace: bool = False) -> None:
         super().__init__()
         if p < 0 or p > 1:
-            raise ValueError(
-                f"dropout probability has to be between 0 and 1, but got {p}"
-            )
+            raise ValueError(f"dropout probability has to be between 0 and 1, but got {p}")
         self.p = p
         self.inplace = inplace
 

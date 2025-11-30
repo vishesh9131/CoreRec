@@ -92,9 +92,7 @@ def call_for_per_sample_grads(
         )
 
     if not isinstance(module, torch.nn.Module):
-        raise RuntimeError(
-            f"Module passed must be nn.Module, got {type(module).__name__}"
-        )
+        raise RuntimeError(f"Module passed must be nn.Module, got {type(module).__name__}")
     if not (batch_size is None or isinstance(batch_size, int)):
         raise RuntimeError(
             f"Batch size passed must be None or an integer, got {type(batch_size).__name__}"

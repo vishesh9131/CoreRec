@@ -4,9 +4,7 @@ import warnings
 from typing import Callable, List
 
 
-_MESSAGE_TEMPLATE = (
-    r"Usage of '{old_location}' is deprecated; please use '{new_location}' instead."
-)
+_MESSAGE_TEMPLATE = r"Usage of '{old_location}' is deprecated; please use '{new_location}' instead."
 
 
 def lazy_deprecated_import(
@@ -38,9 +36,7 @@ def lazy_deprecated_import(
             old_module=__name__,
             new_module=_MIGRATED_TO)
     """
-    warning_message = _MESSAGE_TEMPLATE.format(
-        old_location=old_module, new_location=new_module
-    )
+    warning_message = _MESSAGE_TEMPLATE.format(old_location=old_module, new_location=new_module)
 
     def getattr_dunder(name):
         if name in all:

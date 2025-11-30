@@ -11,7 +11,7 @@ from corerec.pipelines.transformers import (
     MissingValueHandler,
     CategoryEncoder,
     FeatureScaler,
-    DataValidator
+    DataValidator,
 )
 
 __all__ = [
@@ -21,4 +21,3 @@ __all__ = [
     "FeatureScaler",
     "DataValidator",
 ]
-

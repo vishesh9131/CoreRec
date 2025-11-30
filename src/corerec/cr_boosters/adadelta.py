@@ -69,9 +69,7 @@ class Adadelta(Optimizer):
                 if len(p_state) != 0 and not torch.is_tensor(p_state["step"]):
                     step_val = float(p_state["step"])
                     p_state["step"] = (
-                        torch.tensor(
-                            step_val, dtype=_get_scalar_dtype(), device=p.device
-                        )
+                        torch.tensor(step_val, dtype=_get_scalar_dtype(), device=p.device)
                         if group["capturable"]
                         else torch.tensor(step_val, dtype=_get_scalar_dtype())
                     )
@@ -106,12 +104,8 @@ class Adadelta(Optimizer):
                     else torch.zeros((), dtype=_get_scalar_dtype())
                 )
 
-                state["square_avg"] = torch.zeros_like(
-                    p, memory_format=torch.preserve_format
-                )
-                state["acc_delta"] = torch.zeros_like(
-                    p, memory_format=torch.preserve_format
-                )
+                state["square_avg"] = torch.zeros_like(p, memory_format=torch.preserve_format)
+                state["acc_delta"] = torch.zeros_like(p, memory_format=torch.preserve_format)
 
             square_avgs.append(state["square_avg"])
             acc_deltas.append(state["acc_delta"])
@@ -256,12 +250,9 @@ def _single_tensor_adadelta(
 ):
     # If compiling, the compiler will handle cudagraph checks, see note [torch.compile x capturable]
     if not torch._utils.is_compiling() and capturable:
-        capturable_supported_devices = _get_capturable_supported_devices(
-            supports_xla=False
-        )
+        capturable_supported_devices = _get_capturable_supported_devices(supports_xla=False)
         assert all(
-            p.device.type == step.device.type
-            and p.device.type in capturable_supported_devices
+            p.device.type == step.device.type and p.device.type in capturable_supported_devices
             for p, step in zip(params, state_steps)
         ), f"If capturable=True, params and state_steps must be on supported devices: {capturable_supported_devices}."
 
@@ -312,12 +303,9 @@ def _multi_tensor_adadelta(
 
     # If compiling, the compiler will handle cudagraph checks, see note [torch.compile x capturable]
     if not torch._utils.is_compiling() and capturable:
-        capturable_supported_devices = _get_capturable_supported_devices(
-            supports_xla=False
-        )
+        capturable_supported_devices = _get_capturable_supported_devices(supports_xla=False)
         assert all(
-            p.device.type == step.device.type
-            and p.device.type in capturable_supported_devices
+            p.device.type == step.device.type and p.device.type in capturable_supported_devices
             for p, step in zip(params, state_steps)
         ), f"If capturable=True, params and state_steps must be on supported devices: {capturable_supported_devices}."
 
@@ -335,18 +323,14 @@ def _multi_tensor_adadelta(
         device_state_steps,
     ), _ in grouped_tensors.values():
         if has_complex:
-            _view_as_real(
-                device_params, device_grads, device_square_avgs, device_acc_deltas
-            )
+            _view_as_real(device_params, device_grads, device_square_avgs, device_acc_deltas)
 
         # Update steps
         # If steps are on CPU, foreach will fall back to the slow path, which is a for-loop calling t.add(1) over
         # and over. 1 will then be wrapped into a Tensor over and over again, which is slower than if we just
         # wrapped it once now. The alpha is required to assure we go to the right overload.
         if device_state_steps[0].is_cpu:
-            torch._foreach_add_(
-                device_state_steps, torch.tensor(1.0, device="cpu"), alpha=1.0
-            )
+            torch._foreach_add_(device_state_steps, torch.tensor(1.0, device="cpu"), alpha=1.0)
         else:
             torch._foreach_add_(device_state_steps, 1)
 
@@ -363,9 +347,7 @@ def _multi_tensor_adadelta(
                 )
 
         torch._foreach_mul_(device_square_avgs, rho)
-        torch._foreach_addcmul_(
-            device_square_avgs, device_grads, device_grads, value=1 - rho
-        )
+        torch._foreach_addcmul_(device_square_avgs, device_grads, device_grads, value=1 - rho)
 
         std = torch._foreach_add(device_square_avgs, eps)
         torch._foreach_sqrt_(std)
@@ -423,9 +405,7 @@ def adadelta(
 
     # We still respect when the user inputs False for foreach.
     if foreach is None:
-        _, foreach = _default_to_fused_or_foreach(
-            params, differentiable, use_fused=False
-        )
+        _, foreach = _default_to_fused_or_foreach(params, differentiable, use_fused=False)
 
     if foreach and torch.jit.is_scripting():
         raise RuntimeError("torch.jit.script not supported with foreach optimizers")

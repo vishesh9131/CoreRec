@@ -118,9 +118,7 @@ class ExampleAggregateAsDataFrames(DFIterDataPipe):
     def _as_list(self, item):
         try:
             return list(item)
-        except (
-            Exception
-        ):  # TODO(VitalyFedyunin): Replace with better iterable exception
+        except Exception:  # TODO(VitalyFedyunin): Replace with better iterable exception
             return [item]
 
     def __iter__(self):

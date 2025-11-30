@@ -5,11 +5,12 @@ from typing import List, Optional
 from corerec.engines.unionizedFilterEngine.base_recommender import BaseRecommender
 from concurrent.futures import ThreadPoolExecutor
 
+
 class MatrixFactorizationBase(BaseRecommender):
     """
     MatrixFactorizationBase: A Scalable and Efficient Recommender System
     Author: Vishesh Yadav
-    
+
     Overview:
     ----------
     The `MatrixFactorizationBase` class implements a matrix factorization-based
@@ -20,25 +21,25 @@ class MatrixFactorizationBase(BaseRecommender):
     --------------
     - **Vectorized Operations**: Utilizes NumPy's vectorized operations to perform
       computations efficiently, reducing the need for explicit loops.
-    
+
     - **Bias Terms**: Incorporates user and item bias terms to capture inherent
       biases, improving prediction accuracy.
-    
+
     - **Sparse Matrix Handling**: Leverages SciPy's sparse matrix capabilities to
       efficiently manage large, sparse interaction matrices, minimizing memory usage.
-    
+
     - **Stochastic Gradient Descent (SGD)**: Employs SGD for parameter updates,
       enabling faster convergence and scalability with large datasets.
-    
+
     - **Parallelized Factor Updates**: Utilizes multi-threading to update user and
       item factors in parallel, taking advantage of multi-core processors.
-    
+
     - **Early Stopping**: Includes an early stopping mechanism based on validation
       loss to prevent overfitting and reduce unnecessary epochs.
-    
+
     - **Regularization**: Provides separate regularization parameters for user and
       item factors, allowing fine control over model complexity.
-    
+
     - **Xavier Initialization**: Uses Xavier initialization for factor initialization,
       ensuring better convergence properties.
 
@@ -57,13 +58,13 @@ class MatrixFactorizationBase(BaseRecommender):
     ---------
     - `initialize_factors(num_users, num_items)`: Initializes user and item factors
       and biases using Xavier initialization.
-    
+
     - `compute_loss(interaction_matrix)`: Computes the loss (MSE + regularization)
       for the given interaction matrix.
-    
+
     - `fit(interaction_matrix, validation_matrix)`: Trains the model using the
       interaction matrix, with optional validation for early stopping.
-    
+
     - `_sgd_step(interaction_matrix)`: Performs a single SGD step to update user
       and item factors and biases.
 
@@ -73,10 +74,17 @@ class MatrixFactorizationBase(BaseRecommender):
     efficiency are critical. It is particularly well-suited for large datasets with
     sparse interactions, such as user-item ratings in collaborative filtering tasks.
     """
-    def __init__(self, num_factors: int = 20, learning_rate: float = 0.01, 
-                 reg_user: float = 0.02, reg_item: float = 0.02, 
-                 epochs: int = 20, early_stopping_rounds: Optional[int] = None, 
-                 n_threads: int = 4):
+
+    def __init__(
+        self,
+        num_factors: int = 20,
+        learning_rate: float = 0.01,
+        reg_user: float = 0.02,
+        reg_item: float = 0.02,
+        epochs: int = 20,
+        early_stopping_rounds: Optional[int] = None,
+        n_threads: int = 4,
+    ):
         self.num_factors = num_factors
         self.learning_rate = learning_rate
         self.reg_user = reg_user
@@ -101,21 +109,28 @@ class MatrixFactorizationBase(BaseRecommender):
 
     def compute_loss(self, interaction_matrix: csr_matrix) -> float:
         # Vectorized computation of predictions
-        predictions = self.user_factors.dot(self.item_factors.T) + self.user_bias[:, np.newaxis] + self.item_bias[np.newaxis, :] + self.global_bias
+        predictions = (
+            self.user_factors.dot(self.item_factors.T)
+            + self.user_bias[:, np.newaxis]
+            + self.item_bias[np.newaxis, :]
+            + self.global_bias
+        )
         errors = interaction_matrix.toarray() - predictions
-        mse = np.sum(errors ** 2) / interaction_matrix.nnz
-        reg = (self.reg_user * np.sum(self.user_factors ** 2) +
-               self.reg_item * np.sum(self.item_factors ** 2) +
-               self.reg_user * np.sum(self.user_bias ** 2) +
-               self.reg_item * np.sum(self.item_bias ** 2))
+        mse = np.sum(errors**2) / interaction_matrix.nnz
+        reg = (
+            self.reg_user * np.sum(self.user_factors**2)
+            + self.reg_item * np.sum(self.item_factors**2)
+            + self.reg_user * np.sum(self.user_bias**2)
+            + self.reg_item * np.sum(self.item_bias**2)
+        )
         return mse + reg
 
     def fit(self, interaction_matrix: csr_matrix, validation_matrix: Optional[csr_matrix] = None):
         num_users, num_items = interaction_matrix.shape
         self.initialize_factors(num_users, num_items)
         self.global_bias = interaction_matrix.data.mean()
-        
-        best_loss = float('inf')
+
+        best_loss = float("inf")
         no_improve_epochs = 0
 
         for epoch in range(self.epochs):
@@ -131,7 +146,10 @@ class MatrixFactorizationBase(BaseRecommender):
                     no_improve_epochs = 0
                 else:
                     no_improve_epochs += 1
-                    if self.early_stopping_rounds and no_improve_epochs >= self.early_stopping_rounds:
+                    if (
+                        self.early_stopping_rounds
+                        and no_improve_epochs >= self.early_stopping_rounds
+                    ):
                         print("Early stopping triggered.")
                         break
 
@@ -143,17 +161,31 @@ class MatrixFactorizationBase(BaseRecommender):
         Parameters:
         - interaction_matrix (csr_matrix): User-item interaction matrix.
         """
+
         def update_user(u):
             user_interactions = interaction_matrix[u].indices
             for i in user_interactions:
-                prediction = np.dot(self.user_factors[u], self.item_factors[i]) + self.user_bias[u] + self.item_bias[i] + self.global_bias
+                prediction = (
+                    np.dot(self.user_factors[u], self.item_factors[i])
+                    + self.user_bias[u]
+                    + self.item_bias[i]
+                    + self.global_bias
+                )
                 error = interaction_matrix[u, i] - prediction
                 # Update biases
-                self.user_bias[u] += self.learning_rate * (error - self.reg_user * self.user_bias[u])
-                self.item_bias[i] += self.learning_rate * (error - self.reg_item * self.item_bias[i])
+                self.user_bias[u] += self.learning_rate * (
+                    error - self.reg_user * self.user_bias[u]
+                )
+                self.item_bias[i] += self.learning_rate * (
+                    error - self.reg_item * self.item_bias[i]
+                )
                 # Update latent factors
-                self.user_factors[u] += self.learning_rate * (error * self.item_factors[i] - self.reg_user * self.user_factors[u])
-                self.item_factors[i] += self.learning_rate * (error * self.user_factors[u] - self.reg_item * self.item_factors[i])
+                self.user_factors[u] += self.learning_rate * (
+                    error * self.item_factors[i] - self.reg_user * self.user_factors[u]
+                )
+                self.item_factors[i] += self.learning_rate * (
+                    error * self.user_factors[u] - self.reg_item * self.item_factors[i]
+                )
 
         with ThreadPoolExecutor(max_workers=self.n_threads) as executor:
             executor.map(update_user, range(interaction_matrix.shape[0]))

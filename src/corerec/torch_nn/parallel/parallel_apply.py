@@ -100,15 +100,11 @@ def parallel_apply(
                 results[i] = output
         except Exception:
             with lock:
-                results[i] = ExceptionWrapper(
-                    where=f"in replica {i} on device {device}"
-                )
+                results[i] = ExceptionWrapper(where=f"in replica {i} on device {device}")
 
     if len(modules) > 1:
         threads = [
-            threading.Thread(
-                target=_worker, args=(i, module, input, kwargs, device, stream)
-            )
+            threading.Thread(target=_worker, args=(i, module, input, kwargs, device, stream))
             for i, (module, input, kwargs, device, stream) in enumerate(
                 zip(modules, inputs, kwargs_tup, devices, streams)
             )

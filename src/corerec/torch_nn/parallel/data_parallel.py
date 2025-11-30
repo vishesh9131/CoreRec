@@ -35,9 +35,7 @@ def _check_balance(device_ids: Sequence[Union[int, torch.device]]) -> None:
         min_pos, min_val = min(enumerate(values), key=operator.itemgetter(1))
         max_pos, max_val = max(enumerate(values), key=operator.itemgetter(1))
         if min_val / max_val < 0.75:
-            warnings.warn(
-                imbalance_warn.format(device_ids[min_pos], device_ids[max_pos])
-            )
+            warnings.warn(imbalance_warn.format(device_ids[min_pos], device_ids[max_pos]))
             return True
         return False
 
@@ -194,9 +192,7 @@ class DataParallel(Module, Generic[T]):
             outputs = self.parallel_apply(replicas, inputs, module_kwargs)
             return self.gather(outputs, self.output_device)
 
-    def replicate(
-        self, module: T, device_ids: Sequence[Union[int, torch.device]]
-    ) -> List[T]:
+    def replicate(self, module: T, device_ids: Sequence[Union[int, torch.device]]) -> List[T]:
         return replicate(module, device_ids, not torch.is_grad_enabled())
 
     def scatter(
@@ -210,9 +206,7 @@ class DataParallel(Module, Generic[T]):
     def parallel_apply(
         self, replicas: Sequence[T], inputs: Sequence[Any], kwargs: Any
     ) -> List[Any]:
-        return parallel_apply(
-            replicas, inputs, kwargs, self.device_ids[: len(replicas)]
-        )
+        return parallel_apply(replicas, inputs, kwargs, self.device_ids[: len(replicas)])
 
     def gather(self, outputs: Any, output_device: Union[int, torch.device]) -> Any:
         return gather(outputs, output_device, dim=self.dim)

@@ -9,7 +9,7 @@ while adding an import statement here.
 """
 
 __all__ = [
-    'LinearReLU',
+    "LinearReLU",
 ]
 
 from torch.ao.nn.intrinsic.qat import LinearReLU

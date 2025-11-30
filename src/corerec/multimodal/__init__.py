@@ -10,13 +10,13 @@ from corerec.multimodal.fusion_model import (
     ModalityFusion,
     ConcatFusion,
     AttentionFusion,
-    GatingFusion
+    GatingFusion,
 )
 
 __all__ = [
-    'MultimodalFusionModel',
-    'ModalityFusion',
-    'ConcatFusion',
-    'AttentionFusion',
-    'GatingFusion'
-] 
+    "MultimodalFusionModel",
+    "ModalityFusion",
+    "ConcatFusion",
+    "AttentionFusion",
+    "GatingFusion",
+]

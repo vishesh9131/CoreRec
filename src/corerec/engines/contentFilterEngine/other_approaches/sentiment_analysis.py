@@ -1,5 +1,6 @@
 from textblob import TextBlob
 
+
 class SentimentAnalysisFilter:
     def __init__(self, threshold=0.1):
         """
@@ -38,8 +39,8 @@ class SentimentAnalysisFilter:
         sentiment_score = self.analyze_sentiment(content)
 
         if sentiment_score < -self.threshold:
-            return {'status': 'negative', 'sentiment_score': sentiment_score}
+            return {"status": "negative", "sentiment_score": sentiment_score}
         elif sentiment_score > self.threshold:
-            return {'status': 'positive', 'sentiment_score': sentiment_score}
+            return {"status": "positive", "sentiment_score": sentiment_score}
         else:
-            return {'status': 'neutral', 'sentiment_score': sentiment_score}
+            return {"status": "neutral", "sentiment_score": sentiment_score}

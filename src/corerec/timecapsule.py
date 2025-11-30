@@ -1,6 +1,6 @@
-# This is a time capsule module for the corerec 
+# This is a time capsule module for the corerec
 # ###############################################################################################################
-#                           --CoreRec: Connecting to the Unseen--                            
+#                           --CoreRec: Connecting to the Unseen--
 # CoreRec module is designed for graph-based recommendation systems using neural network architectures. It includes:
 #     1. GraphTransformer: A neural network model using Transformer architecture for processing graph data.
 #     2. GraphDataset: A custom dataset class for handling graph data.
@@ -267,4 +267,3 @@ def explainable_predict(model, graph, node_index, top_k=5, threshold=0.5):
     return recommended_indices, explanations
 
 """
-

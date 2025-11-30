@@ -72,15 +72,9 @@ def hash_storage_kernel(x):
     # The randint calls are carefully written to hit things we
     # have lowerings for in inductor.  Lack of unsigned 32-bit integer
     # is a pain.
-    a = torch.randint(
-        -(2**31), 2**31, x.shape, device=x.device, dtype=torch.int32
-    ).abs()
+    a = torch.randint(-(2**31), 2**31, x.shape, device=x.device, dtype=torch.int32).abs()
     a = ((a % (2**31 - 1)) + 1).long()
-    b = (
-        torch.randint(-(2**31), 2**31, x.shape, device=x.device, dtype=torch.int32)
-        .abs()
-        .long()
-    )
+    b = torch.randint(-(2**31), 2**31, x.shape, device=x.device, dtype=torch.int32).abs().long()
     # This is a standard shift-multiply universal hash family
     # plus xor sum hash, using Philox to generate random numbers.
     # Our Philox RNG is not deterministic across devices so
@@ -103,9 +97,7 @@ def hash_storage(storage: torch.UntypedStorage, *, stable_hash: bool = False) ->
         cpu_storage = storage.cpu()
         # TODO: make storage support buffer protocol so this isn't
         # necessary
-        buf = (ctypes.c_byte * cpu_storage.nbytes()).from_address(
-            cpu_storage.data_ptr()
-        )
+        buf = (ctypes.c_byte * cpu_storage.nbytes()).from_address(cpu_storage.data_ptr())
         sha1 = hashlib.sha1()
         sha1.update(buf)
         return sha1.hexdigest()
@@ -193,20 +185,14 @@ class ContentStoreWriter:
 class ContentStoreReader:
     def __init__(self, loc: str, *, cache=True) -> None:
         self.loc = loc
-        self.storage_cache: Optional[
-            Dict[Optional[torch.device], Dict[str, StorageWeakRef]]
-        ] = None
+        self.storage_cache: Optional[Dict[Optional[torch.device], Dict[str, StorageWeakRef]]] = None
         if cache:
             self.storage_cache = defaultdict(dict)
 
     def read_storage(self, h: str, *, device=None) -> torch.UntypedStorage:
         if device is not None:
             device = torch.device(device)
-        ws = (
-            self.storage_cache[device].get(h)
-            if self.storage_cache is not None
-            else None
-        )
+        ws = self.storage_cache[device].get(h) if self.storage_cache is not None else None
         s: Optional[torch.UntypedStorage]
         if ws is not None:
             s = torch.UntypedStorage._new_with_weak_ptr(ws.cdata)
@@ -229,9 +215,7 @@ class ContentStoreReader:
         return torch.load(fn, weights_only=True)
 
     def read_tensor(self, name: str, *, device=None) -> torch.Tensor:
-        dtype, h, storage_offset, size, stride, metadata = self.read_tensor_metadata(
-            name
-        )
+        dtype, h, storage_offset, size, stride, metadata = self.read_tensor_metadata(name)
         storage = self.read_storage(h, device=device)
         t = torch.tensor([], dtype=dtype, device=storage.device)
         t.set_(storage, storage_offset, size, stride)

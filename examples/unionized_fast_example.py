@@ -24,10 +24,11 @@ if __name__ == "__main__":
         # Fallback to FastRecommender if FAST doesn't exist
         try:
             from corerec.engines.unionizedFilterEngine.fast import FAST
+
             model = FAST(factors=32, iterations=1, batch_size=1024, seed=42)
         except:
             print("FAST model not available")
             sys.exit(0)
     model.fit(users, items, ratings)
     recs = model.recommend(users[0], top_n=10)
-    print("FAST recommendations for", users[0], ":", recs) 
+    print("FAST recommendations for", users[0], ":", recs)

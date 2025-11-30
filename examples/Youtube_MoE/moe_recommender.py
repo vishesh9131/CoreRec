@@ -5,6 +5,8 @@ from typing import List, Dict
 from scipy.sparse import csr_matrix
 import logging
 from typing import List, Optional
+
+
 class MixtureOfExpertsRecommender(BaseRecommender):
     def __init__(self, experts: List[BaseRecommender]):
         """
@@ -28,7 +30,9 @@ class MixtureOfExpertsRecommender(BaseRecommender):
         for expert in self.experts:
             expert.fit(interaction_matrix, user_ids, item_ids)
 
-    def recommend(self, user_id: int, top_n: int = 10, exclude_items: Optional[List[int]] = None) -> List[int]:
+    def recommend(
+        self, user_id: int, top_n: int = 10, exclude_items: Optional[List[int]] = None
+    ) -> List[int]:
         """
         Generate recommendations by aggregating experts' suggestions.
 

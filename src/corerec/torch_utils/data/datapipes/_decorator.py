@@ -28,18 +28,13 @@ class functional_datapipe:
         if issubclass(cls, IterDataPipe):
             if isinstance(cls, Type):  # type: ignore[arg-type]
                 if not isinstance(cls, _DataPipeMeta):
-                    raise TypeError(
-                        "`functional_datapipe` can only decorate IterDataPipe"
-                    )
+                    raise TypeError("`functional_datapipe` can only decorate IterDataPipe")
             # with non_deterministic decorator
             else:
                 if not isinstance(cls, non_deterministic) and not (
-                    hasattr(cls, "__self__")
-                    and isinstance(cls.__self__, non_deterministic)
+                    hasattr(cls, "__self__") and isinstance(cls.__self__, non_deterministic)
                 ):
-                    raise TypeError(
-                        "`functional_datapipe` can only decorate IterDataPipe"
-                    )
+                    raise TypeError("`functional_datapipe` can only decorate IterDataPipe")
             IterDataPipe.register_datapipe_as_function(
                 self.name, cls, enable_df_api_tracing=self.enable_df_api_tracing
             )
@@ -147,9 +142,7 @@ def argument_validation(f):
     def wrapper(*args, **kwargs):
         bound = signature.bind(*args, **kwargs)
         for argument_name, value in bound.arguments.items():
-            if argument_name in hints and isinstance(
-                hints[argument_name], _DataPipeMeta
-            ):
+            if argument_name in hints and isinstance(hints[argument_name], _DataPipeMeta):
                 hint = hints[argument_name]
                 if not isinstance(value, IterDataPipe):
                     raise TypeError(
@@ -192,9 +185,7 @@ def runtime_validation(f):
     # TODO:
     # Can be extended to validate '__getitem__' and nonblocking
     if f.__name__ != "__iter__":
-        raise TypeError(
-            f"Can not decorate function {f.__name__} with 'runtime_validation'"
-        )
+        raise TypeError(f"Can not decorate function {f.__name__} with 'runtime_validation'")
 
     @wraps(f)
     def wrapper(self):

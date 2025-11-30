@@ -952,14 +952,10 @@ class FractionalMaxPool2d(Module):
                 "an output size, or a pooling ratio"
             )
         if output_size is not None and output_ratio is not None:
-            raise ValueError(
-                "only one of output_size and output_ratio may be specified"
-            )
+            raise ValueError("only one of output_size and output_ratio may be specified")
         if self.output_ratio is not None:
             if not (0 < self.output_ratio[0] < 1 and 0 < self.output_ratio[1] < 1):
-                raise ValueError(
-                    f"output_ratio must be between 0 and 1 (got {output_ratio})"
-                )
+                raise ValueError(f"output_ratio must be between 0 and 1 (got {output_ratio})")
 
     def forward(self, input: Tensor):
         return F.fractional_max_pool2d(
@@ -1037,18 +1033,14 @@ class FractionalMaxPool3d(Module):
                 "an output size, or a pooling ratio"
             )
         if output_size is not None and output_ratio is not None:
-            raise ValueError(
-                "only one of output_size and output_ratio may be specified"
-            )
+            raise ValueError("only one of output_size and output_ratio may be specified")
         if self.output_ratio is not None:
             if not (
                 0 < self.output_ratio[0] < 1
                 and 0 < self.output_ratio[1] < 1
                 and 0 < self.output_ratio[2] < 1
             ):
-                raise ValueError(
-                    f"output_ratio must be between 0 and 1 (got {output_ratio})"
-                )
+                raise ValueError(f"output_ratio must be between 0 and 1 (got {output_ratio})")
 
     def forward(self, input: Tensor):
         return F.fractional_max_pool3d(
@@ -1247,9 +1239,7 @@ class _AdaptiveMaxPoolNd(Module):
     __constants__ = ["output_size", "return_indices"]
     return_indices: bool
 
-    def __init__(
-        self, output_size: _size_any_opt_t, return_indices: bool = False
-    ) -> None:
+    def __init__(self, output_size: _size_any_opt_t, return_indices: bool = False) -> None:
         super().__init__()
         self.output_size = output_size
         self.return_indices = return_indices

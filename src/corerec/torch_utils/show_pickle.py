@@ -10,6 +10,7 @@ from typing import Any, IO, BinaryIO, Union
 
 __all__ = ["FakeObject", "FakeClass", "DumpUnpickler", "main"]
 
+
 class FakeObject:
     def __init__(self, module, name, args):
         self.module = module
@@ -61,12 +62,7 @@ class FakeClass:
 
 
 class DumpUnpickler(pickle._Unpickler):  # type: ignore[name-defined]
-    def __init__(
-            self,
-            file,
-            *,
-            catch_invalid_utf8=False,
-            **kwargs):
+    def __init__(self, file, *, catch_invalid_utf8=False, **kwargs):
         super().__init__(file, **kwargs)
         self.catch_invalid_utf8 = catch_invalid_utf8
 
@@ -83,7 +79,7 @@ class DumpUnpickler(pickle._Unpickler):  # type: ignore[name-defined]
     # for strings that catches the decode exception and replaces it with
     # a sentinel object.
     def load_binunicode(self):
-        strlen, = struct.unpack("<I", self.read(4))  # type: ignore[attr-defined]
+        (strlen,) = struct.unpack("<I", self.read(4))  # type: ignore[attr-defined]
         if strlen > sys.maxsize:
             raise Exception("String too long.")  # noqa: TRY002
         str_bytes = self.read(strlen)  # type: ignore[attr-defined]
@@ -95,6 +91,7 @@ class DumpUnpickler(pickle._Unpickler):  # type: ignore[name-defined]
                 raise
             obj = FakeObject("builtin", "UnicodeDecodeError", (str(exn),))
         self.append(obj)  # type: ignore[attr-defined]
+
     dispatch[pickle.BINUNICODE[0]] = load_binunicode  # type: ignore[assignment]
 
     @classmethod
@@ -138,7 +135,9 @@ def main(argv, output_stream=None):
                         found = True
                         break
                 if not found:
-                    raise Exception(f"Could not find member matching {mname} in {zfname}")  # noqa: TRY002
+                    raise Exception(
+                        f"Could not find member matching {mname} in {zfname}"
+                    )  # noqa: TRY002
 
 
 if __name__ == "__main__":

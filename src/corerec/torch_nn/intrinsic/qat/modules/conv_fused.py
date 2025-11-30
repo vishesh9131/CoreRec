@@ -10,18 +10,18 @@ while adding an import statement here.
 
 __all__ = [
     # Modules
-    'ConvBn1d',
-    'ConvBnReLU1d',
-    'ConvReLU1d',
-    'ConvBn2d',
-    'ConvBnReLU2d',
-    'ConvReLU2d',
-    'ConvBn3d',
-    'ConvBnReLU3d',
-    'ConvReLU3d',
+    "ConvBn1d",
+    "ConvBnReLU1d",
+    "ConvReLU1d",
+    "ConvBn2d",
+    "ConvBnReLU2d",
+    "ConvReLU2d",
+    "ConvBn3d",
+    "ConvBnReLU3d",
+    "ConvReLU3d",
     # Utilities
-    'freeze_bn_stats',
-    'update_bn_stats',
+    "freeze_bn_stats",
+    "update_bn_stats",
 ]
 
 from torch.ao.nn.intrinsic.qat import ConvBn1d

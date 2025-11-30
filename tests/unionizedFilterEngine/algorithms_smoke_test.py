@@ -16,7 +16,12 @@ class TestUnionizedAlgorithms(unittest.TestCase):
             from corerec.engines.unionizedFilterEngine.cornac_bpr import CornacBPR
         except Exception as e:
             self.skipTest(f"CornacBPR import failed: {e}")
-        model = CornacBPR(factors=8, iterations=1, batch_size=8, num_neg_samples=1, seed=42)
+        model = CornacBPR(
+            factors=8,
+            iterations=1,
+            batch_size=8,
+            num_neg_samples=1,
+            seed=42)
         model.fit(self.users, self.items, self.ratings)
         recs = model.recommend(1, top_n=3)
         self.assertIsInstance(recs, list)
@@ -62,7 +67,9 @@ class TestUnionizedAlgorithms(unittest.TestCase):
         rows = [uid_map[u] for u in self.users]
         cols = [iid_map[i] for i in self.items]
         data = np.array(self.ratings, dtype=float)
-        mat = csr_matrix((data, (rows, cols)), shape=(len(uid_map), len(iid_map)))
+        mat = csr_matrix(
+            (data, (rows, cols)), shape=(
+                len(uid_map), len(iid_map)))
         model = RBM(n_hidden=8, n_epochs=1, batch_size=4, verbose=False)
         try:
             model.fit(mat, sorted(uid_map.keys()), sorted(iid_map.keys()))
@@ -82,7 +89,9 @@ class TestUnionizedAlgorithms(unittest.TestCase):
         rows = [uid_map[u] for u in self.users]
         cols = [iid_map[i] for i in self.items]
         data = np.array(self.ratings, dtype=float)
-        mat = csr_matrix((data, (rows, cols)), shape=(len(uid_map), len(iid_map)))
+        mat = csr_matrix(
+            (data, (rows, cols)), shape=(
+                len(uid_map), len(iid_map)))
         # Use safe rank <= min(n_users, n_items)
         min_rank = min(len(uid_map), len(iid_map), 2)
         model = RLRMC(rank=min_rank, max_iter=1, verbose=False)
@@ -103,8 +112,16 @@ class TestUnionizedAlgorithms(unittest.TestCase):
         rows = [uid_map[u] for u in users]
         cols = [iid_map[i] for i in items]
         data = np.ones(len(users), dtype=float)
-        mat = csr_matrix((data, (rows, cols)), shape=(len(uid_map), len(iid_map)))
-        model = SLiRec(embedding_dim=8, hidden_dim=8, epochs=1, batch_size=4, sequence_length=5, device='cpu')
+        mat = csr_matrix(
+            (data, (rows, cols)), shape=(
+                len(uid_map), len(iid_map)))
+        model = SLiRec(
+            embedding_dim=8,
+            hidden_dim=8,
+            epochs=1,
+            batch_size=4,
+            sequence_length=5,
+            device="cpu")
         model.fit(mat, sorted(uid_map.keys()), sorted(iid_map.keys()))
         recs = model.recommend(1, top_n=2)
         self.assertIsInstance(recs, list)
@@ -118,7 +135,15 @@ class TestUnionizedAlgorithms(unittest.TestCase):
         users = [1, 1, 1, 2]
         items = [10, 20, 30, 10]
         ts = [1, 2, 3, 1]
-        model = SUMModel(embedding_dim=8, num_interests=2, interest_dim=4, epochs=1, batch_size=4, sequence_length=5, device='cpu')
+        model = SUMModel(
+            embedding_dim=8,
+            num_interests=2,
+            interest_dim=4,
+            epochs=1,
+            batch_size=4,
+            sequence_length=5,
+            device="cpu",
+        )
         model.fit(users, items, ts)
         recs = model.recommend(1, top_n=2)
         self.assertIsInstance(recs, list)
@@ -131,11 +156,11 @@ class TestUnionizedAlgorithms(unittest.TestCase):
         users = [1, 1, 2, 3]
         items = [10, 20, 10, 30]
         ratings = [1.0, 1.0, 1.0, 1.0]
-        model = GeoMLC(n_factors=4, n_epochs=1, batch_size=2, device='cpu')
+        model = GeoMLC(n_factors=4, n_epochs=1, batch_size=2, device="cpu")
         model.fit(users, items, ratings)
         recs = model.recommend(1, top_n=2)
         self.assertIsInstance(recs, list)
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

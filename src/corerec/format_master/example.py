@@ -11,10 +11,10 @@ logging.basicConfig(level=logging.INFO)
 format_master = FormatMaster()
 
 # Load the sample dataset
-path = 'corerec/format_master/1.yaml'  # Adjust the path as necessary
+path = "corerec/format_master/1.yaml"  # Adjust the path as necessary
 
 # Load the YAML file into a DataFrame
-with open(path, 'r') as file:
+with open(path, "r") as file:
     data = yaml.safe_load(file)  # Load the YAML data
     df = pd.DataFrame(data)  # Convert the loaded data into a DataFrame
 

@@ -40,9 +40,7 @@ def _pin_memory_loop(in_queue, out_queue, device_id, done_event, device):
             try:
                 data = pin_memory(data, device)
             except Exception:
-                data = ExceptionWrapper(
-                    where=f"in pin memory thread for device {device_id}"
-                )
+                data = ExceptionWrapper(where=f"in pin memory thread for device {device_id}")
             r = (idx, data)
         while not done_event.is_set():
             try:
@@ -71,9 +69,7 @@ def pin_memory(data, device=None):
                 # use `type(data)(...)` to create the new sequence.
                 # Create a clone and update it if the sequence type is mutable.
                 clone = copy.copy(data)
-                clone.update(
-                    {k: pin_memory(sample, device) for k, sample in data.items()}
-                )
+                clone.update({k: pin_memory(sample, device) for k, sample in data.items()})
                 return clone
             else:
                 return type(data)({k: pin_memory(sample, device) for k, sample in data.items()})  # type: ignore[call-arg]
@@ -84,9 +80,7 @@ def pin_memory(data, device=None):
     elif isinstance(data, tuple) and hasattr(data, "_fields"):  # namedtuple
         return type(data)(*(pin_memory(sample, device) for sample in data))
     elif isinstance(data, tuple):
-        return [
-            pin_memory(sample, device) for sample in data
-        ]  # Backwards compatibility.
+        return [pin_memory(sample, device) for sample in data]  # Backwards compatibility.
     elif isinstance(data, collections.abc.Sequence):
         try:
             if isinstance(data, collections.abc.MutableSequence):

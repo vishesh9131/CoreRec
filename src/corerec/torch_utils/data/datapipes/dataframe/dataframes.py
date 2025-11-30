@@ -117,17 +117,13 @@ class Capture:
     def __add__(self, add_val):
         res = CaptureAdd(self, add_val, ctx=self.ctx)
         var = CaptureVariable(res, ctx=self.ctx)
-        self.ctx["operations"].append(
-            CaptureVariableAssign(variable=var, value=res, ctx=self.ctx)
-        )
+        self.ctx["operations"].append(CaptureVariableAssign(variable=var, value=res, ctx=self.ctx))
         return var
 
     def __sub__(self, add_val):
         res = CaptureSub(self, add_val, ctx=self.ctx)
         var = CaptureVariable(res, ctx=self.ctx)
-        self.ctx["operations"].append(
-            CaptureVariableAssign(variable=var, value=res, ctx=self.ctx)
-        )
+        self.ctx["operations"].append(CaptureVariableAssign(variable=var, value=res, ctx=self.ctx))
         return var
 
     def __mul__(self, add_val):
@@ -226,9 +222,7 @@ class CaptureCall(Capture):
         self.callable = callable
 
     def __str__(self):
-        return "{callable}({args},{kwargs})".format(
-            callable=self.callable, **self.kwargs
-        )
+        return "{callable}({args},{kwargs})".format(callable=self.callable, **self.kwargs)
 
     def execute(self):
         # TODO: VitalyFedyunin execute kwargs and maybe nested structures

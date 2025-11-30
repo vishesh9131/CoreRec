@@ -81,18 +81,14 @@ class NAdam(Optimizer):  # noqa: D101
                     if not torch.is_tensor(p_state["step"]):
                         step_val = float(p_state["step"])
                         p_state["step"] = (
-                            torch.tensor(
-                                step_val, dtype=_get_scalar_dtype(), device=p.device
-                            )
+                            torch.tensor(step_val, dtype=_get_scalar_dtype(), device=p.device)
                             if group["capturable"]
                             else torch.tensor(step_val, dtype=_get_scalar_dtype())
                         )
                     if not torch.is_tensor(p_state["mu_product"]):
                         mu_prod_val = p_state["mu_product"]
                         p_state["mu_product"] = (
-                            torch.tensor(
-                                mu_prod_val, dtype=_get_scalar_dtype(), device=p.device
-                            )
+                            torch.tensor(mu_prod_val, dtype=_get_scalar_dtype(), device=p.device)
                             if group["capturable"]
                             else torch.tensor(mu_prod_val, dtype=_get_scalar_dtype())
                         )
@@ -133,13 +129,9 @@ class NAdam(Optimizer):  # noqa: D101
                         else torch.tensor(1.0, dtype=_get_scalar_dtype())
                     )
                     # Exponential moving average of gradient values
-                    state["exp_avg"] = torch.zeros_like(
-                        p, memory_format=torch.preserve_format
-                    )
+                    state["exp_avg"] = torch.zeros_like(p, memory_format=torch.preserve_format)
                     # Exponential moving average of squared gradient values
-                    state["exp_avg_sq"] = torch.zeros_like(
-                        p, memory_format=torch.preserve_format
-                    )
+                    state["exp_avg_sq"] = torch.zeros_like(p, memory_format=torch.preserve_format)
 
                 exp_avgs.append(state["exp_avg"])
                 exp_avg_sqs.append(state["exp_avg_sq"])
@@ -358,12 +350,8 @@ def _single_tensor_nadam(
         else:
             mu_product_next = _get_value(mu_product) * mu_next
             denom.add_(eps)
-            param.addcdiv_(
-                grad, denom, value=(-lr * (1.0 - mu) / (1.0 - _get_value(mu_product)))
-            )
-            param.addcdiv_(
-                exp_avg, denom, value=(-lr * mu_next) / (1.0 - mu_product_next)
-            )
+            param.addcdiv_(grad, denom, value=(-lr * (1.0 - mu) / (1.0 - _get_value(mu_product))))
+            param.addcdiv_(exp_avg, denom, value=(-lr * mu_next) / (1.0 - mu_product_next))
 
 
 def _multi_tensor_nadam(
@@ -393,9 +381,7 @@ def _multi_tensor_nadam(
 
     # If compiling, the compiler will handle cudagraph checks, see note [torch.compile x capturable]
     if not torch._utils.is_compiling() and capturable:
-        capturable_supported_devices = _get_capturable_supported_devices(
-            supports_xla=False
-        )
+        capturable_supported_devices = _get_capturable_supported_devices(supports_xla=False)
         assert all(
             p.device.type == mp.device.type == step.device.type
             and p.device.type in capturable_supported_devices
@@ -415,9 +401,7 @@ def _multi_tensor_nadam(
     ), _ in grouped_tensors.values():
         # handle complex
         if has_complex:
-            _view_as_real(
-                grouped_params, grouped_grads, grouped_exp_avgs, grouped_exp_avg_sqs
-            )
+            _view_as_real(grouped_params, grouped_grads, grouped_exp_avgs, grouped_exp_avg_sqs)
 
         if maximize:
             grouped_grads = torch._foreach_neg(grouped_grads)  # type: ignore[assignment]
@@ -427,9 +411,7 @@ def _multi_tensor_nadam(
         # and over. 1 will then be wrapped into a Tensor over and over again, which is slower than if we just
         # wrapped it once now. The alpha is required to assure we go to the right overload.
         if grouped_state_steps[0].is_cpu:
-            torch._foreach_add_(
-                grouped_state_steps, torch.tensor(1.0, device="cpu"), alpha=1.0
-            )
+            torch._foreach_add_(grouped_state_steps, torch.tensor(1.0, device="cpu"), alpha=1.0)
         else:
             torch._foreach_add_(grouped_state_steps, 1)
 
@@ -440,9 +422,7 @@ def _multi_tensor_nadam(
             else:
                 # Re-use the intermediate memory (grouped_grads) already allocated for maximize
                 if maximize:
-                    torch._foreach_add_(
-                        grouped_grads, grouped_params, alpha=weight_decay
-                    )
+                    torch._foreach_add_(grouped_grads, grouped_params, alpha=weight_decay)
                 else:
                     grouped_grads = torch._foreach_add(  # type: ignore[assignment]
                         grouped_grads, grouped_params, alpha=weight_decay
@@ -452,9 +432,7 @@ def _multi_tensor_nadam(
         torch._foreach_lerp_(grouped_exp_avgs, grouped_grads, 1 - beta1)
 
         torch._foreach_mul_(grouped_exp_avg_sqs, beta2)
-        torch._foreach_addcmul_(
-            grouped_exp_avg_sqs, grouped_grads, grouped_grads, 1 - beta2
-        )
+        torch._foreach_addcmul_(grouped_exp_avg_sqs, grouped_grads, grouped_grads, 1 - beta2)
 
         exp_avg_sq_sqrt = torch._foreach_sqrt(grouped_exp_avg_sqs)
 
@@ -486,16 +464,14 @@ def _multi_tensor_nadam(
             torch._foreach_sqrt_(bias_correction_sqrt)
         else:
             bias_correction_sqrt = [
-                _dispatch_sqrt(1 - beta2 ** _get_value(step))
-                for step in grouped_state_steps
+                _dispatch_sqrt(1 - beta2 ** _get_value(step)) for step in grouped_state_steps
             ]
             mus = [
                 beta1 * (1.0 - 0.5 * (0.96 ** (_get_value(step) * momentum_decay)))
                 for step in grouped_state_steps
             ]
             mu_nexts = [
-                beta1
-                * (1.0 - 0.5 * (0.96 ** ((_get_value(step) + 1) * momentum_decay)))
+                beta1 * (1.0 - 0.5 * (0.96 ** ((_get_value(step) + 1) * momentum_decay)))
                 for step in grouped_state_steps
             ]
 
@@ -549,12 +525,7 @@ def _multi_tensor_nadam(
             )
             step_size_expavg = _stack_if_compiling(
                 [
-                    (
-                        _get_value(lr)
-                        * mu_next
-                        / (1.0 - _get_value(mu_product) * mu_next)
-                    )
-                    * -1
+                    (_get_value(lr) * mu_next / (1.0 - _get_value(mu_product) * mu_next)) * -1
                     for mu_product, mu_next in zip(grouped_mu_products, mu_nexts)
                 ]
             )
@@ -606,9 +577,7 @@ def nadam(
         )
 
     if foreach is None:
-        _, foreach = _default_to_fused_or_foreach(
-            params, differentiable, use_fused=False
-        )
+        _, foreach = _default_to_fused_or_foreach(params, differentiable, use_fused=False)
 
     if foreach and torch.jit.is_scripting():
         raise RuntimeError("torch.jit.script not supported with foreach optimizers")

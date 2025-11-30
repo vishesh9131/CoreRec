@@ -5,10 +5,14 @@ from typing import Any, Dict, List, Callable
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class FUZZY_LOGIC:
-    def __init__(self, input_vars: Dict[str, Callable[[int], Dict[str, float]]], 
-                 output_vars: Dict[str, Callable[[Dict[str, float]], float]], 
-                 rules: List[Callable[[Dict[str, float]], Dict[str, float]]]):
+    def __init__(
+        self,
+        input_vars: Dict[str, Callable[[int], Dict[str, float]]],
+        output_vars: Dict[str, Callable[[Dict[str, float]], float]],
+        rules: List[Callable[[Dict[str, float]], Dict[str, float]]],
+    ):
         """
         Initialize the Fuzzy Logic System with custom inputs, outputs, and rules.
 
@@ -48,7 +52,9 @@ class FUZZY_LOGIC:
                         fuzzy_outputs[key] = max(fuzzy_outputs[key], value)
 
             # Defuzzify outputs
-            defuzzified_outputs = {var: self.output_vars[var](fuzzy_outputs) for var in self.output_vars}
+            defuzzified_outputs = {
+                var: self.output_vars[var](fuzzy_outputs) for var in self.output_vars
+            }
             logger.info(f"Fuzzy Logic evaluation result: {defuzzified_outputs}")
             return defuzzified_outputs
         except Exception as e:

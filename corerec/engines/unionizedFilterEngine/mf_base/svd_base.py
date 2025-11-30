@@ -1,13 +1,16 @@
+from typing import Union
+from pathlib import Path
 """
 Svd - NOT YET IMPLEMENTED
 
-WARNING: This feature is currently under development and not ready for production use.
 
 For similar functionality, please use: sklearn.decomposition.TruncatedSVD
 
 Expected implementation: CoreRec v0.6.0 or later
 Track progress: https://github.com/vishesh9131/CoreRec/issues
 """
+
+from corerec.api.exceptions import ModelNotFittedError
 
 
 class SVDBase:

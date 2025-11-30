@@ -72,9 +72,7 @@ def allow_smaller_batches(args, kwargs):
 
 @contextmanager
 def setup_rnn(use_input_variant, args, kwargs):
-    with batch_second(args, kwargs) if use_input_variant else allow_smaller_batches(
-        args, kwargs
-    ):
+    with batch_second(args, kwargs) if use_input_variant else allow_smaller_batches(args, kwargs):
         yield
 
 
@@ -128,9 +126,7 @@ class ExpandedWeight(torch.Tensor):
         if func in expanded_weights_rnn_decomps:
             # in aten, choosing the input or data variants is done by parsing logic. This mimics some of that
             decomp_opts = expanded_weights_rnn_decomps[func]
-            use_input_variant = isinstance(
-                args[2], list
-            )  # data variant uses a list here
+            use_input_variant = isinstance(args[2], list)  # data variant uses a list here
             decomp = decomp_opts[0] if use_input_variant else decomp_opts[1]
 
             if decomp is not None:

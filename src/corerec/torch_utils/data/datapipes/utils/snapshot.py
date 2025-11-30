@@ -8,9 +8,7 @@ from torch.utils.data.graph_settings import apply_random_seed
 #   1. Caller (either the ReadingService or DataLoader) must pass in the initial RNG
 #   2. `in_batch_shuffle` and `bucketbatch` are not compatible with this because they currently
 #      lack the option to `set_seed`.
-def _simple_graph_snapshot_restoration(
-    datapipe: IterDataPipe, n_iterations: int, rng=None
-) -> None:
+def _simple_graph_snapshot_restoration(datapipe: IterDataPipe, n_iterations: int, rng=None) -> None:
     r"""
     Fast-forward the given DataPipe and its parents by ``n_iterations``, re-doing computations to restore a snapshot.
 

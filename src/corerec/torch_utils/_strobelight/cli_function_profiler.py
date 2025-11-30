@@ -13,9 +13,7 @@ from typing import Any, List, Optional, Sequence
 logger = logging.getLogger("strobelight_function_profiler")
 
 console_handler = logging.StreamHandler()
-formatter = logging.Formatter(
-    "%(name)s, line %(lineno)d, %(asctime)s, %(levelname)s: %(message)s"
-)
+formatter = logging.Formatter("%(name)s, line %(lineno)d, %(asctime)s, %(levelname)s: %(message)s")
 console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
@@ -131,9 +129,7 @@ class StrobelightCLIFunctionProfiler:
 
     def _wait_for_running(self, counter: int = 0) -> None:
         if counter > 20:
-            raise StrobelightCLIProfilerError(
-                "wait_for_running called more than 20 times"
-            )
+            raise StrobelightCLIProfilerError("wait_for_running called more than 20 times")
 
         command = ["strobeclient", "getRunStatus", "--run-id", f"{self.current_run_id}"]
         logger.debug("running command: %s", _command_to_string(command))
@@ -261,9 +257,7 @@ class StrobelightCLIFunctionProfiler:
             if not started:
                 if self.stop_at_error:
                     StrobelightCLIFunctionProfiler._lock.release()
-                    raise StrobelightCLIProfilerError(
-                        "failed to start strobelight profiling"
-                    )
+                    raise StrobelightCLIProfilerError("failed to start strobelight profiling")
                 result = work_function(*args, **kwargs)
                 StrobelightCLIFunctionProfiler._lock.release()
                 return result
@@ -286,9 +280,7 @@ class StrobelightCLIFunctionProfiler:
 # @strobelight()
 # @strobelight(profiler = StrobelightFunctionProfiler(stop_at_error=True,..))
 # @strobelight(stop_at_error=True,...)
-def strobelight(
-    profiler: Optional[StrobelightCLIFunctionProfiler] = None, **kwargs: Any
-) -> Any:
+def strobelight(profiler: Optional[StrobelightCLIFunctionProfiler] = None, **kwargs: Any) -> Any:
     if not profiler:
         profiler = StrobelightCLIFunctionProfiler(**kwargs)
 

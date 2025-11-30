@@ -1,4 +1,3 @@
-
 import numpy as np
 import core_rec as cs
 import vish_graphs as vg
@@ -15,6 +14,7 @@ adj_matrix = np.loadtxt(file_path, delimiter=",")
 top_nodes = vg.find_top_nodes(adj_matrix)
 # vg.draw_graph(adj_matrix, top_nodes=top_nodes)
 
+
 class SimpleNN(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
         super(SimpleNN, self).__init__()
@@ -27,6 +27,7 @@ class SimpleNN(nn.Module):
         x = self.relu(x)
         x = self.fc2(x)
         return x
+
 
 # Convert adjacency matrix to a PyTorch tensor of dtype float32
 adj_matrix = torch.tensor(adj_matrix, dtype=torch.float32)
@@ -62,4 +63,3 @@ for i in range(10):
     # print("Popular Nodes are:", top_nodes)
 
 # vg.draw_graph_3d(adj_matrix, top_nodes=top_nodes, recommended_nodes=predictions,transparent_labeled=False)
-

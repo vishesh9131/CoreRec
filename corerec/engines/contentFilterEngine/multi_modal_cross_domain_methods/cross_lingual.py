@@ -5,20 +5,23 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class CROSS_LINGUAL:
-    def __init__(self, multilingual_model):
+    def __init__(self, multilingual_model, verbose=True):
         """
         Initialize cross-lingual learning.
-        
+
         Args:
             multilingual_model: Model capable of handling multiple languages
+            verbose (bool): Whether to print training progress. Defaults to True.
         """
         self.multilingual_model = multilingual_model
+        self.verbose = verbose
 
     def translate(self, text_input, source_lang, target_lang):
         """
         Translate text from source language to target language.
-        
+
         Args:
             text_input: Input text data
             source_lang: Source language code
@@ -31,7 +34,7 @@ class CROSS_LINGUAL:
     def train(self, data_loader, criterion, optimizer, num_epochs):
         """
         Train the cross-lingual model.
-        
+
         Args:
             data_loader: DataLoader for training data
             criterion: Loss function
@@ -53,7 +56,7 @@ class CROSS_LINGUAL:
     def evaluate(self, data_loader, criterion):
         """
         Evaluate the cross-lingual model.
-        
+
         Args:
             data_loader: DataLoader for evaluation data
             criterion: Loss function
@@ -66,6 +69,6 @@ class CROSS_LINGUAL:
                 outputs = self.multilingual_model(text_input)
                 loss = criterion(outputs, labels)
                 total_loss += loss.item()
-        
+
         if self.verbose:
             logger.info(f"Evaluation Loss: {total_loss / len(data_loader):.4f}")

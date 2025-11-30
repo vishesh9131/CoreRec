@@ -77,7 +77,12 @@ def _load_crlearn_ijcai() -> Optional[Dict[str, List]]:
                 items = df[item_col].astype(str).tolist()
                 ratings = [1.0] * len(users)
                 timestamps = list(range(len(users)))
-                return {"users": users, "items": items, "ratings": ratings, "timestamps": timestamps}
+                return {
+                    "users": users,
+                    "items": items,
+                    "ratings": ratings,
+                    "timestamps": timestamps,
+                }
 
     return None
 
@@ -99,11 +104,23 @@ def load_interactions(prefer: str = "crlearn") -> Dict[str, List]:
 
     candidates: List[Path] = []
     if prefer == "netflix":
-        candidates = [SAMPLE / "netflix_demo.csv", SAMPLE / "youtube_demo.csv", SAMPLE / "spotify_demo.csv"]
+        candidates = [
+            SAMPLE / "netflix_demo.csv",
+            SAMPLE / "youtube_demo.csv",
+            SAMPLE / "spotify_demo.csv",
+        ]
     elif prefer == "youtube":
-        candidates = [SAMPLE / "youtube_demo.csv", SAMPLE / "netflix_demo.csv", SAMPLE / "spotify_demo.csv"]
+        candidates = [
+            SAMPLE / "youtube_demo.csv",
+            SAMPLE / "netflix_demo.csv",
+            SAMPLE / "spotify_demo.csv",
+        ]
     else:
-        candidates = [SAMPLE / "spotify_demo.csv", SAMPLE / "netflix_demo.csv", SAMPLE / "youtube_demo.csv"]
+        candidates = [
+            SAMPLE / "spotify_demo.csv",
+            SAMPLE / "netflix_demo.csv",
+            SAMPLE / "youtube_demo.csv",
+        ]
 
     path = next((p for p in candidates if p.exists()), None)
     if path is None:
@@ -122,7 +139,9 @@ def load_interactions(prefer: str = "crlearn") -> Dict[str, List]:
     if rating_col and rating_col in df:
         # robust conversion; if non-numeric (e.g., age ratings like 'NC-17'), fallback to 1.0
         try:
-            ratings = pd.to_numeric(df[rating_col], errors="coerce").fillna(1.0).astype(float).tolist()
+            ratings = (
+                pd.to_numeric(df[rating_col], errors="coerce").fillna(1.0).astype(float).tolist()
+            )
         except Exception:
             ratings = [1.0] * len(df)
     else:
@@ -139,7 +158,9 @@ def load_interactions(prefer: str = "crlearn") -> Dict[str, List]:
     return {"users": users, "items": items, "ratings": ratings, "timestamps": ts}
 
 
-def build_csr_from_interactions(users: List, items: List, ratings: Optional[List] = None) -> Tuple[csr_matrix, List, List]:
+def build_csr_from_interactions(
+    users: List, items: List, ratings: Optional[List] = None
+) -> Tuple[csr_matrix, List, List]:
     """
     Build a csr matrix and return (matrix, unique_users, unique_items) with original IDs.
     """
@@ -153,4 +174,4 @@ def build_csr_from_interactions(users: List, items: List, ratings: Optional[List
     cols = [iidx[i] for i in items]
     data = np.array(ratings, dtype=float)
     mat = csr_matrix((data, (rows, cols)), shape=(len(uvals), len(ivals)))
-    return mat, uvals, ivals 
+    return mat, uvals, ivals

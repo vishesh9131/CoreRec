@@ -5,9 +5,8 @@ from torch.utils.data import DataLoader, random_split
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
-from corerec.engines.contentFilterEngine.learning_paradigms import LEA_TRANSFER_LEARNING
+import corerec as cr
 from torch.utils.data import Dataset
-
 
 
 # Define the neural network model
@@ -26,62 +25,63 @@ class MovieGenreClassifier(nn.Module):
         out = self.sigmoid(out)
         return out
 
+
 # Custom Dataset for Movies
 class MoviesDataset(Dataset):
     def __init__(self, filepath, vectorizer=None, mlb=None, fit_vectorizer=True, fit_mlb=True):
         self.data = self.load_data(filepath)
         self.genres = self.extract_genres()
-        
+
         # Initialize MultiLabelBinarizer for genres
         if mlb is None and fit_mlb:
             self.mlb = MultiLabelBinarizer()
-            self.data['genres'] = self.data['genres'].str.split('|')
-            self.mlb.fit(self.data['genres'])
+            self.data["genres"] = self.data["genres"].str.split("|")
+            self.mlb.fit(self.data["genres"])
         elif mlb is not None:
             self.mlb = mlb
-            self.data['genres'] = self.data['genres'].str.split('|')
+            self.data["genres"] = self.data["genres"].str.split("|")
         else:
             raise ValueError("mlb cannot be None when fit_mlb is False")
-        
+
         # Initialize TF-IDF Vectorizer for titles
         if vectorizer is None and fit_vectorizer:
             self.vectorizer = TfidfVectorizer(max_features=1000)  # You can adjust max_features
-            self.vectorizer.fit(self.data['title'])
+            self.vectorizer.fit(self.data["title"])
         elif vectorizer is not None:
             self.vectorizer = vectorizer
         else:
             raise ValueError("vectorizer cannot be None when fit_vectorizer is False")
-        
-        self.features = self.vectorizer.transform(self.data['title']).toarray()
-        self.labels = self.mlb.transform(self.data['genres'])
-    
+
+        self.features = self.vectorizer.transform(self.data["title"]).toarray()
+        self.labels = self.mlb.transform(self.data["genres"])
+
     def load_data(self, filepath):
         # Load the dataset with specified encoding
         try:
             df = pd.read_csv(
                 filepath,
-                sep='::',
-                engine='python',
+                sep="::",
+                engine="python",
                 header=None,
-                names=['movie_id', 'title', 'genres'],
-                encoding='utf-8'
+                names=["movie_id", "title", "genres"],
+                encoding="utf-8",
             )
         except UnicodeDecodeError:
             print("UTF-8 encoding failed. Trying 'latin1' encoding.")
             df = pd.read_csv(
                 filepath,
-                sep='::',
-                engine='python',
+                sep="::",
+                engine="python",
                 header=None,
-                names=['movie_id', 'title', 'genres'],
-                encoding='latin1'
+                names=["movie_id", "title", "genres"],
+                encoding="latin1",
             )
         return df
 
     def extract_genres(self):
         # Extract unique genres
         genres = set()
-        for genre_list in self.data['genres'].str.split('|'):
+        for genre_list in self.data["genres"].str.split("|"):
             genres.update(genre_list)
         return genres
 
@@ -92,11 +92,32 @@ class MoviesDataset(Dataset):
         # Features are TF-IDF vectors of titles
         features = self.features[idx]
         labels = self.labels[idx]
-        return torch.tensor(features, dtype=torch.float32), torch.tensor(labels, dtype=torch.float32)
+        return torch.tensor(features, dtype=torch.float32), torch.tensor(
+            labels, dtype=torch.float32
+        )
+
 
 def main():
     # Parameters
-    dataset_path = 'src/SANDBOX/dataset/ml-1m/movies.dat'
+    # Try different possible paths
+    import os
+    possible_paths = [
+        "src/SANDBOX/dataset/ml-1m/movies.dat",
+        "sample_data/movies.dat",
+        "../sample_data/movies.dat",
+        "../../sample_data/movies.dat",
+    ]
+    
+    dataset_path = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            dataset_path = path
+            break
+    
+    if dataset_path is None:
+        print("Warning: movies.dat not found. Please provide a valid path.")
+        print("Tried paths:", possible_paths)
+        return
     hidden_size = 256  # Increased hidden size
     num_epochs = 30
     batch_size = 64
@@ -105,12 +126,12 @@ def main():
 
     # Initialize dataset
     dataset = MoviesDataset(filepath=dataset_path)
-    
+
     # Split dataset into train and validation
     train_size = int((1 - val_split) * len(dataset))
     val_size = len(dataset) - train_size
     train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
-    
+
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size)
 
@@ -121,7 +142,7 @@ def main():
 
     # Try to load pre-trained weights
     try:
-        model.load_state_dict(torch.load('pretrained_weights.pth'))
+        model.load_state_dict(torch.load("pretrained_weights.pth"))
         print("Loaded pre-trained weights successfully")
     except:
         print("No pre-trained weights found, starting from scratch")
@@ -130,7 +151,7 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     # Initialize the Transfer Learning Learner
-    learner = LEA_TRANSFER_LEARNING(model, train_loader, criterion, optimizer, num_epochs)
+    learner = cr.TransferLearning(model, train_loader, criterion, optimizer, num_epochs)
 
     # Train using the learner's train method
     learner.train()
@@ -142,23 +163,30 @@ def main():
         for idx in range(len(dataset)):
             sample_features, true_labels = dataset[idx]
             sample_features = sample_features.unsqueeze(0)
-            
+
             # Use the learner's predict method
-            predicted_probs = model(sample_features).squeeze().numpy()
-            
+            predicted_probs = model(sample_features).squeeze().detach().cpu().numpy()
+
             threshold = 0.5  # Increased threshold for more confident predictions
             recommended_genres = [
-                genre for genre, idx_genre in zip(dataset.mlb.classes_, range(len(dataset.mlb.classes_)))
+                genre
+                for genre, idx_genre in zip(dataset.mlb.classes_, range(len(dataset.mlb.classes_)))
                 if predicted_probs[idx_genre] > threshold
             ]
-            
-            movie_title = dataset.data.iloc[idx]['title']
-            results.append({
-                'title': movie_title,
-                'recommended_genres': recommended_genres,
-                'true_genres': [genre for genre, is_true in zip(dataset.mlb.classes_, true_labels) if is_true]
-            })
-            
+
+            movie_title = dataset.data.iloc[idx]["title"]
+            results.append(
+                {
+                    "title": movie_title,
+                    "recommended_genres": recommended_genres,
+                    "true_genres": [
+                        genre
+                        for genre, is_true in zip(dataset.mlb.classes_, true_labels)
+                        if is_true
+                    ],
+                }
+            )
+
             if idx < 5:  # Print first 5 predictions for debugging
                 print(f"\nMovie: {movie_title}")
                 print(f"True Genres: {results[-1]['true_genres']}")
@@ -169,8 +197,8 @@ def main():
     correct_predictions = 0
     total_predictions = 0
     for result in results:
-        true_set = set(result['true_genres'])
-        pred_set = set(result['recommended_genres'])
+        true_set = set(result["true_genres"])
+        pred_set = set(result["recommended_genres"])
         correct_predictions += len(true_set.intersection(pred_set))
         total_predictions += len(true_set)
 
@@ -179,7 +207,10 @@ def main():
 
     # Save results
     results_df = pd.DataFrame(results)
-    results_df.to_csv('src/SANDBOX/contentFilterExample/LP/transfer_learning_results.csv', index=False)
+    results_df.to_csv(
+        "src/SANDBOX/contentFilterExample/LP/transfer_learning_results.csv", index=False
+    )
+
 
 if __name__ == "__main__":
     main()

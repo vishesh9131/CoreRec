@@ -17,7 +17,9 @@ def load_module(rel_path: str):
 class TestUserProfiling(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load_module("corerec/engines/contentFilterEngine/context_personalization/user_profiling.py")
+        cls.mod = load_module(
+            "corerec/engines/contentFilterEngine/context_personalization/user_profiling.py"
+        )
         cls.UserProfilingRecommender = cls.mod.UserProfilingRecommender
 
     def test_fit_and_recommend(self):
@@ -43,4 +45,4 @@ class TestUserProfiling(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

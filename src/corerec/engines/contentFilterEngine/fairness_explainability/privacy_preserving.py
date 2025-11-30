@@ -1,6 +1,7 @@
 # privacy_preserving implementation
 import pandas as pd
 
+
 class PRIVACY_PRESERVING:
     def __init__(self):
         """
@@ -19,7 +20,7 @@ class PRIVACY_PRESERVING:
         - pd.DataFrame: Anonymized user data.
         """
         # Example: Remove identifiable information
-        anonymized_data = user_data.drop(columns=['user_id', 'zip_code'])
+        anonymized_data = user_data.drop(columns=["user_id", "zip_code"])
         self.anonymized_data = anonymized_data
         return anonymized_data
 

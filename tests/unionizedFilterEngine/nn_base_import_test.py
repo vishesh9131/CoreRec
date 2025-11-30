@@ -2,7 +2,13 @@ import unittest
 from pathlib import Path
 from importlib.util import spec_from_file_location, module_from_spec
 
-BASE = Path(__file__).resolve().parents[2] / "corerec" / "engines" / "unionizedFilterEngine" / "nn_base"
+BASE = (
+    Path(__file__).resolve().parents[2]
+    / "corerec"
+    / "engines"
+    / "unionizedFilterEngine"
+    / "nn_base"
+)
 
 EXCLUDE = {"__init__.py"}
 
@@ -32,8 +38,10 @@ class TestNNBaseImports(unittest.TestCase):
                 except ImportError as e:
                     self.skipTest(f"Skip {f.name}: {e}")
                 except Exception as e:
-                    self.skipTest(f"Skip {f.name} due to heavy deps or runtime error: {e}")
+                    self.skipTest(
+                        f"Skip {
+                            f.name} due to heavy deps or runtime error: {e}")
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

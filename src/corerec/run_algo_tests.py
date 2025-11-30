@@ -93,7 +93,9 @@ class AggregatingTestResult(unittest.TestResult):
 
     def addSkip(self, test, reason):
         super().addSkip(test, reason)
-        self.case_results.append(TestCaseResult(test_id=str(test), outcome="skipped", message=str(reason)))
+        self.case_results.append(
+            TestCaseResult(test_id=str(test), outcome="skipped", message=str(reason))
+        )
 
 
 def discover_tests(search_dirs: List[Path], pattern: str) -> List[unittest.TestSuite]:
@@ -103,7 +105,9 @@ def discover_tests(search_dirs: List[Path], pattern: str) -> List[unittest.TestS
         if not root.exists():
             continue
         try:
-            suite = loader.discover(start_dir=str(root), pattern=pattern, top_level_dir=str(PROJECT_ROOT))
+            suite = loader.discover(
+                start_dir=str(root), pattern=pattern, top_level_dir=str(PROJECT_ROOT)
+            )
             suites.append(suite)
         except Exception:
             # Continue even if a directory has issues
@@ -142,7 +146,9 @@ def _is_loader_failed_test(test: unittest.case.TestCase) -> bool:
     return cls_name == "_FailedTest" or mod_name.startswith("unittest.loader")
 
 
-def run_tests_and_aggregate(search_dirs: List[Path], pattern: str, verbose: bool = False) -> Tuple[List[AlgorithmTestReport], int]:
+def run_tests_and_aggregate(
+    search_dirs: List[Path], pattern: str, verbose: bool = False
+) -> Tuple[List[AlgorithmTestReport], int]:
     all_suites = discover_tests(search_dirs, pattern)
     # Map: (module_file) -> suite
     reports: List[AlgorithmTestReport] = []
@@ -180,11 +186,19 @@ def run_tests_and_aggregate(search_dirs: List[Path], pattern: str, verbose: bool
                 except Exception:
                     file_path = Path("unknown")
 
-            algo_name = extract_algo_name_from_file(file_path) if file_path and file_path.name else module_name
+            algo_name = (
+                extract_algo_name_from_file(file_path)
+                if file_path and file_path.name
+                else module_name
+            )
 
             # Run this subsuite
             result = AggregatingTestResult()
-            runner = unittest.TextTestRunner(stream=sys.stdout if verbose else open(os.devnull, "w"), verbosity=2 if verbose else 1, resultclass=lambda *a, **k: result)
+            runner = unittest.TextTestRunner(
+                stream=sys.stdout if verbose else open(os.devnull, "w"),
+                verbosity=2 if verbose else 1,
+                resultclass=lambda *a, **k: result,
+            )
             start = time.time()
             runner.run(subsuite)
             duration = time.time() - start
@@ -255,10 +269,14 @@ def print_report(reports: List[AlgorithmTestReport]):
         overall_err += errors
         overall_skip += skipped
 
-        print(f"{algo:30} {total:5d} {passed:5d} {failed:5d} {errors:4d} {skipped:5d} {duration:7.2f} {status}")
+        print(
+            f"{algo:30} {total:5d} {passed:5d} {failed:5d} {errors:4d} {skipped:5d} {duration:7.2f} {status}"
+        )
 
     print("-" * len(header))
-    print(f"{'TOTAL':30} {overall_total:5d} {overall_pass:5d} {overall_fail:5d} {overall_err:4d} {overall_skip:5d}")
+    print(
+        f"{'TOTAL':30} {overall_total:5d} {overall_pass:5d} {overall_fail:5d} {overall_err:4d} {overall_skip:5d}"
+    )
 
 
 def save_json_report(reports: List[AlgorithmTestReport], output_path: Path):
@@ -322,7 +340,9 @@ def main():
         print(f" - {d}")
     print(f"Pattern: {args.pattern}")
 
-    reports, total_failures = run_tests_and_aggregate(search_dirs, args.pattern, verbose=args.verbose)
+    reports, total_failures = run_tests_and_aggregate(
+        search_dirs, args.pattern, verbose=args.verbose
+    )
     print_report(reports)
 
     if args.json_output:
@@ -333,4 +353,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()

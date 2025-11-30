@@ -154,9 +154,7 @@ class AdaptiveLogSoftmaxWithLoss(Module):
         self.n_clusters = len(self.cutoffs) - 1
         self.head_size = self.shortlist_size + self.n_clusters
 
-        self.head = Linear(
-            self.in_features, self.head_size, bias=self.head_bias, **factory_kwargs
-        )
+        self.head = Linear(self.in_features, self.head_size, bias=self.head_bias, **factory_kwargs)
         self.tail = ModuleList()
 
         for i in range(self.n_clusters):
@@ -182,26 +180,21 @@ class AdaptiveLogSoftmaxWithLoss(Module):
         if targ_dim == 1:
             if input_.size(0) != target_.size(0):
                 raise RuntimeError(
-                    "Input and target should have the same size "
-                    "in the batch dimension."
+                    "Input and target should have the same size " "in the batch dimension."
                 )
             if input_.dim() != 2:
                 raise RuntimeError(
-                    "1D target tensor expects 2D input tensors, "
-                    "but found inputs with size",
+                    "1D target tensor expects 2D input tensors, " "but found inputs with size",
                     input_.size(),
                 )
         elif targ_dim == 0:
             if input_.dim() != 1:
                 raise RuntimeError(
-                    "0D target tensor expects 1D input tensors, "
-                    "but found inputs with size",
+                    "0D target tensor expects 1D input tensors, " "but found inputs with size",
                     input_.size(),
                 )
         else:
-            raise RuntimeError(
-                "0D or 1D target tensor expected, " "multi-target not supported"
-            )
+            raise RuntimeError("0D or 1D target tensor expected, " "multi-target not supported")
 
         is_batched = targ_dim > 0
         input = input_ if is_batched else input_.unsqueeze(0)
@@ -268,9 +261,7 @@ class AdaptiveLogSoftmaxWithLoss(Module):
         for i, (start_idx, stop_idx) in enumerate(zip(self.cutoffs, self.cutoffs[1:])):
             cluster_output = self.tail[i](input)
             cluster_logprob = F.log_softmax(cluster_output, dim=1)
-            output_logprob = cluster_logprob + head_logprob[
-                :, self.shortlist_size + i
-            ].unsqueeze(1)
+            output_logprob = cluster_logprob + head_logprob[:, self.shortlist_size + i].unsqueeze(1)
 
             out[:, start_idx:stop_idx] = output_logprob
 

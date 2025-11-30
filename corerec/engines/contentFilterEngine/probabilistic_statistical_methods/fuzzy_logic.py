@@ -2,22 +2,18 @@
 import logging
 from typing import Any, Dict, List, Callable
 
-from corerec.utils.validation import (
-    validate_fit_inputs,
-    validate_user_id,
-    validate_item_id,
-    validate_top_k,
-    validate_model_fitted,
-    ValidationError
-)
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class FUZZY_LOGIC:
-    def __init__(self, input_vars: Dict[str, Callable[[int], Dict[str, float]]], 
-                 output_vars: Dict[str, Callable[[Dict[str, float]], float]], 
-                 rules: List[Callable[[Dict[str, float]], Dict[str, float]]]):
+    def __init__(
+        self,
+        input_vars: Dict[str, Callable[[int], Dict[str, float]]],
+        output_vars: Dict[str, Callable[[Dict[str, float]], float]],
+        rules: List[Callable[[Dict[str, float]], Dict[str, float]]],
+    ):
         """
         Initialize the Fuzzy Logic System with custom inputs, outputs, and rules.
 
@@ -57,7 +53,9 @@ class FUZZY_LOGIC:
                         fuzzy_outputs[key] = max(fuzzy_outputs[key], value)
 
             # Defuzzify outputs
-            defuzzified_outputs = {var: self.output_vars[var](fuzzy_outputs) for var in self.output_vars}
+            defuzzified_outputs = {
+                var: self.output_vars[var](fuzzy_outputs) for var in self.output_vars
+            }
             logger.info(f"Fuzzy Logic evaluation result: {defuzzified_outputs}")
             return defuzzified_outputs
         except Exception as e:
@@ -75,11 +73,9 @@ class FUZZY_LOGIC:
         Returns:
         - List[int]: List of recommended actions (placeholder for actual implementation).
         """
-        # Validate inputs
-        validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
-        validate_top_k(top_k if 'top_k' in locals() else 10)
-        
+        if top_n <= 0:
+            raise ValueError("top_n must be positive")
+
         logger.info("Generating recommendations using Fuzzy Logic System.")
         evaluation = self.evaluate(input_values)
         # Example: Recommend actions based on evaluation

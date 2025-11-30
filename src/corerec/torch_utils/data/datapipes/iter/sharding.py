@@ -57,14 +57,10 @@ class ShardingFilterIterDataPipe(_ShardingIterDataPipe):
             )
         if sharding_group == SHARDING_PRIORITIES.DEFAULT:
             if len(self.groups) and SHARDING_PRIORITIES.DEFAULT not in self.groups:
-                raise RuntimeError(
-                    "ShardingFilter cannot mix DEFAULT and non DEFAULT groups"
-                )
+                raise RuntimeError("ShardingFilter cannot mix DEFAULT and non DEFAULT groups")
         else:
             if SHARDING_PRIORITIES.DEFAULT in self.groups:
-                raise RuntimeError(
-                    "ShardingFilter cannot mix DEFAULT and non DEFAULT groups"
-                )
+                raise RuntimeError("ShardingFilter cannot mix DEFAULT and non DEFAULT groups")
         self.groups[sharding_group] = (num_of_instances, instance_id)
         self._update_num_of_instances()
 
@@ -91,10 +87,6 @@ class ShardingFilterIterDataPipe(_ShardingIterDataPipe):
     def __len__(self):
         if isinstance(self.source_datapipe, Sized):
             return len(self.source_datapipe) // self.num_of_instances + (
-                1
-                if (
-                    self.instance_id < len(self.source_datapipe) % self.num_of_instances
-                )
-                else 0
+                1 if (self.instance_id < len(self.source_datapipe) % self.num_of_instances) else 0
             )
         raise TypeError(f"{type(self).__name__} instance doesn't have valid length")

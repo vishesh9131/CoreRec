@@ -242,9 +242,7 @@ class Freezer:
         if path.name == "__init__.py":
             # Python packages are signified by negative size.
             size = -size
-        self.frozen_modules.append(
-            FrozenModule(".".join(module_qualname), c_name, size, bytecode)
-        )
+        self.frozen_modules.append(FrozenModule(".".join(module_qualname), c_name, size, bytecode))
 
 
 def main() -> None:

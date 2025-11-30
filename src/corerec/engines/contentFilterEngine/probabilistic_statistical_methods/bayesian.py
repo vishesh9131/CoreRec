@@ -7,12 +7,13 @@ from typing import List
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class BAYESIAN:
     def __init__(self):
         """
         Initialize the Bayesian classifier using Multinomial Naive Bayes.
         """
-        self.vectorizer = CountVectorizer(stop_words='english')
+        self.vectorizer = CountVectorizer(stop_words="english")
         self.model = MultinomialNB()
         logger.info("Bayesian classifier initialized.")
 

@@ -1,6 +1,9 @@
 from .Bayesian_mf_base import BayesianMFBase as BAYESIAN_MF
-from .Bayesian_Personalized_Ranking_Extensions_base import BayesianPersonalizedRankingBase as BAYESIAN_PERSONALIZED_RANKING
+from .Bayesian_Personalized_Ranking_Extensions_base import (
+    BayesianPersonalizedRankingBase as BAYESIAN_PERSONALIZED_RANKING,
+)
 from .PGM_uf import PGMUFBase as PGM_UF
+
 # from .bivae import BiVAE as BAYESIAN_BiVAE
 
 from .bpr_base import BPRBase as BAYESIAN_BPR

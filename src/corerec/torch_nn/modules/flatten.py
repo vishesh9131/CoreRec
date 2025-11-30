@@ -109,9 +109,7 @@ class Unflatten(Module):
     dim: Union[int, str]
     unflattened_size: Union[_size, NamedShape]
 
-    def __init__(
-        self, dim: Union[int, str], unflattened_size: Union[_size, NamedShape]
-    ) -> None:
+    def __init__(self, dim: Union[int, str], unflattened_size: Union[_size, NamedShape]) -> None:
         super().__init__()
 
         if isinstance(dim, int):

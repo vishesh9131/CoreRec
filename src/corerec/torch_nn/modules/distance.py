@@ -46,9 +46,7 @@ class PairwiseDistance(Module):
     eps: float
     keepdim: bool
 
-    def __init__(
-        self, p: float = 2.0, eps: float = 1e-6, keepdim: bool = False
-    ) -> None:
+    def __init__(self, p: float = 2.0, eps: float = 1e-6, keepdim: bool = False) -> None:
         super().__init__()
         self.norm = p
         self.eps = eps

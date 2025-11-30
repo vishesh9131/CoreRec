@@ -45,7 +45,7 @@ except ImportError:
 # ============================================================================
 
 __all__ = [
-    'AttentionMechanisms',
-    'EnsembleRecommender',
-    'HybridCollaborative',
+    "AttentionMechanisms",
+    "EnsembleRecommender",
+    "HybridCollaborative",
 ]

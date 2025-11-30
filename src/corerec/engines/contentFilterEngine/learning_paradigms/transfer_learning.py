@@ -3,6 +3,7 @@ import torch
 from corerec.train import train_model
 from corerec.predict import predict
 
+
 class TransferLearningLearner:
     def __init__(self, model, data_loader, criterion, optimizer, num_epochs):
         """

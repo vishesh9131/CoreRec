@@ -5,15 +5,34 @@ Note::
     Please, use `torch.ao.nn.quantized` instead.
 """
 
-from torch.ao.nn.quantized.modules.activation import ReLU6, Hardswish, ELU, LeakyReLU, Sigmoid, Softmax, MultiheadAttention, PReLU
+from torch.ao.nn.quantized.modules.activation import (
+    ReLU6,
+    Hardswish,
+    ELU,
+    LeakyReLU,
+    Sigmoid,
+    Softmax,
+    MultiheadAttention,
+    PReLU,
+)
 from torch.ao.nn.quantized.modules.batchnorm import BatchNorm2d, BatchNorm3d
 from torch.ao.nn.quantized.modules.conv import Conv1d, Conv2d, Conv3d
 from torch.ao.nn.quantized.modules.conv import ConvTranspose1d, ConvTranspose2d, ConvTranspose3d
 from torch.ao.nn.quantized.modules.dropout import Dropout
 from torch.ao.nn.quantized.modules.embedding_ops import Embedding, EmbeddingBag
-from torch.ao.nn.quantized.modules.functional_modules import FloatFunctional, FXFloatFunctional, QFunctional
+from torch.ao.nn.quantized.modules.functional_modules import (
+    FloatFunctional,
+    FXFloatFunctional,
+    QFunctional,
+)
 from torch.ao.nn.quantized.modules.linear import Linear
-from torch.ao.nn.quantized.modules.normalization import LayerNorm, GroupNorm, InstanceNorm1d, InstanceNorm2d, InstanceNorm3d
+from torch.ao.nn.quantized.modules.normalization import (
+    LayerNorm,
+    GroupNorm,
+    InstanceNorm1d,
+    InstanceNorm2d,
+    InstanceNorm3d,
+)
 from torch.ao.nn.quantized.modules.rnn import LSTM
 
 from torch.ao.nn.quantized.modules import MaxPool2d
@@ -35,36 +54,36 @@ from torch.ao.nn.quantized.modules import rnn
 from torch.ao.nn.quantized.modules import utils
 
 __all__ = [
-    'BatchNorm2d',
-    'BatchNorm3d',
-    'Conv1d',
-    'Conv2d',
-    'Conv3d',
-    'ConvTranspose1d',
-    'ConvTranspose2d',
-    'ConvTranspose3d',
-    'DeQuantize',
-    'ELU',
-    'Embedding',
-    'EmbeddingBag',
-    'GroupNorm',
-    'Hardswish',
-    'InstanceNorm1d',
-    'InstanceNorm2d',
-    'InstanceNorm3d',
-    'LayerNorm',
-    'LeakyReLU',
-    'Linear',
-    'LSTM',
-    'MultiheadAttention',
-    'Quantize',
-    'ReLU6',
-    'Sigmoid',
-    'Softmax',
-    'Dropout',
-    'PReLU',
+    "BatchNorm2d",
+    "BatchNorm3d",
+    "Conv1d",
+    "Conv2d",
+    "Conv3d",
+    "ConvTranspose1d",
+    "ConvTranspose2d",
+    "ConvTranspose3d",
+    "DeQuantize",
+    "ELU",
+    "Embedding",
+    "EmbeddingBag",
+    "GroupNorm",
+    "Hardswish",
+    "InstanceNorm1d",
+    "InstanceNorm2d",
+    "InstanceNorm3d",
+    "LayerNorm",
+    "LeakyReLU",
+    "Linear",
+    "LSTM",
+    "MultiheadAttention",
+    "Quantize",
+    "ReLU6",
+    "Sigmoid",
+    "Softmax",
+    "Dropout",
+    "PReLU",
     # Wrapper modules
-    'FloatFunctional',
-    'FXFloatFunctional',
-    'QFunctional',
+    "FloatFunctional",
+    "FXFloatFunctional",
+    "QFunctional",
 ]

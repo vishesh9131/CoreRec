@@ -16,9 +16,7 @@ from .expanded_weights_utils import (
 class EmbeddingPerSampleGrad(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwarg_names, _, *expanded_args_and_kwargs):
-        expanded_args, expanded_kwargs = standard_kwargs(
-            kwarg_names, expanded_args_and_kwargs
-        )
+        expanded_args, expanded_kwargs = standard_kwargs(kwarg_names, expanded_args_and_kwargs)
         if len(expanded_args[0].shape) == 1:
             raise RuntimeError(
                 f"Expanded Weights needs an input with a batch size, got a 1D tensor, {expanded_args[0]}"
