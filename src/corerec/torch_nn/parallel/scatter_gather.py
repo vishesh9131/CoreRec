@@ -21,9 +21,7 @@ def is_namedtuple(obj: Any) -> bool:
 
 def _is_namedtuple(obj: Any) -> bool:
     # Check if type was created from collections.namedtuple or a typing.NamedTuple.
-    return (
-        isinstance(obj, tuple) and hasattr(obj, "_asdict") and hasattr(obj, "_fields")
-    )
+    return isinstance(obj, tuple) and hasattr(obj, "_asdict") and hasattr(obj, "_fields")
 
 
 T = TypeVar("T", dict, list, tuple)
@@ -89,13 +87,9 @@ def scatter_kwargs(
     scattered_inputs = scatter(inputs, target_gpus, dim) if inputs else []
     scattered_kwargs = scatter(kwargs, target_gpus, dim) if kwargs else []
     if len(scattered_inputs) < len(scattered_kwargs):
-        scattered_inputs.extend(
-            () for _ in range(len(scattered_kwargs) - len(scattered_inputs))
-        )
+        scattered_inputs.extend(() for _ in range(len(scattered_kwargs) - len(scattered_inputs)))
     elif len(scattered_kwargs) < len(inputs):
-        scattered_kwargs.extend(
-            {} for _ in range(len(scattered_inputs) - len(scattered_kwargs))
-        )
+        scattered_kwargs.extend({} for _ in range(len(scattered_inputs) - len(scattered_kwargs)))
     return tuple(scattered_inputs), tuple(scattered_kwargs)
 
 

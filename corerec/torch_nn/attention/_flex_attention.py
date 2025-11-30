@@ -27,9 +27,12 @@ def _compose(*fs):
     return functools.reduce(compose2, fs)
 
 
-_score_mod_signature = Callable[
-    [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor
-]
+_score_mod_signature = Callable[[torch.Tensor,
+                                 torch.Tensor,
+                                 torch.Tensor,
+                                 torch.Tensor,
+                                 torch.Tensor],
+                                torch.Tensor]
 
 
 def _identity(
@@ -104,12 +107,13 @@ class BlockMask:
         assert batch == 1, head == 1
 
         def create_dense_one(kv_num_blocks, kv_indices):
-            dense_mask = kv_indices.new_zeros(num_rows, num_cols + 1, dtype=torch.int32)
+            dense_mask = kv_indices.new_zeros(
+                num_rows, num_cols + 1, dtype=torch.int32)
 
             row_indices = torch.arange(
-                num_rows, dtype=torch.int, device=device
-            ).unsqueeze(-1)
-            col_indices = torch.arange(num_cols, dtype=torch.int, device=device)
+                num_rows, dtype=torch.int, device=device).unsqueeze(-1)
+            col_indices = torch.arange(
+                num_cols, dtype=torch.int, device=device)
             index_mask = col_indices < kv_num_blocks.unsqueeze(-1)
 
             # We write to one spot "out of bounds"
@@ -157,7 +161,8 @@ class BlockMask:
 
         for r in range(0, num_rows, row_step):
             for c in range(0, num_cols, col_step):
-                char = summarize_section(dense_mask[r : r + row_step, c : c + col_step])
+                char = summarize_section(
+                    dense_mask[r: r + row_step, c: c + col_step])
                 vis += char * 2
             vis += "\n"
         return vis
@@ -182,10 +187,10 @@ def _convert_mask_to_block_mask(
     mask = mask.view(
         B, H, Q // Q_BLOCK_SIZE, Q_BLOCK_SIZE, KV // KV_BLOCK_SIZE, KV_BLOCK_SIZE
     )  # [B, H, Q//Q_BLOCK_SIZE, Q_BLOCK_SIZE, KV//KV_BLOCK_SIZE, KV_BLOCK_SIZE]
-    mask = mask.permute(
-        0, 1, 2, 4, 3, 5
-    )  # [B, H, Q//Q_BLOCK_SIZE, KV//KV_BLOCK_SIZE, Q_BLOCK_SIZE, KV_BLOCK_SIZE]
-    mask = mask.sum(dim=[-2, -1]) > 0  # [B, H, Q//Q_BLOCK_SIZE, KV//KV_BLOCK_SIZE]
+    # [B, H, Q//Q_BLOCK_SIZE, KV//KV_BLOCK_SIZE, Q_BLOCK_SIZE, KV_BLOCK_SIZE]
+    mask = mask.permute(0, 1, 2, 4, 3, 5)
+    # [B, H, Q//Q_BLOCK_SIZE, KV//KV_BLOCK_SIZE]
+    mask = mask.sum(dim=[-2, -1]) > 0
     return mask
 
 
@@ -196,7 +201,8 @@ def _convert_block_mask_to_mask(
 ):
     assert block_mask.dim() == 4
     B, H, Q, KV = block_mask.shape
-    block_mask = block_mask.expand(Q_BLOCK_SIZE, KV_BLOCK_SIZE, *block_mask.shape)
+    block_mask = block_mask.expand(
+        Q_BLOCK_SIZE, KV_BLOCK_SIZE, *block_mask.shape)
     block_mask = block_mask.permute(2, 3, 4, 0, 5, 1).reshape(
         B, H, Q * Q_BLOCK_SIZE, KV * KV_BLOCK_SIZE
     )
@@ -213,9 +219,15 @@ def _create_sparse_block_from_block_mask(
     kv_num_blocks = block_mask.sum(dim=3)
     kv_indices = torch.argsort(block_mask, dim=3, descending=True, stable=True)
     q_num_blocks = block_mask.sum(dim=2)
-    q_indices = torch.argsort(block_mask, dim=2, descending=True, stable=True).permute(
-        0, 1, 3, 2
-    )
+    q_indices = torch.argsort(
+        block_mask,
+        dim=2,
+        descending=True,
+        stable=True).permute(
+        0,
+        1,
+        3,
+        2)
     return BlockMask(
         kv_num_blocks=kv_num_blocks.to(torch.int32).to(device).contiguous(),
         kv_indices=kv_indices.to(torch.int32).to(device).contiguous(),
@@ -275,8 +287,14 @@ def _create_mask(
 # Done as a workaround around torch.compile not compiling what we want in the
 # presence of the torchfunctionmdoe
 def _create_block_mask_inner(
-    score_mod, B, H, M, N, device, KV_BLOCK_SIZE, Q_BLOCK_SIZE
-):
+        score_mod,
+        B,
+        H,
+        M,
+        N,
+        device,
+        KV_BLOCK_SIZE,
+        Q_BLOCK_SIZE):
     mask = _create_mask(score_mod, B, H, M, N, device, _compiled=True)
     block_mask = _convert_mask_to_block_mask(
         mask, KV_BLOCK_SIZE=KV_BLOCK_SIZE, Q_BLOCK_SIZE=Q_BLOCK_SIZE
@@ -317,8 +335,14 @@ def create_block_mask(
         inner_func = torch.compile(inner_func, fullgraph=True, dynamic=False)
     with TransformGetItemToIndex():
         block_mask = inner_func(
-            score_mod, B, H, M, N, device, KV_BLOCK_SIZE, Q_BLOCK_SIZE
-        )
+            score_mod,
+            B,
+            H,
+            M,
+            N,
+            device,
+            KV_BLOCK_SIZE,
+            Q_BLOCK_SIZE)
     return _create_sparse_block_from_block_mask(block_mask)
 
 
@@ -426,14 +450,8 @@ def flex_attention(
         with torch._dynamo.utils.disable_cache_limit():
             with _temp_remove_pre_dispatch_torch_function_mode():
                 out, _ = torch.compile(
-                    flex_attention_hop, backend="eager", fullgraph=True
-                )(
-                    query,
-                    key,
-                    value,
-                    score_mod,
-                    block_mask.as_tuple(),
-                )
+                    flex_attention_hop, backend="eager", fullgraph=True)(
+                    query, key, value, score_mod, block_mask.as_tuple(), )
                 return out
 
 
@@ -471,7 +489,8 @@ def _rel_causal(
     token_q: torch.Tensor,
     token_kv: torch.Tensor,
 ) -> torch.Tensor:
-    return torch.where(token_q >= token_kv, score + (token_q - token_kv), float("-inf"))
+    return torch.where(token_q >= token_kv, score +
+                       (token_q - token_kv), float("-inf"))
 
 
 def _generate_alibi_bias(num_heads: int):

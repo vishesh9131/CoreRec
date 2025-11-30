@@ -74,9 +74,7 @@ def _replicatable_module(module: Module, memo: Optional[Set[Module]] = None) -> 
     memo.add(module)
     if _is_script_module(module):
         memo.update(descendant_modules(module))
-        return all(
-            _is_script_module(descendant) for descendant in descendant_modules(module)
-        )
+        return all(_is_script_module(descendant) for descendant in descendant_modules(module))
 
     for child in module.children():
         # since any unreplicatable module will cause the check to return
@@ -120,8 +118,7 @@ def replicate(
 ) -> List[T]:
     if not _replicatable_module(network):
         raise RuntimeError(
-            "Cannot replicate network where python modules are "
-            "childrens of ScriptModule"
+            "Cannot replicate network where python modules are " "childrens of ScriptModule"
         )
 
     if not devices:
@@ -147,9 +144,7 @@ def replicate(
     buffer_indices_not_rg = {buf: idx for idx, buf in enumerate(buffers_not_rg)}
 
     buffer_copies_rg = _broadcast_coalesced_reshape(buffers_rg, devices, detach=detach)
-    buffer_copies_not_rg = _broadcast_coalesced_reshape(
-        buffers_not_rg, devices, detach=True
-    )
+    buffer_copies_not_rg = _broadcast_coalesced_reshape(buffers_not_rg, devices, detach=True)
 
     modules = list(network.modules())
     module_copies: List[List[Module]] = [[] for _ in devices]

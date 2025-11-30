@@ -2,7 +2,7 @@ from corerec.engines.unionizedFilterEngine.attention_mechanism_base import (
     AM_TRANSFORMER,
     AM_ATTENTION,
     AM_A2SD,
-    AM_SAS
+    AM_SAS,
 )
 from corerec.engines.unionizedFilterEngine.bayesian_method_base import (
     BAYESIAN_MF,
@@ -38,7 +38,7 @@ from corerec.engines.unionizedFilterEngine.mf_base import (
     MF_SVD,
     MF_TEMPORAL_MATRIX_FACTORIZATION,
     MF_USER_BASED_UF,
-    MF_WEIGHTED_MATRIX_FACTORIZATION
+    MF_WEIGHTED_MATRIX_FACTORIZATION,
 )
 from corerec.engines.unionizedFilterEngine.nn_base import (
     NN_SASREC,
@@ -111,34 +111,42 @@ from corerec.engines.unionizedFilterEngine.variational_encoder_base import (
     VE_MULTINOMIAL,
 )
 from corerec.engines.unionizedFilterEngine import (
-    cr_unionizedFactory,cornac_bpr,fast_recommender,
-    fast,geomlc,rbm,rlrmc,sar,sli,sum)   
+    cr_unionizedFactory,
+    cornac_bpr,
+    fast_recommender,
+    fast,
+    geomlc,
+    rbm,
+    rlrmc,
+    sar,
+    sli,
+    sum,
+)
 
 
 __all__ = [
-    'MF_ALS',
-    'MF_A2VSD',
-    'MF_BAYESIAN_MATRIX_FACTORIZATION',
-    'MF_CONTEXTUAL_MATRIX_FACTORIZATION',
-    'MF_DEEP_MF',
-    'MF_FACTORIZATION_MACHINES',
-    'MF_HYBRID_MATRIX_FACTORIZATION',
-    'MF_HIERARCHICAL_POISSON_FACTORIZATION',
-    'MF_HYBRID_REGULARIZATION',
-    'MF_INCREMENTAL_MATRIX_FACTORIZATION',
-    'MF_IMPLICIT_FEEDBACK',
-    'MF_KERNELIZED_MATRIX_FACTORIZATION',
-    'MF_MATRIX_FACTORIZATION_RECOMMENDER',
-    'MF_NEURAL_MATRIX_FACTORIZATION',
-    'MF_NMF',
-    'MF_PMF',
-    'MF_SGD_MATRIX_FACTORIZATION',
-    'MF_SVDPP',
-    'MF_SVD',
-    'MF_TEMPORAL_MATRIX_FACTORIZATION',
-    'MF_USER_BASED_UF',
-    'MF_WEIGHTED_MATRIX_FACTORIZATION'
-    "cr_unionizedFactory",
+    "MF_ALS",
+    "MF_A2VSD",
+    "MF_BAYESIAN_MATRIX_FACTORIZATION",
+    "MF_CONTEXTUAL_MATRIX_FACTORIZATION",
+    "MF_DEEP_MF",
+    "MF_FACTORIZATION_MACHINES",
+    "MF_HYBRID_MATRIX_FACTORIZATION",
+    "MF_HIERARCHICAL_POISSON_FACTORIZATION",
+    "MF_HYBRID_REGULARIZATION",
+    "MF_INCREMENTAL_MATRIX_FACTORIZATION",
+    "MF_IMPLICIT_FEEDBACK",
+    "MF_KERNELIZED_MATRIX_FACTORIZATION",
+    "MF_MATRIX_FACTORIZATION_RECOMMENDER",
+    "MF_NEURAL_MATRIX_FACTORIZATION",
+    "MF_NMF",
+    "MF_PMF",
+    "MF_SGD_MATRIX_FACTORIZATION",
+    "MF_SVDPP",
+    "MF_SVD",
+    "MF_TEMPORAL_MATRIX_FACTORIZATION",
+    "MF_USER_BASED_UF",
+    "MF_WEIGHTED_MATRIX_FACTORIZATION" "cr_unionizedFactory",
     "cornac_bpr",
     "fast_recommender",
     "fast",
@@ -221,7 +229,6 @@ __all__ = [
     "VE_BPRE",
     "VE_STANDARD",
     "VE_MULTINOMIAL",
-
 ]
 
 # from corerec.engines.unionizedFilterEngine.misc_base import (

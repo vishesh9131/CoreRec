@@ -22,11 +22,8 @@ class LinearPerSampleGrad(torch.autograd.Function):
                 "Input does not have a batch dimension. Expanded Weights expected input "
                 f"of at least rank 2, got of rank {len(expanded_args_and_kwargs[0].shape)}"
             )
-        expanded_kwargs = {
-            "bias": expanded_args_and_kwargs[2]
-            if len(expanded_args_and_kwargs) == 3
-            else None
-        }
+        expanded_kwargs = {"bias": expanded_args_and_kwargs[2] if len(
+            expanded_args_and_kwargs) == 3 else None}
         expanded_args = expanded_args_and_kwargs[:2]
         ctx.batch_first = is_batch_first(expanded_args_and_kwargs)
         output = forward_helper(F.linear, expanded_args, expanded_kwargs)
@@ -43,20 +40,24 @@ class LinearPerSampleGrad(torch.autograd.Function):
         results.append(None)  # for op reference
 
         if input.requires_grad:
-            results.append(grad_output.matmul(unpack_expanded_weight_or_tensor(weight)))
+            results.append(
+                grad_output.matmul(
+                    unpack_expanded_weight_or_tensor(weight)))
         else:
             results.append(None)
-        results.extend([None] * 2)  # weight and bias don't compute batched gradients
+        # weight and bias don't compute batched gradients
+        results.extend([None] * 2)
 
         if not ctx.batch_first:
             grad_output = grad_output.transpose(0, 1)
             input = input.transpose(0, 1)
 
-        # weight and bias get their grad_sample fields set directly if they exist
+        # weight and bias get their grad_sample fields set directly if they
+        # exist
         set_grad_sample_if_exists(
-            weight, lambda _: torch.einsum("n...i,n...j->nij", grad_output, input)
-        )
+            weight, lambda _: torch.einsum(
+                "n...i,n...j->nij", grad_output, input))
         set_grad_sample_if_exists(
-            bias, lambda _: torch.einsum("n...k->nk", grad_output)
-        )
+            bias, lambda _: torch.einsum(
+                "n...k->nk", grad_output))
         return tuple(results)

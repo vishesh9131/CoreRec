@@ -38,10 +38,15 @@ __all__ = [
 class _Loss(Module):
     reduction: str
 
-    def __init__(self, size_average=None, reduce=None, reduction: str = "mean") -> None:
+    def __init__(
+            self,
+            size_average=None,
+            reduce=None,
+            reduction: str = "mean") -> None:
         super().__init__()
         if size_average is not None or reduce is not None:
-            self.reduction: str = _Reduction.legacy_get_string(size_average, reduce)
+            self.reduction: str = _Reduction.legacy_get_string(
+                size_average, reduce)
         else:
             self.reduction = reduction
 
@@ -121,7 +126,11 @@ class L1Loss(_Loss):
     """
     __constants__ = ["reduction"]
 
-    def __init__(self, size_average=None, reduce=None, reduction: str = "mean") -> None:
+    def __init__(
+            self,
+            size_average=None,
+            reduce=None,
+            reduction: str = "mean") -> None:
         super().__init__(size_average, reduce, reduction)
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
@@ -432,16 +441,23 @@ class GaussianNLLLoss(_Loss):
     eps: float
 
     def __init__(
-        self, *, full: bool = False, eps: float = 1e-6, reduction: str = "mean"
-    ) -> None:
+            self,
+            *,
+            full: bool = False,
+            eps: float = 1e-6,
+            reduction: str = "mean") -> None:
         super().__init__(None, None, reduction)
         self.full = full
         self.eps = eps
 
     def forward(self, input: Tensor, target: Tensor, var: Tensor) -> Tensor:
         return F.gaussian_nll_loss(
-            input, target, var, full=self.full, eps=self.eps, reduction=self.reduction
-        )
+            input,
+            target,
+            var,
+            full=self.full,
+            eps=self.eps,
+            reduction=self.reduction)
 
 
 class KLDivLoss(_Loss):
@@ -539,8 +555,10 @@ class KLDivLoss(_Loss):
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
         return F.kl_div(
-            input, target, reduction=self.reduction, log_target=self.log_target
-        )
+            input,
+            target,
+            reduction=self.reduction,
+            log_target=self.log_target)
 
 
 class MSELoss(_Loss):
@@ -601,7 +619,11 @@ class MSELoss(_Loss):
     """
     __constants__ = ["reduction"]
 
-    def __init__(self, size_average=None, reduce=None, reduction: str = "mean") -> None:
+    def __init__(
+            self,
+            size_average=None,
+            reduce=None,
+            reduction: str = "mean") -> None:
         super().__init__(size_average, reduce, reduction)
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
@@ -695,8 +717,10 @@ class BCELoss(_WeightedLoss):
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
         return F.binary_cross_entropy(
-            input, target, weight=self.weight, reduction=self.reduction
-        )
+            input,
+            target,
+            weight=self.weight,
+            reduction=self.reduction)
 
 
 class BCEWithLogitsLoss(_Loss):
@@ -889,8 +913,10 @@ class HingeEmbeddingLoss(_Loss):
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
         return F.hinge_embedding_loss(
-            input, target, margin=self.margin, reduction=self.reduction
-        )
+            input,
+            target,
+            margin=self.margin,
+            reduction=self.reduction)
 
 
 class MultiLabelMarginLoss(_Loss):
@@ -950,11 +976,16 @@ class MultiLabelMarginLoss(_Loss):
     """
     __constants__ = ["reduction"]
 
-    def __init__(self, size_average=None, reduce=None, reduction: str = "mean") -> None:
+    def __init__(
+            self,
+            size_average=None,
+            reduce=None,
+            reduction: str = "mean") -> None:
         super().__init__(size_average, reduce, reduction)
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
-        return F.multilabel_margin_loss(input, target, reduction=self.reduction)
+        return F.multilabel_margin_loss(
+            input, target, reduction=self.reduction)
 
 
 class SmoothL1Loss(_Loss):
@@ -1031,13 +1062,20 @@ class SmoothL1Loss(_Loss):
     __constants__ = ["reduction"]
 
     def __init__(
-        self, size_average=None, reduce=None, reduction: str = "mean", beta: float = 1.0
-    ) -> None:
+            self,
+            size_average=None,
+            reduce=None,
+            reduction: str = "mean",
+            beta: float = 1.0) -> None:
         super().__init__(size_average, reduce, reduction)
         self.beta = beta
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
-        return F.smooth_l1_loss(input, target, reduction=self.reduction, beta=self.beta)
+        return F.smooth_l1_loss(
+            input,
+            target,
+            reduction=self.reduction,
+            beta=self.beta)
 
 
 class HuberLoss(_Loss):
@@ -1097,7 +1135,11 @@ class HuberLoss(_Loss):
         self.delta = delta
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
-        return F.huber_loss(input, target, reduction=self.reduction, delta=self.delta)
+        return F.huber_loss(
+            input,
+            target,
+            reduction=self.reduction,
+            delta=self.delta)
 
 
 class SoftMarginLoss(_Loss):
@@ -1134,7 +1176,11 @@ class SoftMarginLoss(_Loss):
     """
     __constants__ = ["reduction"]
 
-    def __init__(self, size_average=None, reduce=None, reduction: str = "mean") -> None:
+    def __init__(
+            self,
+            size_average=None,
+            reduce=None,
+            reduction: str = "mean") -> None:
         super().__init__(size_average, reduce, reduction)
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
@@ -1419,10 +1465,17 @@ class CosineEmbeddingLoss(_Loss):
         super().__init__(size_average, reduce, reduction)
         self.margin = margin
 
-    def forward(self, input1: Tensor, input2: Tensor, target: Tensor) -> Tensor:
+    def forward(
+            self,
+            input1: Tensor,
+            input2: Tensor,
+            target: Tensor) -> Tensor:
         return F.cosine_embedding_loss(
-            input1, input2, target, margin=self.margin, reduction=self.reduction
-        )
+            input1,
+            input2,
+            target,
+            margin=self.margin,
+            reduction=self.reduction)
 
 
 class MarginRankingLoss(_Loss):
@@ -1484,10 +1537,17 @@ class MarginRankingLoss(_Loss):
         super().__init__(size_average, reduce, reduction)
         self.margin = margin
 
-    def forward(self, input1: Tensor, input2: Tensor, target: Tensor) -> Tensor:
+    def forward(
+            self,
+            input1: Tensor,
+            input2: Tensor,
+            target: Tensor) -> Tensor:
         return F.margin_ranking_loss(
-            input1, input2, target, margin=self.margin, reduction=self.reduction
-        )
+            input1,
+            input2,
+            target,
+            margin=self.margin,
+            reduction=self.reduction)
 
 
 class MultiMarginLoss(_WeightedLoss):
@@ -1568,8 +1628,8 @@ class MultiMarginLoss(_WeightedLoss):
             raise ValueError("only p == 1 and p == 2 supported")
         if weight is not None and weight.dim() != 1:
             raise ValueError(
-                f"MultiMarginLoss: expected weight to be None or 1D tensor, got {weight.dim()}D instead"
-            )
+                f"MultiMarginLoss: expected weight to be None or 1D tensor, got {
+                    weight.dim()}D instead")
         self.p = p
         self.margin = margin
 
@@ -1672,14 +1732,17 @@ class TripletMarginLoss(_Loss):
         super().__init__(size_average, reduce, reduction)
         if margin <= 0:
             raise ValueError(
-                f"TripletMarginLoss: expected margin to be greater than 0, got {margin} instead"
-            )
+                f"TripletMarginLoss: expected margin to be greater than 0, got {margin} instead")
         self.margin = margin
         self.p = p
         self.eps = eps
         self.swap = swap
 
-    def forward(self, anchor: Tensor, positive: Tensor, negative: Tensor) -> Tensor:
+    def forward(
+            self,
+            anchor: Tensor,
+            positive: Tensor,
+            negative: Tensor) -> Tensor:
         return F.triplet_margin_loss(
             anchor,
             positive,
@@ -1805,15 +1868,18 @@ class TripletMarginWithDistanceLoss(_Loss):
         super().__init__(size_average=None, reduce=None, reduction=reduction)
         if margin <= 0:
             raise ValueError(
-                f"TripletMarginWithDistanceLoss: expected margin to be greater than 0, got {margin} instead"
-            )
+                f"TripletMarginWithDistanceLoss: expected margin to be greater than 0, got {margin} instead")
         self.distance_function: Optional[Callable[[Tensor, Tensor], Tensor]] = (
             distance_function if distance_function is not None else PairwiseDistance()
         )
         self.margin = margin
         self.swap = swap
 
-    def forward(self, anchor: Tensor, positive: Tensor, negative: Tensor) -> Tensor:
+    def forward(
+            self,
+            anchor: Tensor,
+            positive: Tensor,
+            negative: Tensor) -> Tensor:
         return F.triplet_margin_with_distance_loss(
             anchor,
             positive,
@@ -1964,8 +2030,10 @@ class CTCLoss(_Loss):
     zero_infinity: bool
 
     def __init__(
-        self, blank: int = 0, reduction: str = "mean", zero_infinity: bool = False
-    ):
+            self,
+            blank: int = 0,
+            reduction: str = "mean",
+            zero_infinity: bool = False):
         super().__init__(reduction=reduction)
         self.blank = blank
         self.zero_infinity = zero_infinity

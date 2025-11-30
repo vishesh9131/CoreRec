@@ -31,17 +31,13 @@ class Broadcast(Function):
 
     @staticmethod
     def backward(ctx, *grad_outputs):
-        return (None,) + ReduceAddCoalesced.apply(
-            ctx.input_device, ctx.num_inputs, *grad_outputs
-        )
+        return (None,) + ReduceAddCoalesced.apply(ctx.input_device, ctx.num_inputs, *grad_outputs)
 
 
 class ReduceAddCoalesced(Function):
     @staticmethod
     def forward(ctx, destination, num_inputs, *grads):
-        ctx.target_gpus = [
-            grads[i].get_device() for i in range(0, len(grads), num_inputs)
-        ]
+        ctx.target_gpus = [grads[i].get_device() for i in range(0, len(grads), num_inputs)]
 
         grads_ = [grads[i : i + num_inputs] for i in range(0, len(grads), num_inputs)]
         return comm.reduce_add_coalesced(grads_, destination)
@@ -82,9 +78,7 @@ class Gather(Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        scattered_grads = Scatter.apply(
-            ctx.input_gpus, ctx.input_sizes, ctx.dim, grad_output
-        )
+        scattered_grads = Scatter.apply(ctx.input_gpus, ctx.input_sizes, ctx.dim, grad_output)
         if ctx.unsqueezed_scalar:
             scattered_grads = tuple(g[0] for g in scattered_grads)
         return (None, None) + scattered_grads
@@ -99,9 +93,7 @@ class Scatter(Function):
         streams = None
         if torch.cuda.is_available() and ctx.input_device == -1:
             # Perform CPU to GPU copies in a background stream
-            streams = [
-                _get_stream(torch.device("cuda", device)) for device in target_gpus
-            ]
+            streams = [_get_stream(torch.device("cuda", device)) for device in target_gpus]
         outputs = comm.scatter(input, target_gpus, chunk_sizes, ctx.dim, streams)
         # Synchronize with the copy stream
         if streams is not None:

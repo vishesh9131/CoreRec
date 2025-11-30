@@ -78,7 +78,8 @@ def default_convert(data):
                 clone.update({key: default_convert(data[key]) for key in data})
                 return clone
             else:
-                return elem_type({key: default_convert(data[key]) for key in data})
+                return elem_type(
+                    {key: default_convert(data[key]) for key in data})
         except TypeError:
             # The mapping type may not support `copy()` / `update(mapping)`
             # or `__init__(iterable)`.
@@ -87,9 +88,7 @@ def default_convert(data):
         return elem_type(*(default_convert(d) for d in data))
     elif isinstance(data, tuple):
         return [default_convert(d) for d in data]  # Backwards compatibility.
-    elif isinstance(data, collections.abc.Sequence) and not isinstance(
-        data, (str, bytes)
-    ):
+    elif isinstance(data, collections.abc.Sequence) and not isinstance(data, (str, bytes)):
         try:
             if isinstance(data, collections.abc.MutableSequence):
                 # The sequence type may have extra properties, so we can't just
@@ -152,13 +151,13 @@ def collate(
 
     if collate_fn_map is not None:
         if elem_type in collate_fn_map:
-            return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
+            return collate_fn_map[elem_type](
+                batch, collate_fn_map=collate_fn_map)
 
         for collate_type in collate_fn_map:
             if isinstance(elem, collate_type):
                 return collate_fn_map[collate_type](
-                    batch, collate_fn_map=collate_fn_map
-                )
+                    batch, collate_fn_map=collate_fn_map)
 
     if isinstance(elem, collections.abc.Mapping):
         try:
@@ -169,9 +168,7 @@ def collate(
                 clone = copy.copy(elem)
                 clone.update(
                     {
-                        key: collate(
-                            [d[key] for d in batch], collate_fn_map=collate_fn_map
-                        )
+                        key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
                         for key in elem
                     }
                 )
@@ -179,63 +176,53 @@ def collate(
             else:
                 return elem_type(
                     {
-                        key: collate(
-                            [d[key] for d in batch], collate_fn_map=collate_fn_map
-                        )
+                        key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
                         for key in elem
                     }
                 )
         except TypeError:
             # The mapping type may not support `copy()` / `update(mapping)`
             # or `__init__(iterable)`.
-            return {
-                key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
-                for key in elem
-            }
+            return {key: collate([d[key] for d in batch],
+                                 collate_fn_map=collate_fn_map) for key in elem}
     elif isinstance(elem, tuple) and hasattr(elem, "_fields"):  # namedtuple
-        return elem_type(
-            *(
-                collate(samples, collate_fn_map=collate_fn_map)
-                for samples in zip(*batch)
-            )
-        )
+        return elem_type(*(collate(samples, collate_fn_map=collate_fn_map)
+                           for samples in zip(*batch)))
     elif isinstance(elem, collections.abc.Sequence):
         # check to make sure that the elements in batch have consistent size
         it = iter(batch)
         elem_size = len(next(it))
         if not all(len(elem) == elem_size for elem in it):
-            raise RuntimeError("each element in list of batch should be of equal size")
-        transposed = list(zip(*batch))  # It may be accessed twice, so we use a list.
+            raise RuntimeError(
+                "each element in list of batch should be of equal size")
+        # It may be accessed twice, so we use a list.
+        transposed = list(zip(*batch))
 
         if isinstance(elem, tuple):
             return [
-                collate(samples, collate_fn_map=collate_fn_map)
-                for samples in transposed
+                collate(samples, collate_fn_map=collate_fn_map) for samples in transposed
             ]  # Backwards compatibility.
         else:
             try:
                 if isinstance(elem, collections.abc.MutableSequence):
                     # The sequence type may have extra properties, so we can't just
                     # use `type(data)(...)` to create the new sequence.
-                    # Create a clone and update it if the sequence type is mutable.
+                    # Create a clone and update it if the sequence type is
+                    # mutable.
                     clone = copy.copy(elem)  # type: ignore[arg-type]
                     for i, samples in enumerate(transposed):
-                        clone[i] = collate(samples, collate_fn_map=collate_fn_map)
+                        clone[i] = collate(
+                            samples, collate_fn_map=collate_fn_map)
                     return clone
                 else:
                     return elem_type(
-                        [
-                            collate(samples, collate_fn_map=collate_fn_map)
-                            for samples in transposed
-                        ]
+                        [collate(samples, collate_fn_map=collate_fn_map) for samples in transposed]
                     )
             except TypeError:
                 # The sequence type may not support `copy()` / `__setitem__(index, item)`
                 # or `__init__(iterable)` (e.g., `range`).
-                return [
-                    collate(samples, collate_fn_map=collate_fn_map)
-                    for samples in transposed
-                ]
+                return [collate(samples, collate_fn_map=collate_fn_map)
+                        for samples in transposed]
 
     raise TypeError(default_collate_err_msg_format.format(elem_type))
 
@@ -250,8 +237,7 @@ def collate_tensor_fn(
     if elem.is_nested:
         raise RuntimeError(
             "Batches of nested tensors are not currently supported by the default collate_fn; "
-            "please provide a custom collate_fn to handle them appropriately."
-        )
+            "please provide a custom collate_fn to handle them appropriately.")
     if elem.layout in {
         torch.sparse_coo,
         torch.sparse_csr,
@@ -261,8 +247,7 @@ def collate_tensor_fn(
     }:
         raise RuntimeError(
             "Batches of sparse tensors are not currently supported by the default collate_fn; "
-            "please provide a custom collate_fn to handle them appropriately."
-        )
+            "please provide a custom collate_fn to handle them appropriately.")
     if torch.utils.data.get_worker_info() is not None:
         # If we're in a background process, concatenate directly into a
         # shared memory tensor to avoid an extra copy
@@ -282,7 +267,8 @@ def collate_numpy_array_fn(
     if np_str_obj_array_pattern.search(elem.dtype.str) is not None:
         raise TypeError(default_collate_err_msg_format.format(elem.dtype))
 
-    return collate([torch.as_tensor(b) for b in batch], collate_fn_map=collate_fn_map)
+    return collate([torch.as_tensor(b)
+                   for b in batch], collate_fn_map=collate_fn_map)
 
 
 def collate_numpy_scalar_fn(
@@ -327,7 +313,8 @@ with contextlib.suppress(ImportError):
     default_collate_fn_map[np.ndarray] = collate_numpy_array_fn
     # See scalars hierarchy: https://numpy.org/doc/stable/reference/arrays.scalars.html
     # Skip string scalars
-    default_collate_fn_map[(np.bool_, np.number, np.object_)] = collate_numpy_scalar_fn
+    default_collate_fn_map[(np.bool_, np.number, np.object_)
+                           ] = collate_numpy_scalar_fn
 default_collate_fn_map[float] = collate_float_fn
 default_collate_fn_map[int] = collate_int_fn
 default_collate_fn_map[str] = collate_str_fn

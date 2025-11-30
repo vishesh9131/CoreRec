@@ -74,8 +74,8 @@ class _MaxPoolNd(Module):
     def extra_repr(self) -> str:
         return (
             "kernel_size={kernel_size}, stride={stride}, padding={padding}"
-            ", dilation={dilation}, ceil_mode={ceil_mode}".format(**self.__dict__)
-        )
+            ", dilation={dilation}, ceil_mode={ceil_mode}".format(
+                **self.__dict__))
 
 
 class MaxPool1d(_MaxPoolNd):
@@ -306,7 +306,10 @@ class MaxPool3d(_MaxPoolNd):
 
 class _MaxUnpoolNd(Module):
     def extra_repr(self) -> str:
-        return f"kernel_size={self.kernel_size}, stride={self.stride}, padding={self.padding}"
+        return f"kernel_size={
+            self.kernel_size}, stride={
+            self.stride}, padding={
+            self.padding}"
 
 
 class MaxUnpool1d(_MaxUnpoolNd):
@@ -383,12 +386,15 @@ class MaxUnpool1d(_MaxUnpoolNd):
         self.stride = _single(stride if (stride is not None) else kernel_size)
         self.padding = _single(padding)
 
-    def forward(
-        self, input: Tensor, indices: Tensor, output_size: Optional[List[int]] = None
-    ) -> Tensor:
+    def forward(self, input: Tensor, indices: Tensor,
+                output_size: Optional[List[int]] = None) -> Tensor:
         return F.max_unpool1d(
-            input, indices, self.kernel_size, self.stride, self.padding, output_size
-        )
+            input,
+            indices,
+            self.kernel_size,
+            self.stride,
+            self.padding,
+            output_size)
 
 
 class MaxUnpool2d(_MaxUnpoolNd):
@@ -478,12 +484,15 @@ class MaxUnpool2d(_MaxUnpoolNd):
         self.stride = _pair(stride if (stride is not None) else kernel_size)
         self.padding = _pair(padding)
 
-    def forward(
-        self, input: Tensor, indices: Tensor, output_size: Optional[List[int]] = None
-    ) -> Tensor:
+    def forward(self, input: Tensor, indices: Tensor,
+                output_size: Optional[List[int]] = None) -> Tensor:
         return F.max_unpool2d(
-            input, indices, self.kernel_size, self.stride, self.padding, output_size
-        )
+            input,
+            indices,
+            self.kernel_size,
+            self.stride,
+            self.padding,
+            output_size)
 
 
 class MaxUnpool3d(_MaxUnpoolNd):
@@ -556,12 +565,15 @@ class MaxUnpool3d(_MaxUnpoolNd):
         self.stride = _triple(stride if (stride is not None) else kernel_size)
         self.padding = _triple(padding)
 
-    def forward(
-        self, input: Tensor, indices: Tensor, output_size: Optional[List[int]] = None
-    ) -> Tensor:
+    def forward(self, input: Tensor, indices: Tensor,
+                output_size: Optional[List[int]] = None) -> Tensor:
         return F.max_unpool3d(
-            input, indices, self.kernel_size, self.stride, self.padding, output_size
-        )
+            input,
+            indices,
+            self.kernel_size,
+            self.stride,
+            self.padding,
+            output_size)
 
 
 class _AvgPoolNd(Module):
@@ -574,7 +586,10 @@ class _AvgPoolNd(Module):
     ]
 
     def extra_repr(self) -> str:
-        return f"kernel_size={self.kernel_size}, stride={self.stride}, padding={self.padding}"
+        return f"kernel_size={
+            self.kernel_size}, stride={
+            self.stride}, padding={
+            self.padding}"
 
 
 class AvgPool1d(_AvgPoolNd):
@@ -925,7 +940,11 @@ class FractionalMaxPool2d(Module):
         https://arxiv.org/abs/1412.6071
     """
 
-    __constants__ = ["kernel_size", "return_indices", "output_size", "output_ratio"]
+    __constants__ = [
+        "kernel_size",
+        "return_indices",
+        "output_size",
+        "output_ratio"]
 
     kernel_size: _size_2_t
     return_indices: bool
@@ -944,8 +963,10 @@ class FractionalMaxPool2d(Module):
         self.kernel_size = _pair(kernel_size)
         self.return_indices = return_indices
         self.register_buffer("_random_samples", _random_samples)
-        self.output_size = _pair(output_size) if output_size is not None else None
-        self.output_ratio = _pair(output_ratio) if output_ratio is not None else None
+        self.output_size = _pair(
+            output_size) if output_size is not None else None
+        self.output_ratio = _pair(
+            output_ratio) if output_ratio is not None else None
         if output_size is None and output_ratio is None:
             raise ValueError(
                 "FractionalMaxPool2d requires specifying either "
@@ -953,13 +974,12 @@ class FractionalMaxPool2d(Module):
             )
         if output_size is not None and output_ratio is not None:
             raise ValueError(
-                "only one of output_size and output_ratio may be specified"
-            )
+                "only one of output_size and output_ratio may be specified")
         if self.output_ratio is not None:
-            if not (0 < self.output_ratio[0] < 1 and 0 < self.output_ratio[1] < 1):
+            if not (0 < self.output_ratio[0] <
+                    1 and 0 < self.output_ratio[1] < 1):
                 raise ValueError(
-                    f"output_ratio must be between 0 and 1 (got {output_ratio})"
-                )
+                    f"output_ratio must be between 0 and 1 (got {output_ratio})")
 
     def forward(self, input: Tensor):
         return F.fractional_max_pool2d(
@@ -1011,7 +1031,11 @@ class FractionalMaxPool3d(Module):
         https://arxiv.org/abs/1412.6071
     """
 
-    __constants__ = ["kernel_size", "return_indices", "output_size", "output_ratio"]
+    __constants__ = [
+        "kernel_size",
+        "return_indices",
+        "output_size",
+        "output_ratio"]
     kernel_size: _size_3_t
     return_indices: bool
     output_size: _size_3_t
@@ -1029,8 +1053,10 @@ class FractionalMaxPool3d(Module):
         self.kernel_size = _triple(kernel_size)
         self.return_indices = return_indices
         self.register_buffer("_random_samples", _random_samples)
-        self.output_size = _triple(output_size) if output_size is not None else None
-        self.output_ratio = _triple(output_ratio) if output_ratio is not None else None
+        self.output_size = _triple(
+            output_size) if output_size is not None else None
+        self.output_ratio = _triple(
+            output_ratio) if output_ratio is not None else None
         if output_size is None and output_ratio is None:
             raise ValueError(
                 "FractionalMaxPool3d requires specifying either "
@@ -1038,8 +1064,7 @@ class FractionalMaxPool3d(Module):
             )
         if output_size is not None and output_ratio is not None:
             raise ValueError(
-                "only one of output_size and output_ratio may be specified"
-            )
+                "only one of output_size and output_ratio may be specified")
         if self.output_ratio is not None:
             if not (
                 0 < self.output_ratio[0] < 1
@@ -1047,8 +1072,7 @@ class FractionalMaxPool3d(Module):
                 and 0 < self.output_ratio[2] < 1
             ):
                 raise ValueError(
-                    f"output_ratio must be between 0 and 1 (got {output_ratio})"
-                )
+                    f"output_ratio must be between 0 and 1 (got {output_ratio})")
 
     def forward(self, input: Tensor):
         return F.fractional_max_pool3d(
@@ -1083,8 +1107,8 @@ class _LPPoolNd(Module):
     def extra_repr(self) -> str:
         return (
             "norm_type={norm_type}, kernel_size={kernel_size}, stride={stride}, "
-            "ceil_mode={ceil_mode}".format(**self.__dict__)
-        )
+            "ceil_mode={ceil_mode}".format(
+                **self.__dict__))
 
 
 class LPPool1d(_LPPoolNd):
@@ -1125,8 +1149,12 @@ class LPPool1d(_LPPoolNd):
 
     def forward(self, input: Tensor) -> Tensor:
         return F.lp_pool1d(
-            input, float(self.norm_type), self.kernel_size, self.stride, self.ceil_mode
-        )
+            input,
+            float(
+                self.norm_type),
+            self.kernel_size,
+            self.stride,
+            self.ceil_mode)
 
 
 class LPPool2d(_LPPoolNd):
@@ -1180,8 +1208,12 @@ class LPPool2d(_LPPoolNd):
 
     def forward(self, input: Tensor) -> Tensor:
         return F.lp_pool2d(
-            input, float(self.norm_type), self.kernel_size, self.stride, self.ceil_mode
-        )
+            input,
+            float(
+                self.norm_type),
+            self.kernel_size,
+            self.stride,
+            self.ceil_mode)
 
 
 class LPPool3d(_LPPoolNd):
@@ -1239,17 +1271,20 @@ class LPPool3d(_LPPoolNd):
 
     def forward(self, input: Tensor) -> Tensor:
         return F.lp_pool3d(
-            input, float(self.norm_type), self.kernel_size, self.stride, self.ceil_mode
-        )
+            input,
+            float(
+                self.norm_type),
+            self.kernel_size,
+            self.stride,
+            self.ceil_mode)
 
 
 class _AdaptiveMaxPoolNd(Module):
     __constants__ = ["output_size", "return_indices"]
     return_indices: bool
 
-    def __init__(
-        self, output_size: _size_any_opt_t, return_indices: bool = False
-    ) -> None:
+    def __init__(self, output_size: _size_any_opt_t,
+                 return_indices: bool = False) -> None:
         super().__init__()
         self.output_size = output_size
         self.return_indices = return_indices
@@ -1289,7 +1324,8 @@ class AdaptiveMaxPool1d(_AdaptiveMaxPoolNd):
     output_size: _size_1_t
 
     def forward(self, input: Tensor):
-        return F.adaptive_max_pool1d(input, self.output_size, self.return_indices)
+        return F.adaptive_max_pool1d(
+            input, self.output_size, self.return_indices)
 
 
 class AdaptiveMaxPool2d(_AdaptiveMaxPoolNd):
@@ -1331,7 +1367,8 @@ class AdaptiveMaxPool2d(_AdaptiveMaxPoolNd):
     output_size: _size_2_opt_t
 
     def forward(self, input: Tensor):
-        return F.adaptive_max_pool2d(input, self.output_size, self.return_indices)
+        return F.adaptive_max_pool2d(
+            input, self.output_size, self.return_indices)
 
 
 class AdaptiveMaxPool3d(_AdaptiveMaxPoolNd):
@@ -1374,7 +1411,8 @@ class AdaptiveMaxPool3d(_AdaptiveMaxPoolNd):
     output_size: _size_3_opt_t
 
     def forward(self, input: Tensor):
-        return F.adaptive_max_pool3d(input, self.output_size, self.return_indices)
+        return F.adaptive_max_pool3d(
+            input, self.output_size, self.return_indices)
 
 
 class _AdaptiveAvgPoolNd(Module):

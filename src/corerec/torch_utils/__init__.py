@@ -11,6 +11,7 @@ from torch.utils import (
     data as data,
     hooks as hooks,
 )
+
 # from torch.utils.backend_registration import (
 #     generate_methods_for_privateuse1_backend,
 #     rename_privateuse1_backend,
@@ -33,6 +34,7 @@ def set_module(obj, mod):
 # if torch._running_with_deploy():
 #     # Handle the deploy-specific logic here
 #     pass
+
 
 def swap_tensors(t1, t2):
     """
@@ -108,11 +110,13 @@ def swap_tensors(t1, t2):
     # Swap the at::Tensor they point to
     torch._C._swap_tensor_impl(t1, t2)
 
+
 # Define the is_compiling function
 def is_compiling() -> bool:
     # Implement the logic for determining if the code is compiling
     # This is just a placeholder implementation
     return False
 
+
 # Export the function
-__all__ = ['is_compiling']
+__all__ = ["is_compiling"]

@@ -16,17 +16,17 @@ st.title("Video Recommendation System")
 # Step 1: Load and preprocess the CA Videos dataset
 st.header("Step 1: Load Dataset")
 try:
-    ca_videos_data = pd.read_csv('nanodata.csv')  # Load your dataset
+    ca_videos_data = pd.read_csv("nanodata.csv")  # Load your dataset
 except pd.errors.ParserError as e:
     print(f"Error loading data: {e}")
 
 # Step 2: Create edges based on videos from the same channel
 st.header("Step 2: Preprocess Data")
 edges = []
-channels = ca_videos_data['channel_title'].unique()
+channels = ca_videos_data["channel_title"].unique()
 for channel in channels:
-    channel_videos = ca_videos_data[ca_videos_data['channel_title'] == channel]
-    video_ids = channel_videos['video_id'].values
+    channel_videos = ca_videos_data[ca_videos_data["channel_title"] == channel]
+    video_ids = channel_videos["video_id"].values
     for i in range(len(video_ids)):
         for j in range(i + 1, len(video_ids)):
             edges.append((video_ids[i], video_ids[j]))
@@ -42,7 +42,9 @@ st.write("Data preprocessed successfully!")
 
 # Step 3: Initialize the model
 st.header("Step 3: Initialize Model")
-model = GraphTransformerV2(num_layers=2, d_model=128, num_heads=4, d_feedforward=512, input_dim=adj_matrix.shape[1])
+model = GraphTransformerV2(
+    num_layers=2, d_model=128, num_heads=4, d_feedforward=512, input_dim=adj_matrix.shape[1]
+)
 st.write("Model initialized successfully!")
 
 # Step 4: Train the model
@@ -58,7 +60,13 @@ if st.button("Train Model"):
 
 # Step 5: Make predictions
 st.header("Step 5: Make Predictions")
-node_index = st.number_input("Node index for recommendations", min_value=0, max_value=adj_matrix.shape[0]-1, value=0, step=1)
+node_index = st.number_input(
+    "Node index for recommendations",
+    min_value=0,
+    max_value=adj_matrix.shape[0] - 1,
+    value=0,
+    step=1,
+)
 top_k = st.number_input("Top K recommendations", min_value=1, max_value=20, value=5, step=1)
 threshold = st.slider("Threshold", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
 

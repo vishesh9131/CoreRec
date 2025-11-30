@@ -38,10 +38,11 @@ def _list_with_default(out_size: List[int], defaults: List[int]) -> List[int]:
     if isinstance(out_size, (int, torch.SymInt)):
         return out_size
     if len(defaults) <= len(out_size):
-        raise ValueError(f"Input dimension should be at least {len(out_size) + 1}")
-    return [
-        v if v is not None else d for v, d in zip(out_size, defaults[-len(out_size) :])
-    ]
+        raise ValueError(
+            f"Input dimension should be at least {
+                len(out_size) + 1}")
+    return [v if v is not None else d for v, d in zip(
+        out_size, defaults[-len(out_size):])]
 
 
 def consume_prefix_in_state_dict_if_present(
@@ -62,7 +63,7 @@ def consume_prefix_in_state_dict_if_present(
     keys = list(state_dict.keys())
     for key in keys:
         if key.startswith(prefix):
-            newkey = key[len(prefix) :]
+            newkey = key[len(prefix):]
             state_dict[newkey] = state_dict.pop(key)
 
     # also strip the prefix in metadata if any.
@@ -77,5 +78,5 @@ def consume_prefix_in_state_dict_if_present(
                 continue
             # handling both, 'module' case and  'module.' cases
             if key == prefix.replace(".", "") or key.startswith(prefix):
-                newkey = key[len(prefix) :]
+                newkey = key[len(prefix):]
                 state_dict._metadata[newkey] = state_dict._metadata.pop(key)

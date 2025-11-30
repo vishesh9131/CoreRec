@@ -9,7 +9,10 @@ import torch
 _MISSING: torch.Tensor = object()  # type: ignore[assignment]
 
 
-def set_tensor(module: "torch.nn.Module", name: str, tensor: torch.Tensor) -> None:
+def set_tensor(
+        module: "torch.nn.Module",
+        name: str,
+        tensor: torch.Tensor) -> None:
     if not isinstance(module, torch.nn.Module):
         raise TypeError(f"{module} is not an instance of torch.nn.Module")
     if not isinstance(tensor, torch.Tensor) and tensor is not None:
@@ -34,11 +37,8 @@ def swap_tensor(
 ) -> torch.Tensor:
     if not isinstance(module, torch.nn.Module):
         raise TypeError(f"{module} is not an instance of torch.nn.Module")
-    if (
-        tensor is not _MISSING
-        and not isinstance(tensor, torch.Tensor)
-        and tensor is not None
-    ):
+    if tensor is not _MISSING and not isinstance(
+            tensor, torch.Tensor) and tensor is not None:
         raise TypeError(f"{tensor} is not an instance of torch.Tensor")
     if "." in name:
         raise KeyError('tensor name can\'t contain "."')
@@ -64,8 +64,7 @@ def swap_tensor(
         except AttributeError as ex:
             if not allow_missing:
                 raise AttributeError(
-                    f"{module._get_name()} has no attribute `{name}`"
-                ) from ex
+                    f"{module._get_name()} has no attribute `{name}`") from ex
             orig_tensor = _MISSING
         if (
             orig_tensor is not _MISSING
@@ -73,8 +72,7 @@ def swap_tensor(
             and orig_tensor is not None
         ):
             raise TypeError(
-                f"attribute `{name}`: {orig_tensor} is not an instance of torch.Tensor"
-            )
+                f"attribute `{name}`: {orig_tensor} is not an instance of torch.Tensor")
         if tensor is not _MISSING:
             setattr(module, name, tensor)
         elif hasattr(module, name):
@@ -100,7 +98,8 @@ def swap_submodule(
 
     orig_submodule = module._modules[name]
     if not isinstance(orig_submodule, torch.nn.Module):
-        raise TypeError(f"{name} attribute is not an instance of torch.nn.Module")
+        raise TypeError(
+            f"{name} attribute is not an instance of torch.nn.Module")
     module._modules[name] = submodule
     return orig_submodule
 
@@ -144,8 +143,7 @@ class NamedMemberAccessor:
                 submodule = getattr(module, attr)
             except AttributeError as ex:
                 raise AttributeError(
-                    f"{module._get_name()} has no attribute `{attr}`"
-                ) from ex
+                    f"{module._get_name()} has no attribute `{attr}`") from ex
             if not isinstance(submodule, torch.nn.Module):
                 raise TypeError(  # noqa: B904
                     f"submodule `{name}`: {submodule} is not an instance of torch.nn.Module"
@@ -153,7 +151,10 @@ class NamedMemberAccessor:
             self.memo[name] = submodule
             return submodule
 
-    def swap_submodule(self, path: str, value: "torch.nn.Module") -> "torch.nn.Module":
+    def swap_submodule(
+            self,
+            path: str,
+            value: "torch.nn.Module") -> "torch.nn.Module":
         """
         Swap the submodule specified by the given ``path`` to ``value``.
 
@@ -179,8 +180,7 @@ class NamedMemberAccessor:
             tensor = getattr(submodule, attr)
         except AttributeError as ex:
             raise AttributeError(
-                f"{submodule._get_name()} has no attribute `{name}`"
-            ) from ex
+                f"{submodule._get_name()} has no attribute `{name}`") from ex
         if not isinstance(tensor, torch.Tensor) and tensor is not None:
             raise TypeError(f"{tensor} is not an instance of torch.Tensor")
         return tensor  # type: ignore[return-value]
@@ -208,8 +208,7 @@ class NamedMemberAccessor:
             delattr(submodule, attr)
         except AttributeError as ex:
             raise AttributeError(
-                f"{submodule._get_name()} has no attribute `{name}`"
-            ) from ex
+                f"{submodule._get_name()} has no attribute `{name}`") from ex
 
     def swap_tensor(
         self, name: str, value: torch.Tensor, allow_missing: bool = False
@@ -221,9 +220,8 @@ class NamedMemberAccessor:
         use accessor.swap_tensor("layer1.conv1.weight", value)
         """
         prefix, _, attr = name.rpartition(".")
-        return swap_tensor(
-            self.get_submodule(prefix), attr, value, allow_missing=allow_missing
-        )
+        return swap_tensor(self.get_submodule(prefix), attr,
+                           value, allow_missing=allow_missing)
 
     # Batched operations
 
@@ -237,7 +235,9 @@ class NamedMemberAccessor:
         """
         return [self.get_tensor(name) for name in names]
 
-    def set_tensors(self, names: Iterable[str], values: Iterable[torch.Tensor]) -> None:
+    def set_tensors(self,
+                    names: Iterable[str],
+                    values: Iterable[torch.Tensor]) -> None:
         """
         Set the attributes specified by the given paths to values.
 
@@ -249,7 +249,8 @@ class NamedMemberAccessor:
             names = list(names)
         if not isinstance(values, (list, tuple)):
             values = list(values)
-        assert len(names) == len(values), "names and values must have the same length"
+        assert len(names) == len(
+            values), "names and values must have the same length"
 
         for name, value in zip(names, values):
             self.set_tensor(name, value)
@@ -295,7 +296,8 @@ class NamedMemberAccessor:
             names = list(names)
         if not isinstance(values, (list, tuple)):
             values = list(values)
-        assert len(names) == len(values), "names and values must have the same length"
+        assert len(names) == len(
+            values), "names and values must have the same length"
 
         return [
             self.swap_tensor(name, value, allow_missing=allow_missing)
@@ -318,7 +320,8 @@ class NamedMemberAccessor:
         missing_keys = []
         try:
             for name, tensor in named_tensors.items():
-                orig_tensor = self.swap_tensor(name, tensor, allow_missing=True)
+                orig_tensor = self.swap_tensor(
+                    name, tensor, allow_missing=True)
                 if orig_tensor is _MISSING:
                     missing_keys.append(name)
                 orig_named_tensors[name] = orig_tensor
@@ -331,13 +334,17 @@ class NamedMemberAccessor:
             # Swap back if any key is missing when allow_missing is False
             for name, orig_tensor in orig_named_tensors.items():
                 self.swap_tensor(name, orig_tensor, allow_missing=True)
-            raise RuntimeError(f"Missing key(s): {', '.join(map(repr, missing_keys))}.")
+            raise RuntimeError(
+                f"Missing key(s): {', '.join(map(repr, missing_keys))}.")
         return orig_named_tensors, missing_keys
 
     def check_keys(self, keys: Iterable[str]) -> Tuple[List[str], List[str]]:
         """Check that the given keys are valid."""
         keys = set(keys)
-        valid_keys = {name for name, _ in self.named_tensors(remove_duplicate=False)}
+        valid_keys = {
+            name for name,
+            _ in self.named_tensors(
+                remove_duplicate=False)}
         missing_keys = valid_keys - keys
         unexpected_keys = keys - valid_keys
         return sorted(missing_keys), sorted(unexpected_keys)

@@ -253,3 +253,6 @@ documentation.zip
 !docs/images/*.png
 !docs/images/*.svg
 /cr_learn_setup
+CHANGES_SUMMARY.md
+BUILD_DOCS.md
+BUILD_DOCS.md

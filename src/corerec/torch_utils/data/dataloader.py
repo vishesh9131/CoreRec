@@ -74,9 +74,7 @@ class _DatasetKind:
     @staticmethod
     def create_fetcher(kind, dataset, auto_collation, collate_fn, drop_last):
         if kind == _DatasetKind.Map:
-            return _utils.fetch._MapDatasetFetcher(
-                dataset, auto_collation, collate_fn, drop_last
-            )
+            return _utils.fetch._MapDatasetFetcher(dataset, auto_collation, collate_fn, drop_last)
         else:
             return _utils.fetch._IterableDatasetFetcher(
                 dataset, auto_collation, collate_fn, drop_last
@@ -113,9 +111,7 @@ def _sharding_worker_init_fn(worker_init_fn, world_size, rank_id, worker_id):
     total_workers *= world_size
     global_worker_id = global_worker_id * world_size + rank_id
     # For BC, use default SHARDING_PRIORITIES
-    torch.utils.data.graph_settings.apply_sharding(
-        datapipe, total_workers, global_worker_id
-    )
+    torch.utils.data.graph_settings.apply_sharding(datapipe, total_workers, global_worker_id)
     if worker_init_fn is not None:
         worker_init_fn(worker_id)
 
@@ -397,9 +393,7 @@ class DataLoader(Generic[_T_co]):
         self.persistent_workers = persistent_workers
 
         self.__initialized = True
-        self._IterableDataset_len_called = (
-            None  # See NOTE [ IterableDataset and __len__ ]
-        )
+        self._IterableDataset_len_called = None  # See NOTE [ IterableDataset and __len__ ]
 
         self._iterator = None
 
@@ -566,11 +560,7 @@ class DataLoader(Generic[_T_co]):
                         "than what this DataLoader is going to create."
                     ).format(
                         num_worker_suggest,
-                        (
-                            ""
-                            if cpuset_checked
-                            else " (`cpuset` is not taken into account)"
-                        ),
+                        ("" if cpuset_checked else " (`cpuset` is not taken into account)"),
                     )
                 )
                 if num_worker_suggest is not None
@@ -607,17 +597,13 @@ class DataLoader(Generic[_T_co]):
 
         if max_num_worker_suggest is None:
             warnings.warn(
-                _create_warning_msg(
-                    max_num_worker_suggest, self.num_workers, cpuset_checked
-                )
+                _create_warning_msg(max_num_worker_suggest, self.num_workers, cpuset_checked)
             )
             return
 
         if self.num_workers > max_num_worker_suggest:
             warnings.warn(
-                _create_warning_msg(
-                    max_num_worker_suggest, self.num_workers, cpuset_checked
-                )
+                _create_warning_msg(max_num_worker_suggest, self.num_workers, cpuset_checked)
             )
 
 
@@ -664,9 +650,7 @@ class _BaseDataLoaderIter:
         self._collate_fn = loader.collate_fn
         self._sampler_iter = iter(self._index_sampler)
         self._base_seed = (
-            torch.empty((), dtype=torch.int64)
-            .random_(generator=loader.generator)
-            .item()
+            torch.empty((), dtype=torch.int64).random_(generator=loader.generator).item()
         )
         self._persistent_workers = loader.persistent_workers
         self._num_yielded = 0
@@ -1147,9 +1131,7 @@ class _MultiProcessingDataLoaderIter(_BaseDataLoaderIter):
             if self._pin_memory_device == "xpu":
                 current_device = torch.xpu.current_device()  # type: ignore[attr-defined]
             elif self._pin_memory_device == torch._C._get_privateuse1_backend_name():
-                custom_device_mod = getattr(
-                    torch, torch._C._get_privateuse1_backend_name()
-                )
+                custom_device_mod = getattr(torch, torch._C._get_privateuse1_backend_name())
                 current_device = custom_device_mod.current_device()
             else:
                 current_device = torch.cuda.current_device()  # choose cuda for default
@@ -1214,9 +1196,7 @@ class _MultiProcessingDataLoaderIter(_BaseDataLoaderIter):
         # We resume the prefetching in case it was enabled
         if not first_iter:
             for idx in range(self._num_workers):
-                self._index_queues[idx].put(
-                    _utils.worker._ResumeIteration(self._shared_seed)
-                )
+                self._index_queues[idx].put(_utils.worker._ResumeIteration(self._shared_seed))
             resume_iteration_cnt = self._num_workers
             while resume_iteration_cnt > 0:
                 return_idx, return_data = self._get_data()
@@ -1394,9 +1374,7 @@ class _MultiProcessingDataLoaderIter(_BaseDataLoaderIter):
             if success:
                 return data
             else:
-                raise RuntimeError(
-                    f"DataLoader timed out after {self._timeout} seconds"
-                )
+                raise RuntimeError(f"DataLoader timed out after {self._timeout} seconds")
         elif self._pin_memory:
             while self._pin_memory_thread.is_alive():
                 success, data = self._try_get_data()
@@ -1425,9 +1403,7 @@ class _MultiProcessingDataLoaderIter(_BaseDataLoaderIter):
             while self._rcvd_idx < self._send_idx:
                 info = self._task_info[self._rcvd_idx]
                 worker_id = info[0]
-                if (
-                    len(info) == 2 or self._workers_status[worker_id]
-                ):  # has data or is still active
+                if len(info) == 2 or self._workers_status[worker_id]:  # has data or is still active
                     break
                 del self._task_info[self._rcvd_idx]
                 self._rcvd_idx += 1
@@ -1496,9 +1472,7 @@ class _MultiProcessingDataLoaderIter(_BaseDataLoaderIter):
         # exhausting an `IterableDataset`. This should be used only when this
         # `_MultiProcessingDataLoaderIter` is going to continue running.
 
-        assert self._workers_status[worker_id] or (
-            self._persistent_workers and shutdown
-        )
+        assert self._workers_status[worker_id] or (self._persistent_workers and shutdown)
 
         # Signal termination to that specific worker.
         q = self._index_queues[worker_id]
@@ -1523,11 +1497,7 @@ class _MultiProcessingDataLoaderIter(_BaseDataLoaderIter):
         # Called when shutting down this `_MultiProcessingDataLoaderIter`.
         # See NOTE [ Data Loader Multiprocessing Shutdown Logic ] for details on
         # the logic of this function.
-        if (
-            _utils is None
-            or _utils.python_exit_status is True
-            or _utils.python_exit_status is None
-        ):
+        if _utils is None or _utils.python_exit_status is True or _utils.python_exit_status is None:
             # See (2) of the note. If Python is shutting down, do no-op.
             return
         # Normal exit when last reference is gone / iterator is depleted.

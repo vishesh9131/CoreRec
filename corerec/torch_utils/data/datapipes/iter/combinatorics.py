@@ -45,7 +45,10 @@ class SamplerIterDataPipe(IterDataPipe[_T_co]):
         self.sampler_args = () if sampler_args is None else sampler_args
         self.sampler_kwargs = {} if sampler_kwargs is None else sampler_kwargs
         # https://github.com/python/mypy/pull/9629 will solve
-        self.sampler = sampler(*self.sampler_args, data_source=self.datapipe, **self.sampler_kwargs)  # type: ignore[misc]
+        self.sampler = sampler(
+            *self.sampler_args,
+            data_source=self.datapipe,
+            **self.sampler_kwargs)  # type: ignore[misc]
 
     def __iter__(self) -> Iterator[_T_co]:
         return iter(self.sampler)
@@ -54,7 +57,8 @@ class SamplerIterDataPipe(IterDataPipe[_T_co]):
         # Dataset has been tested as `Sized`
         if isinstance(self.sampler, Sized):
             return len(self.sampler)
-        raise TypeError(f"{type(self).__name__} instance doesn't have valid length")
+        raise TypeError(
+            f"{type(self).__name__} instance doesn't have valid length")
 
 
 @functional_datapipe("shuffle")
@@ -108,7 +112,8 @@ class ShufflerIterDataPipe(IterDataPipe[_T_co]):
     ) -> None:
         super().__init__()
         # TODO: Performance optimization
-        #       buffer can be a fixed size and remove expensive `append()` and `len()` operations
+        # buffer can be a fixed size and remove expensive `append()` and
+        # `len()` operations
         self._buffer: List[_T_co] = []
         assert buffer_size > 0, "buffer_size should be larger than 0"
         if unbatch_level == 0:
@@ -146,13 +151,15 @@ class ShufflerIterDataPipe(IterDataPipe[_T_co]):
     def __len__(self) -> int:
         if isinstance(self.datapipe, Sized):
             return len(self.datapipe)
-        raise TypeError(f"{type(self).__name__} instance doesn't have valid length")
+        raise TypeError(
+            f"{type(self).__name__} instance doesn't have valid length")
 
     def reset(self) -> None:
         self._buffer = []
         if self._enabled:
             if self._seed is None:
-                self._seed = int(torch.empty((), dtype=torch.int64).random_().item())
+                self._seed = int(
+                    torch.empty((), dtype=torch.int64).random_().item())
             self._rng.seed(self._seed)
             self._seed = None
 

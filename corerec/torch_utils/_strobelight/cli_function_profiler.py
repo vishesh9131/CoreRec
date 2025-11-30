@@ -14,8 +14,7 @@ logger = logging.getLogger("strobelight_function_profiler")
 
 console_handler = logging.StreamHandler()
 formatter = logging.Formatter(
-    "%(name)s, line %(lineno)d, %(asctime)s, %(levelname)s: %(message)s"
-)
+    "%(name)s, line %(lineno)d, %(asctime)s, %(levelname)s: %(message)s")
 console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
@@ -40,7 +39,7 @@ def _pid_namespace(pid: Optional[int] = None) -> int:
     """Returns the process's namespace id"""
     pid = pid or os.getpid()
     link = _pid_namespace_link(pid)
-    return int(link[link.find("[") + 1 : -1])
+    return int(link[link.find("[") + 1: -1])
 
 
 def _command_to_string(command: Sequence[str]) -> str:
@@ -60,7 +59,8 @@ class StrobelightCLIFunctionProfiler:
     Check function_profiler_example.py for an example.
     """
 
-    # This lock is used to make sure only one thread is running the profiler at any point.
+    # This lock is used to make sure only one thread is running the profiler
+    # at any point.
     _lock = Lock()
 
     def __init__(
@@ -118,24 +118,22 @@ class StrobelightCLIFunctionProfiler:
 
         if result.returncode != 0:
             raise StrobelightCLIProfilerError(
-                f"failed to start strobelight profiling, error in run_async:{output}"
-            )
+                f"failed to start strobelight profiling, error in run_async:{output}")
 
         if match := re.search(r"INFO Run Id: (-?\d+)", output):
             self.current_run_id = int(match.group(1))
             return
 
         raise StrobelightCLIProfilerError(
-            f"failed to start strobelight profiling, unexpected result {output}"
-        )
+            f"failed to start strobelight profiling, unexpected result {output}")
 
     def _wait_for_running(self, counter: int = 0) -> None:
         if counter > 20:
             raise StrobelightCLIProfilerError(
-                "wait_for_running called more than 20 times"
-            )
+                "wait_for_running called more than 20 times")
 
-        command = ["strobeclient", "getRunStatus", "--run-id", f"{self.current_run_id}"]
+        command = ["strobeclient", "getRunStatus",
+                   "--run-id", f"{self.current_run_id}"]
         logger.debug("running command: %s", _command_to_string(command))
         result = subprocess.run(command, capture_output=True)
         output = result.stderr.decode("utf-8")
@@ -143,8 +141,7 @@ class StrobelightCLIFunctionProfiler:
 
         if result.returncode != 0:
             raise StrobelightCLIProfilerError(
-                f"failed to start strobelight profiling, error in wait_for_running:{output}"
-            )
+                f"failed to start strobelight profiling, error in wait_for_running:{output}")
 
         if match := re.search("Profile run status: (.*)", output):
             current_status = match.group(1)
@@ -155,12 +152,14 @@ class StrobelightCLIFunctionProfiler:
                 self._wait_for_running(counter + 1)
                 return
             else:
-                raise StrobelightCLIProfilerError(f"unexpected {current_status} phase")
+                raise StrobelightCLIProfilerError(
+                    f"unexpected {current_status} phase")
 
         raise StrobelightCLIProfilerError(f"unexpected output\n: {output} ")
 
     def _stop_run(self) -> None:
-        command = ["strobeclient", "stopRun", "--run-id", str(self.current_run_id)]
+        command = ["strobeclient", "stopRun",
+                   "--run-id", str(self.current_run_id)]
         logger.debug("running command: %s", _command_to_string(command))
         result = subprocess.run(command, capture_output=True)
         output = result.stderr.decode("utf-8")
@@ -168,8 +167,7 @@ class StrobelightCLIFunctionProfiler:
 
         if result.returncode != 0:
             raise StrobelightCLIProfilerError(
-                f"failed to stop strobelight profiling, return code is not 0 :{output}"
-            )
+                f"failed to stop strobelight profiling, return code is not 0 :{output}")
 
         if match := re.search("INFO ::1:(.*)", output):
             current_status = match.group(1)
@@ -177,13 +175,13 @@ class StrobelightCLIFunctionProfiler:
                 return
             else:
                 raise StrobelightCLIProfilerError(
-                    f"failed to stop strobelight profiling, got {current_status} result"
-                )
+                    f"failed to stop strobelight profiling, got {current_status} result")
 
         raise StrobelightCLIProfilerError(f"unexpected output\n: {output} ")
 
     def _get_results(self) -> None:
-        command = ["strobeclient", "getRunStatus", "--run-id", str(self.current_run_id)]
+        command = ["strobeclient", "getRunStatus",
+                   "--run-id", str(self.current_run_id)]
         logger.debug("running command: %s", _command_to_string(command))
         result = subprocess.run(command, capture_output=True)
         output = result.stderr.decode("utf-8")
@@ -191,8 +189,7 @@ class StrobelightCLIFunctionProfiler:
 
         if result.returncode != 0:
             raise StrobelightCLIProfilerError(
-                f"failed to extract profiling results, return code is not 0 : {output}"
-            )
+                f"failed to extract profiling results, return code is not 0 : {output}")
 
         if match := re.search("INFO ::1:(.*)", output):
             current_status = match.group(1)
@@ -202,8 +199,7 @@ class StrobelightCLIFunctionProfiler:
                 return
             elif not current_status.__contains__("Profile run finished with SUCCESS"):
                 raise StrobelightCLIProfilerError(
-                    f"failed to extract profiling results, unexpected response {output}"
-                )
+                    f"failed to extract profiling results, unexpected response {output}")
 
         for item in re.findall(
             r"(Total samples(.*)|GraphProfiler(.*)|Icicle view \(python stack\)(.*))",
@@ -252,7 +248,8 @@ class StrobelightCLIFunctionProfiler:
         if locked := StrobelightCLIFunctionProfiler._lock.acquire(False):
             if not locked:
                 if self.stop_at_error:
-                    raise StrobelightCLIProfilerError("concurrent runs not supported")
+                    raise StrobelightCLIProfilerError(
+                        "concurrent runs not supported")
 
                 logger.warning("concurrent runs not supported")
                 return work_function(*args, **kwargs)
@@ -262,8 +259,7 @@ class StrobelightCLIFunctionProfiler:
                 if self.stop_at_error:
                     StrobelightCLIFunctionProfiler._lock.release()
                     raise StrobelightCLIProfilerError(
-                        "failed to start strobelight profiling"
-                    )
+                        "failed to start strobelight profiling")
                 result = work_function(*args, **kwargs)
                 StrobelightCLIFunctionProfiler._lock.release()
                 return result
@@ -287,8 +283,8 @@ class StrobelightCLIFunctionProfiler:
 # @strobelight(profiler = StrobelightFunctionProfiler(stop_at_error=True,..))
 # @strobelight(stop_at_error=True,...)
 def strobelight(
-    profiler: Optional[StrobelightCLIFunctionProfiler] = None, **kwargs: Any
-) -> Any:
+        profiler: Optional[StrobelightCLIFunctionProfiler] = None,
+        **kwargs: Any) -> Any:
     if not profiler:
         profiler = StrobelightCLIFunctionProfiler(**kwargs)
 

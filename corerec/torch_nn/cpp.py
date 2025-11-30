@@ -55,9 +55,12 @@ class ModuleWrapper(nn.Module):
         # assigned to in the super class constructor.
         self.cpp_module = cpp_module
         super().__init__()
-        self._parameters = OrderedDictWrapper(cpp_module, "_parameters")  # type: ignore[assignment]
-        self._buffers: OrderedDictWrapper = OrderedDictWrapper(cpp_module, "_buffers")  # type: ignore[assignment]
-        self._modules: OrderedDictWrapper = OrderedDictWrapper(cpp_module, "_modules")  # type: ignore[assignment]
+        self._parameters = OrderedDictWrapper(
+            cpp_module, "_parameters")  # type: ignore[assignment]
+        self._buffers: OrderedDictWrapper = OrderedDictWrapper(
+            cpp_module, "_buffers")  # type: ignore[assignment]
+        self._modules: OrderedDictWrapper = OrderedDictWrapper(
+            cpp_module, "_modules")  # type: ignore[assignment]
         for attr in dir(cpp_module):
             # Skip magic methods and the three attributes above.
             if not attr.startswith("_"):

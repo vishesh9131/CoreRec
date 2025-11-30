@@ -151,9 +151,7 @@ def _collate_helper(conversion, item):
     for name in columns_name:
         if name in conversion:
             if not callable(conversion[name]):
-                raise RuntimeError(
-                    "Collate (DF)DataPipe requires callable as dict values"
-                )
+                raise RuntimeError("Collate (DF)DataPipe requires callable as dict values")
             collation_fn = conversion[name]
         else:
             # TODO(VitalyFedyunin): Add default collation into df_wrapper

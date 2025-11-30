@@ -19,9 +19,7 @@ from .expanded_weights_utils import (
 class GroupNormPerSampleGrad(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwarg_names, _, *expanded_args_and_kwargs):
-        expanded_args, expanded_kwargs = standard_kwargs(
-            kwarg_names, expanded_args_and_kwargs
-        )
+        expanded_args, expanded_kwargs = standard_kwargs(kwarg_names, expanded_args_and_kwargs)
         input, num_groups = expanded_args
         N = input.shape[0]
         C = input.shape[1]
@@ -56,13 +54,9 @@ class GroupNormPerSampleGrad(torch.autograd.Function):
         results.append(None)  # for op reference
 
         if input.requires_grad:
-            weight_c = unpack_expanded_weight_or_tensor(
-                weight, lambda t: t.contiguous()
-            )
+            weight_c = unpack_expanded_weight_or_tensor(weight, lambda t: t.contiguous())
             input_c = input.contiguous()
-            grad_output_c = (
-                grad_output.contiguous() if grad_output is not None else None
-            )
+            grad_output_c = grad_output.contiguous() if grad_output is not None else None
             N = input.shape[0]
             C = input.shape[1]
             HxW = 1
@@ -98,7 +92,5 @@ class GroupNormPerSampleGrad(torch.autograd.Function):
                 ),
             )
         if hasattr(ctx, "bias"):
-            set_grad_sample_if_exists(
-                bias, lambda _: torch.einsum("ni...->ni", grad_output)
-            )
+            set_grad_sample_if_exists(bias, lambda _: torch.einsum("ni...->ni", grad_output))
         return tuple(results)

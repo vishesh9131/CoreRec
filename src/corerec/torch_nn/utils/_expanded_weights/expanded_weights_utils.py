@@ -15,9 +15,7 @@ def is_batch_first(expanded_args_and_kwargs):
         if not batch_first:
             batch_first = arg.batch_first
         elif arg.batch_first != batch_first:
-            raise RuntimeError(
-                "Got conflicting batch_first arguments in the same layer"
-            )
+            raise RuntimeError("Got conflicting batch_first arguments in the same layer")
     return batch_first
 
 
@@ -28,9 +26,7 @@ def standard_kwargs(kwarg_names, expanded_args):
     the args and kwargs they pass. Functions that don't are linear and convND.
     """
     kwarg_values = expanded_args[len(expanded_args) - len(kwarg_names) :]
-    expanded_args_without_kwargs = expanded_args[
-        : len(expanded_args) - len(kwarg_names)
-    ]
+    expanded_args_without_kwargs = expanded_args[: len(expanded_args) - len(kwarg_names)]
     expanded_kwargs = dict(zip(kwarg_names, kwarg_values))
     return expanded_args_without_kwargs, expanded_kwargs
 
@@ -105,8 +101,7 @@ def _check_and_unexpand_args(func, expanded_args, expanded_kwargs):
                 )
 
     unexpanded_args = tuple(
-        arg.orig_weight if isinstance(arg, ExpandedWeight) else arg
-        for arg in expanded_args
+        arg.orig_weight if isinstance(arg, ExpandedWeight) else arg for arg in expanded_args
     )
     unexpanded_kwargs = {
         name: arg.orig_weight if isinstance(arg, ExpandedWeight) else arg
@@ -151,8 +146,7 @@ def unpack_expanded_weight_or_tensor(maybe_expanded_weight, func=lambda x: x):
         orig_weight = maybe_expanded_weight.orig_weight
         return func(orig_weight)
     elif (
-        isinstance(maybe_expanded_weight, torch.Tensor)
-        and not maybe_expanded_weight.requires_grad
+        isinstance(maybe_expanded_weight, torch.Tensor) and not maybe_expanded_weight.requires_grad
     ):
         return func(maybe_expanded_weight)
     elif isinstance(maybe_expanded_weight, torch.Tensor):

@@ -23,10 +23,7 @@ def parse(graph):
     for node in nodes_proto:
         print(node.name)
         shapeproto = TensorShapeProto(
-            dim=[
-                TensorShapeProto.Dim(size=d.dim_value)
-                for d in node.type.tensor_type.shape.dim
-            ]
+            dim=[TensorShapeProto.Dim(size=d.dim_value) for d in node.type.tensor_type.shape.dim]
         )
         nodes.append(
             NodeDef(

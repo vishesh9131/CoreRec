@@ -7,6 +7,7 @@ from typing import List, Any, Dict
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class LSA:
     def __init__(self, n_components: int = 100):
         """
@@ -15,9 +16,11 @@ class LSA:
         Parameters:
         - n_components (int): Number of latent components to extract.
         """
-        self.vectorizer = TfidfVectorizer(stop_words='english', max_features=1000)
+        self.vectorizer = TfidfVectorizer(stop_words="english", max_features=1000)
         self.lsa_model = TruncatedSVD(n_components=n_components, random_state=42)
         self.item_ids = []
+        self.is_fitted = False
+        self.documents = []  # Store documents for recommendation
         logger.info(f"LSA initialized with {n_components} components.")
 
     def fit(self, documents: List[str]):
@@ -27,12 +30,14 @@ class LSA:
         Parameters:
         - documents (List[str]): List of documents to train the model.
         """
-        # Validate inputs
-        validate_fit_inputs(user_ids, item_ids, ratings)
+        if not documents:
+            raise ValueError("Documents list cannot be empty.")
         
         logger.info("Fitting LSA model on documents.")
+        self.documents = documents  # Store for recommendation
         tfidf_matrix = self.vectorizer.fit_transform(documents)
         self.lsa_model.fit(tfidf_matrix)
+        self.is_fitted = True
         logger.info("LSA model training completed.")
 
     def transform(self, documents: List[str]) -> Any:
@@ -60,15 +65,22 @@ class LSA:
         Returns:
         - List[int]: List of recommended item indices.
         """
-        # Validate inputs
-        validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
-        validate_top_k(top_k if 'top_k' in locals() else 10)
+        if not hasattr(self, 'is_fitted') or not self.is_fitted:
+            raise ValueError("Model must be fitted before generating recommendations.")
         
+        if top_n <= 0:
+            raise ValueError("top_n must be positive.")
+
         logger.info("Generating recommendations using LSA.")
         query_vec = self.transform([query])
-        doc_vecs = self.lsa_model.transform(self.vectorizer.transform(self.vectorizer.get_feature_names_out()))
-        similarity_scores = (doc_vecs @ query_vec.T).flatten()
+        
+        # Transform all training documents to get their vectors in latent space
+        all_doc_vectors = self.transform(self.documents)
+        
+        # Calculate cosine similarity between query and all documents
+        from sklearn.metrics.pairwise import cosine_similarity
+        similarity_scores = cosine_similarity(query_vec, all_doc_vectors).flatten()
+        
         top_indices = similarity_scores.argsort()[::-1][:top_n]
         logger.info(f"Top {top_n} recommendations generated using LSA.")
         return top_indices.tolist()
@@ -76,7 +88,7 @@ class LSA:
     def add_item(self, item_id: int, item_features: Dict[str, Any]):
         logger.info(f"Adding item {item_id} to LSA.")
         # Assuming item_features contains 'genres' as a list
-        genres = ' '.join(item_features.get('genres', []))
+        genres = " ".join(item_features.get("genres", []))
         new_tfidf = self.vectorizer.transform([genres])  # Use transform, not fit
         new_vec = self.lsa_model.transform(new_tfidf)
         # You would need to handle incorporating the new_vec into the existing model

@@ -63,7 +63,8 @@ class ShufflerIterDataPipe(IterDataPipe[_T_co]):
     ) -> None:
         super().__init__()
         self.datapipe = datapipe
-        self.indices = list(range(len(datapipe))) if indices is None else indices
+        self.indices = list(range(len(datapipe))
+                            ) if indices is None else indices
         self._enabled = True
         self._seed = None
         self._rng = random.Random()
@@ -88,10 +89,12 @@ class ShufflerIterDataPipe(IterDataPipe[_T_co]):
 
     def reset(self) -> None:
         if self._enabled and self._seed is None:
-            self._seed = int(torch.empty((), dtype=torch.int64).random_().item())
+            self._seed = int(
+                torch.empty((), dtype=torch.int64).random_().item())
         self._rng.seed(self._seed)
         self._seed = None
-        self._shuffled_indices = self._rng.sample(self.indices, len(self.indices))
+        self._shuffled_indices = self._rng.sample(
+            self.indices, len(self.indices))
 
     def __len__(self) -> int:
         return len(self.datapipe)

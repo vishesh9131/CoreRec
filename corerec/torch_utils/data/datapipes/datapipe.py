@@ -139,7 +139,9 @@ class IterDataPipe(IterableDataset[_T_co], metaclass=_IterDataPipeMeta):
                 _deprecation_warning(**kwargs)
             f = IterDataPipe.functions[attribute_name]
             function = functools.partial(f, self)
-            functools.update_wrapper(wrapper=function, wrapped=f, assigned=("__doc__",))
+            functools.update_wrapper(
+                wrapper=function, wrapped=f, assigned=(
+                    "__doc__",))
             return function
         else:
             raise AttributeError(
@@ -159,21 +161,31 @@ class IterDataPipe(IterableDataset[_T_co], metaclass=_IterDataPipeMeta):
                 f"Unable to add DataPipe function name {function_name} as it is already taken"
             )
 
-        def class_function(cls, enable_df_api_tracing, source_dp, *args, **kwargs):
+        def class_function(
+                cls,
+                enable_df_api_tracing,
+                source_dp,
+                *args,
+                **kwargs):
             result_pipe = cls(source_dp, *args, **kwargs)
             if isinstance(result_pipe, IterDataPipe):
-                if enable_df_api_tracing or isinstance(source_dp, DFIterDataPipe):
+                if enable_df_api_tracing or isinstance(
+                        source_dp, DFIterDataPipe):
                     if function_name not in UNTRACABLE_DATAFRAME_PIPES:
                         result_pipe = result_pipe.trace_as_dataframe()
 
             return result_pipe
 
         function = functools.partial(
-            class_function, cls_to_register, enable_df_api_tracing
-        )
+            class_function,
+            cls_to_register,
+            enable_df_api_tracing)
         functools.update_wrapper(
-            wrapper=function, wrapped=cls_to_register, assigned=("__doc__",)
-        )
+            wrapper=function,
+            wrapped=cls_to_register,
+            assigned=(
+                "__doc__",
+            ))
         cls.functions[function_name] = function
 
     def __getstate__(self):
@@ -211,13 +223,15 @@ class IterDataPipe(IterableDataset[_T_co], metaclass=_IterDataPipeMeta):
     def __repr__(self):
         if self.repr_hook is not None:
             return self.repr_hook(self)
-        # Instead of showing <torch. ... .MapperIterDataPipe object at 0x.....>, return the class name
+        # Instead of showing <torch. ... .MapperIterDataPipe object at
+        # 0x.....>, return the class name
         return str(self.__class__.__qualname__)
 
     def __str__(self):
         if self.str_hook is not None:
             return self.str_hook(self)
-        # Instead of showing <torch. ... .MapperIterDataPipe object at 0x.....>, return the class name
+        # Instead of showing <torch. ... .MapperIterDataPipe object at
+        # 0x.....>, return the class name
         return str(self.__class__.__qualname__)
 
     def __dir__(self):
@@ -288,7 +302,9 @@ class MapDataPipe(Dataset[_T_co], metaclass=_DataPipeMeta):
                 _deprecation_warning(**kwargs)
             f = MapDataPipe.functions[attribute_name]
             function = functools.partial(f, self)
-            functools.update_wrapper(wrapper=function, wrapped=f, assigned=("__doc__",))
+            functools.update_wrapper(
+                wrapper=function, wrapped=f, assigned=(
+                    "__doc__",))
             return function
         else:
             raise AttributeError(
@@ -312,8 +328,11 @@ class MapDataPipe(Dataset[_T_co], metaclass=_DataPipeMeta):
 
         function = functools.partial(class_function, cls_to_register)
         functools.update_wrapper(
-            wrapper=function, wrapped=cls_to_register, assigned=("__doc__",)
-        )
+            wrapper=function,
+            wrapped=cls_to_register,
+            assigned=(
+                "__doc__",
+            ))
         cls.functions[function_name] = function
 
     def __getstate__(self):
@@ -351,13 +370,15 @@ class MapDataPipe(Dataset[_T_co], metaclass=_DataPipeMeta):
     def __repr__(self):
         if self.repr_hook is not None:
             return self.repr_hook(self)
-        # Instead of showing <torch. ... .MapperMapDataPipe object at 0x.....>, return the class name
+        # Instead of showing <torch. ... .MapperMapDataPipe object at 0x.....>,
+        # return the class name
         return str(self.__class__.__qualname__)
 
     def __str__(self):
         if self.str_hook is not None:
             return self.str_hook(self)
-        # Instead of showing <torch. ... .MapperMapDataPipe object at 0x.....>, return the class name
+        # Instead of showing <torch. ... .MapperMapDataPipe object at 0x.....>,
+        # return the class name
         return str(self.__class__.__qualname__)
 
     def __dir__(self):
@@ -393,11 +414,12 @@ class _DataPipeSerializationWrapper:
             return len(self._datapipe)
         except Exception as e:
             raise TypeError(
-                f"{type(self).__name__} instance doesn't have valid length"
-            ) from e
+                f"{type(self).__name__} instance doesn't have valid length") from e
 
 
-class _IterDataPipeSerializationWrapper(_DataPipeSerializationWrapper, IterDataPipe):
+class _IterDataPipeSerializationWrapper(
+        _DataPipeSerializationWrapper,
+        IterDataPipe):
     def __init__(self, datapipe: IterDataPipe[_T_co]):
         super().__init__(datapipe)
         self._datapipe_iter: Optional[Iterator[_T_co]] = None
@@ -411,6 +433,8 @@ class _IterDataPipeSerializationWrapper(_DataPipeSerializationWrapper, IterDataP
         return next(self._datapipe_iter)
 
 
-class _MapDataPipeSerializationWrapper(_DataPipeSerializationWrapper, MapDataPipe):
+class _MapDataPipeSerializationWrapper(
+        _DataPipeSerializationWrapper,
+        MapDataPipe):
     def __getitem__(self, idx):
         return self._datapipe[idx]

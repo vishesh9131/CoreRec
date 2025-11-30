@@ -1,6 +1,10 @@
 from .sasrec_base import SASRecBase as NN_SASREC
-from .rnn_sequential_recommendation_base import RNN_sequential_recommendation_base as NN_RNN_SEQUENTIAL_RECOMMENDATION
-from .self_supervised_learning_cf_base import SelfSupervisedLearningCFBase as NN_SELF_SUPERVISED_LEARNING_CF
+from .rnn_sequential_recommendation_base import (
+    RNN_sequential_recommendation_base as NN_RNN_SEQUENTIAL_RECOMMENDATION,
+)
+from .self_supervised_learning_cf_base import (
+    SelfSupervisedLearningCFBase as NN_SELF_SUPERVISED_LEARNING_CF,
+)
 from .xdeepfm_base import XDeepFMBase as NN_XDEEPFM
 from .ncf_base import NCF_base as NN_NCF
 from .autoencoder_cf_base import AutoencoderCFBase as NN_AUTOENCODER_CF
@@ -11,7 +15,9 @@ from .Bert4Rec_base import Bert4Rec_base as NN_BERT4REC
 from .gnn_ufilter_base import GNN_ufilter_base as NN_GNN
 from .gan_ufilter_base import GAN_ufilter_base as NN_GAN
 from .transformer_ufilter_base import TransformerUFilterBase as NN_TRANSFORMER
-from .variational_autoencoder_ufilter_base import VariationalAutoencoderUFilterBase as NN_VARIATIONAL_AUTOENCODER
+from .variational_autoencoder_ufilter_base import (
+    VariationalAutoencoderUFilterBase as NN_VARIATIONAL_AUTOENCODER,
+)
 from .slirec_base import SLiRecBase as NN_SLIREC
 from .SSR_base import SSR_base as NN_SSR
 from .deep_mf_base import DeepMF_base as NN_DEEP_MF
@@ -110,4 +116,3 @@ __all__ = [
 ]
 
 # init is in maintenance mode
-            

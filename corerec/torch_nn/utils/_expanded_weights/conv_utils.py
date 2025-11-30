@@ -26,10 +26,10 @@ def conv_picker(func, conv1dOpt, conv2dOpt, conv3dOpt):
 
 
 def conv_args_and_kwargs(kwarg_names, expanded_args_and_kwargs):
-    args = expanded_args_and_kwargs[: len(expanded_args_and_kwargs) - len(kwarg_names)]
-    kwargs = expanded_args_and_kwargs[
-        len(expanded_args_and_kwargs) - len(kwarg_names) :
-    ]
+    args = expanded_args_and_kwargs[: len(
+        expanded_args_and_kwargs) - len(kwarg_names)]
+    kwargs = expanded_args_and_kwargs[len(
+        expanded_args_and_kwargs) - len(kwarg_names):]
     kwargs = dict(zip(kwarg_names, kwargs))
 
     return conv_normalizer(*args, **kwargs)
@@ -53,13 +53,17 @@ def conv_normalizer(
     }
 
 
-def conv_input_for_string_padding(func, padding_style, input, dilation, kernel_size):
+def conv_input_for_string_padding(
+        func,
+        padding_style,
+        input,
+        dilation,
+        kernel_size):
     if padding_style == "valid":
         return input
     else:
         padding = int_padding_for_string_padding(
-            func, padding_style, dilation, kernel_size
-        )
+            func, padding_style, dilation, kernel_size)
         return F.pad(input, padding)
 
 
@@ -77,8 +81,7 @@ def int_padding_for_string_padding(func, padding_style, dilation, kernel_size):
         return conv_picker(func, 2, 4, 6) * (0,)
     else:
         raise RuntimeError(
-            f"got padding type of {padding_style}, only accept 'same' or 'valid'"
-        )
+            f"got padding type of {padding_style}, only accept 'same' or 'valid'")
 
 
 def conv_padding_for_same(dilation, kernel_size):
@@ -116,19 +119,18 @@ def conv_backward(func, ctx, grad_output):
 
     def expand(param):
         if isinstance(param, int):
-            return conv_picker(func, (param,), (param, param), (param, param, param))
+            return conv_picker(
+                func, (param,), (param, param), (param, param, param))
         else:
             return param
 
     def calc_total_padding(func, was_same, padding, dilation, kernel_size):
         if was_same:
             all_padding = int_padding_for_string_padding(
-                func, "same", dilation, kernel_size
-            )
+                func, "same", dilation, kernel_size)
             # F.pad needs the padding in reverse order from what conv expects
             total_padding = tuple(
-                all_padding[i] + all_padding[i - 1]
-                for i in range(len(all_padding) - 1, -1, -2)
+                all_padding[i] + all_padding[i - 1] for i in range(len(all_padding) - 1, -1, -2)
             )
             return total_padding
         else:
@@ -153,8 +155,7 @@ def conv_backward(func, ctx, grad_output):
 
     # "same" padding may give uneven padding on either side so we need to separate the "padding" attr and total padding
     total_padding = calc_total_padding(
-        func, ctx.was_same_padding, padding, dilation, kernel_size
-    )
+        func, ctx.was_same_padding, padding, dilation, kernel_size)
 
     if ctx.input_required_grad:
         output_padding = []
@@ -162,13 +163,14 @@ def conv_backward(func, ctx, grad_output):
         for i in range(input_dims):
             input_dim = ctx.orig_input_shape[2 + i]
             output_padding.append(
-                (
-                    total_padding[i]
-                    + input_dim
-                    - (kernel_size[i] * dilation[i] - dilation[i] + 1)
-                )
-                % stride[i]
-            )
+                (total_padding[i] +
+                 input_dim -
+                 (
+                    kernel_size[i] *
+                    dilation[i] -
+                    dilation[i] +
+                    1)) %
+                stride[i])
         weight_ = unpack_expanded_weight_or_tensor(ctx.weight)
         transpose_func = conv_picker(
             func, F.conv_transpose1d, F.conv_transpose2d, F.conv_transpose3d
@@ -186,21 +188,22 @@ def conv_backward(func, ctx, grad_output):
 
         if ctx.was_same_padding:
             for i in range(len(total_padding)):
-                out = torch.narrow(
-                    out, 2 + i, total_padding[i] // 2, ctx.orig_input_shape[2 + i]
-                )
+                out = torch.narrow(out,
+                                   2 + i,
+                                   total_padding[i] // 2,
+                                   ctx.orig_input_shape[2 + i])
 
         results.append(out)
     else:
         results.append(None)
-    # weight and bias don't compute batched gradients; no other arguments are differentiable
+    # weight and bias don't compute batched gradients; no other arguments are
+    # differentiable
     results = results + [None] * 6
 
     # set grad_sample field for weight and bias with per sample gradients
     set_grad_sample_if_exists(ctx.weight, weight_grad_sample)
-    set_grad_sample_if_exists(
-        ctx.bias, lambda _: grad_output.reshape(*grad_output.shape[:2], -1).sum(dim=2)
-    )
+    set_grad_sample_if_exists(ctx.bias, lambda _: grad_output.reshape(
+        *grad_output.shape[:2], -1).sum(dim=2))
     return tuple(results)
 
 
@@ -227,9 +230,7 @@ def conv_unfold_weight_grad_sample(
             padding=(0, padding[0]),
             stride=(1, stride[0]),
         ),
-        lambda: F.unfold(
-            input, kernel_size, dilation=dilation, padding=padding, stride=stride
-        ),
+        lambda: F.unfold(input, kernel_size, dilation=dilation, padding=padding, stride=stride),
         lambda: unfold3d(input, kernel_size, padding, stride, dilation),
     )
 
@@ -248,8 +249,8 @@ def conv_unfold_weight_grad_sample(
         np.prod(kernel_size),
     )
     weight_grad_sample = torch.einsum(
-        "ngrg...->ngr...", weight_grad_sample
-    ).contiguous()
+        "ngrg...->ngr...",
+        weight_grad_sample).contiguous()
     shape = [n] + list(weight_shape)
     weight_grad_sample = weight_grad_sample.view(shape)
     return weight_grad_sample
@@ -286,8 +287,7 @@ def conv_group_weight_grad_sample(
     for i in range(2, input_dims):
         weight_grad_sample = weight_grad_sample.narrow(i, 0, weight_shape[i])
     weight_grad_sample = weight_grad_sample.view(
-        I, batch_size, O, *weight_grad_sample.shape[2:]
-    )
+        I, batch_size, O, *weight_grad_sample.shape[2:])
     weight_grad_sample = weight_grad_sample.movedim(0, 2)
     return weight_grad_sample
 
@@ -322,8 +322,8 @@ def unfold3d(
     """
     if len(tensor.shape) != 5:
         raise ValueError(
-            f"Input tensor must be of the shape [B, C, D, H, W]. Got{tensor.shape}"
-        )
+            f"Input tensor must be of the shape [B, C, D, H, W]. Got{
+                tensor.shape}")
 
     if dilation != (1, 1, 1):
         raise NotImplementedError(f"dilation={dilation} not supported.")
@@ -332,8 +332,13 @@ def unfold3d(
 
     # Input shape: (B, C, D, H, W)
     tensor = F.pad(
-        tensor, (padding[2], padding[2], padding[1], padding[1], padding[0], padding[0])
-    )
+        tensor,
+        (padding[2],
+         padding[2],
+         padding[1],
+         padding[1],
+         padding[0],
+         padding[0]))
     # Output shape: (B, C, D+2*padding[2], H+2*padding[1], W+2*padding[0])
 
     tensor = tensor.unfold(dimension=2, size=kernel_size[0], step=stride[0])
@@ -343,11 +348,12 @@ def unfold3d(
     # For D_out, H_out, W_out definitions see :class:`torch.nn.Unfold`
 
     tensor = tensor.permute(0, 2, 3, 4, 1, 5, 6, 7)
-    # Output shape: (B, D_out, H_out, W_out, C, kernel_size[0], kernel_size[1], kernel_size[2])
+    # Output shape: (B, D_out, H_out, W_out, C, kernel_size[0],
+    # kernel_size[1], kernel_size[2])
 
-    tensor = tensor.reshape(batch_size, -1, channels * np.prod(kernel_size)).transpose(
-        1, 2
-    )
-    # Output shape: (B, D_out * H_out * W_out, C * kernel_size[0] * kernel_size[1] * kernel_size[2]
+    tensor = tensor.reshape(batch_size, -1, channels *
+                            np.prod(kernel_size)).transpose(1, 2)
+    # Output shape: (B, D_out * H_out * W_out, C * kernel_size[0] *
+    # kernel_size[1] * kernel_size[2]
 
     return tensor

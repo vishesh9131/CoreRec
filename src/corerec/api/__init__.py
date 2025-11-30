@@ -11,7 +11,6 @@ from corerec.api.predictor_interface import PredictorInterface
 
 __all__ = [
     "BaseRecommender",
-    "ModelInterface", 
+    "ModelInterface",
     "PredictorInterface",
 ]
-

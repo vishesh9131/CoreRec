@@ -1,9 +1,9 @@
 import sys
 import os
+
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
-
 
 
 import core_rec as cs
@@ -15,12 +15,13 @@ import numpy as np
 import core_rec as cs
 import vish_graphs as vg
 from torch.utils.data import Dataset, DataLoader
-import pandas as pd 
+import pandas as pd
 import numpy as np
 import vish_graphs as vg
 
 import pandas as pd
 import numpy as np
+
 file_path = vg.generate_random_graph(50, seed=122)
 adj_matrix = np.loadtxt(file_path, delimiter=",")
 
@@ -52,7 +53,7 @@ vg.draw_graph_3d(adj_matrix, top_nodes=top_nodes, node_labels=node_labels)
 # import core_rec as cs
 # import vish_graphs as vg
 # from torch.utils.data import Dataset, DataLoader
-# import pandas as pd 
+# import pandas as pd
 # import numpy as np
 # import vish_graphs as vg
 # import numpy as np
@@ -75,5 +76,5 @@ vg.draw_graph_3d(adj_matrix, top_nodes=top_nodes, node_labels=node_labels)
 # # Visualize the 2D graph with labels
 # # vg.draw_graph(adj_matrix, top_nodes=top_nodes, node_labels=node_labels)
 
-# # export in csv 
+# # export in csv
 # vg.export_graph_data_to_csv(adj_matrix, node_labels, "output_graph_data.csv")

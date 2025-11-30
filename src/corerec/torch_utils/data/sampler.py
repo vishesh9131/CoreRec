@@ -195,9 +195,7 @@ class RandomSampler(Sampler[int]):
         else:
             for _ in range(self.num_samples // n):
                 yield from torch.randperm(n, generator=generator).tolist()
-            yield from torch.randperm(n, generator=generator).tolist()[
-                : self.num_samples % n
-            ]
+            yield from torch.randperm(n, generator=generator).tolist()[: self.num_samples % n]
 
     def __len__(self) -> int:
         return self.num_samples
@@ -255,11 +253,7 @@ class WeightedRandomSampler(Sampler[int]):
         replacement: bool = True,
         generator=None,
     ) -> None:
-        if (
-            not isinstance(num_samples, int)
-            or isinstance(num_samples, bool)
-            or num_samples <= 0
-        ):
+        if not isinstance(num_samples, int) or isinstance(num_samples, bool) or num_samples <= 0:
             raise ValueError(
                 f"num_samples should be a positive integer value, but got num_samples={num_samples}"
             )
@@ -315,18 +309,12 @@ class BatchSampler(Sampler[List[int]]):
         # Since collections.abc.Iterable does not check for `__getitem__`, which
         # is one way for an object to be an iterable, we don't do an `isinstance`
         # check here.
-        if (
-            not isinstance(batch_size, int)
-            or isinstance(batch_size, bool)
-            or batch_size <= 0
-        ):
+        if not isinstance(batch_size, int) or isinstance(batch_size, bool) or batch_size <= 0:
             raise ValueError(
                 f"batch_size should be a positive integer value, but got batch_size={batch_size}"
             )
         if not isinstance(drop_last, bool):
-            raise ValueError(
-                f"drop_last should be a boolean value, but got drop_last={drop_last}"
-            )
+            raise ValueError(f"drop_last should be a boolean value, but got drop_last={drop_last}")
         self.sampler = sampler
         self.batch_size = batch_size
         self.drop_last = drop_last

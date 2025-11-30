@@ -88,47 +88,47 @@ CF_Engine = content
 
 __all__ = [
     # Deep Learning Models (direct access)
-    'DCN',
-    'DeepFM',
-    'GNNRec',
-    'MIND',
-    'NASRec',
-    'SASRec',
-    
+    "DCN",
+    "DeepFM",
+    "GNNRec",
+    "MIND",
+    "NASRec",
+    "SASRec",
     # Engine Namespaces (organized access)
-    'unionized',    # Collaborative filtering algorithms
-    'content',      # Content-based filtering algorithms
-    
+    "unionized",  # Collaborative filtering algorithms
+    "content",  # Content-based filtering algorithms
     # Legacy aliases (backward compatibility)
-    'UF_Engine',
-    'CF_Engine',
+    "UF_Engine",
+    "CF_Engine",
 ]
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
 
+
 def list_deep_learning_models():
     """List all available deep learning models."""
     models = []
     if DCN is not None:
-        models.append('DCN')
+        models.append("DCN")
     if DeepFM is not None:
-        models.append('DeepFM')
+        models.append("DeepFM")
     if GNNRec is not None:
-        models.append('GNNRec')
+        models.append("GNNRec")
     if MIND is not None:
-        models.append('MIND')
+        models.append("MIND")
     if NASRec is not None:
-        models.append('NASRec')
+        models.append("NASRec")
     if SASRec is not None:
-        models.append('SASRec')
+        models.append("SASRec")
     return models
+
 
 def get_engine_info():
     """Get information about available engines."""
     return {
-        'deep_learning': list_deep_learning_models(),
-        'unionized_filter': 'engines.unionized',
-        'content_filter': 'engines.content',
+        "deep_learning": list_deep_learning_models(),
+        "unionized_filter": "engines.unionized",
+        "content_filter": "engines.content",
     }

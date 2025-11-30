@@ -1,4 +1,7 @@
-from common_import import *
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import torch
 
 
 def draw_graph(adj_matrix, top_nodes, recommended_nodes=None):
@@ -18,19 +21,28 @@ def draw_graph(adj_matrix, top_nodes, recommended_nodes=None):
     node_colors = []
     for node in G.nodes():
         if recommended_nodes is not None and node in recommended_nodes:
-            node_colors.append('red')
+            node_colors.append("red")
         else:
-            node_colors.append('skyblue')
+            node_colors.append("skyblue")
 
-    nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=500, alpha=0.8)
+    nx.draw_networkx_nodes(
+        G,
+        pos,
+        node_color=node_colors,
+        node_size=500,
+        alpha=0.8)
     nx.draw_networkx_edges(G, pos, width=1.0, alpha=0.5)
     nx.draw_networkx_labels(G, pos, font_size=12)
 
     if top_nodes is not None:
-        top_node_color = 'green'
-        nx.draw_networkx_nodes(G, pos, nodelist=top_nodes, node_color=top_node_color, node_size=500, node_shape='s')
+        top_node_color = "green"
+        nx.draw_networkx_nodes(
+            G,
+            pos,
+            nodelist=top_nodes,
+            node_color=top_node_color,
+            node_size=500,
+            node_shape="s")
 
     plt.title("Recommended Nodes Highlighted in Blue and Top Nodes in Red")
     plt.show()
-
-

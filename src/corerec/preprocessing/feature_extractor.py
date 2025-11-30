@@ -2,12 +2,13 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 import logging
 
+
 class FeatureExtractor:
     """
     A class for extracting features from datasets, particularly text data.
     """
 
-    def __init__(self, max_features=1000, stop_words='english'):
+    def __init__(self, max_features=1000, stop_words="english"):
         """
         Initializes the FeatureExtractor with specified parameters.
 
@@ -17,8 +18,12 @@ class FeatureExtractor:
         """
         self.max_features = max_features
         self.stop_words = stop_words
-        self.vectorizer = TfidfVectorizer(max_features=self.max_features, stop_words=self.stop_words)
-        logging.info(f"FeatureExtractor initialized with max_features={self.max_features} and stop_words={self.stop_words}.")
+        self.vectorizer = TfidfVectorizer(
+            max_features=self.max_features, stop_words=self.stop_words
+        )
+        logging.info(
+            f"FeatureExtractor initialized with max_features={self.max_features} and stop_words={self.stop_words}."
+        )
 
     def extract_tfidf(self, df: pd.DataFrame, text_column: str) -> (pd.DataFrame, TfidfVectorizer):
         """
@@ -37,11 +42,11 @@ class FeatureExtractor:
             raise ValueError(f"Column '{text_column}' not found in DataFrame.")
 
         logging.info(f"Extracting TF-IDF features from column: {text_column}")
-        tfidf_matrix = self.vectorizer.fit_transform(df[text_column].fillna(''))
+        tfidf_matrix = self.vectorizer.fit_transform(df[text_column].fillna(""))
         feature_names = self.vectorizer.get_feature_names_out()
         tfidf_df = pd.DataFrame(tfidf_matrix.toarray(), columns=feature_names, index=df.index)
         logging.info(f"Extracted {len(feature_names)} TF-IDF features.")
-        
+
         return tfidf_df, self.vectorizer
 
     def extract_custom_features(self, df: pd.DataFrame, custom_func) -> pd.DataFrame:
@@ -58,5 +63,5 @@ class FeatureExtractor:
         logging.info("Applying custom feature extraction function.")
         custom_features = custom_func(df)
         logging.info(f"Extracted custom features with shape: {custom_features.shape}")
-        
+
         return custom_features

@@ -102,9 +102,7 @@ class Linear(Module):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.weight = Parameter(
-            torch.empty((out_features, in_features), **factory_kwargs)
-        )
+        self.weight = Parameter(torch.empty((out_features, in_features), **factory_kwargs))
         if bias:
             self.bias = Parameter(torch.empty(out_features, **factory_kwargs))
         else:
@@ -142,9 +140,7 @@ class NonDynamicallyQuantizableLinear(Linear):
         device=None,
         dtype=None,
     ) -> None:
-        super().__init__(
-            in_features, out_features, bias=bias, device=device, dtype=dtype
-        )
+        super().__init__(in_features, out_features, bias=bias, device=device, dtype=dtype)
 
 
 class Bilinear(Module):
@@ -264,9 +260,7 @@ class LazyLinear(LazyModuleMixin, Linear):
     weight: UninitializedParameter
     bias: UninitializedParameter  # type: ignore[assignment]
 
-    def __init__(
-        self, out_features: int, bias: bool = True, device=None, dtype=None
-    ) -> None:
+    def __init__(self, out_features: int, bias: bool = True, device=None, dtype=None) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
         # bias is hardcoded to False to avoid creating tensor
         # that will soon be overwritten.

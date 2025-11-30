@@ -5,10 +5,11 @@ Frontend configurations and template management for IMShow.
 from typing import Dict, Any
 from pathlib import Path
 
+
 def available_frontends() -> Dict[str, Dict[str, Any]]:
     """
     Get available frontend configurations.
-    
+
     Returns:
         Dictionary of frontend configurations
     """
@@ -22,11 +23,11 @@ def available_frontends() -> Dict[str, Dict[str, Any]]:
             "required_fields": ["id", "title", "artist"],
             "color_scheme": {
                 "primary": "#1DB954",
-                "background": "#121212", 
+                "background": "#121212",
                 "text": "#FFFFFF",
-                "secondary": "#535353"
+                "secondary": "#535353",
             },
-            "template_path": "templates/spotify"
+            "template_path": "templates/spotify",
         },
         "youtube": {
             "name": "YouTube Videos",
@@ -39,9 +40,9 @@ def available_frontends() -> Dict[str, Dict[str, Any]]:
                 "primary": "#FF0000",
                 "background": "#FFFFFF",
                 "text": "#0F0F0F",
-                "secondary": "#606060"
+                "secondary": "#606060",
             },
-            "template_path": "templates/youtube"
+            "template_path": "templates/youtube",
         },
         "netflix": {
             "name": "Netflix Streaming",
@@ -54,40 +55,44 @@ def available_frontends() -> Dict[str, Dict[str, Any]]:
                 "primary": "#E50914",
                 "background": "#141414",
                 "text": "#FFFFFF",
-                "secondary": "#564D4D"
+                "secondary": "#564D4D",
             },
-            "template_path": "templates/netflix"
-        }
+            "template_path": "templates/netflix",
+        },
     }
+
 
 def get_frontend_info(frontend: str) -> Dict[str, Any]:
     """
     Get information about a specific frontend.
-    
+
     Args:
         frontend: Frontend name
-        
+
     Returns:
         Frontend configuration dictionary
     """
     frontends = available_frontends()
     if frontend not in frontends:
-        raise ValueError(f"Frontend '{frontend}' not available. Choose from: {list(frontends.keys())}")
-    
+        raise ValueError(
+            f"Frontend '{frontend}' not available. Choose from: {list(frontends.keys())}"
+        )
+
     return frontends[frontend]
+
 
 def get_frontend_template(frontend: str) -> str:
     """
     Get the HTML template for a frontend.
-    
+
     Args:
         frontend: Frontend name
-        
+
     Returns:
         HTML template string
     """
     frontend_info = get_frontend_info(frontend)
-    
+
     # Generate template based on frontend type
     if frontend == "spotify":
         return _generate_spotify_template()
@@ -97,6 +102,7 @@ def get_frontend_template(frontend: str) -> str:
         return _generate_netflix_template()
     else:
         return _generate_generic_template(frontend_info)
+
 
 def _generate_spotify_template() -> str:
     """Generate Spotify-style template."""
@@ -294,6 +300,7 @@ def _generate_spotify_template() -> str:
 </body>
 </html>
     """
+
 
 def _generate_youtube_template() -> str:
     """Generate YouTube-style template."""
@@ -530,6 +537,7 @@ def _generate_youtube_template() -> str:
 </body>
 </html>
     """
+
 
 def _generate_netflix_template() -> str:
     """Generate Netflix-style template."""
@@ -770,6 +778,7 @@ def _generate_netflix_template() -> str:
 </html>
     """
 
+
 def _generate_generic_template(frontend_info: Dict[str, Any]) -> str:
     """Generate a generic template for unknown frontends."""
     return """
@@ -914,4 +923,4 @@ def _generate_generic_template(frontend_info: Dict[str, Any]) -> str:
     </script>
 </body>
 </html>
-    """ 
+    """

@@ -131,61 +131,61 @@ except ImportError:
 
 __all__ = [
     # Popular algorithms (direct access)
-    'FastRecommender',
-    'FastRec',
-    'SAR',
-    'RBM',
-    'RLRMC',
-    'GeoMLC',
-    'SLI',
-    'SUM',
-    
+    "FastRecommender",
+    "FastRec",
+    "SAR",
+    "RBM",
+    "RLRMC",
+    "GeoMLC",
+    "SLI",
+    "SUM",
     # Organized sub-modules
-    'mf',              # Matrix Factorization (SVD, ALS, NMF, etc.)
-    'nn',              # Neural Networks (NCF, DeepFM, etc.)
-    'graph',           # Graph-based (LightGCN, GNN, etc.)
-    'attention',       # Attention mechanisms (SASRec, etc.)
-    'bayesian',        # Bayesian methods (BPR, etc.)
-    'sequential',      # Sequential models (LSTM, GRU, etc.)
-    'vae',             # Variational encoders
-    'regularization',  # Regularization methods
-    
+    "mf",  # Matrix Factorization (SVD, ALS, NMF, etc.)
+    "nn",  # Neural Networks (NCF, DeepFM, etc.)
+    "graph",  # Graph-based (LightGCN, GNN, etc.)
+    "attention",  # Attention mechanisms (SASRec, etc.)
+    "bayesian",  # Bayesian methods (BPR, etc.)
+    "sequential",  # Sequential models (LSTM, GRU, etc.)
+    "vae",  # Variational encoders
+    "regularization",  # Regularization methods
     # Base classes
-    'UnionizedBaseRecommender',
-    'CornacBPR',
+    "UnionizedBaseRecommender",
+    "CornacBPR",
 ]
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
 
+
 def list_algorithms():
     """List all available algorithms in this engine."""
     algorithms = []
-    
+
     # Direct access algorithms
     if FastRecommender is not None:
-        algorithms.append('FastRecommender')
+        algorithms.append("FastRecommender")
     if SAR is not None:
-        algorithms.append('SAR')
+        algorithms.append("SAR")
     if RBM is not None:
-        algorithms.append('RBM')
+        algorithms.append("RBM")
     if RLRMC is not None:
-        algorithms.append('RLRMC')
+        algorithms.append("RLRMC")
     if GeoMLC is not None:
-        algorithms.append('GeoMLC')
-    
+        algorithms.append("GeoMLC")
+
     return algorithms
+
 
 def list_categories():
     """List all algorithm categories."""
     return [
-        'mf (Matrix Factorization)',
-        'nn (Neural Networks)',
-        'graph (Graph-Based)',
-        'attention (Attention Mechanisms)',
-        'bayesian (Bayesian Methods)',
-        'sequential (Sequential Models)',
-        'vae (Variational Encoders)',
-        'regularization (Regularization Methods)',
+        "mf (Matrix Factorization)",
+        "nn (Neural Networks)",
+        "graph (Graph-Based)",
+        "attention (Attention Mechanisms)",
+        "bayesian (Bayesian Methods)",
+        "sequential (Sequential Models)",
+        "vae (Variational Encoders)",
+        "regularization (Regularization Methods)",
     ]

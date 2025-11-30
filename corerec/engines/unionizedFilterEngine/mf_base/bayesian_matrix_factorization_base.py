@@ -24,21 +24,21 @@ Expected release: v0.6.0 or later
 class BayesianMatrixFactorizationBase:
     """
     Bayesian Matrix Factorization - NOT YET IMPLEMENTED
-    
+
     This class is a placeholder for future implementation.
     Attempting to use it will raise NotImplementedError with guidance
     on alternative algorithms to use.
-    
+
     Planned Features (when implemented):
         - Probabilistic matrix factorization with Bayesian inference
         - Automatic uncertainty estimation
         - Hyperparameter learning via MAP or full Bayesian inference
         - Support for missing data and implicit feedback
-    
+
     Raises:
         NotImplementedError: Always raised when attempting to instantiate
     """
-    
+
     def __init__(self, *args, **kwargs):
         raise NotImplementedError(
             "\n\nBayesianMatrixFactorization is not yet implemented.\n\n"

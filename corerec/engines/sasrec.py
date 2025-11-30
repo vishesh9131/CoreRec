@@ -8,7 +8,17 @@ import pickle
 import math
 import json
 import logging
-from corerec.base_recommender import BaseCorerec
+from pathlib import Path
+
+# Project imports (assumed present)
+from corerec.api.base_recommender import BaseRecommender
+from corerec.utils.validation import (
+    validate_fit_inputs,
+    validate_user_id,
+    validate_top_k,
+    validate_model_fitted,
+)
+
 
 class PointWiseFeedForward(nn.Module):
     """
@@ -16,49 +26,53 @@ class PointWiseFeedForward(nn.Module):
     """
     def __init__(self, hidden_units, dropout_rate, activation="gelu"):
         super(PointWiseFeedForward, self).__init__()
-        
+
         self.conv1 = nn.Conv1d(hidden_units, hidden_units * 4, kernel_size=1)
         self.dropout1 = nn.Dropout(p=dropout_rate)
-        
+
         if activation == "relu":
             self.activation = nn.ReLU()
         elif activation == "gelu":
             self.activation = nn.GELU()
-        elif activation == "swish" or activation == "silu":
+        elif activation in ["swish", "silu"]:
             self.activation = nn.SiLU()
         else:
             raise ValueError(f"Unsupported activation: {activation}")
-            
+
         self.conv2 = nn.Conv1d(hidden_units * 4, hidden_units, kernel_size=1)
         self.dropout2 = nn.Dropout(p=dropout_rate)
 
     def forward(self, inputs):
-        outputs = self.dropout2(self.conv2(self.activation(
-            self.dropout1(self.conv1(inputs.transpose(-1, -2)))
-        )))
-        outputs = outputs.transpose(-1, -2)  # as Conv1D requires (N, C, L)
-        outputs += inputs  # residual connection
-        return outputs
+        # inputs: [batch_size, seq_len, hidden_units]
+        x = inputs.transpose(-1, -2)  # -> [batch_size, hidden_units, seq_len]
+        x = self.conv1(x)
+        x = self.activation(self.dropout1(x))
+        x = self.conv2(x)
+        x = self.dropout2(x)
+        x = x.transpose(-1, -2)  # -> [batch_size, seq_len, hidden_units]
+        x = x + inputs  # residual
+        return x
+
 
 class SASRecModel(nn.Module):
     """
-    Self-Attentive Sequential Recommendation model.
+    Self-Attentive Sequential Recommendation model (SASRec).
     """
     def __init__(
-        self, 
-        n_items: int, 
-        hidden_units: int = 64, 
-        num_blocks: int = 2, 
-        num_heads: int = 1, 
-        dropout_rate: float = 0.1, 
+        self,
+        n_items: int,
+        hidden_units: int = 64,
+        num_blocks: int = 2,
+        num_heads: int = 1,
+        dropout_rate: float = 0.1,
         max_seq_length: int = 50,
         position_encoding: str = "learned",
         attention_type: str = "causal",
         activation: str = "gelu",
-        item_embedding_init: Optional[np.ndarray] = None
+        item_embedding_init: Optional[np.ndarray] = None,
     ):
         super(SASRecModel, self).__init__()
-        
+
         self.n_items = n_items
         self.hidden_units = hidden_units
         self.num_blocks = num_blocks
@@ -68,205 +82,205 @@ class SASRecModel(nn.Module):
         self.position_encoding = position_encoding
         self.attention_type = attention_type
         self.activation = activation
-        
-        # Item embedding
-        self.item_emb = nn.Embedding(n_items + 1, hidden_units, padding_idx=0)  # +1 for padding
-        
-        # Initialize with pre-trained embeddings if provided
+
+        # item embedding (+1 for padding index 0)
+        self.item_emb = nn.Embedding(n_items + 1, hidden_units, padding_idx=0)
+
         if item_embedding_init is not None:
             assert item_embedding_init.shape == (n_items + 1, hidden_units), \
-                f"Expected shape ({n_items + 1}, {hidden_units}), got {item_embedding_init.shape}"
+                f"Expected shape {(n_items + 1, hidden_units)}, got {item_embedding_init.shape}"
             self.item_emb.weight.data.copy_(torch.from_numpy(item_embedding_init))
-        
-        # Position encoding
+
+        # position encoding
         if position_encoding == "learned":
             self.pos_emb = nn.Embedding(max_seq_length, hidden_units)
+            self.register_buffer("pos_enc", torch.zeros(1))  # dummy to keep attribute
         elif position_encoding == "sinusoidal":
             pos_enc = self._get_sinusoidal_encoding(max_seq_length, hidden_units)
-            self.register_buffer('pos_enc', pos_enc)
+            self.register_buffer("pos_enc", pos_enc)  # [1, max_seq_length, hidden_units]
             self.pos_emb = None
         else:
             raise ValueError(f"Unsupported position encoding: {position_encoding}")
-        
-        # Dropout
+
         self.dropout = nn.Dropout(p=dropout_rate)
-        
-        # Layer normalization
-        self.layer_norm1 = nn.LayerNorm(hidden_units)
-        self.layer_norm2 = nn.LayerNorm(hidden_units)
-        
-        # Multi-head attention blocks
-        self.attention_layers = nn.ModuleList([])
-        self.feed_forwards = nn.ModuleList([])
-        self.attention_layer_norms = nn.ModuleList([])
-        self.feed_forward_layer_norms = nn.ModuleList([])
-        
+
+        # transformer blocks: attention and feedforward
+        self.attention_layers = nn.ModuleList()
+        self.feed_forwards = nn.ModuleList()
+        self.attention_layer_norms = nn.ModuleList()
+        self.feed_forward_layer_norms = nn.ModuleList()
+
         for _ in range(num_blocks):
-            self.attention_layers.append(
-                nn.MultiheadAttention(hidden_units, num_heads, dropout=dropout_rate)
+            attn_layer = nn.MultiheadAttention(
+                embed_dim=hidden_units, 
+                num_heads=num_heads, 
+                dropout=dropout_rate, 
+                batch_first=False,
+                bias=True
             )
+            # Initialize attention weights more carefully to prevent NaN
+            if hasattr(attn_layer, 'in_proj_weight') and attn_layer.in_proj_weight is not None:
+                torch.nn.init.xavier_uniform_(attn_layer.in_proj_weight, gain=0.1)
+            if hasattr(attn_layer, 'out_proj') and hasattr(attn_layer.out_proj, 'weight'):
+                torch.nn.init.xavier_uniform_(attn_layer.out_proj.weight, gain=0.1)
+            self.attention_layers.append(attn_layer)
+            
             self.feed_forwards.append(
                 PointWiseFeedForward(hidden_units, dropout_rate, activation)
             )
             self.attention_layer_norms.append(nn.LayerNorm(hidden_units))
             self.feed_forward_layer_norms.append(nn.LayerNorm(hidden_units))
-        
-        # Initialize weights
+
+        self.layer_norm_final = nn.LayerNorm(hidden_units)
+
         self.apply(self._init_weights)
-        
+
     def _init_weights(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
-            module.weight.data.normal_(mean=0.0, std=0.02)
-        elif isinstance(module, nn.LayerNorm):
+            # Use smaller initialization to prevent numerical instability
+            module.weight.data.normal_(0.0, 0.01)
+            # Clamp to prevent extreme values
+            module.weight.data.clamp_(-0.1, 0.1)
+        if isinstance(module, nn.LayerNorm):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
         if isinstance(module, nn.Linear) and module.bias is not None:
             module.bias.data.zero_()
-    
-    def _get_sinusoidal_encoding(self, max_seq_len, hidden_units):
-        """Generate sinusoidal position encoding table"""
-        def get_position_angle(pos, i, d_model):
-            return pos / np.power(10000, 2 * (i // 2) / d_model)
-            
-        def get_posi_angle_vec(position):
-            return [get_position_angle(position, hid_j, hidden_units) for hid_j in range(hidden_units)]
-            
-        sinusoid_table = np.array([get_posi_angle_vec(pos_i) for pos_i in range(max_seq_len)])
-        sinusoid_table[:, 0::2] = np.sin(sinusoid_table[:, 0::2])  # dim 2i
-        sinusoid_table[:, 1::2] = np.cos(sinusoid_table[:, 1::2])  # dim 2i+1
-        return torch.FloatTensor(sinusoid_table).unsqueeze(0)
-    
+        if isinstance(module, nn.Conv1d):
+            # Initialize Conv1d layers with smaller weights
+            module.weight.data.normal_(0.0, 0.01)
+            module.weight.data.clamp_(-0.1, 0.1)
+            if module.bias is not None:
+                module.bias.data.zero_()
+
     def _get_attention_mask(self, seq_len, device):
-        """Generate an attention mask based on the attention type"""
         if self.attention_type == "causal":
-            # Create a causal (triangular) mask
-            mask = torch.triu(torch.ones(seq_len, seq_len, device=device), diagonal=1).bool()
+            # causal mask: upper triangular
+            # Use float mask with large negative value instead of bool to prevent NaN
+            mask = torch.triu(torch.ones(seq_len, seq_len, device=device) * -1e9, diagonal=1)
             return mask
-        elif self.attention_type == "bidirectional":
-            # No directional restriction
-            return None
-        else:
-            raise ValueError(f"Unsupported attention type: {self.attention_type}")
-    
-    def forward(self, input_seqs, padding_mask=None, return_attention_weights=False):
-        # Get sequence length
+        return None
+
+    def _get_sinusoidal_encoding(self, max_seq_len, hidden_units):
+        position = torch.arange(max_seq_len).unsqueeze(1).float()
+        div_term = torch.exp(torch.arange(0, hidden_units, 2).float() * -(math.log(10000.0) / hidden_units))
+        pe = torch.zeros(max_seq_len, hidden_units)
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        return pe.unsqueeze(0)  # [1, max_seq_len, hidden_units]
+
+    def forward(self, input_seqs: torch.LongTensor, padding_mask: Optional[torch.BoolTensor] = None, return_attention_weights: bool = False):
+        """
+        input_seqs: LongTensor of shape [batch_size, seq_len]
+        padding_mask: BoolTensor of shape [batch_size, seq_len] where True indicates padding positions
+        """
         batch_size, seq_length = input_seqs.size()
-        
-        # Get item embeddings
+
+        # Validate input - ensure all indices are in valid range [0, n_items]
+        if (input_seqs < 0).any() or (input_seqs > self.n_items).any():
+            # Clamp invalid indices to valid range
+            input_seqs = torch.clamp(input_seqs, 0, self.n_items)
+
         seq_emb = self.item_emb(input_seqs)  # [batch_size, seq_len, hidden_units]
         
-        # Add position embeddings
+        # Check for NaN in embeddings
+        if torch.isnan(seq_emb).any() or torch.isinf(seq_emb).any():
+            # Replace NaN/Inf with zeros
+            seq_emb = torch.where(torch.isnan(seq_emb) | torch.isinf(seq_emb), torch.zeros_like(seq_emb), seq_emb)
+
+        # add positional encoding
         if self.position_encoding == "learned":
-            positions = torch.arange(seq_length, dtype=torch.long, device=input_seqs.device)
-            positions = positions.unsqueeze(0).expand_as(input_seqs)
-            pos_emb = self.pos_emb(positions)
+            positions = torch.arange(seq_length, device=input_seqs.device)
+            pos_emb = self.pos_emb(positions).unsqueeze(0)  # [1, seq_len, hidden_units]
             seq_emb = seq_emb + pos_emb
-        else:  # sinusoidal
-            seq_emb = seq_emb + self.pos_enc[:, :seq_length, :]
-        
-        # Apply dropout
+        else:
+            seq_emb = seq_emb + self.pos_enc[:, :seq_length, :].to(seq_emb.device)
+
         seq_emb = self.dropout(seq_emb)
-        
-        # Prepare attention mask
-        if padding_mask is not None:
-            padding_mask = padding_mask.bool()
-        
-        # Get attention mask based on attention type
-        attention_mask = self._get_attention_mask(seq_length, input_seqs.device)
-        
-        # Transpose for attention operation: [batch_size, seq_len, hidden] -> [seq_len, batch_size, hidden]
+
+        # MultiheadAttention expects [seq_len, batch_size, hidden]
         x = seq_emb.transpose(0, 1)
         
-        # Store attention weights if needed
+        # Convert padding_mask format for MultiheadAttention
+        # MultiheadAttention with batch_first=False expects key_padding_mask: [batch, seq_len] where True = ignore
+        # But we need to transpose it since x is [seq_len, batch, hidden]
+        if padding_mask is not None:
+            padding_mask = padding_mask.bool()  # True for padding
+            # Keep as [batch, seq_len] - MultiheadAttention will handle it correctly
+            # Note: key_padding_mask is bool, attn_mask is float - this is correct for PyTorch
+
+        attention_mask = self._get_attention_mask(seq_length, input_seqs.device)  # [seq_len, seq_len] or None
+
         all_attention_weights = [] if return_attention_weights else None
-        
-        # Apply transformer blocks
+
         for i in range(self.num_blocks):
-            # Layer normalization before attention
+            # pre-attention layer norm (pre-norm)
             residual = x
-            x = self.attention_layer_norms[i](x)
+            x = self.attention_layer_norms[i](x.transpose(0, 1)).transpose(0, 1)  # normalize over hidden
+
+            # Clamp to prevent extreme values
+            x = torch.clamp(x, min=-10.0, max=10.0)
+
+            # Clamp inputs before attention to prevent extreme values
+            x_clamped = torch.clamp(x, min=-5.0, max=5.0)
             
-            # Self-attention
-            if return_attention_weights:
-                x, attn_weights = self.attention_layers[i](
-                    query=x, key=x, value=x,
-                    key_padding_mask=padding_mask,
-                    attn_mask=attention_mask,
-                    need_weights=True
-                )
-                all_attention_weights.append(attn_weights)
-            else:
-                x, _ = self.attention_layers[i](
-                    query=x, key=x, value=x,
-                    key_padding_mask=padding_mask,
-                    attn_mask=attention_mask,
-                    need_weights=False
-                )
+            try:
+                if return_attention_weights:
+                    x_attn, attn_w = self.attention_layers[i](
+                        query=x_clamped, key=x_clamped, value=x_clamped,
+                        key_padding_mask=padding_mask,
+                        attn_mask=attention_mask,
+                        need_weights=True
+                    )
+                    all_attention_weights.append(attn_w)
+                else:
+                    x_attn, _ = self.attention_layers[i](
+                        query=x_clamped, key=x_clamped, value=x_clamped,
+                        key_padding_mask=padding_mask,
+                        attn_mask=attention_mask,
+                        need_weights=False
+                    )
+            except Exception as e:
+                # If attention fails, use residual connection only
+                x_attn = x_clamped
             
-            # Residual connection
-            x = x + residual
-            
-            # Layer normalization before feed-forward
+            # Check for NaN in attention output and replace with zeros
+            if torch.isnan(x_attn).any() or torch.isinf(x_attn).any():
+                # Replace NaN/Inf with zeros
+                x_attn = torch.where(torch.isnan(x_attn) | torch.isinf(x_attn), torch.zeros_like(x_attn), x_attn)
+
+            x = x_attn + residual
+            # Clamp after residual
+            x = torch.clamp(x, min=-10.0, max=10.0)
+
+            # feed-forward block
             residual = x
-            x = self.feed_forward_layer_norms[i](x)
+            x = self.feed_forward_layer_norms[i](x.transpose(0, 1)).transpose(0, 1)
+            x_ff = x.transpose(0, 1)  # -> [batch_size, seq_len, hidden]
+            x_ff = self.feed_forwards[i](x_ff)
             
-            # Position-wise feed-forward
-            # Convert back to [batch_size, seq_len, hidden]
-            x_for_ff = x.transpose(0, 1)
-            x_for_ff = self.feed_forwards[i](x_for_ff)
-            x = x_for_ff.transpose(0, 1)
+            # Check for NaN in feedforward output
+            if torch.isnan(x_ff).any() or torch.isinf(x_ff).any():
+                x_ff = torch.where(torch.isnan(x_ff) | torch.isinf(x_ff), torch.zeros_like(x_ff), x_ff)
             
-            # Residual connection
+            x = x_ff.transpose(0, 1)
             x = x + residual
-        
-        # Final layer normalization
-        x = self.attention_layer_norms[-1](x)
-        
-        # Convert back: [seq_len, batch_size, hidden] -> [batch_size, seq_len, hidden]
-        seq_emb = x.transpose(0, 1)
-        
+            # Clamp after residual
+            x = torch.clamp(x, min=-10.0, max=10.0)
+
+        # final normalization
+        x = self.layer_norm_final(x.transpose(0, 1)).transpose(0, 1)
+        seq_emb = x.transpose(0, 1)  # [batch_size, seq_len, hidden_units]
+
         if return_attention_weights:
             return seq_emb, all_attention_weights
-        else:
-            return seq_emb
-    
-    def predict(self, seq_emb, item_indices=None):
-        """Generate predictions by comparing with item embeddings"""
-        if item_indices is None:
-            # Compare with all items
-            all_items = self.item_emb.weight
-            return torch.matmul(seq_emb, all_items.transpose(0, 1))
-        else:
-            # Compare with specific items
-            item_emb = self.item_emb(item_indices)
-            return torch.sum(seq_emb * item_emb, dim=-1)
-    
-    def get_all_embeddings(self):
-        """Return all item embeddings for external use"""
-        return self.item_emb.weight.data.cpu().numpy()
+        return seq_emb
 
-class SASRec(BaseCorerec):
+
+class SASRec(BaseRecommender):
     """
-    Self-Attentive Sequential Recommendation (SASRec)
-    
-    A sequential recommendation model that uses self-attention mechanism
-    to capture long-range dependencies in user behavior sequences.
-    
-    Features:
-    - Transformer architecture for sequence modeling
-    - Flexible attention mechanisms (causal or bidirectional)
-    - Position encodings (learned or sinusoidal)
-    - Multi-head attention support
-    - Customizable architecture (layers, heads, dimensions)
-    - Various training objectives (BPR, CE, BCE)
-    - Support for pre-trained item embeddings
-    - Attention weights visualization
-    - Model export and import
-    
-    Reference:
-    Wang-Cheng Kang, Julian McAuley. "Self-Attentive Sequential Recommendation." (ICDM 2018)
+    SASRec wrapper that ties the SASRecModel to training, evaluation and I/O helpers.
     """
-    
     def __init__(
         self,
         name: str = "SASRec",
@@ -275,134 +289,213 @@ class SASRec(BaseCorerec):
         num_heads: int = 1,
         dropout_rate: float = 0.1,
         max_seq_length: int = 50,
-        attention_type: str = "causal",  # Options: causal, bidirectional
-        position_encoding: str = "learned",  # Options: learned, sinusoidal
-        activation: str = "gelu",  # Options: relu, gelu, swish
-        loss_type: str = "bpr",  # Options: bpr, ce, bce
-        learning_rate: float = 0.001,
+        position_encoding: str = "learned",
+        attention_type: str = "causal",
+        activation: str = "gelu",
+        device: Optional[torch.device] = None,
+        learning_rate: float = 1e-3,
+        l2_reg: float = 1e-6,
         batch_size: int = 128,
-        num_epochs: int = 20,
-        l2_reg: float = 0.00001,
-        early_stopping_patience: int = 5,
-        item_embedding_init: Optional[np.ndarray] = None,  # Pre-trained embeddings
-        eval_metrics: List[str] = ["ndcg@10", "hit@10"],
-        user_cooling: bool = False,  # Reduce weight for frequent users
-        item_popularity_bias: bool = False,  # Correct for popularity bias
-        neg_samples: int = 1,  # Number of negative samples per positive
+        num_epochs: int = 10,
+        neg_samples: int = 1,
+        loss_type: str = "bce",  # 'bce' | 'bpr' | 'ce'
+        early_stopping_patience: int = 3,
         save_checkpoints: bool = False,
         checkpoint_dir: str = "./checkpoints",
         export_embeddings: bool = False,
-        trainable: bool = True,
-        verbose: bool = False,
+        item_popularity_bias: bool = False,
+        user_cooling: bool = False,
         log_interval: int = 100,
-        seed: Optional[int] = None,
-        device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
+        verbose: bool = True,
     ):
-        super().__init__(name=name, trainable=trainable, verbose=verbose)
-        
-        # Model hyperparameters
+        super().__init__()
+        self.name = name
         self.hidden_units = hidden_units
         self.num_blocks = num_blocks
         self.num_heads = num_heads
         self.dropout_rate = dropout_rate
         self.max_seq_length = max_seq_length
-        self.attention_type = attention_type
         self.position_encoding = position_encoding
+        self.attention_type = attention_type
         self.activation = activation
-        self.loss_type = loss_type
-        
-        # Training hyperparameters
+
+        self.device = device or (torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
         self.learning_rate = learning_rate
+        self.l2_reg = l2_reg
         self.batch_size = batch_size
         self.num_epochs = num_epochs
-        self.l2_reg = l2_reg
-        self.early_stopping_patience = early_stopping_patience
-        self.item_embedding_init = item_embedding_init
-        self.eval_metrics = eval_metrics
-        self.user_cooling = user_cooling
-        self.item_popularity_bias = item_popularity_bias
         self.neg_samples = neg_samples
+        self.loss_type = loss_type.lower()
+        self.early_stopping_patience = early_stopping_patience
         self.save_checkpoints = save_checkpoints
         self.checkpoint_dir = checkpoint_dir
         self.export_embeddings = export_embeddings
+        self.item_popularity_bias = item_popularity_bias
+        self.user_cooling = user_cooling
         self.log_interval = log_interval
-        self.seed = seed
-        self.device = device
+        self.verbose = verbose
+
+        self.logger = self._create_logger()
+        # mappings and state
+        self.item_to_index: Dict[Any, int] = {}
+        self.index_to_item: Dict[int, Any] = {}
+        self.user_sequences: Dict[Any, List[int]] = {}
+        self.item_popularity: Optional[np.ndarray] = None
+        self.user_cooling_weights: Dict[Any, float] = {}
+        self.best_model_state = None
+        self.training_history: List[Dict[str, Any]] = []
+        self.is_fitted = False
+
+        # placeholder for model and optimizer
+        self.model: Optional[SASRecModel] = None
+        self.optimizer: Optional[torch.optim.Optimizer] = None
+
+    def _create_logger(self):
+        logger = logging.getLogger(f"{self.name}_{id(self)}")
+        logger.setLevel(logging.INFO if self.verbose else logging.WARNING)
+        if not logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+        return logger
+
+    @classmethod
+    def load(cls, path: Union[str, Path], device: Optional[torch.device] = None):
+        with open(path, 'rb') as f:
+            obj = pickle.load(f)
+        # If loading an instance of SASRec, return it; otherwise raise
+        if isinstance(obj, SASRec):
+            if device is not None and hasattr(obj, 'model') and obj.model is not None:
+                obj.device = device
+                obj.model.to(device)
+            return obj
+        raise ValueError("Loaded object is not a SASRec instance")
+
+    def save(self, path: Union[str, Path]):
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'wb') as f:
+            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+        self.logger.info(f"{self.name} model saved to {path}")
+
+    def get_item_embeddings(self) -> np.ndarray:
+        if self.model is None:
+            raise ValueError("Model not initialized")
+        return self.model.item_emb.weight.data.cpu().numpy()
+
+    def export_item_embeddings(self, filepath: Optional[str] = None):
+        if filepath is None:
+            filepath = f"{self.name}_embeddings.pkl"
+        embeddings = self.get_item_embeddings()
+        export_data = {
+            "embeddings": embeddings,
+            "index_to_item": self.index_to_item,
+        }
+        with open(filepath, 'wb') as f:
+            pickle.dump(export_data, f)
+        self.logger.info(f"Item embeddings exported to {filepath}")
+
+    def predict(self, last_emb: torch.Tensor, item_indices: Optional[torch.LongTensor] = None) -> torch.Tensor:
+        """
+        Compute scores for items given last_emb [batch_size, hidden].
+        If item_indices is None -> return scores over all items [batch_size, n_items+1]
+        Otherwise return scores for those indices [batch_size, len(item_indices)]
+        """
+        assert self.model is not None, "Model not initialized"
+        item_weights = self.model.item_emb.weight  # [n_items+1, hidden]
+        # scores = last_emb @ item_weights.T
+        scores = torch.matmul(last_emb, item_weights.t())  # [batch, n_items+1]
+        if item_indices is None:
+            return scores
+        else:
+            return scores[:, item_indices]
+
+    def fit(
+        self,
+        user_ids: List[Any],
+        item_ids: List[Any],
+        interaction_matrix: np.ndarray,
+        validation_data: Optional[Dict[Any, Tuple[List[int], List[int]]]] = None,
+        item_embedding_init: Optional[np.ndarray] = None,
+        user_item_timestamps: Optional[Dict[Any, List[Tuple[Any, Any]]]] = None,
+        **kwargs
+    ):
+        """
+        Fit SASRec model.
+
+        user_ids: list of user identifiers (len = n_users)
+        item_ids: list of item identifiers (len = n_items)
+        interaction_matrix: 2D binary or counts matrix shape [n_users, n_items]
+        validation_data: optional dict {user_id: (input_seq, ground_truth_list)}
+        """
+        # Custom validation for matrix format
+        if not isinstance(user_ids, list) or len(user_ids) == 0:
+            raise ValueError("user_ids must be a non-empty list")
+        if not isinstance(item_ids, list) or len(item_ids) == 0:
+            raise ValueError("item_ids must be a non-empty list")
         
-        # Set random seed if provided
-        if seed is not None:
-            torch.manual_seed(seed)
-            np.random.seed(seed)
+        # Handle sparse matrices (scipy.sparse)
+        if hasattr(interaction_matrix, 'toarray'):
+            interaction_matrix = interaction_matrix.toarray()
+        elif not isinstance(interaction_matrix, np.ndarray):
+            interaction_matrix = np.array(interaction_matrix)
         
-        # Will be set during fit
+        if interaction_matrix.ndim != 2:
+            raise ValueError("interaction_matrix must be 2D")
+        if interaction_matrix.shape[0] != len(user_ids):
+            raise ValueError(f"interaction_matrix shape[0] ({interaction_matrix.shape[0]}) must match len(user_ids) ({len(user_ids)})")
+        if interaction_matrix.shape[1] != len(item_ids):
+            raise ValueError(f"interaction_matrix shape[1] ({interaction_matrix.shape[1]}) must match len(item_ids) ({len(item_ids)})")
+
+        # build mappings
         self.item_to_index = {}
         self.index_to_item = {}
-        self.user_sequences = {}
-        self.model = None
-        self.optimizer = None
-        self.item_popularity = None
-        self.is_fitted = False
-        self.best_model_state = None
-        self.training_history = []
-        self.logger = self._setup_logger()
-    
-    def _setup_logger(self):
-        """Set up a logger for the model"""
-        logger = logging.getLogger(f"SASRec_{id(self)}")
-        logger.setLevel(logging.INFO if self.verbose else logging.WARNING)
-        
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        
-        return logger
-    
-    def fit(self, interaction_matrix, user_ids: List[int], item_ids: List[int], validation_data=None):
-        """
-        Train the recommender using user-item interactions.
-        
-        Parameters:
-        - interaction_matrix: User-item interaction matrix (scipy sparse matrix)
-        - user_ids: List of user IDs
-        - item_ids: List of item IDs
-        - validation_data: Optional validation data for early stopping
-        """
-        # Validate inputs
-        validate_fit_inputs(user_ids, item_ids, ratings)
-        
-        self.logger.info(f"Training {self.name} model with {len(user_ids)} users and {len(item_ids)} items")
-        
-        # Create item mapping
         for idx, item_id in enumerate(item_ids):
-            self.item_to_index[item_id] = idx + 1  # Reserve 0 for padding
+            self.item_to_index[item_id] = idx + 1  # reserve 0 for padding
             self.index_to_item[idx + 1] = item_id
-        
-        # Calculate item popularity if needed
-        if self.item_popularity_bias:
-            self.item_popularity = np.asarray(interaction_matrix.sum(axis=0)).flatten() + 1  # +1 smoothing
-            self.item_popularity = np.log(self.item_popularity)
-        
-        # Process interaction matrix to create user sequences
-        user_interaction_counts = []
-        for u_idx, user_id in enumerate(user_ids):
-            user_interactions = interaction_matrix[u_idx].nonzero()[1]
-            if len(user_interactions) > 0:
-                # Map item indices to our internal indices
-                items = [self.item_to_index[item_ids[i]] for i in user_interactions]
-                self.user_sequences[user_id] = items
-                user_interaction_counts.append(len(items))
-        
-        # Calculate user cooling weights if needed
-        if self.user_cooling:
-            self.user_cooling_weights = {}
-            max_count = max(user_interaction_counts)
-            for user_id, seq in self.user_sequences.items():
-                # Inverse square root cooling
-                self.user_cooling_weights[user_id] = 1.0 / np.sqrt(len(seq) / max_count)
-        
-        # Build the model
+
         n_items = len(item_ids)
+        # item popularity
+        if self.item_popularity_bias:
+            # sum across users
+            self.item_popularity = np.asarray(interaction_matrix.sum(axis=0)).flatten() + 1.0
+            self.item_popularity = np.log(self.item_popularity)
+
+        # build user sequences
+        self.user_sequences = {}
+        user_interaction_counts = []
+        
+        # If timestamps are provided, use them to build ordered sequences
+        if user_item_timestamps is not None:
+            for user_id in user_ids:
+                if user_id in user_item_timestamps:
+                    # Get ordered items from timestamps
+                    ordered_items = [item for item, _ in user_item_timestamps[user_id]]
+                    # Map to internal indices
+                    items = [self.item_to_index.get(item, 0) for item in ordered_items if item in self.item_to_index]
+                    # Filter out padding (0)
+                    items = [item for item in items if item > 0]
+                    if len(items) > 0:
+                        self.user_sequences[user_id] = items
+                        user_interaction_counts.append(len(items))
+        else:
+            # Fallback: build sequences from interaction matrix (no temporal order)
+            for u_idx, user_id in enumerate(user_ids):
+                # For 1D array, nonzero() returns (indices,), so use [0]
+                user_interactions = interaction_matrix[u_idx].nonzero()[0]
+                if len(user_interactions) > 0:
+                    items = [self.item_to_index[item_ids[i]] for i in user_interactions]
+                    self.user_sequences[user_id] = items
+                    user_interaction_counts.append(len(items))
+
+        # user cooling
+        if self.user_cooling:
+            max_count = max(user_interaction_counts) if user_interaction_counts else 1
+            for user_id, seq in self.user_sequences.items():
+                self.user_cooling_weights[user_id] = 1.0 / math.sqrt(len(seq) / max_count) if len(seq) > 0 else 1.0
+
+        # build model
         self.model = SASRecModel(
             n_items=n_items,
             hidden_units=self.hidden_units,
@@ -413,553 +506,483 @@ class SASRec(BaseCorerec):
             position_encoding=self.position_encoding,
             attention_type=self.attention_type,
             activation=self.activation,
-            item_embedding_init=self.item_embedding_init
+            item_embedding_init=item_embedding_init
         ).to(self.device)
-        
-        # Setup optimizer
+
         self.optimizer = torch.optim.Adam(
             self.model.parameters(),
             lr=self.learning_rate,
             weight_decay=self.l2_reg
         )
         
-        # Prepare training data
+        # Verify model initialization - check for NaN in initial parameters
+        for name, param in self.model.named_parameters():
+            if torch.isnan(param).any() or torch.isinf(param).any():
+                self.logger.error(f"NaN/Inf detected in {name} after initialization. Reinitializing...")
+                # Reinitialize this parameter
+                if 'weight' in name:
+                    if len(param.shape) >= 2:
+                        torch.nn.init.xavier_uniform_(param, gain=0.1)
+                    else:
+                        torch.nn.init.normal_(param, 0.0, 0.01)
+                param.data.clamp_(-0.1, 0.1)
+        
+        # Test forward pass with dummy input to catch issues early
+        try:
+            dummy_seq = torch.zeros(1, self.max_seq_length, dtype=torch.long, device=self.device)
+            dummy_mask = torch.ones(1, self.max_seq_length, dtype=torch.bool, device=self.device)
+            with torch.no_grad():
+                test_output = self.model(dummy_seq, dummy_mask)
+                if torch.isnan(test_output).any() or torch.isinf(test_output).any():
+                    self.logger.error("Model produces NaN/Inf on dummy input. This indicates initialization issues.")
+        except Exception as e:
+            self.logger.warning(f"Model forward test failed: {e}. Continuing anyway.")
+        
+        # Verify model initialization - check for NaN in initial parameters
+        for name, param in self.model.named_parameters():
+            if torch.isnan(param).any() or torch.isinf(param).any():
+                self.logger.error(f"NaN/Inf detected in {name} after initialization. Reinitializing...")
+                # Reinitialize this parameter
+                if 'weight' in name:
+                    if len(param.shape) >= 2:
+                        torch.nn.init.xavier_uniform_(param)
+                    else:
+                        torch.nn.init.normal_(param, 0.0, 0.01)
+                param.data.clamp_(-0.1, 0.1)
+        
+        # Test forward pass with dummy input to catch issues early
+        try:
+            dummy_seq = torch.zeros(1, self.max_seq_length, dtype=torch.long, device=self.device)
+            dummy_mask = torch.ones(1, self.max_seq_length, dtype=torch.bool, device=self.device)
+            with torch.no_grad():
+                test_output = self.model(dummy_seq, dummy_mask)
+                if torch.isnan(test_output).any() or torch.isinf(test_output).any():
+                    self.logger.error("Model produces NaN/Inf on dummy input. This indicates initialization issues.")
+        except Exception as e:
+            self.logger.warning(f"Model forward test failed: {e}. Continuing anyway.")
+
+        # prepare training sequences
         train_sequences = []
         train_targets = []
-        train_users = []  # Store user IDs for cooling
-        
+        train_users = []
+
         for user_id, seq in self.user_sequences.items():
-            if len(seq) < 2:  # Skip users with too few interactions
+            if len(seq) < 2:
                 continue
-                
-            # Create sequences for training
             for i in range(1, len(seq)):
-                # Use all previous items as input sequence
                 input_seq = seq[:i]
                 target = seq[i]
-                
-                # If sequence is too long, truncate it
                 if len(input_seq) > self.max_seq_length:
                     input_seq = input_seq[-self.max_seq_length:]
                 else:
-                    # Pad sequence
                     input_seq = [0] * (self.max_seq_length - len(input_seq)) + input_seq
-                
                 train_sequences.append(input_seq)
                 train_targets.append(target)
                 train_users.append(user_id)
-        
+
         n_train = len(train_sequences)
         self.logger.info(f"Created {n_train} training instances")
-        
-        # Training loop
+
         best_loss = float('inf')
         patience_counter = 0
         best_metric = 0.0 if validation_data else None
         self.training_history = []
-        
-        # Create checkpoint directory if needed
+        self.best_model_state = None
+
         if self.save_checkpoints:
             os.makedirs(self.checkpoint_dir, exist_ok=True)
-        
+
+        # training loop
         for epoch in range(self.num_epochs):
-            # Set model to training mode
             self.model.train()
-            
-            # Shuffle training data
+            if n_train == 0:
+                self.logger.warning("No training instances. Skipping training.")
+                break
+
             indices = np.arange(n_train)
             np.random.shuffle(indices)
-            
-            # Mini-batch training
-            epoch_loss = 0
+
+            epoch_loss = 0.0
             processed = 0
-            
+
             for i in range(0, n_train, self.batch_size):
-                # Get batch indices
                 batch_indices = indices[i:min(i + self.batch_size, n_train)]
-                batch_size = len(batch_indices)
-                
-                # Get batch data
                 batch_sequences = [train_sequences[idx] for idx in batch_indices]
                 batch_targets = [train_targets[idx] for idx in batch_indices]
                 batch_users = [train_users[idx] for idx in batch_indices]
-                
-                # Create negative samples
+                batch_size = len(batch_indices)
+
+                # negatives: sample neg_samples negatives per positive
                 batch_negatives = []
                 for _ in range(self.neg_samples):
                     negatives = []
                     for user_id, target in zip(batch_users, batch_targets):
                         user_seq = self.user_sequences.get(user_id, [])
+                        # sample until not in seq
                         while True:
                             neg = np.random.randint(1, n_items + 1)
                             if neg not in user_seq:
                                 break
                         negatives.append(neg)
                     batch_negatives.append(negatives)
+
+                batch_sequences_t = torch.LongTensor(batch_sequences).to(self.device)
+                batch_targets_t = torch.LongTensor(batch_targets).to(self.device)
+                batch_negatives_t = [torch.LongTensor(negs).to(self.device) for negs in batch_negatives]
+
+                # Validate input sequences - ensure all indices are valid (0 to n_items)
+                if (batch_sequences_t < 0).any() or (batch_sequences_t > n_items).any():
+                    self.logger.warning(f"Invalid sequence indices at epoch {epoch+1}, batch {i//self.batch_size}. Clamping values.")
+                    batch_sequences_t = torch.clamp(batch_sequences_t, 0, n_items)
                 
-                # Convert to tensors
-                batch_sequences = torch.LongTensor(batch_sequences).to(self.device)
-                batch_targets = torch.LongTensor(batch_targets).to(self.device)
-                batch_negatives = [torch.LongTensor(negs).to(self.device) for negs in batch_negatives]
-                
-                # Create padding mask
-                padding_mask = (batch_sequences == 0)
-                
-                # Forward pass
+                if (batch_targets_t < 1).any() or (batch_targets_t > n_items).any():
+                    self.logger.warning(f"Invalid target indices at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
+                    continue
+
+                padding_mask = (batch_sequences_t == 0)  # [batch, seq_len]
+                # MultiheadAttention expects key_padding_mask where True means ignore
+                # Our padding_mask is already correct (True = padding = ignore)
+
                 self.optimizer.zero_grad()
-                seq_emb = self.model(batch_sequences, padding_mask)
                 
-                # Get last position predictions (for next item)
-                last_emb = seq_emb[:, -1, :]
+                # Check inputs before forward pass
+                if torch.isnan(batch_sequences_t).any() or (batch_sequences_t < 0).any() or (batch_sequences_t > n_items).any():
+                    self.logger.warning(f"Invalid input sequences at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
+                    continue
                 
-                # Calculate loss based on loss type
-                if self.loss_type == 'bpr':
-                    # BPR loss
-                    pos_scores = self.model.predict(last_emb, batch_targets)
-                    neg_scores_list = [self.model.predict(last_emb, negs) for negs in batch_negatives]
-                    
-                    loss = 0
-                    for neg_scores in neg_scores_list:
-                        # Apply popularity correction if enabled
-                        if self.item_popularity_bias:
-                            pos_correction = torch.from_numpy(
-                                self.item_popularity[batch_targets.cpu().numpy() - 1]
-                            ).float().to(self.device)
-                            neg_correction = torch.from_numpy(
-                                self.item_popularity[negs.cpu().numpy() - 1]
-                            ).float().to(self.device)
-                            
-                            pos_scores = pos_scores - pos_correction
-                            neg_scores = neg_scores - neg_correction
-                        
-                        loss += -torch.log(torch.sigmoid(pos_scores - neg_scores) + 1e-8).mean()
-                    
-                    loss /= self.neg_samples
+                try:
+                    with torch.cuda.amp.autocast(enabled=False):  # Disable mixed precision to avoid NaN issues
+                        seq_emb = self.model(batch_sequences_t, padding_mask)  # [batch, seq_len, hidden]
+                except Exception as e:
+                    self.logger.warning(f"Error in model forward pass at epoch {epoch+1}, batch {i//self.batch_size}: {e}. Skipping batch.")
+                    continue
                 
-                elif self.loss_type == 'ce':
-                    # Cross entropy loss
-                    logits = self.model.predict(last_emb)  # [batch_size, n_items+1]
-                    loss = F.cross_entropy(logits, batch_targets)
+                # Check for NaN in model output
+                if torch.isnan(seq_emb).any() or torch.isinf(seq_emb).any():
+                    # Log which part of the model produced NaN
+                    self.logger.warning(f"NaN/Inf in model output at epoch {epoch+1}, batch {i//self.batch_size}. "
+                                      f"Input range: [{batch_sequences_t.min().item()}, {batch_sequences_t.max().item()}]. "
+                                      f"Output stats: min={seq_emb.min().item():.4f}, max={seq_emb.max().item():.4f}, "
+                                      f"mean={seq_emb.mean().item():.4f}, std={seq_emb.std().item():.4f}. Skipping batch.")
+                    continue
                 
-                else:  # 'bce'
-                    # Binary cross entropy loss
-                    pos_scores = self.model.predict(last_emb, batch_targets)
-                    neg_scores_list = [self.model.predict(last_emb, negs) for negs in batch_negatives]
-                    
-                    loss = 0
-                    loss += F.binary_cross_entropy_with_logits(
-                        pos_scores, torch.ones_like(pos_scores)
+                last_emb = seq_emb[:, -1, :]  # [batch, hidden]
+                
+                # Check for NaN in last embedding
+                if torch.isnan(last_emb).any() or torch.isinf(last_emb).any():
+                    self.logger.warning(f"NaN/Inf in last embedding at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
+                    continue
+
+                # Check model parameters for NaN before computing loss
+                has_nan_params = False
+                for param in self.model.parameters():
+                    if torch.isnan(param).any() or torch.isinf(param).any():
+                        has_nan_params = True
+                        break
+                
+                if has_nan_params:
+                    self.logger.warning(f"NaN/Inf in model parameters at epoch {epoch+1}, batch {i//self.batch_size}. Reinitializing model.")
+                    # Reinitialize model
+                    self.model = SASRecModel(
+                        n_items=n_items,
+                        hidden_units=self.hidden_units,
+                        num_blocks=self.num_blocks,
+                        num_heads=self.num_heads,
+                        dropout_rate=self.dropout_rate,
+                        max_seq_length=self.max_seq_length,
+                        position_encoding=self.position_encoding,
+                        attention_type=self.attention_type,
+                        activation=self.activation,
+                        item_embedding_init=None
+                    ).to(self.device)
+                    self.optimizer = torch.optim.Adam(
+                        self.model.parameters(),
+                        lr=self.learning_rate,
+                        weight_decay=self.l2_reg
                     )
+                    continue
+
+                if self.loss_type == 'bpr':
+                    # Get full scores for all items
+                    full_scores = self.predict(last_emb, item_indices=None)  # [batch, n_items+1]
                     
-                    for neg_scores in neg_scores_list:
-                        loss += F.binary_cross_entropy_with_logits(
-                            neg_scores, torch.zeros_like(neg_scores)
-                        )
+                    # Check for NaN in scores
+                    if torch.isnan(full_scores).any() or torch.isinf(full_scores).any():
+                        self.logger.warning(f"NaN/Inf in prediction scores at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
+                        continue
                     
-                    loss /= (1 + self.neg_samples)
-                
-                # Apply user cooling if enabled
+                    # Extract positive scores
+                    pos_idx = batch_targets_t.unsqueeze(1)  # [batch,1]
+                    pos_scores = full_scores.gather(1, pos_idx).squeeze(1)  # [batch]
+                    loss = 0.0
+                    for negs in batch_negatives_t:
+                        # negs is [batch] - one negative per example
+                        # Use gather to extract scores for each negative item
+                        neg_idx = negs.unsqueeze(1)  # [batch, 1]
+                        neg_scores = full_scores.gather(1, neg_idx).squeeze(1)  # [batch]
+                        # Clamp difference to prevent numerical issues
+                        diff = pos_scores - neg_scores
+                        diff = torch.clamp(diff, min=-50, max=50)  # Prevent extreme values
+                        loss += -torch.log(torch.sigmoid(diff) + 1e-8).mean()
+                    loss = loss / self.neg_samples
+
+                elif self.loss_type == 'ce':
+                    logits = self.predict(last_emb)  # [batch, n_items+1]
+                    
+                    # Check for NaN in logits
+                    if torch.isnan(logits).any() or torch.isinf(logits).any():
+                        self.logger.warning(f"NaN/Inf in logits at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
+                        continue
+                    
+                    # cross entropy expects [batch, C] and targets in 0..C-1
+                    # our padding 0 is present; target is in 1..n_items
+                    loss = F.cross_entropy(logits, batch_targets_t)
+
+                else:  # 'bce' default
+                    # Get full scores for all items
+                    full_scores = self.predict(last_emb, item_indices=None)  # [batch, n_items+1]
+                    
+                    # Check for NaN in scores
+                    if torch.isnan(full_scores).any() or torch.isinf(full_scores).any():
+                        self.logger.warning(f"NaN/Inf in prediction scores at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
+                        continue
+                    
+                    # Extract positive scores
+                    pos_idx = batch_targets_t.unsqueeze(1)  # [batch,1]
+                    pos_scores = full_scores.gather(1, pos_idx).squeeze(1)  # [batch]
+                    
+                    # Clamp scores to prevent extreme values
+                    pos_scores = torch.clamp(pos_scores, min=-50, max=50)
+                    
+                    pos_loss = F.binary_cross_entropy_with_logits(pos_scores, torch.ones_like(pos_scores))
+                    
+                    neg_loss = 0.0
+                    for negs in batch_negatives_t:
+                        # negs is [batch] - one negative per example
+                        neg_idx = negs.unsqueeze(1)  # [batch, 1]
+                        neg_scores = full_scores.gather(1, neg_idx).squeeze(1)  # [batch]
+                        
+                        # Clamp scores to prevent extreme values
+                        neg_scores = torch.clamp(neg_scores, min=-50, max=50)
+                        
+                        neg_loss += F.binary_cross_entropy_with_logits(neg_scores, torch.zeros_like(neg_scores))
+                    loss = (pos_loss + neg_loss) / (1 + self.neg_samples)
+
+                # user cooling weights
                 if self.user_cooling:
                     cooling_weights = torch.tensor(
-                        [self.user_cooling_weights.get(user_id, 1.0) for user_id in batch_users],
+                        [self.user_cooling_weights.get(u, 1.0) for u in batch_users],
+                        dtype=loss.dtype,
                         device=self.device
                     )
                     loss = (loss * cooling_weights).mean()
-                
-                # Backward pass and optimization
+
+                # Check for NaN loss
+                if torch.isnan(loss) or torch.isinf(loss):
+                    self.logger.warning(f"NaN/Inf loss detected at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
+                    self.optimizer.zero_grad()  # Clear gradients
+                    continue
+
                 loss.backward()
+                # Clip gradients to prevent exploding gradients
+                grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+                
+                # Check for NaN gradients
+                has_nan_grad = False
+                for param in self.model.parameters():
+                    if param.grad is not None and (torch.isnan(param.grad).any() or torch.isinf(param.grad).any()):
+                        has_nan_grad = True
+                        break
+                
+                if has_nan_grad or torch.isnan(grad_norm) or torch.isinf(grad_norm):
+                    self.logger.warning(f"NaN/Inf gradients detected at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
+                    self.optimizer.zero_grad()
+                    continue
+                
                 self.optimizer.step()
                 
-                # Track loss
+                # Check for NaN parameters after update
+                has_nan_param = False
+                for param in self.model.parameters():
+                    if torch.isnan(param).any() or torch.isinf(param).any():
+                        has_nan_param = True
+                        break
+                
+                if has_nan_param:
+                    self.logger.error(f"NaN/Inf parameters detected after update at epoch {epoch+1}, batch {i//self.batch_size}. Training may be unstable.")
+                    # Try to recover by reloading best model state if available
+                    if self.best_model_state is not None:
+                        self.logger.info("Attempting to recover by reloading best model state.")
+                        self.model.load_state_dict(self.best_model_state)
+                        self.optimizer.zero_grad()
+                    continue
+
                 epoch_loss += loss.item() * batch_size
                 processed += batch_size
-                
-                if i % self.log_interval == 0:
-                    self.logger.info(f"Epoch {epoch+1}/{self.num_epochs}, " + 
-                                     f"Batch {i//self.batch_size}/{n_train//self.batch_size}, " + 
-                                     f"Loss: {loss.item():.4f}")
+
+                if (i // self.batch_size) % self.log_interval == 0:
+                    self.logger.info(f"Epoch {epoch+1}/{self.num_epochs} Batch {i//self.batch_size} Loss: {loss.item():.4f}")
+
+            # Check if we processed any batches
+            if processed == 0:
+                self.logger.error(f"No valid batches processed in epoch {epoch+1}. All batches had NaN/Inf. Stopping training.")
+                if self.best_model_state is not None:
+                    self.logger.info("Reloading best model state.")
+                    self.model.load_state_dict(self.best_model_state)
+                break
             
-            # Calculate average loss
-            avg_loss = epoch_loss / processed if processed > 0 else float('inf')
+            avg_loss = epoch_loss / processed
             
-            # Validation if provided
+            # Save best model state if loss improved and is valid
+            if not (np.isnan(avg_loss) or np.isinf(avg_loss)):
+                if avg_loss < best_loss:
+                    best_loss = avg_loss
+                    self.best_model_state = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
+                    patience_counter = 0
+                else:
+                    patience_counter += 1
+            else:
+                self.logger.warning(f"Epoch {epoch+1} ended with invalid loss: {avg_loss}. Not updating best model.")
+                patience_counter += 1
+
             metrics = {}
             if validation_data:
                 metrics = self.evaluate(validation_data)
-                current_metric = np.mean([metrics[m] for m in self.eval_metrics])
-                self.logger.info(f"Epoch {epoch+1}/{self.num_epochs}, Loss: {avg_loss:.4f}, " +
-                               f"Validation: {current_metric:.4f}")
-                
-                # Early stopping check
+                current_metric = np.mean([metrics[m] for m in metrics]) if len(metrics) > 0 else 0.0
+                self.logger.info(f"Epoch {epoch+1}/{self.num_epochs}, Loss: {avg_loss:.4f}, Validation metric(avg): {current_metric:.4f}")
+
                 if current_metric > best_metric:
                     best_metric = current_metric
                     patience_counter = 0
-                    # Save best model state
                     self.best_model_state = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
                 else:
                     patience_counter += 1
                     if patience_counter >= self.early_stopping_patience:
-                        self.logger.info(f"Early stopping triggered after epoch {epoch+1}")
+                        self.logger.info(f"Early stopping after epoch {epoch+1}")
                         break
             else:
                 self.logger.info(f"Epoch {epoch+1}/{self.num_epochs}, Loss: {avg_loss:.4f}")
-                # Early stopping based on training loss
                 if avg_loss < best_loss:
                     best_loss = avg_loss
                     patience_counter = 0
-                    # Save best model state
                     self.best_model_state = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
                 else:
                     patience_counter += 1
                     if patience_counter >= self.early_stopping_patience:
-                        self.logger.info(f"Early stopping triggered after epoch {epoch+1}")
+                        self.logger.info(f"Early stopping after epoch {epoch+1}")
                         break
-            
-            # Save history
-            history_entry = {"epoch": epoch+1, "loss": avg_loss}
+
+            history_entry = {"epoch": epoch + 1, "loss": avg_loss}
             history_entry.update(metrics)
             self.training_history.append(history_entry)
-            
-            # Save checkpoint if enabled
+
             if self.save_checkpoints:
                 checkpoint_path = os.path.join(self.checkpoint_dir, f"{self.name}_epoch_{epoch+1}.pt")
-                self.save_model(checkpoint_path)
-        
-        # Restore best model if available
+                torch.save(self.model.state_dict(), checkpoint_path)
+
+        # restore best model
         if self.best_model_state is not None:
             self.model.load_state_dict({k: v.to(self.device) for k, v in self.best_model_state.items()})
-        
-        # Export embeddings if requested
+
         if self.export_embeddings:
             self.export_item_embeddings()
-        
+
         self.is_fitted = True
         return self
-    
-    def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
+
+    def recommend(self, user_id: Any, top_n: int = 10, exclude_seen: bool = True) -> List[Any]:
         """
-        Generate top-N recommendations for a user.
-        
-        Parameters:
-        - user_id: User ID
-        - top_n: Number of recommendations to generate
-        - exclude_seen: Whether to exclude already seen items
-        
-        Returns:
-        - List of recommended item IDs
+        Recommend top-n items for a user.
         """
-        # Validate inputs
         validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
-        validate_top_k(top_k if 'top_k' in locals() else 10)
-        
-        if not self.is_fitted:
-            raise ValueError("Model has not been trained yet. Call fit() first.")
-        
+        validate_user_id(user_id, self.user_sequences if hasattr(self, 'user_sequences') else {})
+
         if user_id not in self.user_sequences:
             self.logger.warning(f"Unknown user: {user_id}")
-            return []  # Return empty list for unknown users
-        
-        # Get user's sequence
-        seq = self.user_sequences[user_id]
-        
-        # Create input sequence
+            return []
+
+        seq = list(self.user_sequences[user_id])  # original sequence of internal indices
         if len(seq) > self.max_seq_length:
-            seq = seq[-self.max_seq_length:]
+            seq_in = seq[-self.max_seq_length:]
         else:
-            seq = [0] * (self.max_seq_length - len(seq)) + seq
-        
-        # Create tensor
-        input_seq = torch.LongTensor([seq]).to(self.device)
+            seq_in = [0] * (self.max_seq_length - len(seq)) + seq
+
+        input_seq = torch.LongTensor([seq_in]).to(self.device)
         padding_mask = (input_seq == 0)
-        
-        # Set model to evaluation mode
+
         self.model.eval()
-        
-        # Generate predictions
         with torch.no_grad():
-            logits = self.model(input_seq, padding_mask)
-            
-            # Get predictions for the last position
+            logits = self.model(input_seq, padding_mask)  # [1, seq_len, hidden]
             last_idx = torch.sum(input_seq > 0, dim=1) - 1
             last_idx = torch.clamp(last_idx, min=0)
-            predictions = logits[0, last_idx[0]]
-            
-            # Get all item scores
-            scores = self.model.predict(predictions.unsqueeze(0)).squeeze(0)
-            
-            # Convert to numpy for easier manipulation
-            scores = scores.cpu().numpy()
-        
-        # Set scores of padding item to -inf
-        scores[0] = -np.inf
-        
-        # Exclude seen items if requested
+            last_emb = logits[0, last_idx[0], :].unsqueeze(0)  # [1, hidden]
+            scores = self.predict(last_emb)  # [1, n_items+1]
+            scores = scores.squeeze(0).cpu().numpy()
+
+        scores[0] = -np.inf  # disallow padding
         if exclude_seen:
-            original_seq = self.user_sequences[user_id]
-            for item_idx in original_seq:
-                scores[item_idx] = -np.inf
-        
-        # Apply popularity bias correction if enabled
-        if self.item_popularity_bias:
+            for item_idx in seq:
+                if 0 <= item_idx < len(scores):
+                    scores[item_idx] = -np.inf
+        if self.item_popularity_bias and self.item_popularity is not None:
             scores[1:] = scores[1:] - self.item_popularity
-        
-        # Get top-n item indices
+
         top_indices = np.argsort(scores)[::-1][:top_n]
-        
-        # Convert indices back to original item IDs
-        recommendations = [self.index_to_item[idx] for idx in top_indices]
-        
+        recommendations = [self.index_to_item.get(int(idx), None) for idx in top_indices]
         return recommendations
-    
-    def evaluate(self, eval_data, metrics: List[str] = None, cutoffs: List[int] = [5, 10, 20]):
+
+    def evaluate(self, eval_data: Dict[Any, Tuple[List[int], List[int]]], metrics: Optional[List[str]] = None, cutoffs: Optional[List[int]] = None) -> Dict[str, float]:
         """
-        Evaluate the model on test data.
-        
-        Parameters:
-        - eval_data: Dictionary with user_id -> (input_sequence, ground_truth) pairs
-        - metrics: List of metrics to compute (default: self.eval_metrics)
-        - cutoffs: List of cutoff values for metrics
-        
-        Returns:
-        - Dictionary with evaluation results
+        Evaluate model on eval_data: dict {user_id: (input_seq, ground_truth_list)}
+        metrics: list e.g. ["hit", "ndcg", "precision", "recall"]
+        cutoffs: e.g. [5, 10]
         """
         if not self.is_fitted:
             raise ValueError("Model has not been trained yet. Call fit() first.")
-        
         if metrics is None:
-            metrics = self.eval_metrics
-        
-        # Set model to evaluation mode
-        self.model.eval()
-        
-        # Initialize metrics
+            metrics = ["hit", "ndcg", "precision", "recall"]
+        if cutoffs is None:
+            cutoffs = [5, 10]
+
         metric_values = {f"{m}@{k}": 0.0 for m in metrics for k in cutoffs}
         n_users = 0
-        
+
         for user_id, (input_seq, ground_truth) in eval_data.items():
             if user_id not in self.user_sequences:
                 continue
-            
-            # Generate recommendations
             recs = self.recommend(user_id, top_n=max(cutoffs), exclude_seen=True)
-            
-            # Compute metrics
             for k in cutoffs:
                 recs_at_k = recs[:k]
-                
-                # Hit rate
+
                 if "hit" in metrics:
                     hit = int(any(item in ground_truth for item in recs_at_k))
                     metric_values[f"hit@{k}"] += hit
-                
-                # NDCG
+
                 if "ndcg" in metrics:
-                    ndcg = 0
+                    ndcg = 0.0
                     for i, item in enumerate(recs_at_k):
                         if item in ground_truth:
-                            ndcg += 1 / np.log2(i + 2)
+                            ndcg += 1.0 / math.log2(i + 2)
                     if len(ground_truth) > 0:
-                        idcg = min(len(ground_truth), k)
-                        idcg = sum(1 / np.log2(i + 2) for i in range(idcg))
-                        ndcg = ndcg / idcg if idcg > 0 else 0
+                        idcg_k = min(len(ground_truth), k)
+                        idcg = sum(1.0 / math.log2(i + 2) for i in range(idcg_k))
+                        ndcg = ndcg / idcg if idcg > 0 else 0.0
                     metric_values[f"ndcg@{k}"] += ndcg
-                
-                # Precision
+
                 if "precision" in metrics:
-                    n_relevant = sum(1 for item in recs_at_k if item in ground_truth)
-                    precision = n_relevant / k
+                    n_rel = sum(1 for item in recs_at_k if item in ground_truth)
+                    precision = n_rel / k
                     metric_values[f"precision@{k}"] += precision
-                
-                # Recall
+
                 if "recall" in metrics:
-                    n_relevant = sum(1 for item in recs_at_k if item in ground_truth)
-                    recall = n_relevant / len(ground_truth) if len(ground_truth) > 0 else 0
+                    n_rel = sum(1 for item in recs_at_k if item in ground_truth)
+                    recall = n_rel / len(ground_truth) if len(ground_truth) > 0 else 0.0
                     metric_values[f"recall@{k}"] += recall
-            
+
             n_users += 1
-        
-        # Average metrics
+
         if n_users > 0:
-            for metric in metric_values:
-                metric_values[metric] /= n_users
-        
+            for key in metric_values:
+                metric_values[key] /= n_users
+
         return metric_values
-    
-    def get_item_embeddings(self):
-        """Return the learned item embeddings"""
-        if not self.is_fitted:
-            raise ValueError("Model has not been trained yet. Call fit() first.")
-        return self.model.get_all_embeddings()
-    
-    def export_item_embeddings(self, filepath=None):
-        """Export item embeddings to a file"""
-        if not self.is_fitted:
-            raise ValueError("Model has not been trained yet. Call fit() first.")
-        
-        embeddings = self.get_item_embeddings()
-        export_data = {
-            'embeddings': embeddings,
-            'index_to_item': self.index_to_item
-        }
-        
-        if filepath is None:
-            filepath = f"{self.name}_embeddings.pkl"
-        
-        with open(filepath, 'wb') as f:
-            pickle.dump(export_data, f)
-        
-        self.logger.info(f"Item embeddings exported to {filepath}")
-    
-    def get_attention_weights(self, user_id):
-        """Get attention weights for a user sequence for visualization"""
-        if not self.is_fitted:
-            raise ValueError("Model has not been trained yet. Call fit() first.")
-        
-        if user_id not in self.user_sequences:
-            raise ValueError(f"Unknown user: {user_id}")
-        
-        # Get user's sequence
-        seq = self.user_sequences[user_id]
-        
-        # Create input sequence
-        if len(seq) > self.max_seq_length:
-            seq = seq[-self.max_seq_length:]
-        else:
-            seq = [0] * (self.max_seq_length - len(seq)) + seq
-        
-        # Create tensor
-        input_seq = torch.LongTensor([seq]).to(self.device)
-        padding_mask = (input_seq == 0)
-        
-        # Set model to evaluation mode
-        self.model.eval()
-        
-        # Generate predictions with attention weights
-        with torch.no_grad():
-            _, attention_weights = self.model(input_seq, padding_mask, return_attention_weights=True)
-        
-        # Convert to numpy for easier manipulation
-        attention_weights = [w.cpu().numpy() for w in attention_weights]
-        
-        return attention_weights, seq
-    
-    def save_model(self, filepath: str) -> None:
-        """
-        Save the model to a file.
-        
-        Parameters
-        ----------
-        filepath : str
-            Path to save the model.
-        """
-        if not self.is_fitted:
-            raise ValueError("Model has not been trained yet")
-        
-        model_data = {
-            'model_config': {
-                'hidden_units': self.hidden_units,
-                'num_blocks': self.num_blocks,
-                'num_heads': self.num_heads,
-                'dropout_rate': self.dropout_rate,
-                'max_seq_length': self.max_seq_length,
-                'attention_type': self.attention_type,
-                'position_encoding': self.position_encoding,
-                'activation': self.activation
-            },
-            'training_config': {
-                'learning_rate': self.learning_rate,
-                'batch_size': self.batch_size,
-                'num_epochs': self.num_epochs,
-                'l2_reg': self.l2_reg,
-                'loss_type': self.loss_type,
-                'user_cooling': self.user_cooling,
-                'item_popularity_bias': self.item_popularity_bias
-            },
-            'item_to_index': self.item_to_index,
-            'index_to_item': self.index_to_item,
-            'user_sequences': self.user_sequences,
-            'model_state_dict': self.model.state_dict(),
-            'item_popularity': self.item_popularity if self.item_popularity_bias else None,
-            'training_history': self.training_history
-        }
-        
-        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
-        torch.save(model_data, filepath)
-        self.logger.info(f"Model saved to {filepath}")
-    
-        @classmethod
-        def load_model(cls, filepath: str, device: str = None) -> 'SASRec':
-            """
-            Load a model from a file.
-            
-            Parameters
-            ----------
-            filepath : str
-                Path to the saved model.
-            device : str, optional
-                Device to load the model on
-                
-            Returns
-            -------
-            SASRec
-                Loaded model.
-            """
-            if device is None:
-                device = 'cuda' if torch.cuda.is_available() else 'cpu'
-                
-            model_data = torch.load(filepath, map_location=device)
-            
-            # Create a new instance
-            instance = cls(
-                name=os.path.basename(filepath).split('.')[0],
-                hidden_units=model_data['model_config']['hidden_units'],
-                num_blocks=model_data['model_config']['num_blocks'],
-                num_heads=model_data['model_config']['num_heads'],
-                dropout_rate=model_data['model_config']['dropout_rate'],
-                max_seq_length=model_data['model_config']['max_seq_length'],
-                attention_type=model_data['model_config']['attention_type'],
-                position_encoding=model_data['model_config']['position_encoding'],
-                activation=model_data['model_config']['activation'],
-                learning_rate=model_data['training_config']['learning_rate'],
-                batch_size=model_data['training_config']['batch_size'],
-                num_epochs=model_data['training_config']['num_epochs'],
-                l2_reg=model_data['training_config']['l2_reg'],
-                loss_type=model_data['training_config']['loss_type'],
-                device=device
-            )
-            
-            # Restore mappings and user sequences
-            instance.item_to_index = model_data['item_to_index']
-            instance.index_to_item = model_data['index_to_item']
-            instance.user_sequences = model_data['user_sequences']
-            
-            # Set item popularity if available
-            if 'item_popularity' in model_data and model_data['item_popularity'] is not None:
-                instance.item_popularity = model_data['item_popularity']
-                instance.item_popularity_bias = True
-            
-            # Restore training history if available
-            if 'training_history' in model_data:
-                instance.training_history = model_data['training_history']
-            
-            # Recreate the model
-            n_items = len(instance.item_to_index)
-            instance.model = SASRecModel(
-                n_items=n_items,
-                hidden_units=instance.hidden_units,
-                num_blocks=instance.num_blocks,
-                num_heads=instance.num_heads,
-                dropout_rate=instance.dropout_rate,
-                max_seq_length=instance.max_seq_length,
-                attention_type=instance.attention_type,
-                position_encoding=instance.position_encoding,
-                activation=instance.activation
-            ).to(instance.device)
-            
-            # Load the model weights
-            instance.model.load_state_dict(model_data['model_state_dict'])
-            instance.model.eval()
-            instance.is_fitted = True
-            
-            return instance

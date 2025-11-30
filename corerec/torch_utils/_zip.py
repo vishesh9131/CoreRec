@@ -31,12 +31,13 @@ strip_file_dir = ""
 
 def remove_prefix(text, prefix):
     if text.startswith(prefix):
-        return text[len(prefix) :]
+        return text[len(prefix):]
     return text
 
 
 def write_to_zip(file_path, strip_file_path, zf, prepend_str=""):
-    stripped_file_path = prepend_str + remove_prefix(file_path, strip_file_dir + "/")
+    stripped_file_path = prepend_str + \
+        remove_prefix(file_path, strip_file_dir + "/")
     path = Path(stripped_file_path)
     if path.name in DENY_LIST:
         return
@@ -48,8 +49,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Zip py source")
     parser.add_argument("paths", nargs="*", help="Paths to zip.")
     parser.add_argument(
-        "--install-dir", "--install_dir", help="Root directory for all output files"
-    )
+        "--install-dir",
+        "--install_dir",
+        help="Root directory for all output files")
     parser.add_argument(
         "--strip-dir",
         "--strip_dir",
@@ -76,8 +78,10 @@ def main() -> None:
             for file_path in sorted(files):
                 # strip the absolute path
                 write_to_zip(
-                    file_path, strip_file_dir + "/", zf, prepend_str=prepend_str
-                )
+                    file_path,
+                    strip_file_dir + "/",
+                    zf,
+                    prepend_str=prepend_str)
         else:
             write_to_zip(p, strip_file_dir + "/", zf, prepend_str=prepend_str)
 

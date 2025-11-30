@@ -431,9 +431,7 @@ class GaussianNLLLoss(_Loss):
     full: bool
     eps: float
 
-    def __init__(
-        self, *, full: bool = False, eps: float = 1e-6, reduction: str = "mean"
-    ) -> None:
+    def __init__(self, *, full: bool = False, eps: float = 1e-6, reduction: str = "mean") -> None:
         super().__init__(None, None, reduction)
         self.full = full
         self.eps = eps
@@ -538,9 +536,7 @@ class KLDivLoss(_Loss):
         self.log_target = log_target
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
-        return F.kl_div(
-            input, target, reduction=self.reduction, log_target=self.log_target
-        )
+        return F.kl_div(input, target, reduction=self.reduction, log_target=self.log_target)
 
 
 class MSELoss(_Loss):
@@ -694,9 +690,7 @@ class BCELoss(_WeightedLoss):
         super().__init__(weight, size_average, reduce, reduction)
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
-        return F.binary_cross_entropy(
-            input, target, weight=self.weight, reduction=self.reduction
-        )
+        return F.binary_cross_entropy(input, target, weight=self.weight, reduction=self.reduction)
 
 
 class BCEWithLogitsLoss(_Loss):
@@ -888,9 +882,7 @@ class HingeEmbeddingLoss(_Loss):
         self.margin = margin
 
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
-        return F.hinge_embedding_loss(
-            input, target, margin=self.margin, reduction=self.reduction
-        )
+        return F.hinge_embedding_loss(input, target, margin=self.margin, reduction=self.reduction)
 
 
 class MultiLabelMarginLoss(_Loss):
@@ -1963,9 +1955,7 @@ class CTCLoss(_Loss):
     blank: int
     zero_infinity: bool
 
-    def __init__(
-        self, blank: int = 0, reduction: str = "mean", zero_infinity: bool = False
-    ):
+    def __init__(self, blank: int = 0, reduction: str = "mean", zero_infinity: bool = False):
         super().__init__(reduction=reduction)
         self.blank = blank
         self.zero_infinity = zero_infinity

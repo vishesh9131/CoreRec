@@ -69,8 +69,7 @@ def _untie_named_tensors_map(
             len(tied_names.intersection(given_names_for_tied_tensors)) > 1
             # Only raise an error if the user passed multiple values for the same tied tensor.
             # If all given values are the same, don't raise.
-            and len({parameters_and_buffers[tied_name] for tied_name in tied_names})
-            != 1
+            and len({parameters_and_buffers[tied_name] for tied_name in tied_names}) != 1
         ):
             raise ValueError(
                 f"functional_call got multiple values for keys {sorted(tied_names)}, "
@@ -82,9 +81,7 @@ def _untie_named_tensors_map(
     untied_parameters_and_buffers = parameters_and_buffers.copy()
     for given_name in given_names_for_tied_tensors:
         for tied_name in tied_names_map[given_name]:
-            untied_parameters_and_buffers[tied_name] = parameters_and_buffers[
-                given_name
-            ]
+            untied_parameters_and_buffers[tied_name] = parameters_and_buffers[given_name]
     return untied_parameters_and_buffers
 
 
@@ -98,22 +95,16 @@ def _reparametrize_module(
     stack_weights: bool = False,
 ) -> Iterator[None]:
     if tie_weights:
-        untied_parameters_and_buffers = _untie_named_tensors_map(
-            module, parameters_and_buffers
-        )
+        untied_parameters_and_buffers = _untie_named_tensors_map(module, parameters_and_buffers)
     else:
         untied_parameters_and_buffers = parameters_and_buffers
 
     accessor = NamedMemberAccessor(module)
     if strict:
-        missing_keys, unexpected_keys = accessor.check_keys(
-            untied_parameters_and_buffers
-        )
+        missing_keys, unexpected_keys = accessor.check_keys(untied_parameters_and_buffers)
         error_msgs = []
         if len(unexpected_keys) > 0:
-            error_msgs.append(
-                f"Unexpected key(s): {', '.join(map(repr, unexpected_keys))}."
-            )
+            error_msgs.append(f"Unexpected key(s): {', '.join(map(repr, unexpected_keys))}.")
         if len(missing_keys) > 0:
             error_msgs.append(f"Missing key(s): {', '.join(map(repr, missing_keys))}.")
         if len(error_msgs) > 0:
@@ -132,9 +123,7 @@ def _reparametrize_module(
     finally:
         if stack_weights:
             # When stacking is enabled, we will restore the weights in LIFO order.
-            orig_parameters_and_buffers = dict(
-                reversed(orig_parameters_and_buffers.items())
-            )
+            orig_parameters_and_buffers = dict(reversed(orig_parameters_and_buffers.items()))
         new_parameters_and_buffers, _ = accessor.swap_tensors_dict(
             orig_parameters_and_buffers, allow_missing=True
         )
@@ -258,9 +247,7 @@ def _functional_call(
     ):
         raise RuntimeError("The stateless API can't be used with Jitted modules")
     if isinstance(module, torch.nn.DataParallel):
-        raise RuntimeError(
-            "The stateless API can't be used with nn.DataParallel module"
-        )
+        raise RuntimeError("The stateless API can't be used with nn.DataParallel module")
     if kwargs is None:
         kwargs = {}
     if not isinstance(args, tuple):

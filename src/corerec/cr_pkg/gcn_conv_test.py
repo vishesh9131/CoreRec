@@ -3,6 +3,7 @@ import torch
 from gcn_conv import GCNConv
 from torch_geometric.data import Data
 
+
 @pytest.fixture
 def sample_data():
     # Create a simple graph with 4 nodes and 4 edges
@@ -10,6 +11,7 @@ def sample_data():
     x = torch.tensor([[1, 0], [0, 1], [1, 1], [0, 0]], dtype=torch.float)
     edge_weight = torch.tensor([1, 1, 1, 1], dtype=torch.float)
     return Data(x=x, edge_index=edge_index, edge_weight=edge_weight)
+
 
 def test_gcnconv_forward(sample_data):
     # Initialize GCNConv layer
@@ -21,6 +23,7 @@ def test_gcnconv_forward(sample_data):
     # Check output dimensions
     assert out.size() == (4, 2), "Output dimensions are incorrect"
 
+
 def test_gcnconv_with_edge_weights(sample_data):
     # Initialize GCNConv layer
     conv = GCNConv(in_channels=2, out_channels=2)
@@ -31,6 +34,7 @@ def test_gcnconv_with_edge_weights(sample_data):
     # Check output dimensions
     assert out.size() == (4, 2), "Output dimensions with edge weights are incorrect"
 
+
 def test_gcnconv_no_self_loops(sample_data):
     # Initialize GCNConv layer without self-loops
     conv = GCNConv(in_channels=2, out_channels=2, add_self_loops=False)
@@ -40,6 +44,7 @@ def test_gcnconv_no_self_loops(sample_data):
 
     # Check output dimensions
     assert out.size() == (4, 2), "Output dimensions without self-loops are incorrect"
+
 
 def test_gcnconv_cached(sample_data):
     # Initialize GCNConv layer with caching
@@ -52,6 +57,7 @@ def test_gcnconv_cached(sample_data):
     # Check that the outputs are the same, indicating caching is working
     assert torch.allclose(out1, out2), "Caching is not working correctly"
 
+
 def test_gcnconv_improved(sample_data):
     # Initialize GCNConv layer with improved normalization
     conv = GCNConv(in_channels=2, out_channels=2, improved=True)
@@ -62,6 +68,7 @@ def test_gcnconv_improved(sample_data):
     # Check output dimensions
     assert out.size() == (4, 2), "Output dimensions with improved normalization are incorrect"
 
+
 def test_gcnconv_bias(sample_data):
     # Initialize GCNConv layer without bias
     conv = GCNConv(in_channels=2, out_channels=2, bias=False)
@@ -71,6 +78,7 @@ def test_gcnconv_bias(sample_data):
 
     # Check output dimensions
     assert out.size() == (4, 2), "Output dimensions without bias are incorrect"
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

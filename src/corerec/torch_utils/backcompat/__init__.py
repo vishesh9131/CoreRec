@@ -18,5 +18,6 @@ class Warning:
 
     enabled = property(get_enabled, set_enabled)
 
+
 broadcast_warning = Warning(_set_backcompat_broadcast_warn, _get_backcompat_broadcast_warn)
 keepdim_warning = Warning(_set_backcompat_keepdim_warn, _get_backcompat_keepdim_warn)

@@ -126,9 +126,7 @@ class ConfigModule(ModuleType):
     _hash_digest: Optional[bytes]
 
     def __init__(self):
-        raise NotImplementedError(
-            f"use {__name__}.install_config_module(sys.modules[__name__])"
-        )
+        raise NotImplementedError(f"use {__name__}.install_config_module(sys.modules[__name__])")
 
     def __setattr__(self, name, value):
         if name in self._bypass_keys:
@@ -163,9 +161,7 @@ class ConfigModule(ModuleType):
         for key in sorted(self._config):
             if key.startswith("_"):
                 continue
-            if any(
-                key.startswith(e) for e in self._config["_cache_config_ignore_prefix"]
-            ):
+            if any(key.startswith(e) for e in self._config["_cache_config_ignore_prefix"]):
                 continue
             config[key] = self._config[key]
         return config
@@ -188,9 +184,7 @@ class ConfigModule(ModuleType):
         """Hashes the configs that are not compile_ignored"""
         if self._is_dirty or self._hash_digest is None:
             dict_to_hash = {
-                k: v
-                for k, v in self._config.items()
-                if k not in self._compile_ignored_keys
+                k: v for k, v in self._config.items() if k not in self._compile_ignored_keys
             }
             string_to_hash = repr(sorted(dict_to_hash.items()))
             self._hash_digest = hashlib.md5(string_to_hash.encode("utf-8")).digest()

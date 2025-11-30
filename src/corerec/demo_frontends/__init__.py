@@ -20,10 +20,10 @@ __version__ = "1.0.0"
 __author__ = "CoreRec Team"
 
 __all__ = [
-    'BaseFrontend',
-    'FrontendManager',
-    'quick_launch',
-    'SpotifyFrontend',
-    'YouTubeFrontend',
-    'NetflixFrontend'
-] 
+    "BaseFrontend",
+    "FrontendManager",
+    "quick_launch",
+    "SpotifyFrontend",
+    "YouTubeFrontend",
+    "NetflixFrontend",
+]

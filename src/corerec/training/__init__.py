@@ -12,7 +12,7 @@ from corerec.training.callbacks import (
     EarlyStopping,
     ModelCheckpoint,
     LearningRateScheduler,
-    TensorBoardLogger
+    TensorBoardLogger,
 )
 
 __all__ = [
@@ -23,4 +23,3 @@ __all__ = [
     "LearningRateScheduler",
     "TensorBoardLogger",
 ]
-

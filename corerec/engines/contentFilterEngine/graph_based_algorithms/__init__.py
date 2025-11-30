@@ -45,7 +45,7 @@ except ImportError:
 # ============================================================================
 
 __all__ = [
-    'GNNContentFilter',
-    'GraphFiltering',
-    'SemanticModels',
+    "GNNContentFilter",
+    "GraphFiltering",
+    "SemanticModels",
 ]

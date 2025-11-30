@@ -77,9 +77,8 @@ def _register_parameter_or_buffer(module, name, X):
 
 
 def _maybe_set(dest: Tensor, src: Tensor) -> None:
-    should_swap = (
-        get_swap_module_params_on_conversion() or is_traceable_wrapper_subclass(dest)
-    )
+    should_swap = get_swap_module_params_on_conversion(
+    ) or is_traceable_wrapper_subclass(dest)
     if should_swap:
         if isinstance(dest, Parameter) and not isinstance(src, Parameter):
             src = Parameter(src, requires_grad=dest.requires_grad)
@@ -125,7 +124,8 @@ class ParametrizationList(ModuleList):
         # We require this because we need to treat differently the first parametrization
         # This should never throw, unless this class is used from the outside
         if len(modules) == 0:
-            raise ValueError("ParametrizationList requires one or more modules.")
+            raise ValueError(
+                "ParametrizationList requires one or more modules.")
 
         super().__init__(modules)
         self.unsafe = unsafe
@@ -162,11 +162,12 @@ class ParametrizationList(ModuleList):
                         new = module.right_inverse(new)
                     except NotImplementedError:
                         pass
-                # else, or if it throws, we assume that right_inverse is the identity
+                # else, or if it throws, we assume that right_inverse is the
+                # identity
 
-        if not isinstance(new, Tensor) and not isinstance(
-            new, collections.abc.Sequence
-        ):
+        if not isinstance(
+                new, Tensor) and not isinstance(
+                new, collections.abc.Sequence):
             raise ValueError(
                 "'right_inverse' must return a Tensor or a Sequence of tensors (list, tuple...). "
                 f"Got {type(new).__name__}"
@@ -194,9 +195,8 @@ class ParametrizationList(ModuleList):
                 if not isinstance(originali, Tensor):
                     raise ValueError(
                         "'right_inverse' must return a Tensor or a Sequence of tensors "
-                        "(list, tuple...). "
-                        f"Got element {i} of the sequence with type {type(originali).__name__}."
-                    )
+                        "(list, tuple...). " f"Got element {i} of the sequence with type {
+                            type(originali).__name__}.")
 
                 # If the original tensor was a Parameter that required grad, we expect the user to
                 # add the new parameters to the optimizer after registering the parametrization
@@ -213,8 +213,8 @@ class ParametrizationList(ModuleList):
             Z = self()
             if not isinstance(Z, Tensor):
                 raise ValueError(
-                    f"A parametrization must return a tensor. Got {type(Z).__name__}."
-                )
+                    f"A parametrization must return a tensor. Got {
+                        type(Z).__name__}.")
             if Z.dtype != original_dtype:
                 raise ValueError(
                     "Registering a parametrization may not change the dtype of the tensor, unless `unsafe` flag is enabled.\n"
@@ -249,21 +249,21 @@ class ParametrizationList(ModuleList):
                     value = module.right_inverse(value)
                 else:
                     raise RuntimeError(
-                        f"parametrization {type(module).__name__} does not implement "
-                        "right_inverse."
-                    )
+                        f"parametrization {
+                            type(module).__name__} does not implement " "right_inverse.")
             if self.is_tensor:
                 # These exceptions should only throw when a right_inverse function does not
-                # return the same dtype for every input, which should most likely be caused by a bug
+                # return the same dtype for every input, which should most
+                # likely be caused by a bug
                 if not isinstance(value, Tensor):
                     raise ValueError(
-                        f"`right_inverse` should return a tensor. Got {type(value).__name__}"
-                    )
+                        f"`right_inverse` should return a tensor. Got {
+                            type(value).__name__}")
                 if value.dtype != self.original.dtype:
                     raise ValueError(
-                        f"The tensor returned by `right_inverse` has dtype {value.dtype} "
-                        f"while `original` has dtype {self.original.dtype}"
-                    )
+                        f"The tensor returned by `right_inverse` has dtype {
+                            value.dtype} " f"while `original` has dtype {
+                            self.original.dtype}")
                 # We know that the result is going to have the same dtype
                 _maybe_set(self.original, value)
             else:
@@ -274,9 +274,9 @@ class ParametrizationList(ModuleList):
                     )
                 if len(value) != self.ntensors:
                     raise ValueError(
-                        "'right_inverse' must return a sequence of tensors of length "
-                        f"{self.ntensors}. Got a sequence of length {len(value)}."
-                    )
+                        "'right_inverse' must return a sequence of tensors of length " f"{
+                            self.ntensors}. Got a sequence of length {
+                            len(value)}.")
                 for i, tensor in enumerate(value):
                     original_i = getattr(self, f"original{i}")
                     if not isinstance(tensor, Tensor):
@@ -286,19 +286,24 @@ class ParametrizationList(ModuleList):
                         )
                     if original_i.dtype != tensor.dtype:
                         raise ValueError(
-                            f"Tensor {i} returned by `right_inverse` has dtype {tensor.dtype} "
-                            f"while `original{i}` has dtype {original_i.dtype}"
-                        )
+                            f"Tensor {i} returned by `right_inverse` has dtype {
+                                tensor.dtype} " f"while `original{i}` has dtype {
+                                original_i.dtype}")
                     _maybe_set(original_i, tensor)
 
     def forward(self) -> Tensor:
         if torch.jit.is_scripting():
-            raise RuntimeError("Parametrization is not working with scripting.")
+            raise RuntimeError(
+                "Parametrization is not working with scripting.")
         # Unpack the originals for the first parametrization
         if self.is_tensor:
             x = self[0](self.original)
         else:
-            originals = (getattr(self, f"original{i}") for i in range(self.ntensors))
+            originals = (
+                getattr(
+                    self,
+                    f"original{i}") for i in range(
+                    self.ntensors))
             x = self[0](*originals)
         # It's not possible to call self[1:] here, so we have to be a bit more cryptic
         # Also we want to skip all non-integer keys
@@ -321,7 +326,8 @@ def _inject_new_class(module: Module) -> None:
     cls = module.__class__
 
     def default_deepcopy(self, memo):
-        # Just emulate a standard deepcopy procedure when __deepcopy__ doesn't exist in the current class.
+        # Just emulate a standard deepcopy procedure when __deepcopy__ doesn't
+        # exist in the current class.
         obj = memo.get(id(self), None)
         if obj is not None:
             return obj
@@ -329,7 +335,8 @@ def _inject_new_class(module: Module) -> None:
         memo[id(self)] = replica
         replica.__dict__ = deepcopy(self.__dict__, memo)
         # Also save all slots if they exist.
-        slots_to_save = copyreg._slotnames(self.__class__)  # type: ignore[attr-defined]
+        slots_to_save = copyreg._slotnames(
+            self.__class__)  # type: ignore[attr-defined]
         for slot in slots_to_save:
             if hasattr(self, slot):
                 setattr(replica, slot, deepcopy(getattr(self, slot), memo))
@@ -340,12 +347,12 @@ def _inject_new_class(module: Module) -> None:
             "Serialization of parametrized modules is only "
             "supported through state_dict(). See:\n"
             "https://pytorch.org/tutorials/beginner/saving_loading_models.html"
-            "#saving-loading-a-general-checkpoint-for-inference-and-or-resuming-training"
-        )
+            "#saving-loading-a-general-checkpoint-for-inference-and-or-resuming-training")
 
     dct = {"__getstate__": getstate}
     # We don't allow serialization of parametrized modules but should still allow deepcopying.
-    # Default 'deepcopy' function invokes __deepcopy__ method instead of __getstate__ when it exists.
+    # Default 'deepcopy' function invokes __deepcopy__ method instead of
+    # __getstate__ when it exists.
     if not hasattr(cls, "__deepcopy__"):
         dct["__deepcopy__"] = default_deepcopy  # type: ignore[assignment]
 
@@ -370,7 +377,8 @@ def _inject_property(module: Module, tensor_name: str) -> None:
         tensor_name (str): name of the name of the property to create
     """
     # We check the precondition.
-    # This should never fire if register_parametrization is correctly implemented
+    # This should never fire if register_parametrization is correctly
+    # implemented
     assert not hasattr(module, tensor_name)
 
     @torch.jit.unused
@@ -385,7 +393,8 @@ def _inject_property(module: Module, tensor_name: str) -> None:
 
     def get_parametrized(self) -> Tensor:
         if torch.jit.is_scripting():
-            raise RuntimeError("Parametrization is not working with scripting.")
+            raise RuntimeError(
+                "Parametrization is not working with scripting.")
         parametrization = self.parametrizations[tensor_name]
         if _cache_enabled:
             if torch.jit.is_scripting():
@@ -397,20 +406,26 @@ def _inject_property(module: Module, tensor_name: str) -> None:
             elif torch._C._get_tracing_state() is not None:
                 # Tracing
                 raise RuntimeError(
-                    "Cannot trace a model while caching parametrizations."
-                )
+                    "Cannot trace a model while caching parametrizations.")
             else:
                 return get_cached_parametrization(parametrization)
         else:
-            # If caching is not active, this function just evaluates the parametrization
+            # If caching is not active, this function just evaluates the
+            # parametrization
             return parametrization()
 
     def set_original(self, value: Tensor) -> None:
         if torch.jit.is_scripting():
-            raise RuntimeError("Parametrization is not working with scripting.")
+            raise RuntimeError(
+                "Parametrization is not working with scripting.")
         self.parametrizations[tensor_name].right_inverse(value)
 
-    setattr(module.__class__, tensor_name, property(get_parametrized, set_original))
+    setattr(
+        module.__class__,
+        tensor_name,
+        property(
+            get_parametrized,
+            set_original))
 
 
 def register_parametrization(
@@ -552,8 +567,8 @@ def register_parametrization(
             X = parametrization(Y)
             if not isinstance(X, Tensor):
                 raise ValueError(
-                    f"A parametrization must return a tensor. Got {type(X).__name__}."
-                )
+                    f"A parametrization must return a tensor. Got {
+                        type(X).__name__}.")
             if X.dtype != Y.dtype:
                 raise ValueError(
                     "Registering a parametrization may not change the dtype of the tensor, unless the `unsafe` flag is enabled.\n"
@@ -568,14 +583,15 @@ def register_parametrization(
                 )
             if hasattr(parametrization, "right_inverse"):
                 try:
-                    Z = parametrization.right_inverse(X)  # type: ignore[operator]
+                    Z = parametrization.right_inverse(
+                        X)  # type: ignore[operator]
                 except NotImplementedError:
                     pass
                 else:
                     if not isinstance(Z, Tensor):
                         raise ValueError(
-                            f"parametrization.right_inverse must return a tensor. Got: {type(Z).__name__}"
-                        )
+                            f"parametrization.right_inverse must return a tensor. Got: {
+                                type(Z).__name__}")
                     if Z.dtype != Y.dtype:
                         raise ValueError(
                             "The tensor returned by parametrization.right_inverse must have the same dtype "
@@ -593,18 +609,20 @@ def register_parametrization(
             # else right_inverse is assumed to be the identity
 
         # add the new parametrization to the parametrization list
-        assert isinstance(module.parametrizations, ModuleDict)  # Make mypy happy
+        assert isinstance(
+            module.parametrizations,
+            ModuleDict)  # Make mypy happy
         module.parametrizations[tensor_name].append(parametrization)
         # If unsafe was True in previous parametrization, keep it enabled
-        module.parametrizations[tensor_name].unsafe |= unsafe  # type: ignore[index, union-attr]
+        # type: ignore[index, union-attr]
+        module.parametrizations[tensor_name].unsafe |= unsafe
     elif tensor_name in module._buffers or tensor_name in module._parameters:
         # Set the parametrization mechanism
         # Fetch the original buffer or parameter
         original = getattr(module, tensor_name)
         # We create this early to check for possible errors
         parametrizations = ParametrizationList(
-            [parametrization], original, unsafe=unsafe
-        )
+            [parametrization], original, unsafe=unsafe)
         # Delete the previous parameter or buffer
         delattr(module, tensor_name)
         # If this is the first parametrization registered on the module,
@@ -612,12 +630,15 @@ def register_parametrization(
         if not is_parametrized(module):
             # Change the class
             _inject_new_class(module)
-            # Inject a ``ModuleDict`` into the instance under module.parametrizations
+            # Inject a ``ModuleDict`` into the instance under
+            # module.parametrizations
             module.parametrizations = ModuleDict()
         # Add a property into the class
         _inject_property(module, tensor_name)
         # Add a ParametrizationList
-        assert isinstance(module.parametrizations, ModuleDict)  # Make mypy happy
+        assert isinstance(
+            module.parametrizations,
+            ModuleDict)  # Make mypy happy
         module.parametrizations[tensor_name] = parametrizations
     else:
         raise ValueError(
@@ -640,7 +661,8 @@ def is_parametrized(module: Module, tensor_name: Optional[str] = None) -> bool:
         otherwise ``False``
     """
     parametrizations = getattr(module, "parametrizations", None)
-    if parametrizations is None or not isinstance(parametrizations, ModuleDict):
+    if parametrizations is None or not isinstance(
+            parametrizations, ModuleDict):
         return False
     if tensor_name is None:
         # Check that there is at least one parametrized buffer or Parameter
@@ -678,8 +700,7 @@ def remove_parametrizations(
     """
     if not is_parametrized(module, tensor_name):
         raise ValueError(
-            f"Module {module} does not have a parametrization on {tensor_name}"
-        )
+            f"Module {module} does not have a parametrization on {tensor_name}")
 
     # Fetch the original tensor
     assert isinstance(module.parametrizations, ModuleDict)  # Make mypy happy
@@ -701,7 +722,8 @@ def remove_parametrizations(
                         _maybe_set(original, t)
                     except RuntimeError as e:
                         # TODO: Fix this for tensor subclasses that are parameters:
-                        # RuntimeError: set_storage is not allowed on a Tensor created from .data or .detach().
+                        # RuntimeError: set_storage is not allowed on a Tensor
+                        # created from .data or .detach().
                         raise RuntimeError(
                             "Calling remove_parametrizations() with leave_parametrized=True "
                             "for a parameter that is an instance of a tensor subclass requires "
@@ -709,8 +731,7 @@ def remove_parametrizations(
                             "Alternatively, one can opt into the swap_tensors path"
                             "Either set leave_parametrized=False or provide a working implementation"
                             "for set_() in the tensor subclass or set "
-                            "torch.__future__.set_swap_module_params_on_conversion(True)."
-                        ) from e
+                            "torch.__future__.set_swap_module_params_on_conversion(True).") from e
     else:
         if leave_parametrized:
             # We cannot use no_grad because we need to know whether one or more
@@ -721,8 +742,7 @@ def remove_parametrizations(
         else:
             raise ValueError(
                 "Cannot leave unparametrized (`leave_parametrized=False`) a tensor "
-                "that is parametrized in terms of a sequence of tensors."
-            )
+                "that is parametrized in terms of a sequence of tensors.")
 
     # Delete the property that manages the parametrization
     delattr(module.__class__, tensor_name)
@@ -783,7 +803,8 @@ def transfer_parametrizations_and_params(
 
         assert hasattr(parameters_to_transfer, "__iter__")  # for mypy
         for parameter_name in parameters_to_transfer:
-            # initialize the to-be-transferred param in to_module if it doesn't exist already
+            # initialize the to-be-transferred param in to_module if it doesn't
+            # exist already
             if not hasattr(to_module, parameter_name):
                 setattr(
                     to_module,
@@ -794,19 +815,25 @@ def transfer_parametrizations_and_params(
             # apply the params's parametrizations to to_module
             for param_func in from_module.parametrizations[parameter_name]:
                 register_parametrization(to_module, parameter_name, param_func)
-            assert isinstance(to_module.parametrizations, ModuleDict)  # for mypy
+            assert isinstance(
+                to_module.parametrizations,
+                ModuleDict)  # for mypy
 
             # make values match, original values can be stored in either original or
             # original0, original1..., need to check both cases
-            if hasattr(from_module.parametrizations[parameter_name], "original"):
-                to_module.parametrizations[
+            if hasattr(
+                    from_module.parametrizations[parameter_name],
+                    "original"):
+                to_module.parametrizations[parameter_name].original = from_module.parametrizations[
                     parameter_name
-                ].original = from_module.parametrizations[parameter_name].original
+                ].original
             else:
                 num = 0
                 orig_num = "original" + str(num)
                 # loop through each original# until all values have been set
-                while hasattr(from_module.parametrizations[parameter_name], orig_num):
+                while hasattr(
+                        from_module.parametrizations[parameter_name],
+                        orig_num):
                     setattr(
                         to_module.parametrizations[parameter_name],
                         orig_num,

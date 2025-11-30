@@ -11,9 +11,9 @@ from corerec.retrieval.contrastive_retriever import ContrastiveRetriever
 from corerec.retrieval.faiss_index import FAISSIndexRetriever
 
 __all__ = [
-    'BaseRetriever',
-    'DSSM',
-    'DenseEncoderRetriever',
-    'ContrastiveRetriever',
-    'FAISSIndexRetriever'
-] 
+    "BaseRetriever",
+    "DSSM",
+    "DenseEncoderRetriever",
+    "ContrastiveRetriever",
+    "FAISSIndexRetriever",
+]

@@ -14,17 +14,23 @@ __all__ = ["Timer", "timer", "Language"]
 
 
 if torch.backends.cuda.is_built() and torch.cuda.is_available():  # type: ignore[no-untyped-call]
+
     def timer() -> float:
         torch.cuda.synchronize()
         return timeit.default_timer()
+
 elif torch._C._get_privateuse1_backend_name() != "privateuseone":
-    privateuse1_device_handler = getattr(torch, torch._C._get_privateuse1_backend_name(), None) \
-        if torch._C._get_privateuse1_backend_name() != "cpu" else None
+    privateuse1_device_handler = (
+        getattr(torch, torch._C._get_privateuse1_backend_name(), None)
+        if torch._C._get_privateuse1_backend_name() != "cpu"
+        else None
+    )
 
     def timer() -> float:
         if privateuse1_device_handler:
             privateuse1_device_handler.synchronize()
         return timeit.default_timer()
+
 else:
     timer = timeit.default_timer
 
@@ -217,7 +223,7 @@ class Timer:
         elif language in (Language.CPP, "cpp", "c++"):
             assert self._timer_cls is timeit.Timer, "_timer_cls has already been swapped."
             self._timer_cls = CPPTimer
-            setup = ("" if setup == "pass" else setup)
+            setup = "" if setup == "pass" else setup
             self._language = Language.CPP
             timer_kwargs["global_setup"] = global_setup
 
@@ -276,7 +282,7 @@ class Timer:
             return common.Measurement(
                 number_per_run=number,
                 raw_times=[self._timeit(number=number)],
-                task_spec=self._task_spec
+                task_spec=self._task_spec,
             )
 
     def repeat(self, repeat: int = -1, number: int = -1) -> None:
@@ -292,7 +298,7 @@ class Timer:
         stop_hook: Callable[[List[float]], bool],
         min_run_time: float,
         max_run_time: Optional[float] = None,
-        callback: Optional[Callable[[int, float], NoReturn]] = None
+        callback: Optional[Callable[[int, float], NoReturn]] = None,
     ) -> List[float]:
         total_time = 0.0
         can_stop = False
@@ -378,23 +384,18 @@ class Timer:
             return True
 
         times = self._threaded_measurement_loop(
-            number, time_hook, stop_hook,
-            min_run_time=min_run_time,
-            callback=callback)
-
-        return common.Measurement(
-            number_per_run=number,
-            raw_times=times,
-            task_spec=self._task_spec
+            number, time_hook, stop_hook, min_run_time=min_run_time, callback=callback
         )
 
+        return common.Measurement(number_per_run=number, raw_times=times, task_spec=self._task_spec)
+
     def adaptive_autorange(
-            self,
-            threshold: float = 0.1,
-            *,
-            min_run_time: float = 0.01,
-            max_run_time: float = 10.0,
-            callback: Optional[Callable[[int, float], NoReturn]] = None,
+        self,
+        threshold: float = 0.1,
+        *,
+        min_run_time: float = 0.01,
+        max_run_time: float = 10.0,
+        callback: Optional[Callable[[int, float], NoReturn]] = None,
     ) -> common.Measurement:
         """Similar to `blocked_autorange` but also checks for variablility in measurements
         and repeats until iqr/median is smaller than `threshold` or `max_run_time` is reached.
@@ -437,19 +438,15 @@ class Timer:
         def stop_hook(times: List[float]) -> bool:
             if len(times) > 3:
                 return common.Measurement(
-                    number_per_run=number,
-                    raw_times=times,
-                    task_spec=self._task_spec
+                    number_per_run=number, raw_times=times, task_spec=self._task_spec
                 ).meets_confidence(threshold=threshold)
             return False
-        times = self._threaded_measurement_loop(
-            number, time_hook, stop_hook, min_run_time, max_run_time, callback=callback)
 
-        return common.Measurement(
-            number_per_run=number,
-            raw_times=times,
-            task_spec=self._task_spec
+        times = self._threaded_measurement_loop(
+            number, time_hook, stop_hook, min_run_time, max_run_time, callback=callback
         )
+
+        return common.Measurement(number_per_run=number, raw_times=times, task_spec=self._task_spec)
 
     @overload
     def collect_callgrind(
@@ -522,7 +519,7 @@ class Timer:
         # simpler and quicker to raise an exception for a faulty `stmt` or `setup` in
         # the parent process rather than the valgrind subprocess.
         self._timeit(1)
-        is_python = (self._language == Language.PYTHON)
+        is_python = self._language == Language.PYTHON
         assert is_python or not self._globals
         result = valgrind_timer_interface.wrapper_singleton().collect_callgrind(
             task_spec=self._task_spec,
@@ -534,4 +531,4 @@ class Timer:
             retain_out_file=retain_out_file,
         )
 
-        return (result[0] if repeats is None else result)
+        return result[0] if repeats is None else result

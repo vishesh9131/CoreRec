@@ -5,6 +5,7 @@ from typing import List
 from scipy.sparse import csr_matrix
 from ..base_recommender import BaseRecommender
 
+
 class GraphBasedCFBase(BaseRecommender, ABC):
     def __init__(self, graph_layers: int = 3, learning_rate: float = 0.01):
         self.graph_layers = graph_layers

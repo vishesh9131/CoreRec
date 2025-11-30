@@ -72,15 +72,11 @@ def hash_storage_kernel(x):
     # The randint calls are carefully written to hit things we
     # have lowerings for in inductor.  Lack of unsigned 32-bit integer
     # is a pain.
-    a = torch.randint(
-        -(2**31), 2**31, x.shape, device=x.device, dtype=torch.int32
-    ).abs()
+    a = torch.randint(-(2**31), 2**31, x.shape,
+                      device=x.device, dtype=torch.int32).abs()
     a = ((a % (2**31 - 1)) + 1).long()
-    b = (
-        torch.randint(-(2**31), 2**31, x.shape, device=x.device, dtype=torch.int32)
-        .abs()
-        .long()
-    )
+    b = torch.randint(-(2**31), 2**31, x.shape,
+                      device=x.device, dtype=torch.int32).abs().long()
     # This is a standard shift-multiply universal hash family
     # plus xor sum hash, using Philox to generate random numbers.
     # Our Philox RNG is not deterministic across devices so
@@ -94,7 +90,8 @@ def hash_storage_kernel(x):
 # Returns a hex digest of the data in the storage.  Guaranteed to be
 # SHA-1 if stable_hash=True, otherwise it will consistent for a single
 # process run but not necessarily across processes.
-def hash_storage(storage: torch.UntypedStorage, *, stable_hash: bool = False) -> str:
+def hash_storage(storage: torch.UntypedStorage, *,
+                 stable_hash: bool = False) -> str:
     import torch._dynamo
     from torch._dynamo.utils import is_compile_supported
 
@@ -103,9 +100,10 @@ def hash_storage(storage: torch.UntypedStorage, *, stable_hash: bool = False) ->
         cpu_storage = storage.cpu()
         # TODO: make storage support buffer protocol so this isn't
         # necessary
-        buf = (ctypes.c_byte * cpu_storage.nbytes()).from_address(
-            cpu_storage.data_ptr()
-        )
+        buf = (
+            ctypes.c_byte *
+            cpu_storage.nbytes()).from_address(
+            cpu_storage.data_ptr())
         sha1 = hashlib.sha1()
         sha1.update(buf)
         return sha1.hexdigest()
@@ -122,7 +120,8 @@ def hash_storage(storage: torch.UntypedStorage, *, stable_hash: bool = False) ->
     state = generator.get_state()
     try:
         generator.manual_seed(0)
-        x = torch.empty(0, dtype=torch.uint8, device=storage.device).set_(storage)  # type: ignore[call-overload]
+        x = torch.empty(0, dtype=torch.uint8, device=storage.device).set_(
+            storage)  # type: ignore[call-overload]
         # The dtype-casting view cannot be compiled, and so the
         # padding/reshaping also needs to be done externally even
         # though it could be profitably fused
@@ -193,20 +192,16 @@ class ContentStoreWriter:
 class ContentStoreReader:
     def __init__(self, loc: str, *, cache=True) -> None:
         self.loc = loc
-        self.storage_cache: Optional[
-            Dict[Optional[torch.device], Dict[str, StorageWeakRef]]
-        ] = None
+        self.storage_cache: Optional[Dict[Optional[torch.device],
+                                          Dict[str, StorageWeakRef]]] = None
         if cache:
             self.storage_cache = defaultdict(dict)
 
     def read_storage(self, h: str, *, device=None) -> torch.UntypedStorage:
         if device is not None:
             device = torch.device(device)
-        ws = (
-            self.storage_cache[device].get(h)
-            if self.storage_cache is not None
-            else None
-        )
+        ws = self.storage_cache[device].get(
+            h) if self.storage_cache is not None else None
         s: Optional[torch.UntypedStorage]
         if ws is not None:
             s = torch.UntypedStorage._new_with_weak_ptr(ws.cdata)
@@ -230,8 +225,7 @@ class ContentStoreReader:
 
     def read_tensor(self, name: str, *, device=None) -> torch.Tensor:
         dtype, h, storage_offset, size, stride, metadata = self.read_tensor_metadata(
-            name
-        )
+            name)
         storage = self.read_storage(h, device=device)
         t = torch.tensor([], dtype=dtype, device=storage.device)
         t.set_(storage, storage_offset, size, stride)

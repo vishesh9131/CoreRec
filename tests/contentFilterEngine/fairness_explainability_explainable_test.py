@@ -16,18 +16,23 @@ def load_module(rel_path: str):
 class TestExplainable(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load_module("corerec/engines/contentFilterEngine/fairness_explainability/explainable.py")
+        cls.mod = load_module(
+            "corerec/engines/contentFilterEngine/fairness_explainability/explainable.py"
+        )
         cls.EXPLAINABLE = cls.mod.EXPLAINABLE
 
     def test_generate_and_get(self):
         expl = self.EXPLAINABLE()
-        txt = expl.generate_explanation(1, 42, context={"reason": "similar taste"})
+        txt = expl.generate_explanation(
+            1, 42, context={"reason": "similar taste"})
         self.assertIn("Item 42", txt)
         self.assertIn("User 1", txt)
         got = expl.get_explanation(1, 42)
         self.assertEqual(txt, got)
-        self.assertEqual(expl.get_explanation(2, 99), "No explanation available.")
+        self.assertEqual(
+            expl.get_explanation(
+                2, 99), "No explanation available.")
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

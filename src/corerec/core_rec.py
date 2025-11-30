@@ -1,5 +1,5 @@
 # ###############################################################################################################
-#                           --CoreRec: Connecting to the Unseen--                            
+#                           --CoreRec: Connecting to the Unseen--
 # CoreRec module is designed for graph-based recommendation systems using neural network architectures. It includes:
 #     1. GraphTransformer: A neural network model using Transformer architecture for processing graph data.
 #     2. GraphDataset: A custom dataset class for handling graph data.
@@ -27,7 +27,7 @@ from corerec.metrics import jaccard_similarity, adamic_adar_index, aaj_accuracy
 
 # Importing dataloaders,dataset
 from corerec.cr_utility.dataloader import *
-from corerec.cr_utility.dataset import *    #dont call this its not working rn use GraphDataset ookk
+from corerec.cr_utility.dataset import *  # dont call this its not working rn use GraphDataset ookk
 
 # Importing Boosters AKA Optimizers (Note: _funtional and _init_ is commented)
 from corerec.cr_boosters.adam import *
@@ -43,11 +43,11 @@ from corerec.cr_boosters.sgd import *
 from corerec.cr_boosters.sparse_adam import *
 
 
-#Promoted this script to engine.cr_utility.dataset
+# Promoted this script to engine.cr_utility.dataset
 # from corerec.datasets import GraphDataset
 
 
-#FormatMaster is the plug for corerec preprocessing to detect dataset format and category
+# FormatMaster is the plug for corerec preprocessing to detect dataset format and category
 # from engine.format_master.ds_format_loader import *
 # from engine.format_master.cr_formatMaster import *
 # from engine.format_master.format_library import *

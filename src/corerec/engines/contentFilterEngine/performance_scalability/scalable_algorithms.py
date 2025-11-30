@@ -7,6 +7,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class ScalableAlgorithms:
     def __init__(self, num_workers=None):
         """
@@ -76,7 +77,7 @@ class ScalableAlgorithms:
         - list of lists: A list containing the data chunks.
         """
         chunk_size = len(data) // n_chunks
-        chunks = [data[i * chunk_size:(i + 1) * chunk_size] for i in range(n_chunks - 1)]
-        chunks.append(data[(n_chunks - 1) * chunk_size:])
+        chunks = [data[i * chunk_size : (i + 1) * chunk_size] for i in range(n_chunks - 1)]
+        chunks.append(data[(n_chunks - 1) * chunk_size :])
         logger.info(f"Data split into {n_chunks} chunks.")
         return chunks

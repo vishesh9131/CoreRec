@@ -38,8 +38,7 @@ def broadcast(tensor, devices=None, *, out=None):
     tensor = _handle_complex(tensor)
     if not ((devices is None) ^ (out is None)):
         raise RuntimeError(
-            f"Exactly one of 'devices' and 'out' must be specified, but got devices={devices} and out={out}"
-        )
+            f"Exactly one of 'devices' and 'out' must be specified, but got devices={devices} and out={out}")
     if devices is not None:
         devices = [_get_device_index(d) for d in devices]
         return torch._C._broadcast(tensor, devices)
@@ -93,8 +92,7 @@ def reduce_add(inputs, destination=None):
             got = "x".join(str(x) for x in inp.size())
             expected = "x".join(str(x) for x in input_size)
             raise ValueError(
-                f"input {i} has invalid size: got {got}, but expected {expected}"
-            )
+                f"input {i} has invalid size: got {got}, but expected {expected}")
     if root_index is None:
         raise RuntimeError(
             "reduce_add expects destination to be on the same GPU with one of the tensors"
@@ -107,12 +105,12 @@ def reduce_add(inputs, destination=None):
         result = torch.empty_like(inputs[root_index])
         nccl.reduce(inputs, output=result, root=root_index)
     else:
-        destination_device = torch.device(inputs[root_index].device.type, destination)
+        destination_device = torch.device(
+            inputs[root_index].device.type, destination)
         nonroot = [t for i, t in enumerate(inputs) if i != root_index]
         # make a new tensor w/o clone
-        result = inputs[root_index] + nonroot[0].to(
-            device=destination_device, non_blocking=True
-        )
+        result = inputs[root_index] + \
+            nonroot[0].to(device=destination_device, non_blocking=True)
         for other in nonroot[1:]:
             result.add_(other.to(device=destination_device, non_blocking=True))
     return result
@@ -137,13 +135,17 @@ def reduce_add_coalesced(inputs, destination=None, buffer_size=10485760):
     """
     # TODO: When `len(inputs) == 1` and all inputs are on `destination`, just
     #       return `inputs`.
-    dense_tensors: List[List] = [[] for _ in inputs]  # shape (num_gpus, num_tensors)
+    dense_tensors: List[List] = [[]
+                                 for _ in inputs]  # shape (num_gpus, num_tensors)
     output = []
     ref_order = []
-    # process sparse ones first since they may have different sizes on different gpus
+    # process sparse ones first since they may have different sizes on
+    # different gpus
     for tensor_at_gpus in zip(*inputs):
         if all(t.is_sparse for t in tensor_at_gpus):
-            result = reduce_add(tensor_at_gpus, destination)  # this will be sparse too
+            result = reduce_add(
+                tensor_at_gpus,
+                destination)  # this will be sparse too
             output.append(result)
             ref_order.append(tensor_at_gpus[0])
         else:
@@ -153,9 +155,8 @@ def reduce_add_coalesced(inputs, destination=None, buffer_size=10485760):
     itrs = [_take_tensors(tensors, buffer_size) for tensors in dense_tensors]
     # now the dense ones, which have consistent sizes
     for chunks in zip(*itrs):
-        flat_tensors = [
-            _flatten_dense_tensors(chunk) for chunk in chunks
-        ]  # (num_gpus,)
+        flat_tensors = [_flatten_dense_tensors(
+            chunk) for chunk in chunks]  # (num_gpus,)
         flat_result = reduce_add(flat_tensors, destination)
         for t in _unflatten_dense_tensors(flat_result, chunks[0]):
             # The unflattened tensors do not share storage, and we don't expose
@@ -165,7 +166,14 @@ def reduce_add_coalesced(inputs, destination=None, buffer_size=10485760):
     return tuple(_reorder_tensors_as(output, ref_order))
 
 
-def scatter(tensor, devices=None, chunk_sizes=None, dim=0, streams=None, *, out=None):
+def scatter(
+        tensor,
+        devices=None,
+        chunk_sizes=None,
+        dim=0,
+        streams=None,
+        *,
+        out=None):
     """Scatters tensor across multiple GPUs.
 
     Args:
@@ -202,16 +210,20 @@ def scatter(tensor, devices=None, chunk_sizes=None, dim=0, streams=None, *, out=
     tensor = _handle_complex(tensor)
     if out is None:
         devices = [_get_device_index(d) for d in devices]
-        return tuple(torch._C._scatter(tensor, devices, chunk_sizes, dim, streams))
+        return tuple(
+            torch._C._scatter(
+                tensor,
+                devices,
+                chunk_sizes,
+                dim,
+                streams))
     else:
         if devices is not None:
             raise RuntimeError(
-                f"'devices' must not be specified when 'out' is specified, but got devices={devices}"
-            )
+                f"'devices' must not be specified when 'out' is specified, but got devices={devices}")
         if chunk_sizes is not None:
             raise RuntimeError(
-                f"'chunk_sizes' must not be specified when 'out' is specified, but got chunk_sizes={chunk_sizes}"
-            )
+                f"'chunk_sizes' must not be specified when 'out' is specified, but got chunk_sizes={chunk_sizes}")
         return tuple(torch._C._scatter_out(tensor, out, dim, streams))
 
 
@@ -250,11 +262,11 @@ def gather(tensors, dim=0, destination=None, *, out=None):
                 FutureWarning,
                 stacklevel=2,
             )
-        destination = _get_device_index(destination, allow_cpu=True, optional=True)
+        destination = _get_device_index(
+            destination, allow_cpu=True, optional=True)
         return torch._C._gather(tensors, dim, destination)
     else:
         if destination is not None:
             raise RuntimeError(
-                f"'destination' must not be specified when 'out' is specified, but got destination={destination}"
-            )
+                f"'destination' must not be specified when 'out' is specified, but got destination={destination}")
         return torch._C._gather_out(tensors, out, dim)

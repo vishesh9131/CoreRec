@@ -4,13 +4,19 @@ import torch
 from torch._C import _disabled_torch_function_impl
 
 
-# Metaclass to combine _TensorMeta and the instance check override for Parameter.
+# Metaclass to combine _TensorMeta and the instance check override for
+# Parameter.
 class _ParameterMeta(torch._C._TensorMeta):
-    # Make `isinstance(t, Parameter)` return True for custom tensor instances that have the _is_param flag.
+    # Make `isinstance(t, Parameter)` return True for custom tensor instances
+    # that have the _is_param flag.
     def __instancecheck__(self, instance):
         return super().__instancecheck__(instance) or (
-            isinstance(instance, torch.Tensor) and getattr(instance, "_is_param", False)
-        )
+            isinstance(
+                instance,
+                torch.Tensor) and getattr(
+                instance,
+                "_is_param",
+                False))
 
 
 class Parameter(torch.Tensor, metaclass=_ParameterMeta):
@@ -39,10 +45,12 @@ class Parameter(torch.Tensor, metaclass=_ParameterMeta):
             data = torch.empty(0)
         if type(data) is torch.Tensor or type(data) is Parameter:
             # For ease of BC maintenance, keep this path for standard Tensor.
-            # Eventually (tm), we should change the behavior for standard Tensor to match.
+            # Eventually (tm), we should change the behavior for standard
+            # Tensor to match.
             return torch.Tensor._make_subclass(cls, data, requires_grad)
 
-        # Path for custom tensors: set a flag on the instance to indicate parameter-ness.
+        # Path for custom tensors: set a flag on the instance to indicate
+        # parameter-ness.
         t = data.detach().requires_grad_(requires_grad)
         if type(t) is not type(data):
             raise RuntimeError(
@@ -56,14 +64,16 @@ class Parameter(torch.Tensor, metaclass=_ParameterMeta):
         return t
 
     # Note: the 3 methods below only apply to standard Tensor. Parameters of custom tensor types
-    # are still considered that custom tensor type and these methods will not be called for them.
+    # are still considered that custom tensor type and these methods will not
+    # be called for them.
     def __deepcopy__(self, memo):
         if id(self) in memo:
             return memo[id(self)]
         else:
             result = type(self)(
-                self.data.clone(memory_format=torch.preserve_format), self.requires_grad
-            )
+                self.data.clone(
+                    memory_format=torch.preserve_format),
+                self.requires_grad)
             memo[id(self)] = result
             return result
 
@@ -137,8 +147,7 @@ class UninitializedTensorMixin:
             "Can't access the shape of an uninitialized parameter or buffer. "
             "This error usually happens in `load_state_dict` when trying to load "
             "an uninitialized parameter into an initialized one. "
-            "Call `forward` to initialize the parameters before accessing their attributes."
-        )
+            "Call `forward` to initialize the parameters before accessing their attributes.")
 
     def share_memory_(self):
         raise RuntimeError(
@@ -202,7 +211,10 @@ class UninitializedParameter(UninitializedTensorMixin, Parameter):
         if id(self) in memo:
             return memo[id(self)]
         else:
-            result = type(self)(self.requires_grad, self.data.device, self.data.dtype)
+            result = type(self)(
+                self.requires_grad,
+                self.data.device,
+                self.data.dtype)
             memo[id(self)] = result
             return result
 

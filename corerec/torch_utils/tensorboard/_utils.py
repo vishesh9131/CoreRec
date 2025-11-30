@@ -58,7 +58,16 @@ def _prepare_video(V):
     # pad to nearest power of 2, all at once
     if not is_power2(V.shape[0]):
         len_addition = int(2 ** V.shape[0].bit_length() - V.shape[0])
-        V = np.concatenate((V, np.zeros(shape=(len_addition, t, c, h, w))), axis=0)
+        V = np.concatenate(
+            (V,
+             np.zeros(
+                 shape=(
+                     len_addition,
+                     t,
+                     c,
+                     h,
+                     w))),
+            axis=0)
 
     n_rows = 2 ** ((b.bit_length() - 1) // 2)
     n_cols = V.shape[0] // n_rows
@@ -72,7 +81,8 @@ def _prepare_video(V):
 
 def make_grid(I, ncols=8):
     # I: N1HW or N3HW
-    assert isinstance(I, np.ndarray), "plugin error, should pass numpy array here"
+    assert isinstance(
+        I, np.ndarray), "plugin error, should pass numpy array here"
     if I.shape[1] == 1:
         I = np.concatenate([I, I, I], 1)
     assert I.ndim == 4 and I.shape[1] == 3
@@ -87,7 +97,7 @@ def make_grid(I, ncols=8):
         for x in range(ncols):
             if i >= nimg:
                 break
-            canvas[:, y * H : (y + 1) * H, x * W : (x + 1) * W] = I[i]
+            canvas[:, y * H: (y + 1) * H, x * W: (x + 1) * W] = I[i]
             i = i + 1
     return canvas
 
@@ -116,7 +126,8 @@ def convert_to_HWC(tensor, input_format):  # tensor: numpy array
         index = [input_format.find(c) for c in "HWC"]
         tensor_HWC = tensor.transpose(index)
         if tensor_HWC.shape[2] == 1:
-            tensor_HWC = np.concatenate([tensor_HWC, tensor_HWC, tensor_HWC], 2)
+            tensor_HWC = np.concatenate(
+                [tensor_HWC, tensor_HWC, tensor_HWC], 2)
         return tensor_HWC
 
     if len(input_format) == 2:

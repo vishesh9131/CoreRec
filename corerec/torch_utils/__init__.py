@@ -11,6 +11,7 @@ from torch.utils import (
     data as data,
     hooks as hooks,
 )
+
 # from torch.utils.backend_registration import (
 #     generate_methods_for_privateuse1_backend,
 #     rename_privateuse1_backend,
@@ -34,6 +35,7 @@ def set_module(obj, mod):
 #     # Handle the deploy-specific logic here
 #     pass
 
+
 def swap_tensors(t1, t2):
     """
     This function swaps the content of the two Tensor objects.
@@ -44,13 +46,18 @@ def swap_tensors(t1, t2):
     """
     # Ensure there are no weakrefs
     if weakref.getweakrefs(t1):
-        raise RuntimeError("Cannot swap t1 because it has weakref associated with it")
+        raise RuntimeError(
+            "Cannot swap t1 because it has weakref associated with it")
     if weakref.getweakrefs(t2):
-        raise RuntimeError("Cannot swap t2 because it has weakref associated with it")
-    t1_slots = set(copyreg._slotnames(t1.__class__))  # type: ignore[attr-defined]
-    t2_slots = set(copyreg._slotnames(t2.__class__))  # type: ignore[attr-defined]
+        raise RuntimeError(
+            "Cannot swap t2 because it has weakref associated with it")
+    # type: ignore[attr-defined]
+    t1_slots = set(copyreg._slotnames(t1.__class__))
+    # type: ignore[attr-defined]
+    t2_slots = set(copyreg._slotnames(t2.__class__))
     if t1_slots != t2_slots:
-        raise RuntimeError("Cannot swap t1 and t2 if they have different slots")
+        raise RuntimeError(
+            "Cannot swap t1 and t2 if they have different slots")
 
     def swap_attr(name):
         tmp = getattr(t1, name)
@@ -64,8 +71,7 @@ def swap_tensors(t1, t2):
             "For a module m with `torch.__future__.set_swap_module_params_on_conversion(True)` "
             "you should not change the device or dtype of the module (e.g. `m.cpu()` or `m.half()`) "
             "between running forward and backward. To resolve this, please only change the "
-            "device/dtype before running forward (or after both forward and backward)."
-        )
+            "device/dtype before running forward (or after both forward and backward).")
 
     def check_use_count(t, name="t1"):
         use_count = t._use_count()
@@ -75,8 +81,10 @@ def swap_tensors(t1, t2):
         )
         if use_count > 1:
             if use_count == 2 and t.is_leaf:
-                accum_grad_node = torch.autograd.graph.get_gradient_edge(t).node
-                # Make sure that the accumulate_grad node was not lazy_init-ed by get_gradient_edge
+                accum_grad_node = torch.autograd.graph.get_gradient_edge(
+                    t).node
+                # Make sure that the accumulate_grad node was not lazy_init-ed
+                # by get_gradient_edge
                 if t._use_count() == 2:
                     accum_grad_node.register_prehook(error_pre_hook)
                 else:
@@ -108,11 +116,13 @@ def swap_tensors(t1, t2):
     # Swap the at::Tensor they point to
     torch._C._swap_tensor_impl(t1, t2)
 
+
 # Define the is_compiling function
 def is_compiling() -> bool:
     # Implement the logic for determining if the code is compiling
     # This is just a placeholder implementation
     return False
 
+
 # Export the function
-__all__ = ['is_compiling']
+__all__ = ["is_compiling"]

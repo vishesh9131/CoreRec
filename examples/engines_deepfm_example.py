@@ -17,7 +17,9 @@ if __name__ == "__main__":
     users, items, ratings = data["users"], data["items"], data["ratings"]
 
     # New API: Direct access to DeepFM from engines
-    model = engines.DeepFM(embedding_dim=16, hidden_layers=[64, 32], epochs=1, batch_size=512, device="cpu")
+    model = engines.DeepFM(
+        embedding_dim=16, hidden_layers=[64, 32], epochs=1, batch_size=512, device="cpu"
+    )
     try:
         model.fit(users, items, ratings)
         recs = model.recommend(users[0], top_n=10, exclude_seen=False)

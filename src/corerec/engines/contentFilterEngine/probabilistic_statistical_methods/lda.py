@@ -7,6 +7,7 @@ from typing import List, Any
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class LDA:
     def __init__(self, n_components: int = 10, max_iter: int = 10):
         """
@@ -16,8 +17,10 @@ class LDA:
         - n_components (int): Number of topics.
         - max_iter (int): Maximum number of iterations for the EM algorithm.
         """
-        self.vectorizer = CountVectorizer(stop_words='english')
-        self.lda_model = LatentDirichletAllocation(n_components=n_components, max_iter=max_iter, random_state=42)
+        self.vectorizer = CountVectorizer(stop_words="english")
+        self.lda_model = LatentDirichletAllocation(
+            n_components=n_components, max_iter=max_iter, random_state=42
+        )
         logger.info(f"LDA initialized with {n_components} topics and {max_iter} max iterations.")
 
     def fit(self, documents: List[str]):

@@ -1,8 +1,11 @@
 # corerec/engines/unionizedFilterEngine/als_recommender.py
 
-from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_base import MatrixFactorizationBase
+from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_base import (
+    MatrixFactorizationBase,
+)
 from scipy.sparse import csr_matrix
 from typing import List
+
 
 class ALSRecommender(MatrixFactorizationBase):
     def fit(self, interaction_matrix: csr_matrix, user_ids: List[int], item_ids: List[int]):

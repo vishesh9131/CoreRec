@@ -7,6 +7,7 @@ Therefore, for code tidiness we put these functions into different files in this
 folder.
 """
 
+from . import collate, fetch, pin_memory, signal_handling, worker
 import atexit
 import sys
 
@@ -49,6 +50,3 @@ def _set_python_exit_flag():
 
 
 atexit.register(_set_python_exit_flag)
-
-
-from . import collate, fetch, pin_memory, signal_handling, worker

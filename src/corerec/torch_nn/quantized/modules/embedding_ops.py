@@ -8,7 +8,7 @@ appropriate file under the `torch/ao/nn/quantized/modules`,
 while adding an import statement here.
 """
 
-__all__ = ['EmbeddingPackedParams', 'Embedding', 'EmbeddingBag']
+__all__ = ["EmbeddingPackedParams", "Embedding", "EmbeddingBag"]
 
 from torch.ao.nn.quantized.modules.embedding_ops import Embedding
 from torch.ao.nn.quantized.modules.embedding_ops import EmbeddingBag

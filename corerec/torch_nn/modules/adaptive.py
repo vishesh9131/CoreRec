@@ -129,7 +129,8 @@ class AdaptiveLogSoftmaxWithLoss(Module):
         cutoffs = list(cutoffs)
 
         if len(cutoffs) == 0:
-            raise ValueError("cutoffs should be a sequence of length larger than 0")
+            raise ValueError(
+                "cutoffs should be a sequence of length larger than 0")
 
         if (
             (cutoffs != sorted(cutoffs))
@@ -155,8 +156,10 @@ class AdaptiveLogSoftmaxWithLoss(Module):
         self.head_size = self.shortlist_size + self.n_clusters
 
         self.head = Linear(
-            self.in_features, self.head_size, bias=self.head_bias, **factory_kwargs
-        )
+            self.in_features,
+            self.head_size,
+            bias=self.head_bias,
+            **factory_kwargs)
         self.tail = ModuleList()
 
         for i in range(self.n_clusters):
@@ -183,25 +186,20 @@ class AdaptiveLogSoftmaxWithLoss(Module):
             if input_.size(0) != target_.size(0):
                 raise RuntimeError(
                     "Input and target should have the same size "
-                    "in the batch dimension."
-                )
+                    "in the batch dimension.")
             if input_.dim() != 2:
                 raise RuntimeError(
                     "1D target tensor expects 2D input tensors, "
-                    "but found inputs with size",
-                    input_.size(),
-                )
+                    "but found inputs with size", input_.size(), )
         elif targ_dim == 0:
             if input_.dim() != 1:
                 raise RuntimeError(
                     "0D target tensor expects 1D input tensors, "
-                    "but found inputs with size",
-                    input_.size(),
-                )
+                    "but found inputs with size", input_.size(), )
         else:
             raise RuntimeError(
-                "0D or 1D target tensor expected, " "multi-target not supported"
-            )
+                "0D or 1D target tensor expected, "
+                "multi-target not supported")
 
         is_batched = targ_dim > 0
         input = input_ if is_batched else input_.unsqueeze(0)
@@ -236,17 +234,19 @@ class AdaptiveLogSoftmaxWithLoss(Module):
 
                 gather_inds.index_fill_(0, row_indices, cluster_index)
                 cluster_logprob = F.log_softmax(cluster_output, dim=1)
-                local_logprob = cluster_logprob.gather(1, relative_target.unsqueeze(1))
+                local_logprob = cluster_logprob.gather(
+                    1, relative_target.unsqueeze(1))
                 output.index_copy_(0, row_indices, local_logprob.squeeze(1))
 
             used_rows += row_indices.numel()
 
         if used_rows != batch_size:
             raise RuntimeError(
-                f"Target values should be in [0, {self.n_classes - 1}], "
-                f"but values in range [{target.min().item()}, {target.max().item()}] "
-                "were found. "
-            )
+                f"Target values should be in [0, {
+                    self.n_classes -
+                    1}], " f"but values in range [{
+                    target.min().item()}, {
+                    target.max().item()}] " "were found. ")
 
         head_output = self.head(input)
         head_logprob = F.log_softmax(head_output, dim=1)
@@ -265,12 +265,12 @@ class AdaptiveLogSoftmaxWithLoss(Module):
 
         out[:, : self.shortlist_size] = head_logprob[:, : self.shortlist_size]
 
-        for i, (start_idx, stop_idx) in enumerate(zip(self.cutoffs, self.cutoffs[1:])):
+        for i, (start_idx, stop_idx) in enumerate(
+                zip(self.cutoffs, self.cutoffs[1:])):
             cluster_output = self.tail[i](input)
             cluster_logprob = F.log_softmax(cluster_output, dim=1)
-            output_logprob = cluster_logprob + head_logprob[
-                :, self.shortlist_size + i
-            ].unsqueeze(1)
+            output_logprob = cluster_logprob + \
+                head_logprob[:, self.shortlist_size + i].unsqueeze(1)
 
             out[:, start_idx:stop_idx] = output_logprob
 

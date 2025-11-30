@@ -22,6 +22,7 @@ Usage:
 import networkx as nx
 import numpy as np
 
+
 def jaccard_similarity(graph, node):
     G = nx.from_numpy_array(graph)
     scores = []
@@ -35,6 +36,7 @@ def jaccard_similarity(graph, node):
             scores.append((n, score))
     return scores
 
+
 def adamic_adar_index(graph, node):
     G = nx.from_numpy_array(graph)
     scores = []
@@ -43,9 +45,14 @@ def adamic_adar_index(graph, node):
         if n != node:
             neighbors_n = set(G.neighbors(n))
             shared_neighbors = neighbors & neighbors_n
-            score = sum(1 / np.log(len(list(G.neighbors(nn)))) for nn in shared_neighbors if len(list(G.neighbors(nn))) > 1)
+            score = sum(
+                1 / np.log(len(list(G.neighbors(nn))))
+                for nn in shared_neighbors
+                if len(list(G.neighbors(nn))) > 1
+            )
             scores.append((n, score))
     return scores
+
 
 def aaj_accuracy(graph, node_index, recommended_indices):
     G = nx.from_numpy_array(graph)

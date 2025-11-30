@@ -1,5 +1,6 @@
 from owlready2 import get_ontology
 
+
 class OntologyBasedFilter:
     def __init__(self, ontology_path):
         """
@@ -46,9 +47,9 @@ class OntologyBasedFilter:
         related_concepts = self.find_related_concepts(concepts)
 
         if related_concepts:
-            return {'status': 'filtered', 'related_concepts': related_concepts}
+            return {"status": "filtered", "related_concepts": related_concepts}
         else:
-            return {'status': 'allowed', 'related_concepts': related_concepts}
+            return {"status": "allowed", "related_concepts": related_concepts}
 
     def find_related_concepts(self, concepts):
         """

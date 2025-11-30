@@ -1,6 +1,5 @@
-
 # ###############################################################################################################
-#                           --CoreRec: Connecting to the Unseen--                            
+#                           --CoreRec: Connecting to the Unseen--
 # CoreRec module is designed for graph-based recommendation systems using neural network architectures. It includes:
 #     1. GraphTransformer: A neural network model using Transformer architecture for processing graph data.
 #     2. GraphDataset: A custom dataset class for handling graph data.
@@ -11,12 +10,15 @@
 # ###############################################################################################################
 from common_import import *
 
+
 class GraphTransformer(nn.Module):
     def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim, use_weights=False):
         super(GraphTransformer, self).__init__()
         self.use_weights = use_weights
         self.input_linear = nn.Linear(input_dim, d_model)
-        self.encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=num_heads, dim_feedforward=d_feedforward, batch_first=True)
+        self.encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model, nhead=num_heads, dim_feedforward=d_feedforward, batch_first=True
+        )
         self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=num_layers)
         self.output_linear = nn.Linear(d_model, input_dim)
 
@@ -28,6 +30,7 @@ class GraphTransformer(nn.Module):
         x = self.transformer_encoder(x)
         x = self.output_linear(x)
         return x
+
 
 # Custom Dataset for Graph Data
 class GraphDataset(Dataset):
@@ -47,6 +50,7 @@ class GraphDataset(Dataset):
             weights = self.weight_matrix[idx]
             return node_features, weights
         return node_features, node_features  # Return node_features as targets if no weights
+
 
 # Training Loop
 def train_model(model, data_loader, criterion, optimizer, num_epochs):
@@ -84,8 +88,7 @@ def train_model(model, data_loader, criterion, optimizer, num_epochs):
 #         print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {average_loss:.4f}")
 
 
-def predict(model, graph, node_index,top_k=5):
-    
+def predict(model, graph, node_index, top_k=5):
     model.eval()
     with torch.no_grad():
         input_data = torch.tensor(graph[node_index]).unsqueeze(0)  # Get the input node's features
@@ -95,21 +98,18 @@ def predict(model, graph, node_index,top_k=5):
     recommended_indices = scores.argsort()[-top_k:][::-1]
     return recommended_indices
 
+
 def predict(model, graph, node_index, top_k=5, threshold=0.5):
     model.eval()
     with torch.no_grad():
         input_data = torch.tensor(graph[node_index]).unsqueeze(0)  # Get the input node's features
         output = model(input_data)
         scores = output.squeeze().numpy()
-    
+
     # Apply threshold
     recommended_indices = [i for i, score in enumerate(scores) if score > threshold]
     recommended_indices = sorted(recommended_indices, key=lambda i: scores[i], reverse=True)[:top_k]
     return recommended_indices
-
-
-
-
 
 
 # Graph Drawing Function
@@ -133,9 +133,9 @@ def draw_graph(adj_matrix, top_nodes, recommended_nodes=None):
     node_colors = []
     for node in G.nodes():
         if recommended_nodes is not None and node in recommended_nodes:
-            node_colors.append('red')
+            node_colors.append("red")
         else:
-            node_colors.append('skyblue')
+            node_colors.append("skyblue")
 
     nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=500, alpha=0.8)
 
@@ -147,13 +147,13 @@ def draw_graph(adj_matrix, top_nodes, recommended_nodes=None):
 
     # Highlight top nodes with a different shape
     if top_nodes is not None:
-        top_node_color = 'green'
-        nx.draw_networkx_nodes(G, pos, nodelist=top_nodes, node_color=top_node_color, node_size=500, node_shape='s')
+        top_node_color = "green"
+        nx.draw_networkx_nodes(
+            G, pos, nodelist=top_nodes, node_color=top_node_color, node_size=500, node_shape="s"
+        )
 
     plt.title("Recommended Nodes Highlighted in Blue and Top Nodes in Red")
     plt.show()
-    
-
 
 
 def jaccard_similarity(graph, node):
@@ -169,6 +169,7 @@ def jaccard_similarity(graph, node):
             scores.append((n, score))
     return scores
 
+
 def adamic_adar_index(graph, node):
     G = nx.from_numpy_array(graph)
     scores = []
@@ -177,10 +178,13 @@ def adamic_adar_index(graph, node):
         if n != node:
             neighbors_n = set(G.neighbors(n))
             shared_neighbors = neighbors & neighbors_n
-            score = sum(1 / np.log(len(list(G.neighbors(nn)))) for nn in shared_neighbors if len(list(G.neighbors(nn))) > 1)
+            score = sum(
+                1 / np.log(len(list(G.neighbors(nn))))
+                for nn in shared_neighbors
+                if len(list(G.neighbors(nn))) > 1
+            )
             scores.append((n, score))
     return scores
-
 
 
 def aaj_accuracy(graph, node_index, recommended_indices):
@@ -207,7 +211,6 @@ def aaj_accuracy(graph, node_index, recommended_indices):
     return avg_jaccard, avg_adamic_adar
 
 
-
 # XAI
 def explainable_predict(model, graph, node_index, top_k=5, threshold=0.5):
     model.eval()
@@ -226,8 +229,16 @@ def explainable_predict(model, graph, node_index, top_k=5, threshold=0.5):
 
     for idx in recommended_indices:
         node_neighbors = set(G.neighbors(idx))
-        jaccard = len(user_neighbors & node_neighbors) / len(user_neighbors | node_neighbors) if len(user_neighbors | node_neighbors) > 0 else 0
-        adamic_adar = sum(1 / np.log(len(list(G.neighbors(nn)))) for nn in user_neighbors & node_neighbors if len(list(G.neighbors(nn))) > 1)
+        jaccard = (
+            len(user_neighbors & node_neighbors) / len(user_neighbors | node_neighbors)
+            if len(user_neighbors | node_neighbors) > 0
+            else 0
+        )
+        adamic_adar = sum(
+            1 / np.log(len(list(G.neighbors(nn))))
+            for nn in user_neighbors & node_neighbors
+            if len(list(G.neighbors(nn))) > 1
+        )
 
         # Generate natural language explanations
         explanation_text = f"The recommendation is based on the similarity of node {idx} to your interests and its connections to relevant nodes."
@@ -237,7 +248,7 @@ def explainable_predict(model, graph, node_index, top_k=5, threshold=0.5):
             "score": scores[idx],
             "jaccard_similarity": jaccard,
             "adamic_adar_index": adamic_adar,
-            "explanation": explanation_text
+            "explanation": explanation_text,
         }
         explanations.append(explanation)
 

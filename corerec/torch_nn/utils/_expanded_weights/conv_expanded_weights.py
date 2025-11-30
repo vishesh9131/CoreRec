@@ -19,13 +19,13 @@ class ConvPerSampleGrad(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwarg_names, conv_fn, *expanded_args_and_kwargs):
         expanded_args, expanded_kwargs = conv_args_and_kwargs(
-            kwarg_names, expanded_args_and_kwargs
-        )
+            kwarg_names, expanded_args_and_kwargs)
         orig_input = expanded_args[0]
         was_same_padding = expanded_kwargs["padding"] == "same"
 
         if isinstance(expanded_kwargs["padding"], str):
-            # if padding is a string, we'll do the necessary padding (slowly) using F.pad
+            # if padding is a string, we'll do the necessary padding (slowly)
+            # using F.pad
             kernel_size = expanded_args[1].shape[2:]
             padding, dilation = expanded_kwargs["padding"], expanded_kwargs["dilation"]
             input = conv_input_for_string_padding(

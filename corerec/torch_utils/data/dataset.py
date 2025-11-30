@@ -60,7 +60,8 @@ class Dataset(Generic[_T_co]):
     """
 
     def __getitem__(self, index) -> _T_co:
-        raise NotImplementedError("Subclasses of Dataset should implement __getitem__.")
+        raise NotImplementedError(
+            "Subclasses of Dataset should implement __getitem__.")
 
     # def __getitems__(self, indices: List) -> List[_T_co]:
     # Not implemented to prevent false-positives in fetcher check in
@@ -235,21 +236,25 @@ class StackDataset(Dataset[_T_stack]):
 
     datasets: Union[tuple, dict]
 
-    def __init__(self, *args: Dataset[_T_co], **kwargs: Dataset[_T_co]) -> None:
+    def __init__(
+            self,
+            *args: Dataset[_T_co],
+            **kwargs: Dataset[_T_co]) -> None:
         if args:
             if kwargs:
                 raise ValueError(
                     "Supported either ``tuple``- (via ``args``) or"
-                    "``dict``- (via ``kwargs``) like input/output, but both types are given."
-                )
+                    "``dict``- (via ``kwargs``) like input/output, but both types are given.")
             self._length = len(args[0])  # type: ignore[arg-type]
-            if any(self._length != len(dataset) for dataset in args):  # type: ignore[arg-type]
+            if any(self._length != len(dataset)
+                   for dataset in args):  # type: ignore[arg-type]
                 raise ValueError("Size mismatch between datasets")
             self.datasets = args
         elif kwargs:
             tmp = list(kwargs.values())
             self._length = len(tmp[0])  # type: ignore[arg-type]
-            if any(self._length != len(dataset) for dataset in tmp):  # type: ignore[arg-type]
+            if any(self._length != len(dataset)
+                   for dataset in tmp):  # type: ignore[arg-type]
                 raise ValueError("Size mismatch between datasets")
             self.datasets = kwargs
         else:
@@ -266,7 +271,8 @@ class StackDataset(Dataset[_T_stack]):
             dict_batch: List[_T_dict] = [{} for _ in indices]
             for k, dataset in self.datasets.items():
                 if callable(getattr(dataset, "__getitems__", None)):
-                    items = dataset.__getitems__(indices)  # type: ignore[attr-defined]
+                    # type: ignore[attr-defined]
+                    items = dataset.__getitems__(indices)
                     if len(items) != len(indices):
                         raise ValueError(
                             "Nested dataset's output size mismatch."
@@ -283,7 +289,8 @@ class StackDataset(Dataset[_T_stack]):
         list_batch: List[list] = [[] for _ in indices]
         for dataset in self.datasets:
             if callable(getattr(dataset, "__getitems__", None)):
-                items = dataset.__getitems__(indices)  # type: ignore[attr-defined]
+                # type: ignore[attr-defined]
+                items = dataset.__getitems__(indices)
                 if len(items) != len(indices):
                     raise ValueError(
                         "Nested dataset's output size mismatch."
@@ -325,7 +332,9 @@ class ConcatDataset(Dataset[_T_co]):
     def __init__(self, datasets: Iterable[Dataset]) -> None:
         super().__init__()
         self.datasets = list(datasets)
-        assert len(self.datasets) > 0, "datasets should not be an empty iterable"  # type: ignore[arg-type]
+        # type: ignore[arg-type]
+        assert len(
+            self.datasets) > 0, "datasets should not be an empty iterable"
         for d in self.datasets:
             assert not isinstance(
                 d, IterableDataset
@@ -339,8 +348,7 @@ class ConcatDataset(Dataset[_T_co]):
         if idx < 0:
             if -idx > len(self):
                 raise ValueError(
-                    "absolute value of index should not exceed dataset length"
-                )
+                    "absolute value of index should not exceed dataset length")
             idx = len(self) + idx
         dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
         if dataset_idx == 0:
@@ -376,16 +384,14 @@ class ChainDataset(IterableDataset):
     def __iter__(self):
         for d in self.datasets:
             assert isinstance(
-                d, IterableDataset
-            ), "ChainDataset only supports IterableDataset"
+                d, IterableDataset), "ChainDataset only supports IterableDataset"
             yield from d
 
     def __len__(self):
         total = 0
         for d in self.datasets:
             assert isinstance(
-                d, IterableDataset
-            ), "ChainDataset only supports IterableDataset"
+                d, IterableDataset), "ChainDataset only supports IterableDataset"
             total += len(d)  # type: ignore[arg-type]
         return total
 
@@ -402,7 +408,10 @@ class Subset(Dataset[_T_co]):
     dataset: Dataset[_T_co]
     indices: Sequence[int]
 
-    def __init__(self, dataset: Dataset[_T_co], indices: Sequence[int]) -> None:
+    def __init__(
+            self,
+            dataset: Dataset[_T_co],
+            indices: Sequence[int]) -> None:
         self.dataset = dataset
         self.indices = indices
 
@@ -415,7 +424,8 @@ class Subset(Dataset[_T_co]):
         # add batched sampling support when parent dataset supports it.
         # see torch.utils.data._utils.fetch._MapDatasetFetcher
         if callable(getattr(self.dataset, "__getitems__", None)):
-            return self.dataset.__getitems__([self.indices[idx] for idx in indices])  # type: ignore[attr-defined]
+            return self.dataset.__getitems__(
+                [self.indices[idx] for idx in indices])  # type: ignore[attr-defined]
         else:
             return [self.dataset[self.indices[idx]] for idx in indices]
 
@@ -457,13 +467,17 @@ def random_split(
         subset_lengths: List[int] = []
         for i, frac in enumerate(lengths):
             if frac < 0 or frac > 1:
-                raise ValueError(f"Fraction at index {i} is not between 0 and 1")
+                raise ValueError(
+                    f"Fraction at index {i} is not between 0 and 1")
             n_items_in_split = int(
-                math.floor(len(dataset) * frac)  # type: ignore[arg-type]
-            )
+                math.floor(
+                    len(dataset) *
+                    frac))  # type: ignore[arg-type]
             subset_lengths.append(n_items_in_split)
-        remainder = len(dataset) - sum(subset_lengths)  # type: ignore[arg-type]
-        # add 1 to all the lengths in round-robin fashion until the remainder is 0
+        # type: ignore[arg-type]
+        remainder = len(dataset) - sum(subset_lengths)
+        # add 1 to all the lengths in round-robin fashion until the remainder
+        # is 0
         for i in range(remainder):
             idx_to_add_at = i % len(subset_lengths)
             subset_lengths[idx_to_add_at] += 1
@@ -471,19 +485,17 @@ def random_split(
         for i, length in enumerate(lengths):
             if length == 0:
                 warnings.warn(
-                    f"Length of split at index {i} is 0. "
-                    f"This might result in an empty dataset."
-                )
+                    f"Length of split at index {i} is 0. " f"This might result in an empty dataset.")
 
     # Cannot verify that dataset is Sized
     if sum(lengths) != len(dataset):  # type: ignore[arg-type]
         raise ValueError(
-            "Sum of input lengths does not equal the length of the input dataset!"
-        )
+            "Sum of input lengths does not equal the length of the input dataset!")
 
-    indices = randperm(sum(lengths), generator=generator).tolist()  # type: ignore[arg-type, call-overload]
+    # type: ignore[arg-type, call-overload]
+    indices = randperm(sum(lengths), generator=generator).tolist()
     lengths = cast(Sequence[int], lengths)
     return [
-        Subset(dataset, indices[offset - length : offset])
+        Subset(dataset, indices[offset - length: offset])
         for offset, length in zip(itertools.accumulate(lengths), lengths)
     ]

@@ -6,7 +6,12 @@ from types import ModuleType
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-BASE_DIR = REPO_ROOT / "corerec" / "engines" / "contentFilterEngine" / "embedding_representation_learning"
+BASE_DIR = (
+    REPO_ROOT /
+    "corerec" /
+    "engines" /
+    "contentFilterEngine" /
+    "embedding_representation_learning")
 
 
 def ensure_fake_package(name: str, path: Path):
@@ -33,13 +38,29 @@ class TestPersonalizedEmbeddings(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         ensure_fake_package("corerec", REPO_ROOT / "corerec")
-        ensure_fake_package("corerec.engines", REPO_ROOT / "corerec" / "engines")
-        ensure_fake_package("corerec.engines.contentFilterEngine", REPO_ROOT / "corerec" / "engines" / "contentFilterEngine")
-        ensure_fake_package("corerec.engines.contentFilterEngine.embedding_representation_learning", BASE_DIR)
+        ensure_fake_package(
+            "corerec.engines",
+            REPO_ROOT /
+            "corerec" /
+            "engines")
+        ensure_fake_package(
+            "corerec.engines.contentFilterEngine",
+            REPO_ROOT / "corerec" / "engines" / "contentFilterEngine",
+        )
+        ensure_fake_package(
+            "corerec.engines.contentFilterEngine.embedding_representation_learning",
+            BASE_DIR)
 
-        # Preload submodules explicitly to avoid importing the entire engines package tree
-        doc2vec_mod = load_as("corerec.engines.contentFilterEngine.embedding_representation_learning.doc2vec", "doc2vec.py")
-        load_as("corerec.engines.contentFilterEngine.embedding_representation_learning.word2vec", "word2vec.py")
+        # Preload submodules explicitly to avoid importing the entire engines
+        # package tree
+        doc2vec_mod = load_as(
+            "corerec.engines.contentFilterEngine.embedding_representation_learning.doc2vec",
+            "doc2vec.py",
+        )
+        load_as(
+            "corerec.engines.contentFilterEngine.embedding_representation_learning.word2vec",
+            "word2vec.py",
+        )
         cls.mod = load_as(
             "corerec.engines.contentFilterEngine.embedding_representation_learning.personalized_embeddings",
             "personalized_embeddings.py",
@@ -49,14 +70,19 @@ class TestPersonalizedEmbeddings(unittest.TestCase):
         class _FakeW2V:
             def __init__(self, **kwargs):
                 self.vector_size = int(kwargs.get("vector_size", 8))
+
             def train(self, sentences, epochs=1):
                 return None
+
             def get_embedding(self, word):
                 return [0.0] * self.vector_size
+
             def save_model(self, path):
                 return None
+
             def load_model(self, path):
                 return None
+
         cls.mod.WORD2VEC = _FakeW2V
 
         cls.PERSONALIZED_EMBEDDINGS = cls.mod.PERSONALIZED_EMBEDDINGS
@@ -73,4 +99,4 @@ class TestPersonalizedEmbeddings(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

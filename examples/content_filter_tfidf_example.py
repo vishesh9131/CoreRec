@@ -28,4 +28,4 @@ if __name__ == "__main__":
         model.fit(items, docs)
         print("Query 'movie':", model.recommend_by_text("movie", top_n=10))
     except Exception as e:
-        print("TFIDF example skipped:", e) 
+        print("TFIDF example skipped:", e)

@@ -99,10 +99,7 @@ def issubtype(left, right, recursive=True):
     if len(variants) == 0:
         return False
 
-    return all(
-        _issubtype_with_constraints(variant, constraints, recursive)
-        for variant in variants
-    )
+    return all(_issubtype_with_constraints(variant, constraints, recursive) for variant in variants)
 
 
 def _decompose_type(t, to_list=True):
@@ -184,10 +181,7 @@ def _issubtype_with_constraints(variant, constraints, recursive=True):
                     if (
                         v_args is not None
                         and len(v_args) == len(c_args)
-                        and all(
-                            issubtype(v_arg, c_arg)
-                            for v_arg, c_arg in zip(v_args, c_args)
-                        )
+                        and all(issubtype(v_arg, c_arg) for v_arg, c_arg in zip(v_args, c_args))
                     ):
                         return True
             # Tuple[int] -> Tuple
@@ -219,9 +213,7 @@ def issubinstance(data, data_type):
         if dt_args is None or len(dt_args) == 0:
             return True
         kt, vt = dt_args
-        return all(
-            issubinstance(k, kt) and issubinstance(v, vt) for k, v in data.items()
-        )
+        return all(issubinstance(k, kt) and issubinstance(v, vt) for k, v in data.items())
 
     return True
 
@@ -295,9 +287,7 @@ class _DataPipeMeta(GenericMeta):
             if isinstance(base, _DataPipeMeta):
                 return super().__new__(cls, name, bases, namespace, **kwargs)  # type: ignore[call-overload]
 
-        namespace.update(
-            {"type": _DEFAULT_TYPE, "__init_subclass__": _dp_init_subclass}
-        )
+        namespace.update({"type": _DEFAULT_TYPE, "__init_subclass__": _dp_init_subclass})
         return super().__new__(cls, name, bases, namespace, **kwargs)  # type: ignore[call-overload]
 
     def __init__(self, name, bases, namespace, **kwargs):
@@ -336,16 +326,12 @@ class _DataPipeMeta(GenericMeta):
                 )
 
         if len(params) > 1:
-            raise TypeError(
-                f"Too many parameters for {self} actual {len(params)}, expected 1"
-            )
+            raise TypeError(f"Too many parameters for {self} actual {len(params)}, expected 1")
 
         t = _DataPipeType(params[0])
 
         if not t.issubtype(self.type):
-            raise TypeError(
-                f"Can not subclass a DataPipe[{t}] from DataPipe[{self.type}]"
-            )
+            raise TypeError(f"Can not subclass a DataPipe[{t}] from DataPipe[{self.type}]")
 
         # Types are equal, fast path for inheritance
         if self.type == t:
@@ -452,9 +438,7 @@ def _dp_init_subclass(sub_cls, *args, **kwargs):
             ):
                 raise TypeError(
                     "Expected 'Iterator' as the return annotation for `__iter__` of {}"
-                    ", but found {}".format(
-                        sub_cls.__name__, _type_repr(hints["return"])
-                    )
+                    ", but found {}".format(sub_cls.__name__, _type_repr(hints["return"]))
                 )
             data_type = return_hint.__args__[0]
             if not issubtype(data_type, sub_cls.type.param):

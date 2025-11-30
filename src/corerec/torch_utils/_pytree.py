@@ -396,9 +396,7 @@ def _tuple_flatten(d: Tuple[Any, ...]) -> Tuple[List[Any], Context]:
     return list(d), None
 
 
-def _tuple_flatten_with_keys(
-    d: Tuple[Any, ...]
-) -> Tuple[List[Tuple[KeyEntry, Any]], Context]:
+def _tuple_flatten_with_keys(d: Tuple[Any, ...]) -> Tuple[List[Tuple[KeyEntry, Any]], Context]:
     values, context = _tuple_flatten(d)
     return [(SequenceKey(i), v) for i, v in enumerate(values)], context
 
@@ -424,9 +422,7 @@ def _dict_flatten(d: Dict[Any, Any]) -> Tuple[List[Any], Context]:
     return list(d.values()), list(d.keys())
 
 
-def _dict_flatten_with_keys(
-    d: Dict[Any, Any]
-) -> Tuple[List[Tuple[KeyEntry, Any]], Context]:
+def _dict_flatten_with_keys(d: Dict[Any, Any]) -> Tuple[List[Tuple[KeyEntry, Any]], Context]:
     values, context = _dict_flatten(d)
     return [(MappingKey(k), v) for k, v in zip(context, values)], context
 
@@ -654,9 +650,7 @@ def _get_node_type(tree: Any) -> Any:
 
 # A leaf is defined as anything that is not a Node.
 def _is_leaf(tree: PyTree, is_leaf: Optional[Callable[[PyTree], bool]] = None) -> bool:
-    return (is_leaf is not None and is_leaf(tree)) or _get_node_type(
-        tree
-    ) not in SUPPORTED_NODES
+    return (is_leaf is not None and is_leaf(tree)) or _get_node_type(tree) not in SUPPORTED_NODES
 
 
 # A TreeSpec represents the structure of a pytree. It holds:
@@ -690,10 +684,7 @@ class TreeSpec:
             children_specs_str += self.children_specs[0].__repr__(indent)
             children_specs_str += "," if self.num_children > 1 else ""
             children_specs_str += ",".join(
-                [
-                    "\n" + " " * indent + child.__repr__(indent)
-                    for child in self.children_specs[1:]
-                ]
+                ["\n" + " " * indent + child.__repr__(indent) for child in self.children_specs[1:]]
             )
         repr_suffix: str = f"{children_specs_str}])"
         return repr_prefix + repr_suffix
@@ -711,8 +702,7 @@ class TreeSpec:
             # Always require custom node types to match exactly
             if node_type != self.type:
                 raise ValueError(
-                    f"Type mismatch; "
-                    f"expected {self.type!r}, but got {node_type!r}.",
+                    f"Type mismatch; " f"expected {self.type!r}, but got {node_type!r}.",
                 )
             flatten_fn = SUPPORTED_NODES[node_type].flatten_fn
             child_pytrees, context = flatten_fn(tree)
@@ -733,13 +723,11 @@ class TreeSpec:
             )
             if node_type != self.type and not both_standard_dict:
                 raise ValueError(
-                    f"Node type mismatch; "
-                    f"expected {self.type!r}, but got {node_type!r}.",
+                    f"Node type mismatch; " f"expected {self.type!r}, but got {node_type!r}.",
                 )
             if len(tree) != self.num_children:
                 raise ValueError(
-                    f"Node arity mismatch; "
-                    f"expected {self.num_children}, but got {len(tree)}.",
+                    f"Node arity mismatch; " f"expected {self.num_children}, but got {len(tree)}.",
                 )
 
             if both_standard_dict:  # dictionary types are compatible with each other
@@ -1047,8 +1035,7 @@ def map_only(
     You can also directly use 'tree_map_only'
     """
     if isinstance(__type_or_types_or_pred, (type, tuple)) or (
-        sys.version_info >= (3, 10)
-        and isinstance(__type_or_types_or_pred, types.UnionType)
+        sys.version_info >= (3, 10) and isinstance(__type_or_types_or_pred, types.UnionType)
     ):
 
         def pred(x: Any) -> bool:

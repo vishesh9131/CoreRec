@@ -32,29 +32,31 @@ if IS_WINDOWS:
             self.manager_pid = os.getppid()
 
             # mypy cannot detect this code is windows only
-            self.kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
+            self.kernel32 = ctypes.WinDLL(
+                "kernel32", use_last_error=True)  # type: ignore[attr-defined]
             self.kernel32.OpenProcess.argtypes = (DWORD, BOOL, DWORD)
             self.kernel32.OpenProcess.restype = HANDLE
             self.kernel32.WaitForSingleObject.argtypes = (HANDLE, DWORD)
             self.kernel32.WaitForSingleObject.restype = DWORD
 
-            # Value obtained from https://msdn.microsoft.com/en-us/library/ms684880.aspx
+            # Value obtained from
+            # https://msdn.microsoft.com/en-us/library/ms684880.aspx
             SYNCHRONIZE = 0x00100000
             self.manager_handle = self.kernel32.OpenProcess(
-                SYNCHRONIZE, 0, self.manager_pid
-            )
+                SYNCHRONIZE, 0, self.manager_pid)
 
             if not self.manager_handle:
-                raise ctypes.WinError(ctypes.get_last_error())  # type: ignore[attr-defined]
+                # type: ignore[attr-defined]
+                raise ctypes.WinError(ctypes.get_last_error())
 
             self.manager_dead = False
 
         def is_alive(self):
             if not self.manager_dead:
-                # Value obtained from https://msdn.microsoft.com/en-us/library/windows/desktop/ms687032.aspx
-                self.manager_dead = (
-                    self.kernel32.WaitForSingleObject(self.manager_handle, 0) == 0
-                )
+                # Value obtained from
+                # https://msdn.microsoft.com/en-us/library/windows/desktop/ms687032.aspx
+                self.manager_dead = self.kernel32.WaitForSingleObject(
+                    self.manager_handle, 0) == 0
             return not self.manager_dead
 
 else:
@@ -89,8 +91,8 @@ class WorkerInfo:
     def __setattr__(self, key, val):
         if self.__initialized:
             raise RuntimeError(
-                f"Cannot assign attributes to {self.__class__.__name__} objects"
-            )
+                f"Cannot assign attributes to {
+                    self.__class__.__name__} objects")
         return super().__setattr__(key, val)
 
     def __repr__(self):
@@ -277,8 +279,10 @@ def _worker_loop(
 
         global _worker_info
         _worker_info = WorkerInfo(
-            id=worker_id, num_workers=num_workers, seed=seed, dataset=dataset
-        )
+            id=worker_id,
+            num_workers=num_workers,
+            seed=seed,
+            dataset=dataset)
 
         from torch.utils.data import _DatasetKind
 
@@ -293,8 +297,7 @@ def _worker_loop(
             )
         except Exception:
             init_exception = ExceptionWrapper(
-                where=f"in DataLoader worker process {worker_id}"
-            )
+                where=f"in DataLoader worker process {worker_id}")
 
         # When using Iterable mode, some worker can exit earlier than others due
         # to the IterableDataset behaving differently for different workers.
@@ -329,8 +332,7 @@ def _worker_loop(
 
                 # Recreate the fetcher for worker-reuse policy
                 fetcher = _DatasetKind.create_fetcher(
-                    dataset_kind, dataset, auto_collation, collate_fn, drop_last
-                )
+                    dataset_kind, dataset, auto_collation, collate_fn, drop_last)
                 continue
             elif r is None:
                 # Received the final signal
@@ -348,12 +350,11 @@ def _worker_loop(
                 init_exception = None
             else:
                 try:
-                    data = fetcher.fetch(index)  # type: ignore[possibly-undefined]
+                    # type: ignore[possibly-undefined]
+                    data = fetcher.fetch(index)
                 except Exception as e:
-                    if (
-                        isinstance(e, StopIteration)
-                        and dataset_kind == _DatasetKind.Iterable
-                    ):
+                    if isinstance(
+                            e, StopIteration) and dataset_kind == _DatasetKind.Iterable:
                         data = _IterableDatasetStopIteration(worker_id)
                         # Set `iteration_end`
                         #   (1) to save future `next(...)` calls, and
@@ -364,8 +365,7 @@ def _worker_loop(
                         # `ExceptionWrapper` does the correct thing.
                         # See NOTE [ Python Traceback Reference Cycle Problem ]
                         data = ExceptionWrapper(
-                            where=f"in DataLoader worker process {worker_id}"
-                        )
+                            where=f"in DataLoader worker process {worker_id}")
             data_queue.put((idx, data))
             del data, idx, index, r  # save memory
     except KeyboardInterrupt:

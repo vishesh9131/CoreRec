@@ -73,9 +73,7 @@ class FileWriter:
         # TODO: See if we can remove this in the future if we are
         # actually the ones passing in a PosixPath
         log_dir = str(log_dir)
-        self.event_writer = EventFileWriter(
-            log_dir, max_queue, flush_secs, filename_suffix
-        )
+        self.event_writer = EventFileWriter(log_dir, max_queue, flush_secs, filename_suffix)
 
     def get_logdir(self):
         """Return the directory where event file will be written."""
@@ -127,9 +125,7 @@ class FileWriter:
         event = event_pb2.Event(graph_def=graph.SerializeToString())
         self.add_event(event, None, walltime)
 
-        trm = event_pb2.TaggedRunMetadata(
-            tag="step1", run_metadata=stepstats.SerializeToString()
-        )
+        trm = event_pb2.TaggedRunMetadata(tag="step1", run_metadata=stepstats.SerializeToString())
         event = event_pb2.Event(tagged_run_metadata=trm)
         self.add_event(event, None, walltime)
 
@@ -235,9 +231,7 @@ class SummaryWriter:
             from datetime import datetime
 
             current_time = datetime.now().strftime("%b%d_%H-%M-%S")
-            log_dir = os.path.join(
-                "runs", current_time + "_" + socket.gethostname() + comment
-            )
+            log_dir = os.path.join("runs", current_time + "_" + socket.gethostname() + comment)
         self.log_dir = log_dir
         self.purge_step = purge_step
         self.max_queue = max_queue
@@ -375,9 +369,7 @@ class SummaryWriter:
         """
         torch._C._log_api_usage_once("tensorboard.logging.add_scalar")
 
-        summary = scalar(
-            tag, scalar_value, new_style=new_style, double_precision=double_precision
-        )
+        summary = scalar(tag, scalar_value, new_style=new_style, double_precision=double_precision)
         self._get_file_writer().add_summary(summary, global_step, walltime)
 
     def add_scalars(self, main_tag, tag_scalar_dict, global_step=None, walltime=None):
@@ -418,9 +410,7 @@ class SummaryWriter:
             if fw_tag in self.all_writers.keys():
                 fw = self.all_writers[fw_tag]
             else:
-                fw = FileWriter(
-                    fw_tag, self.max_queue, self.flush_secs, self.filename_suffix
-                )
+                fw = FileWriter(fw_tag, self.max_queue, self.flush_secs, self.filename_suffix)
                 self.all_writers[fw_tag] = fw
             fw.add_summary(scalar(main_tag, scalar_value), global_step, walltime)
 
@@ -563,20 +553,14 @@ class SummaryWriter:
         """
         torch._C._log_api_usage_once("tensorboard.logging.add_histogram_raw")
         if len(bucket_limits) != len(bucket_counts):
-            raise ValueError(
-                "len(bucket_limits) != len(bucket_counts), see the document."
-            )
+            raise ValueError("len(bucket_limits) != len(bucket_counts), see the document.")
         self._get_file_writer().add_summary(
-            histogram_raw(
-                tag, min, max, num, sum, sum_squares, bucket_limits, bucket_counts
-            ),
+            histogram_raw(tag, min, max, num, sum, sum_squares, bucket_limits, bucket_counts),
             global_step,
             walltime,
         )
 
-    def add_image(
-        self, tag, img_tensor, global_step=None, walltime=None, dataformats="CHW"
-    ):
+    def add_image(self, tag, img_tensor, global_step=None, walltime=None, dataformats="CHW"):
         """Add image data to summary.
 
         Note that this requires the ``pillow`` package.
@@ -625,9 +609,7 @@ class SummaryWriter:
             image(tag, img_tensor, dataformats=dataformats), global_step, walltime
         )
 
-    def add_images(
-        self, tag, img_tensor, global_step=None, walltime=None, dataformats="NCHW"
-    ):
+    def add_images(self, tag, img_tensor, global_step=None, walltime=None, dataformats="NCHW"):
         """Add batched image data to summary.
 
         Note that this requires the ``pillow`` package.
@@ -774,13 +756,9 @@ class SummaryWriter:
             vid_tensor: :math:`(N, T, C, H, W)`. The values should lie in [0, 255] for type `uint8` or [0, 1] for type `float`.
         """
         torch._C._log_api_usage_once("tensorboard.logging.add_video")
-        self._get_file_writer().add_summary(
-            video(tag, vid_tensor, fps), global_step, walltime
-        )
+        self._get_file_writer().add_summary(video(tag, vid_tensor, fps), global_step, walltime)
 
-    def add_audio(
-        self, tag, snd_tensor, global_step=None, sample_rate=44100, walltime=None
-    ):
+    def add_audio(self, tag, snd_tensor, global_step=None, sample_rate=44100, walltime=None):
         """Add audio data to summary.
 
         Args:
@@ -813,17 +791,13 @@ class SummaryWriter:
             writer.add_text('rnn', 'This is an rnn', 10)
         """
         torch._C._log_api_usage_once("tensorboard.logging.add_text")
-        self._get_file_writer().add_summary(
-            text(tag, text_string), global_step, walltime
-        )
+        self._get_file_writer().add_summary(text(tag, text_string), global_step, walltime)
 
     def add_onnx_graph(self, prototxt):
         torch._C._log_api_usage_once("tensorboard.logging.add_onnx_graph")
         self._get_file_writer().add_onnx_graph(load_onnx_graph(prototxt))
 
-    def add_graph(
-        self, model, input_to_model=None, verbose=False, use_strict_trace=True
-    ):
+    def add_graph(self, model, input_to_model=None, verbose=False, use_strict_trace=True):
         """Add graph data to summary.
 
         Args:
@@ -837,9 +811,7 @@ class SummaryWriter:
         """
         torch._C._log_api_usage_once("tensorboard.logging.add_graph")
         # A valid PyTorch model should have a 'forward' method
-        self._get_file_writer().add_graph(
-            graph(model, input_to_model, verbose, use_strict_trace)
-        )
+        self._get_file_writer().add_graph(graph(model, input_to_model, verbose, use_strict_trace))
 
     @staticmethod
     def _encode(rawstr):
@@ -913,9 +885,7 @@ class SummaryWriter:
         fs = tf.io.gfile
         if fs.exists(save_path):
             if fs.isdir(save_path):
-                print(
-                    "warning: Embedding dir exists, did you set global_step for add_embedding()?"
-                )
+                print("warning: Embedding dir exists, did you set global_step for add_embedding()?")
             else:
                 raise NotADirectoryError(
                     f"Path: `{save_path}` exists, but is a file. Cannot proceed."
@@ -924,20 +894,14 @@ class SummaryWriter:
             fs.makedirs(save_path)
 
         if metadata is not None:
-            assert mat.shape[0] == len(
-                metadata
-            ), "#labels should equal with #data points"
+            assert mat.shape[0] == len(metadata), "#labels should equal with #data points"
             make_tsv(metadata, save_path, metadata_header=metadata_header)
 
         if label_img is not None:
-            assert (
-                mat.shape[0] == label_img.shape[0]
-            ), "#images should equal with #data points"
+            assert mat.shape[0] == label_img.shape[0], "#images should equal with #data points"
             make_sprite(label_img, save_path)
 
-        assert (
-            mat.ndim == 2
-        ), "mat should be 2D, where mat.size(0) is the number of data points"
+        assert mat.ndim == 2, "mat should be 2D, where mat.size(0) is the number of data points"
         make_mat(mat, save_path)
 
         # Filesystem doesn't necessarily have append semantics, so we store an
@@ -945,9 +909,7 @@ class SummaryWriter:
         # embedding is added
         if not hasattr(self, "_projector_config"):
             self._projector_config = ProjectorConfig()
-        embedding_info = get_embedding_info(
-            metadata, label_img, subdir, global_step, tag
-        )
+        embedding_info = get_embedding_info(metadata, label_img, subdir, global_step, tag)
         self._projector_config.embeddings.extend([embedding_info])
 
         from google.protobuf import text_format
@@ -1051,9 +1013,7 @@ class SummaryWriter:
             walltime,
         )
 
-    def add_custom_scalars_multilinechart(
-        self, tags, category="default", title="untitled"
-    ):
+    def add_custom_scalars_multilinechart(self, tags, category="default", title="untitled"):
         """Shorthand for creating multilinechart. Similar to ``add_custom_scalars()``, but the only necessary argument is *tags*.
 
         Args:
@@ -1063,15 +1023,11 @@ class SummaryWriter:
 
             writer.add_custom_scalars_multilinechart(['twse/0050', 'twse/2330'])
         """
-        torch._C._log_api_usage_once(
-            "tensorboard.logging.add_custom_scalars_multilinechart"
-        )
+        torch._C._log_api_usage_once("tensorboard.logging.add_custom_scalars_multilinechart")
         layout = {category: {title: ["Multiline", tags]}}
         self._get_file_writer().add_summary(custom_scalars(layout))
 
-    def add_custom_scalars_marginchart(
-        self, tags, category="default", title="untitled"
-    ):
+    def add_custom_scalars_marginchart(self, tags, category="default", title="untitled"):
         """Shorthand for creating marginchart.
 
         Similar to ``add_custom_scalars()``, but the only necessary argument is *tags*,
@@ -1084,9 +1040,7 @@ class SummaryWriter:
 
             writer.add_custom_scalars_marginchart(['twse/0050', 'twse/2330', 'twse/2006'])
         """
-        torch._C._log_api_usage_once(
-            "tensorboard.logging.add_custom_scalars_marginchart"
-        )
+        torch._C._log_api_usage_once("tensorboard.logging.add_custom_scalars_marginchart")
         assert len(tags) == 3
         layout = {category: {title: ["Margin", tags]}}
         self._get_file_writer().add_summary(custom_scalars(layout))

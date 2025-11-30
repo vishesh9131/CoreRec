@@ -15,21 +15,28 @@ __all__ = ["scatter", "scatter_kwargs", "gather"]
     category=FutureWarning,
 )
 def is_namedtuple(obj: Any) -> bool:
-    # Check if type was created from collections.namedtuple or a typing.NamedTuple.
+    # Check if type was created from collections.namedtuple or a
+    # typing.NamedTuple.
     return _is_namedtuple(obj)
 
 
 def _is_namedtuple(obj: Any) -> bool:
-    # Check if type was created from collections.namedtuple or a typing.NamedTuple.
-    return (
-        isinstance(obj, tuple) and hasattr(obj, "_asdict") and hasattr(obj, "_fields")
-    )
+    # Check if type was created from collections.namedtuple or a
+    # typing.NamedTuple.
+    return isinstance(
+        obj,
+        tuple) and hasattr(
+        obj,
+        "_asdict") and hasattr(
+            obj,
+        "_fields")
 
 
 T = TypeVar("T", dict, list, tuple)
 
 
-# For some reason, 'scatter' returns a tuple when given a single Tensor input but a list otherwise.
+# For some reason, 'scatter' returns a tuple when given a single Tensor
+# input but a list otherwise.
 @overload
 def scatter(
     inputs: torch.Tensor,
@@ -89,17 +96,20 @@ def scatter_kwargs(
     scattered_inputs = scatter(inputs, target_gpus, dim) if inputs else []
     scattered_kwargs = scatter(kwargs, target_gpus, dim) if kwargs else []
     if len(scattered_inputs) < len(scattered_kwargs):
-        scattered_inputs.extend(
-            () for _ in range(len(scattered_kwargs) - len(scattered_inputs))
-        )
+        scattered_inputs.extend(() for _ in range(
+            len(scattered_kwargs) - len(scattered_inputs)))
     elif len(scattered_kwargs) < len(inputs):
         scattered_kwargs.extend(
-            {} for _ in range(len(scattered_inputs) - len(scattered_kwargs))
-        )
+            {} for _ in range(
+                len(scattered_inputs) -
+                len(scattered_kwargs)))
     return tuple(scattered_inputs), tuple(scattered_kwargs)
 
 
-def gather(outputs: Any, target_device: Union[int, torch.device], dim: int = 0) -> Any:
+def gather(outputs: Any,
+           target_device: Union[int,
+                                torch.device],
+           dim: int = 0) -> Any:
     r"""Gather tensors from different GPUs on a specified device.
 
     This function is useful for gathering the results of a distributed computation.
@@ -125,7 +135,8 @@ def gather(outputs: Any, target_device: Union[int, torch.device], dim: int = 0) 
         if isinstance(out, dict):
             if not all(len(out) == len(d) for d in outputs):
                 raise ValueError("All dicts must have the same number of keys")
-            return type(out)((k, gather_map([d[k] for d in outputs])) for k in out)
+            return type(out)(
+                (k, gather_map([d[k] for d in outputs])) for k in out)
         if _is_namedtuple(out):
             return type(out)._make(map(gather_map, zip(*outputs)))
         return type(out)(map(gather_map, zip(*outputs)))

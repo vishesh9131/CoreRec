@@ -90,7 +90,8 @@ def indent_msg(fn):
 class FrozenModule:
     # The fully qualified module name, e.g. 'foo.bar.baz'
     module_name: str
-    # The name of the C variable that holds the bytecode, e.g. 'M_foo__bar__baz'
+    # The name of the C variable that holds the bytecode, e.g.
+    # 'M_foo__bar__baz'
     c_name: str
     # The size of the C variable. Negative if this module is a package.
     size: int
@@ -122,10 +123,14 @@ class Freezer:
 
         Shared frozen modules evenly across the files.
         """
-        bytecode_file_names = [f"bytecode_{i}.c" for i in range(NUM_BYTECODE_FILES)]
+        bytecode_file_names = [
+            f"bytecode_{i}.c" for i in range(NUM_BYTECODE_FILES)]
         bytecode_files = [
-            open(os.path.join(install_root, name), "w") for name in bytecode_file_names
-        ]
+            open(
+                os.path.join(
+                    install_root,
+                    name),
+                "w") for name in bytecode_file_names]
         it = itertools.cycle(bytecode_files)
         for m in self.frozen_modules:
             self.write_frozen(m, next(it))
@@ -142,7 +147,11 @@ class Freezer:
 
             outfp.write(MAIN_PREFIX_TEMPLATE.format(symbol_name))
             for m in self.frozen_modules:
-                outfp.write(f'\t{{"{m.module_name}", {m.c_name}, {m.size}}},\n')
+                outfp.write(
+                    f'\t{{"{
+                        m.module_name}", {
+                        m.c_name}, {
+                        m.size}}},\n')
             outfp.write(MAIN_SUFFIX)
             if oss:
                 outfp.write(FAKE_PREFIX)
@@ -153,7 +162,7 @@ class Freezer:
         outfp.write(f"unsigned char {m.c_name}[] = {{")
         for i in range(0, len(m.bytecode), 16):
             outfp.write("\n\t")
-            for c in bytes(m.bytecode[i : i + 16]):
+            for c in bytes(m.bytecode[i: i + 16]):
                 outfp.write("%d," % c)
         outfp.write("\n};\n")
 
@@ -173,7 +182,8 @@ class Freezer:
             return
 
         # Python packages are directories that have __init__.py in them.
-        is_package_dir = any(child.name == "__init__.py" for child in path.iterdir())
+        is_package_dir = any(
+            child.name == "__init__.py" for child in path.iterdir())
         if not is_package_dir:
             self.msg(path, "S")
             return
@@ -183,7 +193,10 @@ class Freezer:
         for child in path.iterdir():
             self.compile_path(child, top_package_path)
 
-    def get_module_qualname(self, file_path: Path, top_package_path: Path) -> List[str]:
+    def get_module_qualname(
+            self,
+            file_path: Path,
+            top_package_path: Path) -> List[str]:
         # `path` looks like 'Lib/foo/bar/baz.py'
 
         # chop off 'Lib/' to get something that represents a Python module hierarchy.
@@ -243,17 +256,24 @@ class Freezer:
             # Python packages are signified by negative size.
             size = -size
         self.frozen_modules.append(
-            FrozenModule(".".join(module_qualname), c_name, size, bytecode)
-        )
+            FrozenModule(
+                ".".join(module_qualname),
+                c_name,
+                size,
+                bytecode))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Compile py source")
     parser.add_argument("paths", nargs="*", help="Paths to freeze.")
-    parser.add_argument("--verbose", action="store_true", help="Print debug logs")
     parser.add_argument(
-        "--install-dir", "--install_dir", help="Root directory for all output files"
-    )
+        "--verbose",
+        action="store_true",
+        help="Print debug logs")
+    parser.add_argument(
+        "--install-dir",
+        "--install_dir",
+        help="Root directory for all output files")
     parser.add_argument(
         "--oss",
         action="store_true",

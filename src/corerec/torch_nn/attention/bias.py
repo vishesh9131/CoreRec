@@ -138,9 +138,7 @@ class CausalBias(torch.Tensor):
         """Lower right causal bias"""
         diagonal_offset = self.seq_len_kv - self.seq_len_q
         return torch.tril(
-            torch.ones(
-                self.seq_len_q, self.seq_len_kv, device=device, dtype=torch.bool
-            ),
+            torch.ones(self.seq_len_q, self.seq_len_kv, device=device, dtype=torch.bool),
             diagonal=diagonal_offset,
         )
 
@@ -276,9 +274,7 @@ class CausalBias(torch.Tensor):
         if kwargs is None:
             kwargs = {}
         if func != torch.nn.functional.scaled_dot_product_attention:
-            raise NotImplementedError(
-                "CausalBias only supports scaled_dot_product_attention"
-            )
+            raise NotImplementedError("CausalBias only supports scaled_dot_product_attention")
         return cls._dispatch(*args, **kwargs)
 
     def __repr__(self):

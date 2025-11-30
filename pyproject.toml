@@ -88,11 +88,20 @@ extend-exclude = '''
   | \.mypy_cache
   | \.tox
   | \.venv
+  | venv
   | build
   | dist
+  | \.pytest_cache
+  | \.coverage
+  | htmlcov
   | src/SANDBOX
+  | __pycache__
+  | \.ipynb_checkpoints
 )/
 '''
+skip-string-normalization = false
+skip-magic-trailing-comma = false
+preview = false
 
 [tool.isort]
 profile = "black"

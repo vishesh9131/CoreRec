@@ -51,8 +51,7 @@ def factory_kwargs(kwargs):
         if k in kwargs:
             if k in r:
                 raise TypeError(
-                    f"{k} specified twice, in **kwargs and in factory_kwargs"
-                )
+                    f"{k} specified twice, in **kwargs and in factory_kwargs")
             r[k] = kwargs[k]
 
     return r

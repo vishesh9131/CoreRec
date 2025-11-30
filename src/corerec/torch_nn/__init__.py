@@ -50,9 +50,7 @@ def factory_kwargs(kwargs):
     for k in simple_keys:
         if k in kwargs:
             if k in r:
-                raise TypeError(
-                    f"{k} specified twice, in **kwargs and in factory_kwargs"
-                )
+                raise TypeError(f"{k} specified twice, in **kwargs and in factory_kwargs")
             r[k] = kwargs[k]
 
     return r

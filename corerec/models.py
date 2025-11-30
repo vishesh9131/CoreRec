@@ -1,7 +1,9 @@
 # """
 # models.py
 
-# This module defines the GraphTransformer, GraphSAGE, GAT, GNN, HAN, and GCF classes, neural network models using various architectures for processing graph data.
+# This module defines the GraphTransformer, GraphSAGE, GAT, GNN, HAN, and
+# GCF classes, neural network models using various architectures for
+# processing graph data.
 
 # Classes:
 #     GraphTransformer: A neural network model for graph data using Transformer architecture.
@@ -9,7 +11,8 @@
 #     GAT: A neural network model for graph data using Graph Attention Network architecture.
 #     GNN: A general neural network model for graph data.
 #     HAN: A neural network model for heterogeneous graph data using Heterogeneous Graph Attention Network architecture.
-#     GCF: A neural network model for collaborative filtering using Graph Convolutional Factorization.
+# GCF: A neural network model for collaborative filtering using Graph
+# Convolutional Factorization.
 
 # Usage:
 #     from engine.models import GraphTransformer, GraphSAGE, GAT, GNN, HAN, GCF
@@ -103,7 +106,7 @@
 #             x = conv(x, edge_index)
 #             x = self.relu(x)
 #         return x
-    
+
 # class GNN(Module):
 #     def __init__(self, in_channels, hidden_channels, out_channels, num_layers):
 #         super(GNN, self).__init__()
@@ -165,18 +168,9 @@
 #         user_indices = user_indices + num_nodes // 2
 #         edge_index = torch.stack([torch.cat([user_indices, item_indices]), torch.cat([item_indices, user_indices])], dim=0)
 #         return edge_index
-    
 
 
-
-
-
-
-
-
-
-
-# ######################-Work-in-Progress-##################### 
+# ######################-Work-in-Progress-#####################
 # class GraphTransformerV2_test(Module):
 #     def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim):
 #         super(GraphTransformerV2, self).__init__()
@@ -220,4 +214,3 @@
 #         x = self.output_linear(x)
 
 #         return x
-

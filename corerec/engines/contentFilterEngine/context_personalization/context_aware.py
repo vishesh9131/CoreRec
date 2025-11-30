@@ -3,16 +3,19 @@ from typing import Dict, List, Any, Optional
 from collections import defaultdict
 import json
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ContextAwareRecommender:
     """
     A context-aware recommender system that adapts recommendations based on contextual factors.
-    
-    This recommender system incorporates contextual information to provide more relevant 
+
+    This recommender system incorporates contextual information to provide more relevant
     recommendations by adjusting feature weights based on the current context. It considers
-    various contextual factors such as time, location, user state, and other environmental 
+    various contextual factors such as time, location, user state, and other environmental
     variables to modify the importance of different item features.
-    
+
     Attributes:
         context_factors (Dict[str, Dict]): Mapping of context factors to their value-specific weights.
             Format: {
@@ -29,20 +32,15 @@ class ContextAwareRecommender:
                 }
             }
         feature_weights (Dict[str, float]): Current active feature weights based on context.
-    
+
     Methods:
         update_context: Updates the current context and recalculates feature weights.
         recommend: Generates recommendations considering the current context.
         _initialize_feature_weights: Initializes weights based on context.
         _encode_item_features: Encodes and weights item features.
     """
-    
-    def __init__(
-        self, 
-        context_config_path: str, 
-        item_features: Dict[int, Dict[str, Any]]
-        
-    ):
+
+    def __init__(self, context_config_path: str, item_features: Dict[int, Dict[str, Any]]):
         """
         Initialize the context-aware recommender with a configuration file for context factors and item features.
 
@@ -66,29 +64,31 @@ class ContextAwareRecommender:
         - Dict[str, Any]: Configuration for context factors.
         """
         if not os.path.exists(config_path):
-            raise FileNotFoundError(f"Configuration file not found: {config_path}")
-            return {}
-        with open(config_path, 'r') as file:
+            logger.warning(f"Configuration file not found: {config_path}. Using default context.")
+            return {"default": {}}
+        with open(config_path, "r") as file:
             config = json.load(file)
         return config
 
-    def _initialize_feature_weights(self, current_context: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
+    def _initialize_feature_weights(
+        self, current_context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, float]:
         """
         Initialize and calculate feature weights based on the current context.
-        
+
         This method processes the current context to determine appropriate weights for different
         item features. It combines weights from multiple context factors when they affect the
         same feature.
-        
+
         Args:
             current_context (Optional[Dict[str, Any]]): Dictionary containing current context
                 information. Keys are context factor names, values are the current factor values.
                 If None, uses default context.
-        
+
         Returns:
             Dict[str, float]: Dictionary mapping feature names to their calculated weights
                 based on the current context.
-        
+
         Example:
             >>> context = {"time": "evening", "location": "home"}
             >>> recommender._initialize_feature_weights(context)
@@ -106,23 +106,23 @@ class ContextAwareRecommender:
     def _encode_item_features(self, item_id: int) -> Dict[str, float]:
         """
         Encode item features into a weighted feature vector based on current context.
-        
+
         This method transforms an item's raw features into a weighted feature representation,
         applying the current context-dependent weights. It handles both categorical and
         numerical features appropriately.
-        
+
         Args:
             item_id (int): The unique identifier of the item to encode.
-        
+
         Returns:
             Dict[str, float]: Dictionary containing the encoded and weighted features.
                 For categorical features: {feature_name_value: weight}
                 For numerical features: {feature_name: value * weight}
-        
+
         Example:
             >>> recommender._encode_item_features(123)
             {"genre_action": 1.2, "duration": 90.5, "rating": 4.5}
-        
+
         Note:
             - Categorical features are encoded as separate binary features
             - Numerical features are scaled by their corresponding weights
@@ -146,16 +146,16 @@ class ContextAwareRecommender:
         - data (dict): The data used for training the model, containing user interactions.
         """
         for user_id, items in data.items():
+            if "interacted_items" not in self.user_profiles[user_id]:
+                self.user_profiles[user_id]["interacted_items"] = set()
             for item_id in items:
+                self.user_profiles[user_id]["interacted_items"].add(item_id)
                 encoded_features = self._encode_item_features(item_id)
                 for feature, value in encoded_features.items():
                     self.user_profiles[user_id][feature] += value
 
     def recommend(
-        self, 
-        user_id: int, 
-        context: Optional[Dict[str, Any]] = None, 
-        top_n: int = 10
+        self, user_id: int, context: Optional[Dict[str, Any]] = None, top_n: int = 10
     ) -> List[int]:
         """
         Generate top-N item recommendations for a given user considering context.
@@ -178,9 +178,10 @@ class ContextAwareRecommender:
             return []
 
         scores = {}
-        interacted_items = set()
         # Collect all items the user has interacted with to exclude them from recommendations
-        interacted_items = user_profile.get('interacted_items', set())
+        interacted_items = user_profile.get("interacted_items", set())
+        if interacted_items is None:
+            interacted_items = set()
 
         for item_id, features in self.item_features.items():
             if item_id in interacted_items:

@@ -25,7 +25,9 @@ def run_dcn():
     DCN = try_import("corerec.engines.dcn", "DCN")
     if not DCN:
         return
-    model = DCN(embedding_dim=8, num_cross_layers=1, deep_layers=[8], epochs=1, batch_size=8, device="cpu")
+    model = DCN(
+        embedding_dim=8, num_cross_layers=1, deep_layers=[8], epochs=1, batch_size=8, device="cpu"
+    )
     users = [1, 2, 1, 3]
     items = [10, 10, 20, 30]
     ratings = [1, 0, 1, 0]
@@ -67,7 +69,9 @@ def run_mind():
     MIND = try_import("corerec.engines.mind", "MIND")
     if not MIND:
         return
-    model = MIND(embedding_dim=16, num_interests=2, epochs=1, batch_size=8, max_seq_length=5, device="cpu")
+    model = MIND(
+        embedding_dim=16, num_interests=2, epochs=1, batch_size=8, max_seq_length=5, device="cpu"
+    )
     users = [1, 1, 1, 2]
     items = [10, 20, 30, 10]
     ts = [1, 2, 3, 1]
@@ -92,11 +96,20 @@ def run_sasrec():
     if not SASRec:
         return
     from scipy.sparse import csr_matrix
+
     user_ids = [1, 2]
     item_ids = [10, 20, 30]
     dense = np.array([[1, 0, 1], [0, 1, 0]], dtype=float)
     inter = csr_matrix(dense)
-    model = SASRec(hidden_units=16, num_blocks=1, num_heads=1, num_epochs=1, batch_size=4, max_seq_length=5, device="cpu")
+    model = SASRec(
+        hidden_units=16,
+        num_blocks=1,
+        num_heads=1,
+        num_epochs=1,
+        batch_size=4,
+        max_seq_length=5,
+        device="cpu",
+    )
     model.fit(inter, user_ids, item_ids)
     print("SASRec recs:", model.recommend(1, top_n=3))
 
@@ -107,4 +120,4 @@ if __name__ == "__main__":
     run_gnnrec()
     run_mind()
     run_nasrec()
-    run_sasrec() 
+    run_sasrec()

@@ -75,8 +75,7 @@ class Sampler(Generic[_T_co]):
 
             warnings.warn(
                 "`data_source` argument is not used and will be removed in 2.2.0."
-                "You may still have custom implementation that utilizes it."
-            )
+                "You may still have custom implementation that utilizes it.")
 
     def __iter__(self) -> Iterator[_T_co]:
         raise NotImplementedError
@@ -157,13 +156,13 @@ class RandomSampler(Sampler[int]):
 
         if not isinstance(self.replacement, bool):
             raise TypeError(
-                f"replacement should be a boolean value, but got replacement={self.replacement}"
-            )
+                f"replacement should be a boolean value, but got replacement={
+                    self.replacement}")
 
         if not isinstance(self.num_samples, int) or self.num_samples <= 0:
             raise ValueError(
-                f"num_samples should be a positive integer value, but got num_samples={self.num_samples}"
-            )
+                f"num_samples should be a positive integer value, but got num_samples={
+                    self.num_samples}")
 
     @property
     def num_samples(self) -> int:
@@ -195,9 +194,7 @@ class RandomSampler(Sampler[int]):
         else:
             for _ in range(self.num_samples // n):
                 yield from torch.randperm(n, generator=generator).tolist()
-            yield from torch.randperm(n, generator=generator).tolist()[
-                : self.num_samples % n
-            ]
+            yield from torch.randperm(n, generator=generator).tolist()[: self.num_samples % n]
 
     def __len__(self) -> int:
         return self.num_samples
@@ -255,18 +252,16 @@ class WeightedRandomSampler(Sampler[int]):
         replacement: bool = True,
         generator=None,
     ) -> None:
-        if (
-            not isinstance(num_samples, int)
-            or isinstance(num_samples, bool)
-            or num_samples <= 0
-        ):
+        if not isinstance(
+                num_samples,
+                int) or isinstance(
+                num_samples,
+                bool) or num_samples <= 0:
             raise ValueError(
-                f"num_samples should be a positive integer value, but got num_samples={num_samples}"
-            )
+                f"num_samples should be a positive integer value, but got num_samples={num_samples}")
         if not isinstance(replacement, bool):
             raise ValueError(
-                f"replacement should be a boolean value, but got replacement={replacement}"
-            )
+                f"replacement should be a boolean value, but got replacement={replacement}")
 
         weights_tensor = torch.as_tensor(weights, dtype=torch.double)
         if len(weights_tensor.shape) != 1:
@@ -282,8 +277,10 @@ class WeightedRandomSampler(Sampler[int]):
 
     def __iter__(self) -> Iterator[int]:
         rand_tensor = torch.multinomial(
-            self.weights, self.num_samples, self.replacement, generator=self.generator
-        )
+            self.weights,
+            self.num_samples,
+            self.replacement,
+            generator=self.generator)
         yield from iter(rand_tensor.tolist())
 
     def __len__(self) -> int:
@@ -315,29 +312,29 @@ class BatchSampler(Sampler[List[int]]):
         # Since collections.abc.Iterable does not check for `__getitem__`, which
         # is one way for an object to be an iterable, we don't do an `isinstance`
         # check here.
-        if (
-            not isinstance(batch_size, int)
-            or isinstance(batch_size, bool)
-            or batch_size <= 0
-        ):
+        if not isinstance(
+                batch_size,
+                int) or isinstance(
+                batch_size,
+                bool) or batch_size <= 0:
             raise ValueError(
-                f"batch_size should be a positive integer value, but got batch_size={batch_size}"
-            )
+                f"batch_size should be a positive integer value, but got batch_size={batch_size}")
         if not isinstance(drop_last, bool):
             raise ValueError(
-                f"drop_last should be a boolean value, but got drop_last={drop_last}"
-            )
+                f"drop_last should be a boolean value, but got drop_last={drop_last}")
         self.sampler = sampler
         self.batch_size = batch_size
         self.drop_last = drop_last
 
     def __iter__(self) -> Iterator[List[int]]:
-        # Implemented based on the benchmarking in https://github.com/pytorch/pytorch/pull/76951
+        # Implemented based on the benchmarking in
+        # https://github.com/pytorch/pytorch/pull/76951
         if self.drop_last:
             sampler_iter = iter(self.sampler)
             while True:
                 try:
-                    batch = [next(sampler_iter) for _ in range(self.batch_size)]
+                    batch = [next(sampler_iter)
+                             for _ in range(self.batch_size)]
                     yield batch
                 except StopIteration:
                     break
@@ -358,8 +355,11 @@ class BatchSampler(Sampler[List[int]]):
         # Can only be called if self.sampler has __len__ implemented
         # We cannot enforce this condition, so we turn off typechecking for the
         # implementation below.
-        # Somewhat related: see NOTE [ Lack of Default `__len__` in Python Abstract Base Classes ]
+        # Somewhat related: see NOTE [ Lack of Default `__len__` in Python
+        # Abstract Base Classes ]
         if self.drop_last:
-            return len(self.sampler) // self.batch_size  # type: ignore[arg-type]
+            # type: ignore[arg-type]
+            return len(self.sampler) // self.batch_size
         else:
-            return (len(self.sampler) + self.batch_size - 1) // self.batch_size  # type: ignore[arg-type]
+            return (len(self.sampler) + self.batch_size -
+                    1) // self.batch_size  # type: ignore[arg-type]

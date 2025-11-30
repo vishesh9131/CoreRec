@@ -17,12 +17,11 @@ class EmbeddingPerSampleGrad(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwarg_names, _, *expanded_args_and_kwargs):
         expanded_args, expanded_kwargs = standard_kwargs(
-            kwarg_names, expanded_args_and_kwargs
-        )
+            kwarg_names, expanded_args_and_kwargs)
         if len(expanded_args[0].shape) == 1:
             raise RuntimeError(
-                f"Expanded Weights needs an input with a batch size, got a 1D tensor, {expanded_args[0]}"
-            )
+                f"Expanded Weights needs an input with a batch size, got a 1D tensor, {
+                    expanded_args[0]}")
         output = forward_helper(F.embedding, expanded_args, expanded_kwargs)
         ctx.input, ctx.weight = expanded_args
         ctx.padding_idx, ctx.scale_grad_by_freq = (
@@ -50,8 +49,10 @@ class EmbeddingPerSampleGrad(torch.autograd.Function):
                 .reshape(batch_size, -1, embedding_dim)
             )
             grad_sample = torch.zeros(
-                batch_size, *weight.shape, device=weight.device, dtype=grad_output.dtype
-            )
+                batch_size,
+                *weight.shape,
+                device=weight.device,
+                dtype=grad_output.dtype)
             return grad_sample.scatter_add_(
                 1, index, grad_output.reshape(batch_size, -1, embedding_dim)
             )
@@ -75,7 +76,8 @@ class EmbeddingPerSampleGrad(torch.autograd.Function):
         else:
             results.append(None)
 
-        # weight doesn't compute batched gradients; no other arguments are differentiable (2 not saved from forward)
+        # weight doesn't compute batched gradients; no other arguments are
+        # differentiable (2 not saved from forward)
         results = results + [None] * 6
 
         # set grad_sample field for weight with per sample gradients

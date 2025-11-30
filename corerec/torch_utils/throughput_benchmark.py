@@ -5,7 +5,9 @@ import torch._C
 
 def format_time(time_us=None, time_ms=None, time_s=None):
     """Define time formatting."""
-    assert sum([time_us is not None, time_ms is not None, time_s is not None]) == 1
+    assert sum([time_us is not None,
+                time_ms is not None,
+                time_s is not None]) == 1
 
     US_IN_SECOND = 1e6
     US_IN_MS = 1e3
@@ -19,10 +21,10 @@ def format_time(time_us=None, time_ms=None, time_s=None):
             raise AssertionError("Shouldn't reach here :)")
 
     if time_us >= US_IN_SECOND:
-        return f'{time_us / US_IN_SECOND:.3f}s'
+        return f"{time_us / US_IN_SECOND:.3f}s"
     if time_us >= US_IN_MS:
-        return f'{time_us / US_IN_MS:.3f}ms'
-    return f'{time_us:.3f}us'
+        return f"{time_us / US_IN_MS:.3f}ms"
+    return f"{time_us:.3f}us"
 
 
 class ExecutionStats:
@@ -45,16 +47,26 @@ class ExecutionStats:
 
     @property
     def total_time_seconds(self):
-        return self.num_iters * (
-            self.latency_avg_ms / 1000.0) / self.benchmark_config.num_calling_threads
+        return (
+            self.num_iters
+            * (self.latency_avg_ms / 1000.0)
+            / self.benchmark_config.num_calling_threads
+        )
 
     def __str__(self):
-        return '\n'.join([
-            "Average latency per example: " + format_time(time_ms=self.latency_avg_ms),
-            f"Total number of iterations: {self.num_iters}",
-            f"Total number of iterations per second (across all threads): {self.iters_per_second:.2f}",
-            "Total time: " + format_time(time_s=self.total_time_seconds)
-        ])
+        return "\n".join(
+            [
+                "Average latency per example: " +
+                format_time(
+                    time_ms=self.latency_avg_ms),
+                f"Total number of iterations: {
+                    self.num_iters}",
+                f"Total number of iterations per second (across all threads): {
+                    self.iters_per_second:.2f}",
+                "Total time: " +
+                format_time(
+                    time_s=self.total_time_seconds),
+            ])
 
 
 class ThroughputBenchmark:

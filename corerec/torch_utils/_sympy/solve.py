@@ -60,7 +60,10 @@ def try_solve(
     # That is because, as is, we assume the thing we are trying to isolate is
     # only on the right-hand side.
     if lhs_has_thing and rhs_has_thing:
-        log.debug("thing (%s) found in both sides of expression: %s", thing, expr)
+        log.debug(
+            "thing (%s) found in both sides of expression: %s",
+            thing,
+            expr)
         return None
 
     # Try considering both LHS and RHS by mirroring the original expression:
@@ -80,7 +83,8 @@ def try_solve(
         assert isinstance(e, sympy.Rel)
 
         for _ in range(trials):
-            trial = _try_isolate_lhs(e, thing, floordiv_inequality=floordiv_inequality)
+            trial = _try_isolate_lhs(
+                e, thing, floordiv_inequality=floordiv_inequality)
             # Stop if there was no change in this trial.
             if trial == e:
                 break
@@ -95,18 +99,17 @@ def try_solve(
 
 
 def _try_isolate_lhs(
-    e: sympy.Basic, thing: sympy.Basic, floordiv_inequality: bool
-) -> sympy.Basic:
+        e: sympy.Basic,
+        thing: sympy.Basic,
+        floordiv_inequality: bool) -> sympy.Basic:
     op = type(e)
 
     if isinstance(e, sympy.Rel):
         # Move any constants in the left-hand side to the right-hand side.
-        lhs_not_thing = (
-            sum(a for a in e.lhs.args if not a.has(thing))
-            if isinstance(e.lhs, sympy.Add)
-            else 0
-        )
-        e = op(e.lhs - lhs_not_thing, e.rhs - lhs_not_thing)  # type: ignore[attr-defined]
+        lhs_not_thing = (sum(a for a in e.lhs.args if not a.has(
+            thing)) if isinstance(e.lhs, sympy.Add) else 0)
+        # type: ignore[attr-defined]
+        e = op(e.lhs - lhs_not_thing, e.rhs - lhs_not_thing)
 
     # Divide both sides by the factors that don't contain thing.
     if isinstance(e, sympy.Rel) and isinstance(e.lhs, sympy.Mul):
@@ -114,7 +117,8 @@ def _try_isolate_lhs(
         other = sympy.Mul(*[a for a in lhs.args if not a.has(thing)])
 
         # If we can't tell whether 'other' is negative or positive, we do nothing.
-        # That is because we don't know whether we have mirror the operation or not.
+        # That is because we don't know whether we have mirror the operation or
+        # not.
         if not (isinstance(e, INEQUALITY_TYPES) and other.is_negative is None):
             # Divide both sides by 'other'.
             lhs = lhs / other
@@ -128,9 +132,9 @@ def _try_isolate_lhs(
             assert op is not None
             e = op(lhs, rhs)
 
-    ################################################################################
+    ##########################################################################
     # left-hand side is FloorDiv
-    ################################################################################
+    ##########################################################################
     #
     # Given the expression: a // b op c
     # where 'op' is a relational operation, these rules only work if:
@@ -148,28 +152,46 @@ def _try_isolate_lhs(
         if isinstance(e, sympy.Eq):
             numerator, denominator = e.lhs.args
             return sympy.And(
-                sympy.Ge(numerator, (e.rhs * denominator)),  # type: ignore[arg-type]
-                sympy.Lt(numerator, ((e.rhs + 1) * denominator)),  # type: ignore[arg-type]
+                sympy.Ge(
+                    numerator,
+                    (e.rhs * denominator)),
+                # type: ignore[arg-type]
+                sympy.Lt(
+                    numerator,
+                    ((e.rhs + 1) * denominator)),
+                # type: ignore[arg-type]
             )
         # a // b != expr
         # => a < (b * expr) or a >= (b * (expr + 1))
         if isinstance(e, sympy.Ne):
             numerator, denominator = e.lhs.args
             return sympy.Or(
-                sympy.Lt(numerator, (e.rhs * denominator)),  # type: ignore[arg-type]
-                sympy.Ge(numerator, ((e.rhs + 1) * denominator)),  # type: ignore[arg-type]
+                sympy.Lt(
+                    numerator,
+                    (e.rhs * denominator)),
+                # type: ignore[arg-type]
+                sympy.Ge(
+                    numerator,
+                    ((e.rhs + 1) * denominator)),
+                # type: ignore[arg-type]
             )
         # The transformations below only work if b is positive.
         # Note: we only have this information for constants.
         # a // b > expr  => a >= b * (expr + 1)
         # a // b >= expr => a >= b * expr
         if isinstance(e, (sympy.Gt, sympy.Ge)):
-            quotient = e.rhs if isinstance(e, sympy.Ge) else (e.rhs + 1)  # type: ignore[arg-type]
-            return sympy.Ge(e.lhs.args[0], (quotient * e.lhs.args[1]))  # type: ignore[arg-type]
+            quotient = e.rhs if isinstance(
+                e, sympy.Ge) else (
+                e.rhs + 1)  # type: ignore[arg-type]
+            # type: ignore[arg-type]
+            return sympy.Ge(e.lhs.args[0], (quotient * e.lhs.args[1]))
         # a // b < expr  => a < b * expr
         # a // b <= expr => a < b * (expr + 1)
         if isinstance(e, (sympy.Lt, sympy.Le)):
-            quotient = e.rhs if isinstance(e, sympy.Lt) else (e.rhs + 1)  # type: ignore[arg-type]
-            return sympy.Lt(e.lhs.args[0], (quotient * e.lhs.args[1]))  # type: ignore[arg-type]
+            quotient = e.rhs if isinstance(
+                e, sympy.Lt) else (
+                e.rhs + 1)  # type: ignore[arg-type]
+            # type: ignore[arg-type]
+            return sympy.Lt(e.lhs.args[0], (quotient * e.lhs.args[1]))
 
     return e

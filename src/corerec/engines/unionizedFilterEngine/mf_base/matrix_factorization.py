@@ -19,6 +19,7 @@ from typing import List, Optional, Dict, Any, Tuple
 from corerec.base_recommender import BaseCorerec
 from corerec.engines.unionizedFilterEngine.device_manager import DeviceManager
 
+
 class MatrixFactorization(BaseCorerec):
     """Matrix Factorization for Unionized Filtering.
 
@@ -68,8 +69,8 @@ class MatrixFactorization(BaseCorerec):
         use_bias: bool = True,
         verbose: bool = False,
         seed: Optional[int] = None,
-        device: str = 'auto',
-        batch_size: int = 10000
+        device: str = "auto",
+        batch_size: int = 10000,
     ):
         super().__init__(name="MatrixFactorization", trainable=True, verbose=verbose)
         self.k = k
@@ -153,12 +154,12 @@ class MatrixFactorization(BaseCorerec):
                 errors = np.array(batch_ratings) - preds
 
                 self.user_factors[batch_user_indices] += self.learning_rate * (
-                    errors[:, np.newaxis] * self.item_factors[batch_item_indices] -
-                    self.lambda_reg * self.user_factors[batch_user_indices]
+                    errors[:, np.newaxis] * self.item_factors[batch_item_indices]
+                    - self.lambda_reg * self.user_factors[batch_user_indices]
                 )
                 self.item_factors[batch_item_indices] += self.learning_rate * (
-                    errors[:, np.newaxis] * self.user_factors[batch_user_indices] -
-                    self.lambda_reg * self.item_factors[batch_item_indices]
+                    errors[:, np.newaxis] * self.user_factors[batch_user_indices]
+                    - self.lambda_reg * self.item_factors[batch_item_indices]
                 )
 
                 if self.use_bias:
@@ -172,7 +173,9 @@ class MatrixFactorization(BaseCorerec):
                 total_loss += np.sum(errors**2)
 
             if self.verbose:
-                print(f"Iteration {iteration + 1}/{self.max_iter}, Loss: {total_loss / len(user_ids):.4f}")
+                print(
+                    f"Iteration {iteration + 1}/{self.max_iter}, Loss: {total_loss / len(user_ids):.4f}"
+                )
 
     def _predict_batch(self, user_indices: List[int], item_indices: List[int]) -> np.ndarray:
         """Predict ratings for a batch of user-item pairs."""
@@ -196,11 +199,15 @@ class MatrixFactorization(BaseCorerec):
             return []
 
         user_idx = self.user_map[user_id]
-        scores = self.global_mean + self.item_biases if self.use_bias else np.zeros(len(self.item_map))
+        scores = (
+            self.global_mean + self.item_biases if self.use_bias else np.zeros(len(self.item_map))
+        )
         scores += np.dot(self.user_factors[user_idx], self.item_factors.T)
-        
+
         if exclude_seen:
-            user_items = set([self.reverse_item_map[iid] for iid in self.user_item_matrix[user_idx].indices])
+            user_items = set(
+                [self.reverse_item_map[iid] for iid in self.user_item_matrix[user_idx].indices]
+            )
             for item_id in user_items:
                 if item_id in self.item_map:
                     scores[self.item_map[item_id]] = -np.inf
@@ -211,38 +218,34 @@ class MatrixFactorization(BaseCorerec):
     def save_model(self, filepath: str) -> None:
         """Save the model to a file."""
         model_data = {
-            'user_factors': self.user_factors,
-            'item_factors': self.item_factors,
-            'user_biases': self.user_biases,
-            'item_biases': self.item_biases,
-            'global_mean': self.global_mean,
-            'user_map': self.user_map,
-            'item_map': self.item_map,
-            'reverse_user_map': self.reverse_user_map,
-            'reverse_item_map': self.reverse_item_map,
-            'k': self.k,
-            'use_bias': self.use_bias
+            "user_factors": self.user_factors,
+            "item_factors": self.item_factors,
+            "user_biases": self.user_biases,
+            "item_biases": self.item_biases,
+            "global_mean": self.global_mean,
+            "user_map": self.user_map,
+            "item_map": self.item_map,
+            "reverse_user_map": self.reverse_user_map,
+            "reverse_item_map": self.reverse_item_map,
+            "k": self.k,
+            "use_bias": self.use_bias,
         }
         np.save(filepath, model_data, allow_pickle=True)
 
     @classmethod
-    def load_model(cls, filepath: str, device: str = 'auto') -> 'MatrixFactorization':
+    def load_model(cls, filepath: str, device: str = "auto") -> "MatrixFactorization":
         """Load a model from a file."""
         model_data = np.load(filepath, allow_pickle=True).item()
-        instance = cls(
-            k=model_data['k'],
-            use_bias=model_data['use_bias'],
-            device=device
-        )
-        
-        instance.user_factors = model_data['user_factors']
-        instance.item_factors = model_data['item_factors']
-        instance.user_biases = model_data['user_biases']
-        instance.item_biases = model_data['item_biases']
-        instance.global_mean = model_data['global_mean']
-        instance.user_map = model_data['user_map']
-        instance.item_map = model_data['item_map']
-        instance.reverse_user_map = model_data['reverse_user_map']
-        instance.reverse_item_map = model_data['reverse_item_map']
-        
+        instance = cls(k=model_data["k"], use_bias=model_data["use_bias"], device=device)
+
+        instance.user_factors = model_data["user_factors"]
+        instance.item_factors = model_data["item_factors"]
+        instance.user_biases = model_data["user_biases"]
+        instance.item_biases = model_data["item_biases"]
+        instance.global_mean = model_data["global_mean"]
+        instance.user_map = model_data["user_map"]
+        instance.item_map = model_data["item_map"]
+        instance.reverse_user_map = model_data["reverse_user_map"]
+        instance.reverse_item_map = model_data["reverse_item_map"]
+
         return instance

@@ -9,11 +9,12 @@ from corerec.utils.validation import (
     validate_item_id,
     validate_top_k,
     validate_model_fitted,
-    ValidationError
+    ValidationError,
 )
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
 
 class InteractiveFilteringRecommender:
     def __init__(self, base_recommender: Any):
@@ -58,7 +59,7 @@ class InteractiveFilteringRecommender:
             # Example: Adjust user profile or model based on feedback
             # This is a placeholder for actual implementation
             logger.info(f"Updating base recommender for user {user_id} based on feedback.")
-            if hasattr(self.base_recommender, 'update_user_profile'):
+            if hasattr(self.base_recommender, "update_user_profile"):
                 self.base_recommender.update_user_profile(user_id, item_id, feedback_score)
             else:
                 logger.warning("Base recommender does not support updating user profiles.")
@@ -78,18 +79,24 @@ class InteractiveFilteringRecommender:
         - List[int]: List of recommended item IDs.
         """
         # Validate inputs
-        validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
-        validate_top_k(top_k if 'top_k' in locals() else 10)
-        
-        logger.info(f"Generating recommendations for user {user_id} with query '{query}' using InteractiveFilteringRecommender.")
+        if user_id is None:
+            raise ValueError("user_id cannot be None")
+        if top_n <= 0:
+            raise ValueError("top_n must be positive")
+        if not hasattr(self.base_recommender, 'recommend'):
+            raise ValueError("Base recommender must have a recommend method")
+
+        logger.info(
+            f"Generating recommendations for user {user_id} with query '{query}' using InteractiveFilteringRecommender."
+        )
         # Get base recommendations
         base_recommendations = self.base_recommender.recommend(user_id, query, top_n=top_n * 2)
 
         if user_id in self.user_feedback:
             # Filter out items with negative feedback
             filtered_recommendations = [
-                item_id for item_id in base_recommendations
+                item_id
+                for item_id in base_recommendations
                 if self.user_feedback[user_id].get(item_id, 0) >= 0
             ]
             logger.info(f"Filtered recommendations for user {user_id}: {filtered_recommendations}")

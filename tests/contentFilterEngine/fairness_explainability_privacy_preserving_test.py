@@ -17,15 +17,19 @@ def load_module(rel_path: str):
 class TestPrivacyPreserving(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load_module("corerec/engines/contentFilterEngine/fairness_explainability/privacy_preserving.py")
+        cls.mod = load_module(
+            "corerec/engines/contentFilterEngine/fairness_explainability/privacy_preserving.py"
+        )
         cls.PRIVACY_PRESERVING = cls.mod.PRIVACY_PRESERVING
 
     def test_anonymize_and_dp(self):
-        df = pd.DataFrame({
-            "user_id": [1, 2],
-            "zip_code": ["12345", "54321"],
-            "age": [25, 30],
-        })
+        df = pd.DataFrame(
+            {
+                "user_id": [1, 2],
+                "zip_code": ["12345", "54321"],
+                "age": [25, 30],
+            }
+        )
         pp = self.PRIVACY_PRESERVING()
         anon = pp.anonymize_data(df)
         self.assertNotIn("user_id", anon.columns)
@@ -38,4 +42,4 @@ class TestPrivacyPreserving(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

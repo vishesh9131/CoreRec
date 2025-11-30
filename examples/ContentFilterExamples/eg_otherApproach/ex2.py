@@ -1,11 +1,9 @@
-from corerec.engines.contentFilterEngine.other_approaches import (
-    OTH_RULE_BASED,
-    OTH_SENTIMENT_ANALYSIS,
-    OTH_ONTOLOGY_BASED,
-)
+# Import using cleaner module path
+import corerec as cr
 
 import os
 from collections import defaultdict
+
 
 class RecommenderSystemFilter:
     def __init__(self, movies_dat_path):
@@ -27,7 +25,7 @@ class RecommenderSystemFilter:
         if not os.path.exists(self.movies_dat_path):
             raise FileNotFoundError(f"The file {self.movies_dat_path} does not exist.")
 
-        with open(self.movies_dat_path, 'r', encoding='utf-8') as file:
+        with open(self.movies_dat_path, "r", encoding="utf-8") as file:
             for line in file:
                 line = line.strip()
                 if not line:
@@ -36,11 +34,8 @@ class RecommenderSystemFilter:
                 if len(parts) != 3:
                     continue  # Skip malformed lines
                 movie_id, title, genres = parts
-                genre_list = genres.split('|')
-                self.movie_genres[movie_id] = {
-                    'title': title,
-                    'genres': genre_list
-                }
+                genre_list = genres.split("|")
+                self.movie_genres[movie_id] = {"title": title, "genres": genre_list}
                 for genre in genre_list:
                     self.genre_movies[genre.lower()].add(movie_id)
 
@@ -58,14 +53,16 @@ class RecommenderSystemFilter:
         # Find the movie ID for the given title
         target_movie_id = None
         for movie_id, details in self.movie_genres.items():
-            if details['title'].lower() == movie_title.lower():
+            if details["title"].lower() == movie_title.lower():
                 target_movie_id = movie_id
                 break
 
         if not target_movie_id:
             raise ValueError(f"Movie titled '{movie_title}' not found in the dataset.")
 
-        target_genres = set([genre.lower() for genre in self.movie_genres[target_movie_id]['genres']])
+        target_genres = set(
+            [genre.lower() for genre in self.movie_genres[target_movie_id]["genres"]]
+        )
 
         # Find movies that share the most genres with the target movie
         similarity_scores = defaultdict(int)
@@ -80,19 +77,21 @@ class RecommenderSystemFilter:
         # Get top_n recommendations
         recommendations = []
         for movie_id, score in sorted_movies[:top_n]:
-            recommendations.append(self.movie_genres[movie_id]['title'])
+            recommendations.append(self.movie_genres[movie_id]["title"])
 
         return recommendations
 
 
 def main():
     # Sample Content to Filter
-    content = "I absolutely love the new sci-fi movie! The chemistry between characters is fantastic."
+    content = (
+        "I absolutely love the new sci-fi movie! The chemistry between characters is fantastic."
+    )
 
     # -----------------------------
     # 1. Rule-Based Filtering
     # -----------------------------
-    rule_filter = OTH_RULE_BASED()
+    rule_filter = cr.RuleBased()
     # Adding rules: Flag content containing 'sci-fi' and allow content containing 'fantastic'
     rule_filter.add_rule("sci-fi", "flag")
     rule_filter.add_rule("fantastic", "allow")
@@ -102,7 +101,7 @@ def main():
     # -----------------------------
     # 2. Sentiment Analysis Filtering
     # -----------------------------
-    sentiment_filter = OTH_SENTIMENT_ANALYSIS(threshold=0.2)
+    sentiment_filter = cr.SentimentAnalysis(threshold=0.2)
     sentiment_result = sentiment_filter.filter_content(content)
     print("Sentiment Analysis Filter Result:", sentiment_result)
 
@@ -111,7 +110,7 @@ def main():
     # -----------------------------
     ontology_path = "src/SANDBOX/contentFilterExample/exampleotheraoprach/ontologies/ontology.owl"
     try:
-        ontology_filter = OTH_ONTOLOGY_BASED(ontology_path)
+        ontology_filter = cr.OntologyBased(ontology_path)
         ontology_result = ontology_filter.filter_content(content)
         print("Ontology-Based Filter Result:", ontology_result)
     except ValueError as ve:
@@ -130,6 +129,7 @@ def main():
             print(f"{idx}. {rec}")
     except (FileNotFoundError, ValueError) as e:
         print(e)
+
 
 if __name__ == "__main__":
     main()

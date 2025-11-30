@@ -16,35 +16,36 @@ from typing import Dict, List, Any
 import os
 import json
 from cr_learn import ml_1m as ml
+
 # New Import technique
-from corerec import cf_engine as cr
+import corerec as cr
 
 data = ml.load()
-cfg = 'examples/ContentFilterExamples/context_config.json'  
+cfg = "examples/ContentFilterExamples/context_config.json"
 embedding_data = ml.prepare_embedding_data()
 
 
 # Initialize Recommenders
-users_df = data['users']
-ratings_df = data['ratings']
-movies_df = data['movies']
-user_interactions = data['user_interactions']
-item_features = data['item_features']
+users_df = data["users"]
+ratings_df = data["ratings"]
+movies_df = data["movies"]
+user_interactions = data["user_interactions"]
+item_features = data["item_features"]
 
-all_items = set(movies_df['movie_id'].tolist())
+all_items = set(movies_df["movie_id"].tolist())
 
 print("Initializing recommenders...")
-user_recommender = cr.user_profiling.UserProfilingRecommender(user_attributes=users_df)
-context_recommender = cr.context_aware.ContextAwareRecommender(
-    context_config_path=cfg,
-    item_features=item_features
+user_recommender = cr.UserProfiling(user_attributes=users_df)
+context_recommender = cr.ContextAware(
+    context_config_path=cfg, item_features=item_features
 )
-item_recommender = cr.item_profiling.ItemProfilingRecommender()
+item_recommender = cr.ItemProfiling()
 
 # Initialize Embedding Models
 print("Initializing embedding models...")
-embedding_recommender = cr.personalized_embeddings.PERSONALIZED_EMBEDDINGS()
-# EMB_PERSONALIZED_EMBEDDINGS()
+# Access via engines.contentFilterEngine since it's not in top-level yet
+from corerec.engines.contentFilterEngine.embedding_representation_learning.personalized_embeddings import PERSONALIZED_EMBEDDINGS
+embedding_recommender = PERSONALIZED_EMBEDDINGS()
 
 # Prepare data for embeddings
 print("Preparing data for embeddings...")
@@ -69,12 +70,11 @@ item_recommender.fit(user_interactions, item_features)
 
 # Generate Embedding-Based Recommendations (Example)
 user_id = 1  # Replace with desired user ID
-current_context = {
-    "time_of_day": "evening",
-    "location": "home"
-}
+current_context = {"time_of_day": "evening", "location": "home"}
 
-print(f"Generating recommendations for User {user_id} with context {current_context} using embeddings...")
+print(
+    f"Generating recommendations for User {user_id} with context {current_context} using embeddings..."
+)
 # Example: Get user profile attributes
 user_profile = user_recommender.user_profiles.get(user_id, {})
 if not user_profile:
@@ -83,9 +83,9 @@ if not user_profile:
 else:
     # Example: Aggregate embeddings based on user interacted items
     user_embedding = {}
-    interacted_items = user_profile.get('interacted_items', set())
+    interacted_items = user_profile.get("interacted_items", set())
     for item_id in interacted_items:
-        genres = movies_df[movies_df['movie_id'] == item_id]['genres'].values[0].split('|')
+        genres = movies_df[movies_df["movie_id"] == item_id]["genres"].values[0].split("|")
         for genre in genres:
             genre_embedding = embedding_recommender.get_word_embedding(genre)
             for idx, val in enumerate(genre_embedding):
@@ -98,7 +98,7 @@ else:
     for item_id in all_items:
         if item_id in interacted_items:
             continue
-        genres = movies_df[movies_df['movie_id'] == item_id]['genres'].values[0].split('|')
+        genres = movies_df[movies_df["movie_id"] == item_id]["genres"].values[0].split("|")
         item_embedding = []
         for genre in genres:
             genre_emb = embedding_recommender.get_word_embedding(genre)
@@ -108,7 +108,9 @@ else:
             continue
         item_vector = sum(item_embedding)
         user_vector = sum(user_embedding.values())
-        similarity = dot([user_vector], [item_vector]) / (norm([user_vector]) * norm([item_vector]) + 1e-10)
+        similarity = dot([user_vector], [item_vector]) / (
+            norm([user_vector]) * norm([item_vector]) + 1e-10
+        )
         scores[item_id] = similarity
 
     # Sort and get top-N
@@ -117,10 +119,11 @@ else:
 
 # Fetch and display movie titles for recommended movie IDs
 if recommendations:
-    recommended_movies = movies_df[movies_df['movie_id'].isin(recommendations)]
-    print(f"Top 10 embedding-based recommendations for User {user_id} in context {current_context}:")
+    recommended_movies = movies_df[movies_df["movie_id"].isin(recommendations)]
+    print(
+        f"Top 10 embedding-based recommendations for User {user_id} in context {current_context}:"
+    )
     for _, row in recommended_movies.iterrows():
         print(f"- {row['title']}")
 else:
     print("No recommendations could be generated.")
-

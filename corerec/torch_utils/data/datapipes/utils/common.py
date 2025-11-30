@@ -24,7 +24,8 @@ __all__ = [
 DILL_AVAILABLE = dill_available()
 
 
-def validate_input_col(fn: Callable, input_col: Optional[Union[int, tuple, list]]):
+def validate_input_col(
+        fn: Callable, input_col: Optional[Union[int, tuple, list]]):
     """
     Check that function used in a callable datapipe works with the input column.
 
@@ -57,9 +58,7 @@ def validate_input_col(fn: Callable, input_col: Optional[Union[int, tuple, list]
     """
     try:
         sig = inspect.signature(fn)
-    except (
-        ValueError
-    ):  # Signature cannot be inspected, likely it is a built-in fn or written in C
+    except ValueError:  # Signature cannot be inspected, likely it is a built-in fn or written in C
         return
     if isinstance(input_col, (list, tuple)):
         input_col_size = len(input_col)
@@ -137,10 +136,13 @@ def _check_unpickable_fn(fn: Callable):
     If it is a lambda or local function, a UserWarning will be raised. If it's not a callable function, a TypeError will be raised.
     """
     if not callable(fn):
-        raise TypeError(f"A callable function is expected, but {type(fn)} is provided.")
+        raise TypeError(
+            f"A callable function is expected, but {
+                type(fn)} is provided.")
 
     # Extract function from partial object
-    # Nested partial function is automatically expanded as a single partial object
+    # Nested partial function is automatically expanded as a single partial
+    # object
     if isinstance(fn, functools.partial):
         fn = fn.func
 
@@ -153,7 +155,9 @@ def _check_unpickable_fn(fn: Callable):
         return
 
     # Lambda function
-    if hasattr(fn, "__name__") and fn.__name__ == "<lambda>" and not dill_available():
+    if hasattr(
+            fn,
+            "__name__") and fn.__name__ == "<lambda>" and not dill_available():
         warnings.warn(
             "Lambda function is not supported by pickle, please use "
             "regular python function or functools.partial instead."
@@ -226,32 +230,38 @@ def get_file_binaries_from_pathnames(
     for pathname in pathnames:
         if not isinstance(pathname, str):
             raise TypeError(
-                f"Expected string type for pathname, but got {type(pathname)}"
-            )
+                f"Expected string type for pathname, but got {
+                    type(pathname)}")
         yield pathname, StreamWrapper(open(pathname, mode, encoding=encoding))
 
 
 def validate_pathname_binary_tuple(data: Tuple[str, IOBase]):
     if not isinstance(data, tuple):
         raise TypeError(
-            f"pathname binary data should be tuple type, but it is type {type(data)}"
-        )
+            f"pathname binary data should be tuple type, but it is type {
+                type(data)}")
     if len(data) != 2:
         raise TypeError(
-            f"pathname binary stream tuple length should be 2, but got {len(data)}"
-        )
+            f"pathname binary stream tuple length should be 2, but got {
+                len(data)}")
     if not isinstance(data[0], str):
         raise TypeError(
-            f"pathname within the tuple should have string type pathname, but it is type {type(data[0])}"
-        )
-    if not isinstance(data[1], IOBase) and not isinstance(data[1], StreamWrapper):
+            f"pathname within the tuple should have string type pathname, but it is type {
+                type(
+                    data[0])}")
+    if not isinstance(
+            data[1],
+            IOBase) and not isinstance(
+            data[1],
+            StreamWrapper):
         raise TypeError(
             f"binary stream within the tuple should have IOBase or"
             f"its subclasses as type, but it is type {type(data[1])}"
         )
 
 
-# Deprecated function names and its corresponding DataPipe type and kwargs for the `_deprecation_warning` function
+# Deprecated function names and its corresponding DataPipe type and kwargs
+# for the `_deprecation_warning` function
 _iter_deprecated_functional_names: Dict[str, Dict] = {}
 _map_deprecated_functional_names: Dict[str, Dict] = {}
 
@@ -270,17 +280,14 @@ def _deprecation_warning(
 ) -> None:
     if new_functional_name and not old_functional_name:
         raise ValueError(
-            "Old functional API needs to be specified for the deprecation warning."
-        )
+            "Old functional API needs to be specified for the deprecation warning.")
     if new_argument_name and not old_argument_name:
         raise ValueError(
-            "Old argument name needs to be specified for the deprecation warning."
-        )
+            "Old argument name needs to be specified for the deprecation warning.")
 
     if old_functional_name and old_argument_name:
         raise ValueError(
-            "Deprecating warning for functional API and argument should be separated."
-        )
+            "Deprecating warning for functional API and argument should be separated.")
 
     msg = f"`{old_class_name}()`"
     if deprecate_functional_name_only and old_functional_name:
@@ -332,8 +339,8 @@ class StreamWrapper:
         if parent_stream is not None:
             if not isinstance(parent_stream, StreamWrapper):
                 raise RuntimeError(
-                    f"Parent stream should be StreamWrapper, {type(parent_stream)} was given"
-                )
+                    f"Parent stream should be StreamWrapper, {
+                        type(parent_stream)} was given")
             parent_stream.child_counter += 1
             self.parent_stream = parent_stream
         if StreamWrapper.debug_unclosed_streams:
@@ -366,10 +373,7 @@ class StreamWrapper:
             del StreamWrapper.session_streams[self]
         if hasattr(self, "parent_stream") and self.parent_stream is not None:
             self.parent_stream.child_counter -= 1
-            if (
-                not self.parent_stream.child_counter
-                and self.parent_stream.close_on_last_child
-            ):
+            if not self.parent_stream.child_counter and self.parent_stream.close_on_last_child:
                 self.parent_stream.close()
         try:
             self.file_obj.close(*args, **kwargs)
@@ -384,7 +388,8 @@ class StreamWrapper:
             self.close()
 
     def __dir__(self):
-        attrs = list(self.__dict__.keys()) + list(StreamWrapper.__dict__.keys())
+        attrs = list(self.__dict__.keys()) + \
+            list(StreamWrapper.__dict__.keys())
         attrs += dir(self.file_obj)
         return list(set(attrs))
 

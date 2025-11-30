@@ -7,6 +7,7 @@ from typing import Any, Tuple
 
 __all__ = ["RemovableHandle", "unserializable_hook", "warn_if_has_hooks", "BackwardHook"]
 
+
 class RemovableHandle:
     r"""
     A handle which provides the capability to remove a hook.
@@ -85,10 +86,13 @@ def warn_if_has_hooks(tensor):
         for k in tensor._backward_hooks:
             hook = tensor._backward_hooks[k]
             if not hasattr(hook, "__torch_unserializable__"):
-                warnings.warn(f"backward hook {repr(hook)} on tensor will not be "
-                              "serialized.  If this is expected, you can "
-                              "decorate the function with @torch.utils.hooks.unserializable_hook "
-                              "to suppress this warning")
+                warnings.warn(
+                    f"backward hook {repr(hook)} on tensor will not be "
+                    "serialized.  If this is expected, you can "
+                    "decorate the function with @torch.utils.hooks.unserializable_hook "
+                    "to suppress this warning"
+                )
+
 
 class BackwardHook:
     """
@@ -142,8 +146,10 @@ class BackwardHook:
                     continue
 
                 if len(out) != len(res):
-                    raise RuntimeError("Backward hook returned an invalid number of grad_input, "
-                                       f"got {len(out)}, but expected {len(res)}")
+                    raise RuntimeError(
+                        "Backward hook returned an invalid number of grad_input, "
+                        f"got {len(out)}, but expected {len(res)}"
+                    )
 
                 res = out
 
@@ -171,12 +177,20 @@ class BackwardHook:
 
         new_tensors = torch.nn.modules._functions.BackwardHookFunction.apply(*tensors)
         if len(new_tensors) == 0:
-            raise RuntimeError("Cannot set Module backward hook for a Module with no input Tensors.")
+            raise RuntimeError(
+                "Cannot set Module backward hook for a Module with no input Tensors."
+            )
 
-        grad_fns = [t.grad_fn for t in new_tensors if t.grad_fn is not None and t.grad_fn.name() == "BackwardHookFunctionBackward"]
+        grad_fns = [
+            t.grad_fn
+            for t in new_tensors
+            if t.grad_fn is not None and t.grad_fn.name() == "BackwardHookFunctionBackward"
+        ]
         if len(grad_fns) == 0:
-            raise RuntimeError("Error while setting up backward hooks. Please open "
-                               "an issue with a code sample to reproduce this.")
+            raise RuntimeError(
+                "Error while setting up backward hooks. Please open "
+                "an issue with a code sample to reproduce this."
+            )
 
         fn(grad_fns[0])
 
@@ -202,9 +216,9 @@ class BackwardHook:
     def setup_output_hook(self, args):
         def fn(grad_fn):
             def hook(_, grad_output):
-                self.grad_outputs = self._pack_with_none(self.output_tensors_index,
-                                                         grad_output,
-                                                         self.n_outputs)
+                self.grad_outputs = self._pack_with_none(
+                    self.output_tensors_index, grad_output, self.n_outputs
+                )
 
                 if self.user_pre_hooks:
                     expected_len = len(self.grad_outputs)
@@ -215,8 +229,10 @@ class BackwardHook:
 
                         actual_len = len(hook_grad_outputs)
                         if actual_len != expected_len:
-                            raise RuntimeError("Backward pre hook returned an invalid number of grad_output, "
-                                               f"got {actual_len}, but expected {expected_len}")
+                            raise RuntimeError(
+                                "Backward pre hook returned an invalid number of grad_output, "
+                                f"got {actual_len}, but expected {expected_len}"
+                            )
                         self.grad_outputs = hook_grad_outputs
 
                 # We need to be able to clear self.grad_outputs but also return it
@@ -228,9 +244,13 @@ class BackwardHook:
                     grad_inputs = self._pack_with_none([], [], self.n_inputs)
                     for user_hook in self.user_hooks:
                         res = user_hook(self.module, grad_inputs, self.grad_outputs)
-                        if res is not None and not (isinstance(res, tuple) and all(el is None for el in res)):
-                            raise RuntimeError("Backward hook for Modules where no input requires "
-                                               "gradient should always return None or None for all gradients.")
+                        if res is not None and not (
+                            isinstance(res, tuple) and all(el is None for el in res)
+                        ):
+                            raise RuntimeError(
+                                "Backward hook for Modules where no input requires "
+                                "gradient should always return None or None for all gradients."
+                            )
                     self.grad_outputs = None
 
                 if local_grad_outputs is not None:

@@ -34,15 +34,26 @@ def load_as(package_name: str, rel_file: str):
 class TestContentFilterFactory(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Build minimal package skeleton to satisfy relative imports without executing real __init__
+        # Build minimal package skeleton to satisfy relative imports without
+        # executing real __init__
         ensure_fake_package("corerec", REPO_ROOT / "corerec")
-        ensure_fake_package("corerec.engines", REPO_ROOT / "corerec" / "engines")
+        ensure_fake_package(
+            "corerec.engines",
+            REPO_ROOT /
+            "corerec" /
+            "engines")
         ensure_fake_package("corerec.engines.contentFilterEngine", CFE_DIR)
 
         # Preload tfidf module under the expected fully-qualified name
-        cls.tfidf_mod = load_as("corerec.engines.contentFilterEngine.tfidf_recommender", "tfidf_recommender.py")
-        # Now load factory with proper __package__ so `from .tfidf_recommender` works
-        cls.factory_mod = load_as("corerec.engines.contentFilterEngine.cr_contentFilterFactory", "cr_contentFilterFactory.py")
+        cls.tfidf_mod = load_as(
+            "corerec.engines.contentFilterEngine.tfidf_recommender",
+            "tfidf_recommender.py")
+        # Now load factory with proper __package__ so `from .tfidf_recommender`
+        # works
+        cls.factory_mod = load_as(
+            "corerec.engines.contentFilterEngine.cr_contentFilterFactory",
+            "cr_contentFilterFactory.py",
+        )
 
     def test_get_recommender_tfidf(self):
         feature_matrix = np.eye(5)
@@ -52,8 +63,9 @@ class TestContentFilterFactory(unittest.TestCase):
 
     def test_get_recommender_unsupported(self):
         with self.assertRaises(ValueError):
-            self.factory_mod.ContentFilterFactory.get_recommender({"method": "unknown"})
+            self.factory_mod.ContentFilterFactory.get_recommender(
+                {"method": "unknown"})
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

@@ -23,8 +23,7 @@ def rename_kernels(source_code: str) -> str:
     pattern = r"(\w+)\s*=\s*async_compile\.triton\('triton_',\s"
     triton_kernel_decl = "def triton_"
     matches = [
-        (match.end(), match.group(1))
-        for match in re.finditer(pattern, source_code, re.DOTALL)
+        (match.end(), match.group(1)) for match in re.finditer(pattern, source_code, re.DOTALL)
     ]
 
     # Starting from the last match to avoid issues with shifting indices after replacements
@@ -113,9 +112,7 @@ def process_file(input_filename: str, output_filename: str) -> str:
     return transformed_code
 
 
-def get_clean_triton(
-    input_path: Path, output_path: Path = Path("triton_only_repro.py")
-):
+def get_clean_triton(input_path: Path, output_path: Path = Path("triton_only_repro.py")):
     """Run experiments and output results to file
 
     Args:
@@ -135,9 +132,7 @@ if __name__ == "__main__":
     )
 
     # Add the arguments
-    parser.add_argument(
-        "input_path", type=Path, help="Path to inductor generated output code"
-    )
+    parser.add_argument("input_path", type=Path, help="Path to inductor generated output code")
     parser.add_argument(
         "--output_path",
         type=Path,

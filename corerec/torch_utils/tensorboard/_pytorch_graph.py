@@ -57,9 +57,8 @@ class NodeBase:
         repr.append(str(type(self)))
         for m in dir(self):
             if "__" not in m:
-                repr.append(
-                    m + ": " + str(getattr(self, m)) + str(type(getattr(self, m)))
-                )
+                repr.append(m + ": " + str(getattr(self, m)) +
+                            str(type(getattr(self, m))))
         return "\n".join(repr) + "\n\n"
 
 
@@ -167,7 +166,8 @@ class GraphPy:
 
     def populate_namespace_from_OP_to_IO(self):
         for node in self.nodes_op:
-            for node_output, outputSize in zip(node.outputs, node.outputstensor_size):
+            for node_output, outputSize in zip(
+                    node.outputs, node.outputstensor_size):
                 self.scope_name_appeared.append(node.scopeName)
                 self.nodes_io[node_output] = NodeBase(
                     node_output,
@@ -187,15 +187,16 @@ class GraphPy:
                 )
 
         for key, node in self.nodes_io.items():
-            if type(node) == NodeBase:
-                self.unique_name_to_scoped_name[key] = node.scope + "/" + node.debugName
+            if isinstance(node, NodeBase):
+                self.unique_name_to_scoped_name[key] = node.scope + \
+                    "/" + node.debugName
             if hasattr(node, "input_or_output"):
-                self.unique_name_to_scoped_name[key] = (
-                    node.input_or_output + "/" + node.debugName
-                )
+                self.unique_name_to_scoped_name[key] = node.input_or_output + \
+                    "/" + node.debugName
 
             if hasattr(node, "scope") and node.scope is not None:
-                self.unique_name_to_scoped_name[key] = node.scope + "/" + node.debugName
+                self.unique_name_to_scoped_name[key] = node.scope + \
+                    "/" + node.debugName
                 if node.scope == "" and self.shallowest_scope_name:
                     self.unique_name_to_scoped_name[node.debugName] = (
                         self.shallowest_scope_name + "/" + node.debugName
@@ -204,13 +205,9 @@ class GraphPy:
         # replace name
         for key, node in self.nodes_io.items():
             self.nodes_io[key].inputs = [
-                self.unique_name_to_scoped_name[node_input_id]
-                for node_input_id in node.inputs
-            ]
+                self.unique_name_to_scoped_name[node_input_id] for node_input_id in node.inputs]
             if node.debugName in self.unique_name_to_scoped_name:
-                self.nodes_io[key].debugName = self.unique_name_to_scoped_name[
-                    node.debugName
-                ]
+                self.nodes_io[key].debugName = self.unique_name_to_scoped_name[node.debugName]
 
     def to_proto(self):
         """Convert graph representation of GraphPy object to TensorBoard required format."""
@@ -247,9 +244,8 @@ def parse(graph, trace, args=None, omit_useless_nodes=True):
     nodes_py = GraphPy()
     for node in graph.inputs():
         if omit_useless_nodes:
-            if (
-                len(node.uses()) == 0
-            ):  # number of user of the node (= number of outputs/ fanout)
+            if len(
+                    node.uses()) == 0:  # number of user of the node (= number of outputs/ fanout)
                 continue
 
         if node.type().kind() != CLASSTYPE_KIND:
@@ -261,9 +257,7 @@ def parse(graph, trace, args=None, omit_useless_nodes=True):
             attr_name = node.s("name")
             attr_key = node.output().debugName()
             parent = node.input().node()
-            if (
-                parent.kind() == GETATTR_KIND
-            ):  # If the parent node is not the top-level "self" node
+            if parent.kind() == GETATTR_KIND:  # If the parent node is not the top-level "self" node
                 parent_attr_name = parent.s("name")
                 parent_attr_key = parent.output().debugName()
                 parent_scope = attr_to_scope[parent_attr_key]
@@ -271,15 +265,18 @@ def parse(graph, trace, args=None, omit_useless_nodes=True):
                 attr_to_scope[attr_key] = f"{parent_scope}/{attr_scope}.{attr_name}"
             else:
                 attr_to_scope[attr_key] = f"__module.{attr_name}"
-            # We don't need classtype nodes; scope will provide this information
+            # We don't need classtype nodes; scope will provide this
+            # information
             if node.output().type().kind() != CLASSTYPE_KIND:
                 node_py = NodePyOP(node)
-                node_py.scopeName = attr_to_scope[attr_key]  # type: ignore[attr-defined]
+                # type: ignore[attr-defined]
+                node_py.scopeName = attr_to_scope[attr_key]
                 nodes_py.append(node_py)
         else:
             nodes_py.append(NodePyOP(node))
 
-    for i, node in enumerate(graph.outputs()):  # Create sink nodes for output ops
+    for i, node in enumerate(
+            graph.outputs()):  # Create sink nodes for output ops
         node_pyio = NodePyIO(node, "output")
         node_pyio.debugName = f"output.{i + 1}"
         node_pyio.inputs = [node.debugName()]
@@ -350,9 +347,13 @@ def graph(model, args, verbose=False, use_strict_trace=True):
     # and
     # https://github.com/tensorflow/tensorboard/blob/master/tensorboard/compat/proto/step_stats.proto
     stepstats = RunMetadata(
-        step_stats=StepStats(dev_stats=[DeviceStepStats(device="/device:CPU:0")])
-    )
-    return GraphDef(node=list_of_nodes, versions=VersionDef(producer=22)), stepstats
+        step_stats=StepStats(
+            dev_stats=[
+                DeviceStepStats(
+                    device="/device:CPU:0")]))
+    return GraphDef(
+        node=list_of_nodes, versions=VersionDef(
+            producer=22)), stepstats
     # The producer version has been reverse engineered from standard
     # TensorBoard logged data.
 

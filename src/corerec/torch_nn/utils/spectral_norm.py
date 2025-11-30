@@ -99,9 +99,7 @@ class SpectralNorm:
                     # Spectral norm of weight equals to `u^T W v`, where `u` and `v`
                     # are the first left and right singular vectors.
                     # This power iteration produces approximations of `u` and `v`.
-                    v = F.normalize(
-                        torch.mv(weight_mat.t(), u), dim=0, eps=self.eps, out=v
-                    )
+                    v = F.normalize(torch.mv(weight_mat.t(), u), dim=0, eps=self.eps, out=v)
                     u = F.normalize(torch.mv(weight_mat, v), dim=0, eps=self.eps, out=u)
                 if self.n_power_iterations > 0:
                     # See above on why we need to clone
@@ -150,9 +148,7 @@ class SpectralNorm:
         fn = SpectralNorm(name, n_power_iterations, dim, eps)
         weight = module._parameters[name]
         if weight is None:
-            raise ValueError(
-                f"`SpectralNorm` cannot be applied as parameter `{name}` is None"
-            )
+            raise ValueError(f"`SpectralNorm` cannot be applied as parameter `{name}` is None")
         if isinstance(weight, torch.nn.parameter.UninitializedParameter):
             raise ValueError(
                 "The module passed to `SpectralNorm` can't have uninitialized parameters. "
@@ -210,9 +206,7 @@ class SpectralNormLoadStateDictPreHook:
         error_msgs,
     ) -> None:
         fn = self.fn
-        version = local_metadata.get("spectral_norm", {}).get(
-            fn.name + ".version", None
-        )
+        version = local_metadata.get("spectral_norm", {}).get(fn.name + ".version", None)
         if version is None or version < 1:
             weight_key = prefix + fn.name
             if (

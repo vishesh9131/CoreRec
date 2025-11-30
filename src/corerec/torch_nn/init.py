@@ -121,20 +121,14 @@ def calculate_gain(nonlinearity, param=None):
     elif nonlinearity == "leaky_relu":
         if param is None:
             negative_slope = 0.01
-        elif (
-            not isinstance(param, bool)
-            and isinstance(param, int)
-            or isinstance(param, float)
-        ):
+        elif not isinstance(param, bool) and isinstance(param, int) or isinstance(param, float):
             # True/False are instances of int, hence check above
             negative_slope = param
         else:
             raise ValueError(f"negative_slope {param} not a valid number")
         return math.sqrt(2.0 / (1 + negative_slope**2))
     elif nonlinearity == "selu":
-        return (
-            3.0 / 4
-        )  # Value found empirically (https://github.com/pytorch/pytorch/pull/50664)
+        return 3.0 / 4  # Value found empirically (https://github.com/pytorch/pytorch/pull/50664)
     else:
         raise ValueError(f"Unsupported nonlinearity {nonlinearity}")
 
@@ -236,9 +230,7 @@ def constant_(tensor: Tensor, val: float) -> Tensor:
         >>> nn.init.constant_(w, 0.3)
     """
     if torch.overrides.has_torch_function_variadic(tensor):
-        return torch.overrides.handle_torch_function(
-            constant_, (tensor,), tensor=tensor, val=val
-        )
+        return torch.overrides.handle_torch_function(constant_, (tensor,), tensor=tensor, val=val)
     return _no_grad_fill_(tensor, val)
 
 

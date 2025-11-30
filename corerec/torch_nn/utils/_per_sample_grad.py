@@ -82,27 +82,27 @@ def call_for_per_sample_grads(
             raise RuntimeError(
                 "Unable to find a tensor in the passed args and kwargs. They may not be pytree-able "
                 "and so ExpandedWeights cannot compute the batch size from the inputs. Please specify "
-                "it explicitly"
-            )
+                "it explicitly")
         return batch_size
 
     if loss_reduction not in ["sum", "mean"]:
         raise RuntimeError(
-            f"Expected loss_reduction argument to be sum or mean, got {loss_reduction}"
-        )
+            f"Expected loss_reduction argument to be sum or mean, got {loss_reduction}")
 
     if not isinstance(module, torch.nn.Module):
         raise RuntimeError(
-            f"Module passed must be nn.Module, got {type(module).__name__}"
-        )
+            f"Module passed must be nn.Module, got {
+                type(module).__name__}")
     if not (batch_size is None or isinstance(batch_size, int)):
         raise RuntimeError(
-            f"Batch size passed must be None or an integer, got {type(batch_size).__name__}"
-        )
+            f"Batch size passed must be None or an integer, got {
+                type(batch_size).__name__}")
     if batch_size is not None and batch_size < 1:
         raise RuntimeError(f"Batch size must be positive, got {batch_size}")
     for weight in module.parameters():
-        if hasattr(weight, "grad_sample") and weight.grad_sample is not None:  # type: ignore[attr-defined]
+        if hasattr(
+                weight,
+                "grad_sample") and weight.grad_sample is not None:  # type: ignore[attr-defined]
             raise RuntimeError(
                 "Current Expanded Weights accumulates the gradients, which will be incorrect for multiple "
                 f"calls without clearing gradients. Please clear out the grad_sample parameter of {weight} or "

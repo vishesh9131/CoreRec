@@ -13,14 +13,14 @@ Track progress: https://github.com/vishesh9131/CoreRec/issues
 class WeightedMatrixFactorizationBase:
     """
     Weightedmatrixfactorization - Placeholder for future implementation.
-    
+
     This class will raise NotImplementedError when instantiated.
     Please use the recommended alternatives listed in the module docstring.
-    
+
     Raises:
         NotImplementedError: This feature is not yet implemented
     """
-    
+
     def __init__(self, *args, **kwargs):
         raise NotImplementedError(
             f"\n\nWeightedMatrixFactorizationBase is not yet implemented.\n\n"

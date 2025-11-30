@@ -17,7 +17,8 @@ def attr_value_proto(dtype, shape, s):
         attr["attr"] = AttrValue(s=s.encode(encoding="utf_8"))
     if shape is not None:
         shapeproto = tensor_shape_proto(shape)
-        attr["_output_shapes"] = AttrValue(list=AttrValue.ListValue(shape=[shapeproto]))
+        attr["_output_shapes"] = AttrValue(
+            list=AttrValue.ListValue(shape=[shapeproto]))
     return attr
 
 
@@ -26,7 +27,10 @@ def tensor_shape_proto(outputsize):
 
     Follows https://github.com/tensorflow/tensorboard/blob/master/tensorboard/compat/proto/tensor_shape.proto .
     """
-    return TensorShapeProto(dim=[TensorShapeProto.Dim(size=d) for d in outputsize])
+    return TensorShapeProto(
+        dim=[
+            TensorShapeProto.Dim(
+                size=d) for d in outputsize])
 
 
 def node_proto(

@@ -3,7 +3,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import List, Dict, Tuple, Optional
+from typing import Union, List, Dict, Tuple, Optional
+from pathlib import Path
 import pickle
 import os
 from scipy.sparse import csr_matrix
@@ -34,21 +35,6 @@ class LightGCN(BaseRecommender):
                  dropout: float = 0.0,
                  early_stopping_patience: int = 10,
                  verbose: bool = True):
-        """
-        Initialize LightGCN model
-        
-        Args:
-            n_factors: Embedding size
-            n_layers: Number of graph convolution layers
-            learning_rate: Learning rate for optimizer
-            regularization: L2 regularization coefficient
-            batch_size: Training batch size
-            epochs: Number of training epochs
-            device: Computing device ('cpu' or 'cuda')
-            dropout: Dropout rate
-            early_stopping_patience: Number of epochs to wait before early stopping
-            verbose: Whether to print training progress
-        """
         super().__init__()
         self.n_factors = n_factors
         self.n_layers = n_layers
@@ -79,13 +65,6 @@ class LightGCN(BaseRecommender):
         self.user_interactions = {}
         
     def _create_mappings(self, user_ids: List[int], item_ids: List[int]) -> None:
-        """
-        Create mappings between original IDs and internal indices
-        
-        Args:
-            user_ids: List of user IDs
-            item_ids: List of item IDs
-        """
         unique_user_ids = sorted(set(user_ids))
         unique_item_ids = sorted(set(item_ids))
         
@@ -99,9 +78,6 @@ class LightGCN(BaseRecommender):
         self.n_items = len(unique_item_ids)
         
     def _build_model(self) -> None:
-        """
-        Build the LightGCN model
-        """
         self.model = LightGCNModel(
             n_users=self.n_users,
             n_items=self.n_items,
@@ -117,15 +93,6 @@ class LightGCN(BaseRecommender):
         )
         
     def _create_adjacency_matrix(self, interaction_matrix: csr_matrix) -> torch.Tensor:
-        """
-        Create normalized adjacency matrix for graph convolution
-        
-        Args:
-            interaction_matrix: User-item interaction matrix
-            
-        Returns:
-            Normalized adjacency matrix as a sparse tensor
-        """
         # Convert to PyTorch sparse tensor
         indices = interaction_matrix.nonzero()
         values = interaction_matrix.data
@@ -159,13 +126,6 @@ class LightGCN(BaseRecommender):
         return norm_adj
     
     def _store_user_interactions(self, user_ids: List[int], item_ids: List[int]) -> None:
-        """
-        Store user interactions for recommendation filtering
-        
-        Args:
-            user_ids: List of user IDs
-            item_ids: List of item IDs
-        """
         self.user_interactions = {}
         for user_id, item_id in zip(user_ids, item_ids):
             user_idx = self.user_id_map.get(user_id)
@@ -177,16 +137,6 @@ class LightGCN(BaseRecommender):
                 self.user_interactions[user_idx].add(item_idx)
     
     def _sample_negative_items(self, user_idx: int, n_neg: int = 1) -> List[int]:
-        """
-        Sample negative items for a user
-        
-        Args:
-            user_idx: User index
-            n_neg: Number of negative items to sample
-            
-        Returns:
-            List of negative item indices
-        """
         pos_items = self.user_interactions.get(user_idx, set())
         neg_items = []
         
@@ -198,17 +148,6 @@ class LightGCN(BaseRecommender):
         return neg_items
     
     def _create_bpr_loss(self, users: torch.Tensor, pos_items: torch.Tensor, neg_items: torch.Tensor) -> torch.Tensor:
-        """
-        Create BPR loss for training
-        
-        Args:
-            users: User indices
-            pos_items: Positive item indices
-            neg_items: Negative item indices
-            
-        Returns:
-            BPR loss
-        """
         # Get embeddings
         user_emb, item_emb = self.model()
         
@@ -236,14 +175,6 @@ class LightGCN(BaseRecommender):
         return loss + l2_loss
     
     def fit(self, interaction_matrix: csr_matrix, user_ids: List[int], item_ids: List[int]) -> None:
-        """
-        Fit the LightGCN model
-        
-        Args:
-            interaction_matrix: User-item interaction matrix
-            user_ids: List of user IDs
-            item_ids: List of item IDs
-        """
         # Validate inputs
         validate_fit_inputs(user_ids, item_ids, ratings)
         
@@ -320,60 +251,8 @@ class LightGCN(BaseRecommender):
         self.model.eval()
         self.user_embedding, self.item_embedding = self.model()
     
-    def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
-        """
-        Recommend items for a user
-        
-        Args:
-            user_id: User ID
-            top_n: Number of recommendations to return
-            exclude_seen: Whether to exclude seen items
-            
-        Returns:
-            List of recommended item IDs
-        """
-        # Validate inputs
-        validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
-        validate_top_k(top_k if 'top_k' in locals() else 10)
-        
-        if self.user_embedding is None or self.item_embedding is None:
-            raise ValueError("Model has not been trained yet")
-        
-        if user_id not in self.user_id_map:
-            return []
-        
-        user_idx = self.user_id_map[user_id]
-        user_emb = self.user_embedding[user_idx].detach()
-        
-        # Calculate scores for all items
-        scores = torch.matmul(user_emb, self.item_embedding.t()).detach().cpu().numpy()
-        
-        # Exclude seen items if needed
-        if exclude_seen and user_idx in self.user_interactions:
-            seen_items = self.user_interactions[user_idx]
-            for item_idx in seen_items:
-                scores[item_idx] = -np.inf
-        
-        # Get top-N items
-        top_item_indices = np.argsort(-scores)[:top_n]
-        
-        # Convert indices back to original IDs
-        top_items = [self.reverse_item_map[idx] for idx in top_item_indices]
-        
-        return top_items
-    
-    def predict(self, user_id: int, item_id: int) -> float:
-        """
-        Predict rating for a user-item pair
-        
-        Args:
-            user_id: User ID
-            item_id: Item ID
-            
-        Returns:
-            Predicted rating
-        """
+    def _validate_predict_inputs(self, user_id, item_id):
+        """Validate inputs for prediction."""
         if self.user_embedding is None or self.item_embedding is None:
             raise ValueError("Model has not been trained yet")
         
@@ -390,13 +269,8 @@ class LightGCN(BaseRecommender):
         
         return float(score)
     
-    def save_model(self, filepath: str) -> None:
-        """
-        Save model to file
-        
-        Args:
-            filepath: Path to save the model
-        """
+    def _save_model_data(self):
+        """Save model data for serialization."""
         model_data = {
             'n_factors': self.n_factors,
             'n_layers': self.n_layers,
@@ -415,137 +289,54 @@ class LightGCN(BaseRecommender):
             'reverse_user_map': self.reverse_user_map,
             'reverse_item_map': self.reverse_item_map,
             'user_interactions': self.user_interactions,
-            'user_embedding': self.user_embedding.detach().cpu().numpy() if self.user_embedding is not None else None,
-            'item_embedding': self.item_embedding.detach().cpu().numpy() if self.item_embedding is not None else None
-        }
+                'user_embedding': self.user_embedding.detach().cpu().numpy() if self.user_embedding is not None else None,
+                'item_embedding': self.item_embedding.detach().cpu().numpy() if self.item_embedding is not None else None
+            }
         
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        with open(filepath, 'wb') as f:
-            pickle.dump(model_data, f)
+        # Note: filepath parameter should be passed to this method
+        # This is a helper method, actual save should use the save() method
+        return model_data
     
-    @classmethod
-    def load_model(cls, filepath: str) -> 'LightGCN':
-        """
-        Load model from file
+        @classmethod
+        def load_model(cls, filepath: str) -> 'LightGCN':
+            with open(filepath, 'rb') as f:
+                model_data = pickle.load(f)
         
-        Args:
-            filepath: Path to load the model from
-            
-        Returns:
-            Loaded LightGCN model
-        """
-        with open(filepath, 'rb') as f:
-            model_data = pickle.load(f)
+            instance = cls(
+                n_factors=model_data['n_factors'],
+                n_layers=model_data['n_layers'],
+                learning_rate=model_data['learning_rate'],
+                regularization=model_data['regularization'],
+                batch_size=model_data['batch_size'],
+                epochs=model_data['epochs'],
+                device=model_data['device'],
+                dropout=model_data['dropout'],
+                early_stopping_patience=model_data['early_stopping_patience'],
+                verbose=model_data['verbose']
+            )
         
-        instance = cls(
-            n_factors=model_data['n_factors'],
-            n_layers=model_data['n_layers'],
-            learning_rate=model_data['learning_rate'],
-            regularization=model_data['regularization'],
-            batch_size=model_data['batch_size'],
-            epochs=model_data['epochs'],
-            device=model_data['device'],
-            dropout=model_data['dropout'],
-            early_stopping_patience=model_data['early_stopping_patience'],
-            verbose=model_data['verbose']
-        )
+            instance.n_users = model_data['n_users']
+            instance.n_items = model_data['n_items']
+            instance.user_id_map = model_data['user_id_map']
+            instance.item_id_map = model_data['item_id_map']
+            instance.reverse_user_map = model_data['reverse_user_map']
+            instance.reverse_item_map = model_data['reverse_item_map']
+            instance.user_interactions = model_data['user_interactions']
         
-        instance.n_users = model_data['n_users']
-        instance.n_items = model_data['n_items']
-        instance.user_id_map = model_data['user_id_map']
-        instance.item_id_map = model_data['item_id_map']
-        instance.reverse_user_map = model_data['reverse_user_map']
-        instance.reverse_item_map = model_data['reverse_item_map']
-        instance.user_interactions = model_data['user_interactions']
+            if model_data['user_embedding'] is not None and model_data['item_embedding'] is not None:
+                instance.user_embedding = torch.tensor(model_data['user_embedding']).to(instance.device)
+                instance.item_embedding = torch.tensor(model_data['item_embedding']).to(instance.device)
         
-        if model_data['user_embedding'] is not None and model_data['item_embedding'] is not None:
-            instance.user_embedding = torch.tensor(model_data['user_embedding']).to(instance.device)
-            instance.item_embedding = torch.tensor(model_data['item_embedding']).to(instance.device)
-        
-        return instance
+            return instance
 
+    def save(self, path: Union[str, Path], **kwargs) -> None:
+        """Save model to disk."""
+        import pickle
+        from pathlib import Path
 
-class LightGCNModel(nn.Module):
-    """
-    LightGCN Model implementation
-    """
-    
-    def __init__(self, n_users: int, n_items: int, n_factors: int, n_layers: int, dropout: float = 0.0):
-        """
-        Initialize LightGCN model
-        
-        Args:
-            n_users: Number of users
-            n_items: Number of items
-            n_factors: Embedding size
-            n_layers: Number of graph convolution layers
-            dropout: Dropout rate
-        """
-        super(LightGCNModel, self).__init__()
-        
-        self.n_users = n_users
-        self.n_items = n_items
-        self.n_factors = n_factors
-        self.n_layers = n_layers
-        self.dropout = dropout
-        
-        # Initialize embeddings
-        self.user_embedding = nn.Embedding(n_users, n_factors)
-        self.item_embedding = nn.Embedding(n_items, n_factors)
-        
-        # Initialize weights
-        nn.init.normal_(self.user_embedding.weight, std=0.1)
-        nn.init.normal_(self.item_embedding.weight, std=0.1)
-        
-        # Adjacency matrix
-        self.adj_matrix = None
-    
-    def set_adj_matrix(self, adj_matrix: torch.Tensor) -> None:
-        """
-        Set adjacency matrix for graph convolution
-        
-        Args:
-            adj_matrix: Normalized adjacency matrix
-        """
-        self.adj_matrix = adj_matrix
-    
-    def forward(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Forward pass
-        
-        Returns:
-            Tuple of user and item embeddings
-        """
-        if self.adj_matrix is None:
-            raise ValueError("Adjacency matrix has not been set")
-        
-        # Get initial embeddings
-        user_embeddings = self.user_embedding.weight
-        item_embeddings = self.item_embedding.weight
-        
-        # Concatenate user and item embeddings
-        all_embeddings = torch.cat([user_embeddings, item_embeddings], dim=0)
-        
-        # List to store embeddings from each layer
-        embeddings_list = [all_embeddings]
-        
-        # Graph convolution
-        for _ in range(self.n_layers):
-            # Dropout if needed
-            if self.dropout > 0 and self.training:
-                all_embeddings = F.dropout(all_embeddings, p=self.dropout)
-            
-            # Perform graph convolution: A * H
-            all_embeddings = torch.sparse.mm(self.adj_matrix, all_embeddings)
-            
-            # Add to list
-            embeddings_list.append(all_embeddings)
-        
-        # Sum embeddings from all layers
-        all_embeddings = torch.stack(embeddings_list, dim=1)
-        all_embeddings = torch.mean(all_embeddings, dim=1)
-        
-        # Split user and item embeddings
-        user_embeddings, item_embeddings = torch.split(all_embeddings, [self.n_users, self.n_items])
-        
-        return user_embeddings, item_embeddings
+        path_obj = Path(path)
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(path_obj, 'wb') as f:
+            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+

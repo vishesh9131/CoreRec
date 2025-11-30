@@ -379,10 +379,7 @@ class ValueRanges(Generic[_T]):
     def coordinatewise_monotone_map(cls, x, y, fn):
         """It's increasing or decreasing on each coordinate."""
         x, y = cls.wrap(x), cls.wrap(y)
-        products = [
-            fn(a, b)
-            for a, b in itertools.product([x.lower, x.upper], [y.lower, y.upper])
-        ]
+        products = [fn(a, b) for a, b in itertools.product([x.lower, x.upper], [y.lower, y.upper])]
         return ValueRanges(min(products), max(products))
 
 
@@ -399,9 +396,7 @@ class SymPyValueRangeAnalysis:
             value = value.lower
         # NB: value is NOT a sympy expression, it's a constant!
         is_python = isinstance(value, (int, float, bool))
-        assert is_python or isinstance(
-            value, (BooleanAtom, sympy.Integer, sympy.Number)
-        )
+        assert is_python or isinstance(value, (BooleanAtom, sympy.Integer, sympy.Number))
 
         # using nan makes subsequent computation throw, and for the purposes of optimization
         # returning -math.inf - math.inf is equivalent to giving up
@@ -505,9 +500,7 @@ class SymPyValueRangeAnalysis:
 
     @staticmethod
     def add(a, b):
-        return ValueRanges.coordinatewise_increasing_map(
-            a, b, _keep_float(operator.add)
-        )
+        return ValueRanges.coordinatewise_increasing_map(a, b, _keep_float(operator.add))
 
     @classmethod
     def mul(cls, a, b):
@@ -536,22 +529,16 @@ class SymPyValueRangeAnalysis:
         if 0 in b or ((-int_oo in a or int_oo in a) and (-int_oo in b or int_oo in b)):
             return ValueRanges.unknown()
         else:
-            return ValueRanges.coordinatewise_monotone_map(
-                a, b, _keep_float(IntTrueDiv)
-            )
+            return ValueRanges.coordinatewise_monotone_map(a, b, _keep_float(IntTrueDiv))
 
     @staticmethod
     def truediv(a, b):
         a = ValueRanges.wrap(a)
         b = ValueRanges.wrap(b)
-        if 0 in b or (
-            (-sympy.oo in a or sympy.oo in a) and (-sympy.oo in b or sympy.oo in b)
-        ):
+        if 0 in b or ((-sympy.oo in a or sympy.oo in a) and (-sympy.oo in b or sympy.oo in b)):
             return ValueRanges.unknown()
         else:
-            return ValueRanges.coordinatewise_monotone_map(
-                a, b, _keep_float(FloatTrueDiv)
-            )
+            return ValueRanges.coordinatewise_monotone_map(a, b, _keep_float(FloatTrueDiv))
 
     @staticmethod
     def floordiv(a, b):
@@ -635,9 +622,7 @@ class SymPyValueRangeAnalysis:
         elif b.is_singleton():
             if b.lower % 2 == 0:
                 # x^n where n is even
-                return ValueRanges.convex_min_zero_map(
-                    a, lambda x: safe_pow(x, b.lower)
-                )
+                return ValueRanges.convex_min_zero_map(a, lambda x: safe_pow(x, b.lower))
             else:
                 # x^n where n is odd
                 return ValueRanges.increasing_map(a, lambda x: safe_pow(x, b.lower))
@@ -647,9 +632,7 @@ class SymPyValueRangeAnalysis:
             # bound based on what the maximum absolute value could be, in both
             # directions
             max_base = max(a.upper, -a.lower)
-            return ValueRanges(
-                -(safe_pow(max_base, b.upper)), safe_pow(max_base, b.upper)
-            )
+            return ValueRanges(-(safe_pow(max_base, b.upper)), safe_pow(max_base, b.upper))
 
     @classmethod
     def pow(cls, a, b):
@@ -740,9 +723,7 @@ class SymPyValueRangeAnalysis:
 
     @classmethod
     def ceil_to_int(cls, x, dtype):
-        return ValueRanges.increasing_map(
-            x, sympy.functions.elementary.integers.ceiling
-        )
+        return ValueRanges.increasing_map(x, sympy.functions.elementary.integers.ceiling)
 
     # I think these implementations are sound.  The hazard here is that sympy
     # will carry out the floor/ceil at too high precision and then something
@@ -764,9 +745,7 @@ class SymPyValueRangeAnalysis:
 
     @classmethod
     def floor(cls, x):
-        return ValueRanges.increasing_map(
-            x, _keep_float(sympy.functions.elementary.integers.floor)
-        )
+        return ValueRanges.increasing_map(x, _keep_float(sympy.functions.elementary.integers.floor))
 
     @classmethod
     def ceil(cls, x):
@@ -1014,9 +993,7 @@ def bound_sympy(
         expr,
         LazyString(
             lambda: "\n"
-            + "\n".join(
-                f"  {k}: {r}" for k, r in ranges.items() if k in expr.free_symbols
-            )
+            + "\n".join(f"  {k}: {r}" for k, r in ranges.items() if k in expr.free_symbols)
             if ranges
             else ""
         ),

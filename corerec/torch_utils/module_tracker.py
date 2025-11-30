@@ -119,7 +119,8 @@ class ModuleTracker:
         self._get_append_fn(name, False)()
 
         args, _ = tree_flatten(input)
-        tensors = [a for a in args if isinstance(a, torch.Tensor) and a.requires_grad]
+        tensors = [a for a in args if isinstance(
+            a, torch.Tensor) and a.requires_grad]
         if tensors:
             register_multi_grad_hook(tensors, self._get_pop_fn(name, True))
 
@@ -128,12 +129,14 @@ class ModuleTracker:
         self._get_pop_fn(name, False)()
 
         args, _ = tree_flatten(output)
-        tensors = [a for a in args if isinstance(a, torch.Tensor) and a.requires_grad]
+        tensors = [a for a in args if isinstance(
+            a, torch.Tensor) and a.requires_grad]
         if tensors:
             register_multi_grad_hook(tensors, self._get_append_fn(name, True))
 
     def __enter__(self):
-        self._fw_pre_handle = register_module_forward_pre_hook(self._fw_pre_hook)
+        self._fw_pre_handle = register_module_forward_pre_hook(
+            self._fw_pre_hook)
         self._fw_post_handle = register_module_forward_hook(self._fw_post_hook)
         return self
 

@@ -51,7 +51,8 @@ class DataFrameTracedOps(DFIterDataPipe):
             yield self.output_var.apply_ops(item)
 
 
-#  TODO(VitalyFedyunin): Extract this list from the DFIterDataPipe registred functions
+# TODO(VitalyFedyunin): Extract this list from the DFIterDataPipe
+# registred functions
 DATAPIPES_OPS = [
     "_dataframes_as_tuples",
     "groupby",
@@ -66,11 +67,16 @@ DATAPIPES_OPS = [
     "_dataframes_shuffle",
 ]
 
-UNIMPLEMENTED_ATTR = ["__deepcopy__", "__setstate__", "is_shardable", "apply_sharding"]
+UNIMPLEMENTED_ATTR = [
+    "__deepcopy__",
+    "__setstate__",
+    "is_shardable",
+    "apply_sharding"]
 
 
 class Capture:
-    # TODO: All operations are shared across entire InitialCapture, need to figure out what if we join two captures
+    # TODO: All operations are shared across entire InitialCapture, need to
+    # figure out what if we join two captures
 
     def __init__(self, schema_df=None):
         self.ctx = {"operations": [], "variables": [], "schema_df": schema_df}
@@ -112,22 +118,28 @@ class Capture:
         return CaptureGetItem(self, key, ctx=self.ctx)
 
     def __setitem__(self, key, value):
-        self.ctx["operations"].append(CaptureSetItem(self, key, value, ctx=self.ctx))
+        self.ctx["operations"].append(
+            CaptureSetItem(
+                self, key, value, ctx=self.ctx))
 
     def __add__(self, add_val):
         res = CaptureAdd(self, add_val, ctx=self.ctx)
         var = CaptureVariable(res, ctx=self.ctx)
         self.ctx["operations"].append(
-            CaptureVariableAssign(variable=var, value=res, ctx=self.ctx)
-        )
+            CaptureVariableAssign(
+                variable=var,
+                value=res,
+                ctx=self.ctx))
         return var
 
     def __sub__(self, add_val):
         res = CaptureSub(self, add_val, ctx=self.ctx)
         var = CaptureVariable(res, ctx=self.ctx)
         self.ctx["operations"].append(
-            CaptureVariableAssign(variable=var, value=res, ctx=self.ctx)
-        )
+            CaptureVariableAssign(
+                variable=var,
+                value=res,
+                ctx=self.ctx))
         return var
 
     def __mul__(self, add_val):
@@ -138,10 +150,13 @@ class Capture:
         return var
 
     def _is_context_empty(self):
-        return len(self.ctx["operations"]) == 0 and len(self.ctx["variables"]) == 0
+        return len(
+            self.ctx["operations"]) == 0 and len(
+            self.ctx["variables"]) == 0
 
     def apply_ops_2(self, dataframe):
-        # TODO(VitalyFedyunin): Make this calculation thread safe (as currently it updates pointer)
+        # TODO(VitalyFedyunin): Make this calculation thread safe (as currently
+        # it updates pointer)
         self.ctx["variables"][0].calculated_value = dataframe
         for op in self.ctx["operations"]:
             op.execute()
@@ -153,7 +168,8 @@ class Capture:
         return value.columns
 
     # TODO(VitalyFedyunin): Add tests
-    # TODO(VitalyFedyunin): Need to join context if one of them are empty because we used capture
+    # TODO(VitalyFedyunin): Need to join context if one of them are empty
+    # because we used capture
 
     def __call__(self, *args, **kwargs):
         # TODO: Check if args or kwargs have more than one different context
@@ -201,8 +217,10 @@ class CaptureLikeMock:
     def __init__(self, name):
         import unittest.mock as mock
 
-        # TODO(VitalyFedyunin): Do not use provate function here, copy own implementation instead.
-        get_target, attribute = mock._get_target(name)  # type: ignore[attr-defined]
+        # TODO(VitalyFedyunin): Do not use provate function here, copy own
+        # implementation instead.
+        get_target, attribute = mock._get_target(
+            name)  # type: ignore[attr-defined]
         self.get_target = get_target
         self.attribute = attribute
         self.name = name
@@ -227,8 +245,7 @@ class CaptureCall(Capture):
 
     def __str__(self):
         return "{callable}({args},{kwargs})".format(
-            callable=self.callable, **self.kwargs
-        )
+            callable=self.callable, **self.kwargs)
 
     def execute(self):
         # TODO: VitalyFedyunin execute kwargs and maybe nested structures
@@ -258,7 +275,8 @@ class CaptureVariable(Capture):
 
     def __init__(self, value, ctx):
         if CaptureControl.disabled:
-            raise RuntimeError("Attempting to create capture variable with capture off")
+            raise RuntimeError(
+                "Attempting to create capture variable with capture off")
         self.ctx = ctx
         self.value = value
         self.name = f"var_{CaptureVariable.names_idx}"
@@ -272,7 +290,8 @@ class CaptureVariable(Capture):
         return self.calculated_value
 
     def apply_ops(self, dataframe):
-        # TODO(VitalyFedyunin): Make this calculation thread safe (as currently it updates pointer)
+        # TODO(VitalyFedyunin): Make this calculation thread safe (as currently
+        # it updates pointer)
         self.ctx["variables"][0].calculated_value = dataframe
         for op in self.ctx["operations"]:
             op.execute()
@@ -388,7 +407,8 @@ class CaptureDataFrame(CaptureInitial):
 
 class CaptureDataFrameWithDataPipeOps(CaptureDataFrame):
     def as_datapipe(self):
-        return DataFrameTracedOps(self.ctx["variables"][0].source_datapipe, self)
+        return DataFrameTracedOps(
+            self.ctx["variables"][0].source_datapipe, self)
 
     def raw_iterator(self):
         return self.as_datapipe().__iter__()
@@ -396,7 +416,11 @@ class CaptureDataFrameWithDataPipeOps(CaptureDataFrame):
     def __iter__(self):
         return iter(self._dataframes_as_tuples())
 
-    def batch(self, batch_size=10, drop_last: bool = False, wrapper_class=DataChunkDF):
+    def batch(
+            self,
+            batch_size=10,
+            drop_last: bool = False,
+            wrapper_class=DataChunkDF):
         dp = self._dataframes_per_row()._dataframes_concat(batch_size)
         dp = dp.as_datapipe().batch(1, drop_last=drop_last, wrapper_class=wrapper_class)
         dp._dp_contains_dataframe = True
@@ -439,7 +463,9 @@ class CaptureDataFrameWithDataPipeOps(CaptureDataFrame):
 
 
 @functional_datapipe("trace_as_dataframe")
-class DataFrameTracer(CaptureDataFrameWithDataPipeOps, IterDataPipe):  # type: ignore[misc]
+class DataFrameTracer(
+        CaptureDataFrameWithDataPipeOps,
+        IterDataPipe):  # type: ignore[misc]
     source_datapipe: Optional[Any] = None
 
     # TODO(VitalyFedyunin): Must implement all special functions of datapipes

@@ -13,8 +13,7 @@ def get_enum(reduction: str) -> int:
     elif reduction == "elementwise_mean":
         warnings.warn(
             "reduction='elementwise_mean' is deprecated. "
-            "Please use reduction='mean' instead."
-        )
+            "Please use reduction='mean' instead.")
         ret = 1
     elif reduction == "sum":
         ret = 2
@@ -28,7 +27,8 @@ def get_enum(reduction: str) -> int:
 # and convert them into the new constants for now
 
 
-# We use these functions in torch/legacy as well, in which case we'll silence the warning
+# We use these functions in torch/legacy as well, in which case we'll
+# silence the warning
 def legacy_get_string(
     size_average: Optional[bool],
     reduce: Optional[bool],

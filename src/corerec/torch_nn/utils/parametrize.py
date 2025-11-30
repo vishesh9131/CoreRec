@@ -77,9 +77,7 @@ def _register_parameter_or_buffer(module, name, X):
 
 
 def _maybe_set(dest: Tensor, src: Tensor) -> None:
-    should_swap = (
-        get_swap_module_params_on_conversion() or is_traceable_wrapper_subclass(dest)
-    )
+    should_swap = get_swap_module_params_on_conversion() or is_traceable_wrapper_subclass(dest)
     if should_swap:
         if isinstance(dest, Parameter) and not isinstance(src, Parameter):
             src = Parameter(src, requires_grad=dest.requires_grad)
@@ -164,9 +162,7 @@ class ParametrizationList(ModuleList):
                         pass
                 # else, or if it throws, we assume that right_inverse is the identity
 
-        if not isinstance(new, Tensor) and not isinstance(
-            new, collections.abc.Sequence
-        ):
+        if not isinstance(new, Tensor) and not isinstance(new, collections.abc.Sequence):
             raise ValueError(
                 "'right_inverse' must return a Tensor or a Sequence of tensors (list, tuple...). "
                 f"Got {type(new).__name__}"
@@ -212,9 +208,7 @@ class ParametrizationList(ModuleList):
             # Z = forward(right_inverse(original))
             Z = self()
             if not isinstance(Z, Tensor):
-                raise ValueError(
-                    f"A parametrization must return a tensor. Got {type(Z).__name__}."
-                )
+                raise ValueError(f"A parametrization must return a tensor. Got {type(Z).__name__}.")
             if Z.dtype != original_dtype:
                 raise ValueError(
                     "Registering a parametrization may not change the dtype of the tensor, unless `unsafe` flag is enabled.\n"
@@ -396,9 +390,7 @@ def _inject_property(module: Module, tensor_name: str) -> None:
                 )
             elif torch._C._get_tracing_state() is not None:
                 # Tracing
-                raise RuntimeError(
-                    "Cannot trace a model while caching parametrizations."
-                )
+                raise RuntimeError("Cannot trace a model while caching parametrizations.")
             else:
                 return get_cached_parametrization(parametrization)
         else:
@@ -551,9 +543,7 @@ def register_parametrization(
             Y = getattr(module, tensor_name)
             X = parametrization(Y)
             if not isinstance(X, Tensor):
-                raise ValueError(
-                    f"A parametrization must return a tensor. Got {type(X).__name__}."
-                )
+                raise ValueError(f"A parametrization must return a tensor. Got {type(X).__name__}.")
             if X.dtype != Y.dtype:
                 raise ValueError(
                     "Registering a parametrization may not change the dtype of the tensor, unless the `unsafe` flag is enabled.\n"
@@ -602,9 +592,7 @@ def register_parametrization(
         # Fetch the original buffer or parameter
         original = getattr(module, tensor_name)
         # We create this early to check for possible errors
-        parametrizations = ParametrizationList(
-            [parametrization], original, unsafe=unsafe
-        )
+        parametrizations = ParametrizationList([parametrization], original, unsafe=unsafe)
         # Delete the previous parameter or buffer
         delattr(module, tensor_name)
         # If this is the first parametrization registered on the module,
@@ -677,9 +665,7 @@ def remove_parametrizations(
         ValueError: if ``leave_parametrized=False`` and the parametrization depends on several tensors
     """
     if not is_parametrized(module, tensor_name):
-        raise ValueError(
-            f"Module {module} does not have a parametrization on {tensor_name}"
-        )
+        raise ValueError(f"Module {module} does not have a parametrization on {tensor_name}")
 
     # Fetch the original tensor
     assert isinstance(module.parametrizations, ModuleDict)  # Make mypy happy
@@ -799,9 +785,9 @@ def transfer_parametrizations_and_params(
             # make values match, original values can be stored in either original or
             # original0, original1..., need to check both cases
             if hasattr(from_module.parametrizations[parameter_name], "original"):
-                to_module.parametrizations[
+                to_module.parametrizations[parameter_name].original = from_module.parametrizations[
                     parameter_name
-                ].original = from_module.parametrizations[parameter_name].original
+                ].original
             else:
                 num = 0
                 orig_num = "original" + str(num)

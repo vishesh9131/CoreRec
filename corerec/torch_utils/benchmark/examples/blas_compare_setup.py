@@ -34,15 +34,16 @@ BASE_PKG_DEPS = (
 
 
 SubEnvSpec = collections.namedtuple(
-    "SubEnvSpec", (
+    "SubEnvSpec",
+    (
         "generic_installs",
         "special_installs",
         "environment_variables",
-
         # Validate install.
         "expected_blas_symbols",
         "expected_mkl_version",
-    ))
+    ),
+)
 
 
 SUB_ENVS = {
@@ -53,7 +54,6 @@ SUB_ENVS = {
         expected_blas_symbols=("mkl_blas_sgemm",),
         expected_mkl_version="2020.0.3",
     ),
-
     MKL_2020_0: SubEnvSpec(
         generic_installs=(),
         special_installs=("intel", ("mkl=2020.0", "mkl-include=2020.0")),
@@ -61,7 +61,6 @@ SUB_ENVS = {
         expected_blas_symbols=("mkl_blas_sgemm",),
         expected_mkl_version="2020.0.0",
     ),
-
     OPEN_BLAS: SubEnvSpec(
         generic_installs=("openblas",),
         special_installs=(),
@@ -69,7 +68,6 @@ SUB_ENVS = {
         expected_blas_symbols=("exec_blas",),
         expected_mkl_version=None,
     ),
-
     # EIGEN: SubEnvSpec(
     #     generic_installs=(),
     #     special_installs=(),
@@ -83,7 +81,9 @@ def conda_run(*args):
     """Convenience method."""
     stdout, stderr, retcode = conda.cli.python_api.run_command(*args)
     if retcode:
-        raise OSError(f"conda error: {str(args)}  retcode: {retcode}\n{stderr}")
+        raise OSError(
+            f"conda error: {
+                str(args)}  retcode: {retcode}\n{stderr}")
 
     return stdout
 
@@ -94,11 +94,15 @@ def main():
         shutil.rmtree(WORKING_ROOT)
     os.makedirs(WORKING_ROOT)
 
-    git_root = subprocess.check_output(
-        "git rev-parse --show-toplevel",
-        shell=True,
-        cwd=os.path.dirname(os.path.realpath(__file__))
-    ).decode("utf-8").strip()
+    git_root = (
+        subprocess.check_output(
+            "git rev-parse --show-toplevel",
+            shell=True,
+            cwd=os.path.dirname(os.path.realpath(__file__)),
+        )
+        .decode("utf-8")
+        .strip()
+    )
 
     for env_name, env_spec in SUB_ENVS.items():
         env_path = os.path.join(WORKING_ROOT, env_name)
@@ -106,7 +110,8 @@ def main():
         conda_run(
             conda_commands.CREATE,
             "--no-default-packages",
-            "--prefix", env_path,
+            "--prefix",
+            env_path,
             "python=3",
         )
 
@@ -127,8 +132,9 @@ def main():
         print("Installing packages:")
         conda_run(
             conda_commands.INSTALL,
-            "--prefix", env_path,
-            *(BASE_PKG_DEPS + env_spec.generic_installs)
+            "--prefix",
+            env_path,
+            *(BASE_PKG_DEPS + env_spec.generic_installs),
         )
 
         if env_spec.special_installs:
@@ -136,17 +142,20 @@ def main():
             print(f"Installing packages from channel: {channel}")
             conda_run(
                 conda_commands.INSTALL,
-                "--prefix", env_path,
-                "-c", channel, *channel_deps
-            )
+                "--prefix",
+                env_path,
+                "-c",
+                channel,
+                *channel_deps)
 
         if env_spec.environment_variables:
             print("Setting environment variables.")
 
             # This does not appear to be possible using the python API.
             env_set = subprocess.run(
-                f"source activate {env_path} && "
-                f"conda env config vars set {' '.join(env_spec.environment_variables)}",
+                f"source activate {env_path} && " f"conda env config vars set {
+                    ' '.join(
+                        env_spec.environment_variables)}",
                 shell=True,
                 capture_output=True,
                 check=False,
@@ -159,12 +168,17 @@ def main():
                 )
 
             # Check that they were actually set correctly.
-            actual_env_vars = subprocess.run(
-                f"source activate {env_path} && env",
-                shell=True,
-                capture_output=True,
-                check=True,
-            ).stdout.decode("utf-8").strip().splitlines()
+            actual_env_vars = (
+                subprocess.run(
+                    f"source activate {env_path} && env",
+                    shell=True,
+                    capture_output=True,
+                    check=True,
+                )
+                .stdout.decode("utf-8")
+                .strip()
+                .splitlines()
+            )
             for e in env_spec.environment_variables:
                 assert e in actual_env_vars, f"{e} not in envs"
 
@@ -202,7 +216,7 @@ def main():
                 f"  stdout: {check_run.stdout.decode('utf-8')}\n"
                 f"  stderr: {check_run.stderr.decode('utf-8')}"
             )
-        check_run_stdout = check_run.stdout.decode('utf-8')
+        check_run_stdout = check_run.stdout.decode("utf-8")
         print(check_run_stdout)
 
         for e in env_spec.environment_variables:
@@ -213,7 +227,10 @@ def main():
             assert s in check_run_stdout
 
         if env_spec.expected_mkl_version is not None:
-            assert f"- Intel(R) Math Kernel Library Version {env_spec.expected_mkl_version}" in check_run_stdout
+            assert (
+                f"- Intel(R) Math Kernel Library Version {env_spec.expected_mkl_version}"
+                in check_run_stdout
+            )
 
         print(f"Build complete: {env_name}")
 

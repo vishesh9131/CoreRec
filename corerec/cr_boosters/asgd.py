@@ -92,22 +92,14 @@ class ASGD(Optimizer):
                 state = self.state[p]
                 # State initialization
                 if len(state) == 0:
-                    state["step"] = torch.zeros(
-                        (), device=p.device, dtype=_get_scalar_dtype()
-                    )
+                    state["step"] = torch.zeros((), device=p.device, dtype=_get_scalar_dtype())
                     state["eta"] = (
-                        torch.as_tensor(
-                            group["lr"], device=p.device, dtype=_get_scalar_dtype()
-                        )
+                        torch.as_tensor(group["lr"], device=p.device, dtype=_get_scalar_dtype())
                         .clone()
                         .detach()
                     )
-                    state["mu"] = torch.ones(
-                        (), device=p.device, dtype=_get_scalar_dtype()
-                    )
-                    state["ax"] = torch.zeros_like(
-                        p, memory_format=torch.preserve_format
-                    )
+                    state["mu"] = torch.ones((), device=p.device, dtype=_get_scalar_dtype())
+                    state["ax"] = torch.zeros_like(p, memory_format=torch.preserve_format)
 
                 mus.append(state["mu"])
                 axs.append(state["ax"])
@@ -218,10 +210,7 @@ def _single_tensor_asgd(
         if not torch._utils.is_compiling() and capturable:
             capturable_supported_devices = _get_capturable_supported_devices()
             assert (
-                param.device.type
-                == mu.device.type
-                == eta.device.type
-                == step_t.device.type
+                param.device.type == mu.device.type == eta.device.type == step_t.device.type
                 and param.device.type in capturable_supported_devices
             ), (
                 f"If capturable=True, params, mus, etas, and state_steps must be "
@@ -289,9 +278,7 @@ def _multi_tensor_asgd(
 
     # If compiling, the compiler will handle cudagraph checks, see note [torch.compile x capturable]
     if not torch._utils.is_compiling() and capturable:
-        capturable_supported_devices = _get_capturable_supported_devices(
-            supports_xla=False
-        )
+        capturable_supported_devices = _get_capturable_supported_devices(supports_xla=False)
         assert all(
             p.device.type == mu.device.type == eta.device.type == step.device.type
             and p.device.type in capturable_supported_devices
@@ -323,9 +310,7 @@ def _multi_tensor_asgd(
         # and over. 1 will then be wrapped into a Tensor over and over again, which is slower than if we just
         # wrapped it once now. The alpha is required to assure we go to the right overload.
         if grouped_state_steps[0].is_cpu:
-            torch._foreach_add_(
-                grouped_state_steps, torch.tensor(1.0, device="cpu"), alpha=1.0
-            )
+            torch._foreach_add_(grouped_state_steps, torch.tensor(1.0, device="cpu"), alpha=1.0)
         else:
             torch._foreach_add_(grouped_state_steps, 1)
 
@@ -336,15 +321,11 @@ def _multi_tensor_asgd(
                 torch._foreach_add_(grouped_grads, grouped_params, alpha=weight_decay)
                 intermediate = grouped_grads
             else:
-                intermediate = torch._foreach_add(
-                    grouped_grads, grouped_params, alpha=weight_decay
-                )
+                intermediate = torch._foreach_add(grouped_grads, grouped_params, alpha=weight_decay)
 
             torch._foreach_add_(intermediate, grouped_params, alpha=lambd)
         else:
-            intermediate = torch._foreach_add(
-                grouped_grads, grouped_params, alpha=lambd
-            )
+            intermediate = torch._foreach_add(grouped_grads, grouped_params, alpha=lambd)
 
         # update param
         # param * (1 - lambd * eta) - eta * grad
@@ -423,9 +404,7 @@ def asgd(
     See :class:`~torch.optim.ASGD` for details.
     """
     if foreach is None:
-        _, foreach = _default_to_fused_or_foreach(
-            params, differentiable, use_fused=False
-        )
+        _, foreach = _default_to_fused_or_foreach(params, differentiable, use_fused=False)
 
     if foreach and torch.jit.is_scripting():
         raise RuntimeError("torch.jit.script not supported with foreach optimizers")

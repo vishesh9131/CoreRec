@@ -97,7 +97,16 @@ def handlers():
         IsNonOverlappingAndDenseIndicator: "is_non_overlapping_and_dense_indicator",
         RoundDecimal: "round_decimal",
     }
-    for name in ["cos", "sin", "tan", "sinh", "cosh", "tanh", "asin", "acos", "atan"]:
+    for name in [
+        "cos",
+        "sin",
+        "tan",
+        "sinh",
+        "cosh",
+        "tanh",
+        "asin",
+        "acos",
+            "atan"]:
         HANDLERS[getattr(sympy, name)] = name
 
     return HANDLERS
@@ -128,17 +137,23 @@ def sympy_interp(
         return env[expr]
 
     # Special cases
-    if isinstance(expr, sympy.Pow) and isinstance(
-        expr.args[1], sympy.core.numbers.Half
-    ):
+    if isinstance(
+            expr,
+            sympy.Pow) and isinstance(
+            expr.args[1],
+            sympy.core.numbers.Half):
         return analysis.sqrt(sympy_interp(analysis, env, expr.args[0]))
     if isinstance(expr, ToFloat):
         return analysis.to_dtype(
-            sympy_interp(analysis, env, expr.args[0]), torch.float64
-        )
+            sympy_interp(
+                analysis,
+                env,
+                expr.args[0]),
+            torch.float64)
 
     # Recursive case
-    args = [sympy_interp(analysis, env, arg) for arg in expr.args]  # type: ignore[arg-type]
+    args = [sympy_interp(analysis, env, arg)
+            for arg in expr.args]  # type: ignore[arg-type]
 
     # These handlers are special because they take an extra dtype argument
     # specifying what they should convert to, and we need to appropriately set

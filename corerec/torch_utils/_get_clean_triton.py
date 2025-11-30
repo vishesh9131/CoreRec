@@ -13,8 +13,12 @@ def remove_triton_function_declaration(source_code: str) -> str:
 
 
 def remove_async_compile(source_code: str) -> str:
-    remove_top_level = str.replace(source_code, "async_compile = AsyncCompile()", "")
-    remove_compile = str.replace(remove_top_level, "async_compile.wait(globals())", "")
+    remove_top_level = str.replace(
+        source_code, "async_compile = AsyncCompile()", "")
+    remove_compile = str.replace(
+        remove_top_level,
+        "async_compile.wait(globals())",
+        "")
     remove_del = str.replace(remove_compile, "del async_compile", "")
     return remove_del
 
@@ -22,12 +26,11 @@ def remove_async_compile(source_code: str) -> str:
 def rename_kernels(source_code: str) -> str:
     pattern = r"(\w+)\s*=\s*async_compile\.triton\('triton_',\s"
     triton_kernel_decl = "def triton_"
-    matches = [
-        (match.end(), match.group(1))
-        for match in re.finditer(pattern, source_code, re.DOTALL)
-    ]
+    matches = [(match.end(), match.group(1))
+               for match in re.finditer(pattern, source_code, re.DOTALL)]
 
-    # Starting from the last match to avoid issues with shifting indices after replacements
+    # Starting from the last match to avoid issues with shifting indices after
+    # replacements
     for end_index, captured_string in reversed(matches):
         # Find the index of the next "B" after the current match
         index_of_B = source_code.find(triton_kernel_decl, end_index)
@@ -36,16 +39,19 @@ def rename_kernels(source_code: str) -> str:
             source_code = (
                 source_code[:index_of_B]
                 + f"def {captured_string}"
-                + source_code[index_of_B + len(triton_kernel_decl) :]
+                + source_code[index_of_B + len(triton_kernel_decl):]
             )
         else:
-            # If triton_kernel_decl is not found after the current match, continue to the next
+            # If triton_kernel_decl is not found after the current match,
+            # continue to the next
             continue
 
     return source_code
 
 
-def merge_params(original_params: List[str], new_params: List[str]) -> List[str]:
+def merge_params(
+        original_params: List[str],
+        new_params: List[str]) -> List[str]:
     assert len(new_params) >= len(original_params)
     for idx in range(len(new_params)):
         if new_params[idx] == "T":
@@ -97,8 +103,7 @@ def process_file(input_filename: str, output_filename: str) -> str:
     launch_params_filename = f"{input_filename}.launch_params"
     if not os.path.exists(launch_params_filename):
         raise RuntimeError(
-            f"Missing {launch_params_filename}. Run `TORCHINDUCTOR_DUMP_LAUNCH_PARAMS=1 python {input_filename} first."
-        )
+            f"Missing {launch_params_filename}. Run `TORCHINDUCTOR_DUMP_LAUNCH_PARAMS=1 python {input_filename} first.")
 
     with open(launch_params_filename) as f:
         launch_params_meta = f.readlines()
@@ -114,8 +119,8 @@ def process_file(input_filename: str, output_filename: str) -> str:
 
 
 def get_clean_triton(
-    input_path: Path, output_path: Path = Path("triton_only_repro.py")
-):
+        input_path: Path,
+        output_path: Path = Path("triton_only_repro.py")):
     """Run experiments and output results to file
 
     Args:
@@ -131,13 +136,13 @@ if __name__ == "__main__":
     python inputcode.py
     """
     parser = argparse.ArgumentParser(
-        description="Clean Inductor generated code to remove Inductor dependencies"
-    )
+        description="Clean Inductor generated code to remove Inductor dependencies")
 
     # Add the arguments
     parser.add_argument(
-        "input_path", type=Path, help="Path to inductor generated output code"
-    )
+        "input_path",
+        type=Path,
+        help="Path to inductor generated output code")
     parser.add_argument(
         "--output_path",
         type=Path,

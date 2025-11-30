@@ -6,8 +6,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class MetaLearner:
-    def __init__(self, model, data_loader, criterion, optimizer, num_epochs):
+    def __init__(self, model, data_loader, criterion, optimizer, num_epochs, verbose=True):
         """
         Initializes the MetaLearner with the given model, data loader, criterion, optimizer, and number of epochs.
 
@@ -17,12 +18,14 @@ class MetaLearner:
             criterion (torch.nn.Module): Loss function used to evaluate the model's performance.
             optimizer (torch.optim.Optimizer): Optimization algorithm used to update model weights.
             num_epochs (int): Number of epochs to train the model.
+            verbose (bool): Whether to print training progress. Defaults to True.
         """
         self.model = model
         self.data_loader = data_loader
         self.criterion = criterion
         self.optimizer = optimizer
         self.num_epochs = num_epochs
+        self.verbose = verbose
 
     def train(self):
         """

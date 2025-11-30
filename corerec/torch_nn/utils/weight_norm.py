@@ -37,8 +37,7 @@ class WeightNorm:
         for hook in module._forward_pre_hooks.values():
             if isinstance(hook, WeightNorm) and hook.name == name:
                 raise RuntimeError(
-                    f"Cannot register two weight_norm hooks on the same parameter {name}"
-                )
+                    f"Cannot register two weight_norm hooks on the same parameter {name}")
 
         if dim is None:
             dim = -1
@@ -49,15 +48,18 @@ class WeightNorm:
         if isinstance(weight, UninitializedParameter):
             raise ValueError(
                 "The module passed to `WeightNorm` can't have uninitialized parameters. "
-                "Make sure to run the dummy forward before applying weight normalization"
-            )
+                "Make sure to run the dummy forward before applying weight normalization")
         # remove w from parameter list
         del module._parameters[name]
 
         # add g and v as new parameters and express w as g/||v|| * v
         module.register_parameter(
-            name + "_g", Parameter(norm_except_dim(weight, 2, dim).data)
-        )
+            name + "_g",
+            Parameter(
+                norm_except_dim(
+                    weight,
+                    2,
+                    dim).data))
         module.register_parameter(name + "_v", Parameter(weight.data))
         setattr(module, name, fn.compute_weight(module))
 
@@ -80,7 +82,10 @@ class WeightNorm:
 T_module = TypeVar("T_module", bound=Module)
 
 
-def weight_norm(module: T_module, name: str = "weight", dim: int = 0) -> T_module:
+def weight_norm(
+        module: T_module,
+        name: str = "weight",
+        dim: int = 0) -> T_module:
     r"""Apply weight normalization to a parameter in the given module.
 
     .. math::

@@ -32,9 +32,7 @@ def _keep_float(f):
     @functools.wraps(f)
     def inner(*args):
         r = f(*args)
-        if any(isinstance(a, sympy.Float) for a in args) and not isinstance(
-            r, sympy.Float
-        ):
+        if any(isinstance(a, sympy.Float) for a in args) and not isinstance(r, sympy.Float):
             r = sympy.Float(float(r))
         return r
 
@@ -156,9 +154,7 @@ class FloorDiv(sympy.Function):
         try:
             gcd = sympy.gcd(base, divisor)
             if gcd != 1:
-                return FloorDiv(
-                    sympy.simplify(base / gcd), sympy.simplify(divisor / gcd)
-                )
+                return FloorDiv(sympy.simplify(base / gcd), sympy.simplify(divisor / gcd))
         except sympy.PolynomialError:
             pass  # https://github.com/pytorch/pytorch/issues/108276
 
@@ -613,9 +609,7 @@ class IsNonOverlappingAndDenseIndicator(sympy.Function):
             assert dim != 0
             # When all strides are integral, we can sort, and the size for the
             # largest stride doesn't matter and can be arbitrarily symbolic
-            s_sizes, s_strides = zip(
-                *sorted(zip(sizes, strides), key=operator.itemgetter(1))
-            )
+            s_sizes, s_strides = zip(*sorted(zip(sizes, strides), key=operator.itemgetter(1)))
             # Put something arbitrary in the max size spot, it'll be ignored
             if all(isinstance(a, sympy.Integer) for a in s_sizes[:-1]):
                 s_sizes = s_sizes[:-1] + (42,)

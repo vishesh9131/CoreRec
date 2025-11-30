@@ -16,8 +16,7 @@ def is_batch_first(expanded_args_and_kwargs):
             batch_first = arg.batch_first
         elif arg.batch_first != batch_first:
             raise RuntimeError(
-                "Got conflicting batch_first arguments in the same layer"
-            )
+                "Got conflicting batch_first arguments in the same layer")
     return batch_first
 
 
@@ -27,10 +26,9 @@ def standard_kwargs(kwarg_names, expanded_args):
     Most `__torch_function__`s standardize the kwargs that they give, so this will separate
     the args and kwargs they pass. Functions that don't are linear and convND.
     """
-    kwarg_values = expanded_args[len(expanded_args) - len(kwarg_names) :]
-    expanded_args_without_kwargs = expanded_args[
-        : len(expanded_args) - len(kwarg_names)
-    ]
+    kwarg_values = expanded_args[len(expanded_args) - len(kwarg_names):]
+    expanded_args_without_kwargs = expanded_args[: len(
+        expanded_args) - len(kwarg_names)]
     expanded_kwargs = dict(zip(kwarg_names, kwarg_values))
     return expanded_args_without_kwargs, expanded_kwargs
 
@@ -69,13 +67,13 @@ def _check_and_unexpand_args(func, expanded_args, expanded_kwargs):
         )
     if not isinstance(input, torch.Tensor):
         raise RuntimeError(
-            "Expanded Weights requires a Tensor as the first input to get the batch dimension, "
-            f"got {type(input).__name__} in function {func.__name__}"
-        )
+            "Expanded Weights requires a Tensor as the first input to get the batch dimension, " f"got {
+                type(input).__name__} in function {
+                func.__name__}")
     if len(input.shape) == 0:
         raise RuntimeError(
-            f"Expanded Weights requires a batch dimension but got an input of size 0 in function {func.__name__}"
-        )
+            f"Expanded Weights requires a batch dimension but got an input of size 0 in function {
+                func.__name__}")
     if input.shape[0] == 0:
         raise RuntimeError(
             "0 is not a valid batch size for Expanded Weights but got input tensor of "
@@ -104,10 +102,8 @@ def _check_and_unexpand_args(func, expanded_args, expanded_kwargs):
                     f"with {loss_reduction} and one with {arg.loss_reduction}"
                 )
 
-    unexpanded_args = tuple(
-        arg.orig_weight if isinstance(arg, ExpandedWeight) else arg
-        for arg in expanded_args
-    )
+    unexpanded_args = tuple(arg.orig_weight if isinstance(
+        arg, ExpandedWeight) else arg for arg in expanded_args)
     unexpanded_kwargs = {
         name: arg.orig_weight if isinstance(arg, ExpandedWeight) else arg
         for (name, arg) in expanded_kwargs.items()
@@ -130,17 +126,21 @@ def set_grad_sample_if_exists(maybe_expanded_weight, per_sample_grad_fn):
         )
 
         if maybe_expanded_weight.batch_size > grad_sample_contribution.shape[0]:
-            # this only passes the other checks if the arg allows smaller batch sizes
+            # this only passes the other checks if the arg allows smaller batch
+            # sizes
             intermediate = torch.zeros(
                 maybe_expanded_weight.batch_size,
                 *grad_sample_contribution.shape[1:],
                 dtype=grad_sample_contribution.dtype,
                 device=grad_sample_contribution.device,
             )
-            intermediate[: grad_sample_contribution.shape[0]] = grad_sample_contribution
+            intermediate[: grad_sample_contribution.shape[0]
+                         ] = grad_sample_contribution
             grad_sample_contribution = intermediate
 
-        if hasattr(unpacked, "grad_sample") and unpacked.grad_sample is not None:
+        if hasattr(
+                unpacked,
+                "grad_sample") and unpacked.grad_sample is not None:
             unpacked.grad_sample = unpacked.grad_sample + grad_sample_contribution
         else:
             unpacked.grad_sample = grad_sample_contribution
@@ -151,15 +151,13 @@ def unpack_expanded_weight_or_tensor(maybe_expanded_weight, func=lambda x: x):
         orig_weight = maybe_expanded_weight.orig_weight
         return func(orig_weight)
     elif (
-        isinstance(maybe_expanded_weight, torch.Tensor)
-        and not maybe_expanded_weight.requires_grad
+        isinstance(maybe_expanded_weight, torch.Tensor) and not maybe_expanded_weight.requires_grad
     ):
         return func(maybe_expanded_weight)
     elif isinstance(maybe_expanded_weight, torch.Tensor):
         raise RuntimeError(
             "ExpandedWeights currently does not support a mixture of ExpandedWeight parameters "
-            "and normal Parameters. Please file and issue with pytorch/pytorch"
-        )
+            "and normal Parameters. Please file and issue with pytorch/pytorch")
 
 
 def sum_over_all_but_batch_and_last_n(

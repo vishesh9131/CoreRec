@@ -2,4 +2,4 @@
 
 import vish_graphs as vg
 
-vg.scale_and_save_matrices('SANDBOX/label.csv', 'SANDBOX/delete/a', 10)
+vg.scale_and_save_matrices("SANDBOX/label.csv", "SANDBOX/delete/a", 10)

@@ -2,9 +2,14 @@ import unittest
 from pathlib import Path
 from importlib.util import spec_from_file_location, module_from_spec
 
-CONTENT_ENGINE_ROOT = Path(__file__).resolve().parents[2] / "corerec" / "engines" / "contentFilterEngine"
+CONTENT_ENGINE_ROOT = (
+    Path(__file__).resolve().parents[2] /
+    "corerec" /
+    "engines" /
+    "contentFilterEngine")
 
-# Files likely safe to import are included; others may have optional heavy deps.
+# Files likely safe to import are included; others may have optional heavy
+# deps.
 EXCLUDE_DIR_NAMES = {"__pycache__"}
 EXCLUDE_FILE_NAMES = {"__init__.py"}
 
@@ -30,7 +35,9 @@ def load_module_from_path(path: Path):
 
 class TestAllContentFilterAlgorithms(unittest.TestCase):
     def test_import_all_algorithm_modules(self):
-        self.assertTrue(CONTENT_ENGINE_ROOT.exists(), f"Missing path: {CONTENT_ENGINE_ROOT}")
+        self.assertTrue(
+            CONTENT_ENGINE_ROOT.exists(),
+            f"Missing path: {CONTENT_ENGINE_ROOT}")
         failures = []
         skipped = []
         passed = []
@@ -43,14 +50,20 @@ class TestAllContentFilterAlgorithms(unittest.TestCase):
                 except ImportError as e:
                     # Likely missing optional dependency; mark as skipped
                     skipped.append((file_path, f"ImportError: {e}"))
-                    self.skipTest(f"Optional dep missing for {file_path.name}: {e}")
+                    self.skipTest(
+                        f"Optional dep missing for {
+                            file_path.name}: {e}")
                 except Exception as e:
                     failures.append((file_path, str(e)))
                     self.fail(f"Failed importing {file_path}: {e}")
 
         # Summary for logs (unittest will reflect individual subTest outcomes)
         # These prints help in CI logs; not assertions
-        print(f"\n[ContentFilterEngine Import Summary] Passed: {len(passed)}, Skipped: {len(skipped)}, Failures: {len(failures)}")
+        print(
+            f"\n[ContentFilterEngine Import Summary] Passed: {
+                len(passed)}, Skipped: {
+                len(skipped)}, Failures: {
+                len(failures)}")
         if skipped:
             for p, r in skipped[:5]:
                 print(f"  - SKIP {p.name}: {r}")
@@ -60,4 +73,4 @@ class TestAllContentFilterAlgorithms(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

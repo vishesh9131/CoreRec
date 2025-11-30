@@ -29,8 +29,7 @@ class SyncBatchNorm(Function):
         size = int(input.numel() // input.size(1))
         if size == 1 and world_size < 2:
             raise ValueError(
-                f"Expected more than 1 value per channel when training, got input size {size}"
-            )
+                f"Expected more than 1 value per channel when training, got input size {size}")
 
         num_channels = input.shape[1]
         if input.numel() > 0:
@@ -52,8 +51,9 @@ class SyncBatchNorm(Function):
             # & invstd, but they still needs to participate the all_gather
             # collective communication to unblock other peer processes.
             combined = torch.zeros(
-                2 * num_channels + 1, dtype=input.dtype, device=input.device
-            )
+                2 * num_channels + 1,
+                dtype=input.dtype,
+                device=input.device)
 
         # Use allgather instead of allreduce because count could be different across
         # ranks, simple all reduce op can not give correct results.
@@ -71,20 +71,30 @@ class SyncBatchNorm(Function):
                 device=combined.device,
             )
             dist.all_gather_into_tensor(
-                combined_flat, combined, process_group, async_op=False
-            )
-            combined = torch.reshape(combined_flat, (world_size, combined_size))
-            # world_size * (2C + 1) -> world_size * C, world_size * C, world_size * 1
-            mean_all, invstd_all, count_all = torch.split(combined, num_channels, dim=1)
+                combined_flat, combined, process_group, async_op=False)
+            combined = torch.reshape(
+                combined_flat, (world_size, combined_size))
+            # world_size * (2C + 1) -> world_size * C, world_size * C,
+            # world_size * 1
+            mean_all, invstd_all, count_all = torch.split(
+                combined, num_channels, dim=1)
         else:
             # world_size * (2C + 1)
-            combined_list = [torch.empty_like(combined) for _ in range(world_size)]
-            dist.all_gather(combined_list, combined, process_group, async_op=False)
+            combined_list = [torch.empty_like(
+                combined) for _ in range(world_size)]
+            dist.all_gather(
+                combined_list,
+                combined,
+                process_group,
+                async_op=False)
             combined = torch.stack(combined_list, dim=0)
-            # world_size * (2C + 1) -> world_size * C, world_size * C, world_size * 1
-            mean_all, invstd_all, count_all = torch.split(combined, num_channels, dim=1)
+            # world_size * (2C + 1) -> world_size * C, world_size * C,
+            # world_size * 1
+            mean_all, invstd_all, count_all = torch.split(
+                combined, num_channels, dim=1)
 
-        if not (torch.cuda.is_available() and torch.cuda.is_current_stream_capturing()):
+        if not (torch.cuda.is_available()
+                and torch.cuda.is_current_stream_capturing()):
             # The lines below force a synchronization between CUDA and CPU, because
             # the shape of the result count_all depends on the values in mask tensor.
             # Such synchronizations break CUDA Graph capturing.
@@ -113,12 +123,19 @@ class SyncBatchNorm(Function):
             counts,
         )
 
-        self.save_for_backward(input, weight, mean, invstd, count_all.to(torch.int32))
+        self.save_for_backward(
+            input,
+            weight,
+            mean,
+            invstd,
+            count_all.to(
+                torch.int32))
         self.process_group = process_group
 
         # apply element-wise normalization
         if input.numel() > 0:
-            return torch.batch_norm_elemt(input, weight, bias, mean, invstd, eps)
+            return torch.batch_norm_elemt(
+                input, weight, bias, mean, invstd, eps)
         else:
             return torch.empty_like(input)
 
@@ -193,8 +210,9 @@ class SyncBatchNorm(Function):
             if self.needs_input_grad[0]:
                 # launch all_reduce to unblock other peer processes
                 combined = torch.zeros(
-                    2 * num_channels, dtype=saved_input.dtype, device=saved_input.device
-                )
+                    2 * num_channels,
+                    dtype=saved_input.dtype,
+                    device=saved_input.device)
                 torch.distributed.all_reduce(
                     combined,
                     torch.distributed.ReduceOp.SUM,
@@ -219,8 +237,8 @@ class CrossMapLRN2d(Function):
 
         if input.dim() != 4:
             raise ValueError(
-                f"CrossMapLRN2d: Expected input to be 4D, got {input.dim()}D instead."
-            )
+                f"CrossMapLRN2d: Expected input to be 4D, got {
+                    input.dim()}D instead.")
 
         ctx.scale = ctx.scale or input.new()
         output = input.new()
@@ -278,7 +296,10 @@ class CrossMapLRN2d(Function):
         input_height = input.size(2)
         input_width = input.size(3)
 
-        paddded_ratio = input.new(channels + ctx.size - 1, input_height, input_width)
+        paddded_ratio = input.new(
+            channels + ctx.size - 1,
+            input_height,
+            input_width)
         accum_ratio = input.new(input_height, input_width)
 
         cache_ratio_value = 2 * ctx.alpha * ctx.beta / ctx.size
@@ -301,8 +322,7 @@ class CrossMapLRN2d(Function):
             for c in range(channels):
                 accum_ratio.add_(paddded_ratio[c + ctx.size - 1])
                 grad_input[n][c].addcmul_(
-                    input[n][c], accum_ratio, value=-cache_ratio_value
-                )
+                    input[n][c], accum_ratio, value=-cache_ratio_value)
                 accum_ratio.add_(paddded_ratio[c], alpha=-1)
 
         return grad_input, None, None, None, None
@@ -311,7 +331,8 @@ class CrossMapLRN2d(Function):
 class BackwardHookFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, *args):
-        ctx.mark_non_differentiable(*[arg for arg in args if not arg.requires_grad])
+        ctx.mark_non_differentiable(
+            *[arg for arg in args if not arg.requires_grad])
         return args
 
     @staticmethod

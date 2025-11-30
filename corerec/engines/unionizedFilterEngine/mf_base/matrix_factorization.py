@@ -16,13 +16,24 @@
 import numpy as np
 from scipy.sparse import csr_matrix, lil_matrix
 from typing import List, Optional, Dict, Any, Tuple
-from corerec.base_recommender import BaseCorerec
+from corerec.api.base_recommender import BaseRecommender
+from corerec.utils.validation import (
+    validate_fit_inputs,
+    validate_user_id,
+    validate_top_k,
+    validate_model_fitted,
+)
 from corerec.engines.unionizedFilterEngine.device_manager import DeviceManager
 import logging
 
 logger = logging.getLogger(__name__)
 
-class MatrixFactorization(BaseCorerec):
+from corerec.api.exceptions import ModelNotFittedError
+from typing import Union
+from pathlib import Path
+
+
+class MatrixFactorization(BaseRecommender):
     """Matrix Factorization for Unionized Filtering.
 
     Parameters
@@ -71,8 +82,8 @@ class MatrixFactorization(BaseCorerec):
         use_bias: bool = True,
         verbose: bool = False,
         seed: Optional[int] = None,
-        device: str = 'auto',
-        batch_size: int = 10000
+        device: str = "auto",
+        batch_size: int = 10000,
     ):
         super().__init__(name="MatrixFactorization", trainable=True, verbose=verbose)
         self.k = k
@@ -104,18 +115,20 @@ class MatrixFactorization(BaseCorerec):
         self.device_manager.set_device(device)
         self.xp = self.device_manager.get_framework_for_device()
 
-    def _create_mappings(self, user_ids: List[int], item_ids: List[int]):
-        """Create mappings for user and item IDs."""
-        unique_users = set(user_ids)
-        self.user_map = {user_id: idx for idx, user_id in enumerate(unique_users)}
+    def _create_mappings(self, user_ids: List[int], item_ids: List[int]) -> None:
+        """Create mappings between original IDs and matrix indices."""
+        self.user_map = {user_id: idx for idx, user_id in enumerate(user_ids)}
+        self.item_map = {item_id: idx for idx, item_id in enumerate(item_ids)}
         self.reverse_user_map = {idx: user_id for user_id, idx in self.user_map.items()}
-
-        unique_items = set(item_ids)
-        self.item_map = {item_id: idx for idx, item_id in enumerate(unique_items)}
         self.reverse_item_map = {idx: item_id for item_id, idx in self.item_map.items()}
 
-    def fit(self, user_ids: List[int], item_ids: List[int], ratings: List[float]):
-        """Fit the model to the data."""
+    def fit(
+        self, user_ids: List[int], item_ids: List[int], ratings: List[float], **kwargs
+    ) -> "MatrixFactorization":
+        """Train the matrix factorization model."""
+        # Validate inputs
+        validate_fit_inputs(user_ids, item_ids, ratings)
+
         self._create_mappings(user_ids, item_ids)
 
         n_users = len(self.user_map)
@@ -135,6 +148,9 @@ class MatrixFactorization(BaseCorerec):
             self.user_biases = np.zeros(n_users)
             self.item_biases = np.zeros(n_items)
         self.global_mean = np.mean(ratings)
+
+        if self.seed is not None:
+            np.random.seed(self.seed)
 
         for iteration in range(self.max_iter):
             total_loss = 0.0
@@ -156,12 +172,12 @@ class MatrixFactorization(BaseCorerec):
                 errors = np.array(batch_ratings) - preds
 
                 self.user_factors[batch_user_indices] += self.learning_rate * (
-                    errors[:, np.newaxis] * self.item_factors[batch_item_indices] -
-                    self.lambda_reg * self.user_factors[batch_user_indices]
+                    errors[:, np.newaxis] * self.item_factors[batch_item_indices]
+                    - self.lambda_reg * self.user_factors[batch_user_indices]
                 )
                 self.item_factors[batch_item_indices] += self.learning_rate * (
-                    errors[:, np.newaxis] * self.user_factors[batch_user_indices] -
-                    self.lambda_reg * self.item_factors[batch_item_indices]
+                    errors[:, np.newaxis] * self.user_factors[batch_user_indices]
+                    - self.lambda_reg * self.item_factors[batch_item_indices]
                 )
 
                 if self.use_bias:
@@ -175,85 +191,110 @@ class MatrixFactorization(BaseCorerec):
                 total_loss += np.sum(errors**2)
 
             if self.verbose:
-                logger.info(f"Iteration {iteration + 1}/{self.max_iter}, Loss: {total_loss / len(user_ids):.4f}")
+                logger.info(
+                    f"Iteration {iteration + 1}/{self.max_iter}, Loss: {total_loss / len(user_ids):.4f}"
+                )
+
+        self.is_fitted = True
+        return self
 
     def _predict_batch(self, user_indices: List[int], item_indices: List[int]) -> np.ndarray:
         """Predict ratings for a batch of user-item pairs."""
-        # Validate inputs
-        validate_fit_inputs(user_ids, item_ids, ratings)
-        
-        preds = self.global_mean
-        if self.use_bias:
-            preds += self.user_biases[user_indices] + self.item_biases[item_indices]
-        preds += np.sum(self.user_factors[user_indices] * self.item_factors[item_indices], axis=1)
+        preds = np.zeros(len(user_indices))
+        for i, (u_idx, i_idx) in enumerate(zip(user_indices, item_indices)):
+            pred = self.global_mean
+            if self.use_bias:
+                pred += self.user_biases[u_idx] + self.item_biases[i_idx]
+            pred += np.dot(self.user_factors[u_idx], self.item_factors[i_idx])
+            preds[i] = pred
         return preds
 
-    def _predict(self, user_idx: int, item_idx: int) -> float:
-        """Predict rating for a single user-item pair."""
+    def predict(self, user_id: int, item_id: int, **kwargs) -> float:
+        """Predict rating for a user-item pair."""
+        if not self.is_fitted:
+            raise ModelNotFittedError(f"{self.name} must be fitted before making predictions")
+
+        if user_id not in self.user_map or item_id not in self.item_map:
+            return 0.0
+
+        user_idx = self.user_map[user_id]
+        item_idx = self.item_map[item_id]
+
         pred = self.global_mean
         if self.use_bias:
             pred += self.user_biases[user_idx] + self.item_biases[item_idx]
         pred += np.dot(self.user_factors[user_idx], self.item_factors[item_idx])
-        return pred
+        return float(pred)
 
-    def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
-        """Generate top-N recommendations for a user."""
+    def recommend(self, user_id: int, top_k: int = 10, **kwargs) -> List[int]:
+        """Generate top-K recommendations for a user."""
+        # Validate inputs
+        validate_model_fitted(self.is_fitted, self.name)
+        validate_user_id(user_id, self.user_map if hasattr(self, "user_map") else {})
+        validate_top_k(top_k)
+
         if user_id not in self.user_map:
             return []
 
         user_idx = self.user_map[user_id]
-        scores = self.global_mean + self.item_biases if self.use_bias else np.zeros(len(self.item_map))
-        scores += np.dot(self.user_factors[user_idx], self.item_factors.T)
-        
-        if exclude_seen:
-            user_items = set([self.reverse_item_map[iid] for iid in self.user_item_matrix[user_idx].indices])
-            for item_id in user_items:
-                if item_id in self.item_map:
-                    scores[self.item_map[item_id]] = -np.inf
+        scores = np.dot(self.user_factors[user_idx], self.item_factors.T)
+        if self.use_bias:
+            scores += self.item_biases
 
-        top_item_indices = np.argsort(scores)[-top_n:][::-1]
-        return [self.reverse_item_map[idx] for idx in top_item_indices]
+        # Exclude items user has already rated
+        if self.user_item_matrix is not None:
+            rated_items = self.user_item_matrix[user_idx].indices
+            scores[rated_items] = -np.inf
 
-    def save_model(self, filepath: str) -> None:
-        """Save the model to a file."""
-        # Validate inputs
-        validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
-        validate_top_k(top_k if 'top_k' in locals() else 10)
-        
-        model_data = {
-            'user_factors': self.user_factors,
-            'item_factors': self.item_factors,
-            'user_biases': self.user_biases,
-            'item_biases': self.item_biases,
-            'global_mean': self.global_mean,
-            'user_map': self.user_map,
-            'item_map': self.item_map,
-            'reverse_user_map': self.reverse_user_map,
-            'reverse_item_map': self.reverse_item_map,
-            'k': self.k,
-            'use_bias': self.use_bias
-        }
-        np.save(filepath, model_data, allow_pickle=True)
+        top_indices = np.argsort(scores)[::-1][:top_k]
+        return [self.reverse_item_map[idx] for idx in top_indices if idx in self.reverse_item_map]
+
+    def save(self, path: Union[str, Path], **kwargs) -> None:
+        """Save model to disk."""
+        import pickle
+
+        path_obj = Path(path)
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(path_obj, "wb") as f:
+            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+        if self.verbose:
+            logger.info(f"{self.name} model saved to {path}")
 
     @classmethod
-    def load_model(cls, filepath: str, device: str = 'auto') -> 'MatrixFactorization':
-        """Load a model from a file."""
+    def load(cls, path: Union[str, Path], **kwargs) -> "MatrixFactorization":
+        """Load model from disk."""
+        import pickle
+
+        with open(path, "rb") as f:
+            model = pickle.load(f)
+
+        if hasattr(model, "verbose") and model.verbose:
+            logger.info(f"Model loaded from {path}")
+
+        return model
+
+    @classmethod
+    def load_model(cls, filepath: str, device: str = "auto") -> "MatrixFactorization":
+        """Load model from file using numpy save format."""
         model_data = np.load(filepath, allow_pickle=True).item()
+
+        # Create instance with saved parameters
         instance = cls(
-            k=model_data['k'],
-            use_bias=model_data['use_bias'],
-            device=device
+            k=model_data.get("k", 10), use_bias=model_data.get("use_bias", True), device=device
         )
-        
-        instance.user_factors = model_data['user_factors']
-        instance.item_factors = model_data['item_factors']
-        instance.user_biases = model_data['user_biases']
-        instance.item_biases = model_data['item_biases']
-        instance.global_mean = model_data['global_mean']
-        instance.user_map = model_data['user_map']
-        instance.item_map = model_data['item_map']
-        instance.reverse_user_map = model_data['reverse_user_map']
-        instance.reverse_item_map = model_data['reverse_item_map']
-        
+
+        # Restore model state
+        instance.user_factors = model_data["user_factors"]
+        instance.item_factors = model_data["item_factors"]
+        instance.user_biases = model_data.get("user_biases")
+        instance.item_biases = model_data.get("item_biases")
+        instance.global_mean = model_data.get("global_mean", 0.0)
+        instance.user_map = model_data["user_map"]
+        instance.item_map = model_data["item_map"]
+        instance.reverse_user_map = model_data.get("reverse_user_map", {})
+        instance.reverse_item_map = model_data.get("reverse_item_map", {})
+
+        instance.is_fitted = True
         return instance

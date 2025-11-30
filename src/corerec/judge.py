@@ -17,6 +17,7 @@ import numpy as np
 from typing import List, Dict, Set
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
+
 class judge:
     """Class to compute evaluation metrics for recommender systems."""
 
@@ -239,7 +240,9 @@ class judge:
         similarities = []
         for i in range(len(recommended_items)):
             for j in range(i + 1, len(recommended_items)):
-                similarities.append(item_similarity_matrix[recommended_items[i], recommended_items[j]])
+                similarities.append(
+                    item_similarity_matrix[recommended_items[i], recommended_items[j]]
+                )
         return 1 - np.mean(similarities) if similarities else 0.0
 
     @staticmethod

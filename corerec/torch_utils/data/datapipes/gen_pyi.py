@@ -29,12 +29,14 @@ def gen_from_template(
     for placeholder, lines, indentation in replacements:
         with open(output_path, "w") as f:
             content = content.replace(
-                placeholder, materialize_lines(lines, indentation)
-            )
+                placeholder, materialize_lines(
+                    lines, indentation))
             f.write(content)
 
 
-def find_file_paths(dir_paths: List[str], files_to_exclude: Set[str]) -> Set[str]:
+def find_file_paths(
+        dir_paths: List[str],
+        files_to_exclude: Set[str]) -> Set[str]:
     """
     When given a path to a directory, returns the paths to the relevant files within it.
 
@@ -45,8 +47,7 @@ def find_file_paths(dir_paths: List[str], files_to_exclude: Set[str]) -> Set[str
         all_files = os.listdir(dir_path)
         python_files = {fname for fname in all_files if ".py" == fname[-3:]}
         filter_files = {
-            fname for fname in python_files if fname not in files_to_exclude
-        }
+            fname for fname in python_files if fname not in files_to_exclude}
         paths.update({os.path.join(dir_path, fname) for fname in filter_files})
     return paths
 
@@ -59,9 +60,9 @@ def extract_method_name(line: str) -> str:
         start_token, end_token = "('", "')"
     else:
         raise RuntimeError(
-            f"Unable to find appropriate method name within line:\n{line}"
-        )
-    start, end = line.find(start_token) + len(start_token), line.find(end_token)
+            f"Unable to find appropriate method name within line:\n{line}")
+    start, end = line.find(start_token) + \
+        len(start_token), line.find(end_token)
     return line[start:end]
 
 
@@ -69,7 +70,8 @@ def extract_class_name(line: str) -> str:
     """Extract class name from class definition in the form of "class {CLASS_NAME}({Type}):"."""
     start_token = "class "
     end_token = "("
-    start, end = line.find(start_token) + len(start_token), line.find(end_token)
+    start, end = line.find(start_token) + \
+        len(start_token), line.find(end_token)
     return line[start:end]
 
 
@@ -96,7 +98,8 @@ def parse_datapipe_file(
             if method_name and "class " in line:
                 class_name = extract_class_name(line)
                 continue
-            if method_name and ("def __init__(" in line or "def __new__(" in line):
+            if method_name and (
+                    "def __init__(" in line or "def __new__(" in line):
                 if "def __new__(" in line:
                     special_output_type.add(method_name)
                 open_paren_count += 1
@@ -108,13 +111,13 @@ def parse_datapipe_file(
                 if open_paren_count == 0:
                     end = line.rfind(")")
                     signature += line[:end]
-                    method_to_signature[method_name] = process_signature(signature)
+                    method_to_signature[method_name] = process_signature(
+                        signature)
                     method_to_class_name[method_name] = class_name
                     method_name, class_name, signature = "", "", ""
                 elif open_paren_count < 0:
                     raise RuntimeError(
-                        "open parenthesis count < 0. This shouldn't be possible."
-                    )
+                        "open parenthesis count < 0. This shouldn't be possible.")
                 else:
                     signature += line.strip("\n").strip(" ")
     return (
@@ -143,7 +146,8 @@ def parse_datapipe_files(
         ) = parse_datapipe_file(path)
         methods_and_signatures.update(method_to_signature)
         methods_and_class_names.update(method_to_class_name)
-        methods_with_special_output_types.update(methods_needing_special_output_types)
+        methods_with_special_output_types.update(
+            methods_needing_special_output_types)
         methods_and_doc_strings.update(doc_string_dict)
     return (
         methods_and_signatures,
@@ -243,9 +247,8 @@ def get_method_definitions(
             f"def {method_name}({arguments}) -> {output_type}:\n"
             f"{doc_string}"
         )
-    method_definitions.sort(
-        key=lambda s: s.split("\n")[1]
-    )  # sorting based on method_name
+    method_definitions.sort(key=lambda s: s.split(
+        "\n")[1])  # sorting based on method_name
 
     return method_definitions
 
@@ -262,7 +265,8 @@ iterDP_method_to_special_output_type: Dict[str, str] = {
 mapDP_file_path: str = "map"
 mapDP_files_to_exclude: Set[str] = {"__init__.py", "utils.py"}
 mapDP_deprecated_files: Set[str] = set()
-mapDP_method_to_special_output_type: Dict[str, str] = {"shuffle": "IterDataPipe"}
+mapDP_method_to_special_output_type: Dict[str, str] = {
+    "shuffle": "IterDataPipe"}
 
 
 def main() -> None:

@@ -21,7 +21,7 @@
 #     contextual_matrix_factorization_base,
 #     sgd_matrix_factorization_base,
 #     svd_base,
-#     svdpp_base    
+#     svdpp_base
 # )
 
 # from .nn_base import (
@@ -174,5 +174,3 @@
 #     "VariationalAutoencoderUFilterBase",
 #     "BayesianMFBase",
 # ]
-
-

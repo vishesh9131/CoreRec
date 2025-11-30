@@ -192,10 +192,7 @@ def _default_to_fused_or_foreach(
     )
     foreach = not fused and all(
         p is None
-        or (
-            type(p) in _foreach_supported_types
-            and p.device.type in foreach_supported_devices
-        )
+        or (type(p) in _foreach_supported_types and p.device.type in foreach_supported_devices)
         for p in params
     )
     return fused, foreach
@@ -212,9 +209,7 @@ def _view_as_real(params, *state_and_grads):
 def _get_scalar_dtype(is_fused=None):
     if is_fused:
         return torch.float32
-    return (
-        torch.float64 if torch.get_default_dtype() == torch.float64 else torch.float32
-    )
+    return torch.float64 if torch.get_default_dtype() == torch.float64 else torch.float32
 
 
 def _get_capturable_supported_devices(supports_xla: bool = True) -> List[str]:
@@ -423,16 +418,10 @@ class Optimizer:
         # https://github.com/pytorch/pytorch/blob/d3ba8901d8640eb16f88b2bfef9df7fa383d4b47/torch/_inductor/compile_fx.py#L390.
         # Thus, when compiling, inductor will determine if cudagraphs
         # can be enabled based on whether there is input mutation or CPU tensors.
-        if (
-            not is_compiling()
-            and torch.backends.cuda.is_built()
-            and torch.cuda.is_available()
-        ):
+        if not is_compiling() and torch.backends.cuda.is_built() and torch.cuda.is_available():
             capturing = torch.cuda.is_current_stream_capturing()
 
-            if capturing and not all(
-                group["capturable"] for group in self.param_groups
-            ):
+            if capturing and not all(group["capturable"] for group in self.param_groups):
                 raise RuntimeError(
                     "Attempting CUDA graph capture of step() for an instance of "
                     + self.__class__.__name__
@@ -518,9 +507,7 @@ class Optimizer:
             return _group_tensors_by_device_and_dtype(tensorlistlist, with_indices)  # type: ignore[return-value, arg-type]
 
     def _patch_step_function(self) -> None:
-        self._zero_grad_profile_name = (
-            f"Optimizer.zero_grad#{self.__class__.__name__}.zero_grad"
-        )
+        self._zero_grad_profile_name = f"Optimizer.zero_grad#{self.__class__.__name__}.zero_grad"
         hooked = getattr(self.__class__.step, "hooked", None)
         if not hooked:
             self.__class__.step = self.profile_hook_step(self.__class__.step)  # type: ignore[assignment]
@@ -852,9 +839,7 @@ class Optimizer:
         saved_groups = deepcopy(state_dict["param_groups"])
 
         if len(groups) != len(saved_groups):
-            raise ValueError(
-                "loaded state dict has a different number of " "parameter groups"
-            )
+            raise ValueError("loaded state dict has a different number of " "parameter groups")
         param_lens = (len(g["params"]) for g in groups)
         saved_lens = (len(g["params"]) for g in saved_groups)
         if any(p_len != s_len for p_len, s_len in zip(param_lens, saved_lens)):
@@ -879,9 +864,7 @@ class Optimizer:
                 )
             elif isinstance(value, dict):
                 return {
-                    k: _cast(
-                        param, v, param_id=param_id, param_groups=param_groups, key=k
-                    )
+                    k: _cast(param, v, param_id=param_id, param_groups=param_groups, key=k)
                     for k, v in value.items()
                 }
             elif isinstance(value, Iterable):
@@ -896,16 +879,12 @@ class Optimizer:
         for k, v in state_dict["state"].items():
             if k in id_map:
                 param = id_map[k]
-                state[param] = _cast(
-                    param, v, param_id=k, param_groups=state_dict["param_groups"]
-                )
+                state[param] = _cast(param, v, param_id=k, param_groups=state_dict["param_groups"])
             else:
                 state[k] = v
 
         # Update parameter groups, setting their 'params' value
-        def update_group(
-            group: Dict[str, Any], new_group: Dict[str, Any]
-        ) -> Dict[str, Any]:
+        def update_group(group: Dict[str, Any], new_group: Dict[str, Any]) -> Dict[str, Any]:
             new_group["params"] = group["params"]
             return new_group
 
@@ -931,9 +910,7 @@ class Optimizer:
                 (in one case it does the step with a gradient of 0 and in the other it skips
                 the step altogether).
         """
-        foreach = self.defaults.get("foreach", False) or self.defaults.get(
-            "fused", False
-        )
+        foreach = self.defaults.get("foreach", False) or self.defaults.get("fused", False)
 
         if not hasattr(self, "_zero_grad_profile_name"):
             self._patch_step_function()
@@ -961,9 +938,9 @@ class Optimizer:
                                 p.grad.zero_()
                             else:
                                 assert per_device_and_dtype_grads is not None
-                                per_device_and_dtype_grads[p.grad.device][
-                                    p.grad.dtype
-                                ].append(p.grad)
+                                per_device_and_dtype_grads[p.grad.device][p.grad.dtype].append(
+                                    p.grad
+                                )
             if foreach:
                 assert per_device_and_dtype_grads is not None
                 for per_dtype_grads in per_device_and_dtype_grads.values():
@@ -1052,9 +1029,3 @@ class Optimizer:
             raise ValueError("some parameters appear in more than one parameter group")
 
         self.param_groups.append(param_group)
-
-
-
-
-
-

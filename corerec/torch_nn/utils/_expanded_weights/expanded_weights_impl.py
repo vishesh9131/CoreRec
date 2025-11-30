@@ -34,7 +34,8 @@ expanded_weights_rnn_decomps = {
 }
 
 
-# all of the RNN decomps run linear with the batch dimension second, even if batch_first was set
+# all of the RNN decomps run linear with the batch dimension second, even
+# if batch_first was set
 @contextmanager
 def batch_second(args, kwargs):
     def set_batch_second(ew):
@@ -52,7 +53,8 @@ def batch_second(args, kwargs):
         tree_map_only(ExpandedWeight, reset_batch_first, kwargs)
 
 
-# to support packed sequences, we need to allow for smaller batches. Expanded weights represents the largest batch
+# to support packed sequences, we need to allow for smaller batches.
+# Expanded weights represents the largest batch
 @contextmanager
 def allow_smaller_batches(args, kwargs):
     def allow(ew):
@@ -72,9 +74,7 @@ def allow_smaller_batches(args, kwargs):
 
 @contextmanager
 def setup_rnn(use_input_variant, args, kwargs):
-    with batch_second(args, kwargs) if use_input_variant else allow_smaller_batches(
-        args, kwargs
-    ):
+    with batch_second(args, kwargs) if use_input_variant else allow_smaller_batches(args, kwargs):
         yield
 
 
@@ -112,8 +112,8 @@ class ExpandedWeight(torch.Tensor):
     def __new__(cls, orig_weight, batch_size, loss_reduction):
         if not isinstance(orig_weight, torch.Tensor):
             raise RuntimeError(
-                f"Can only make Expanded Weights of Tensors, got {type(orig_weight).__name__}"
-            )
+                f"Can only make Expanded Weights of Tensors, got {
+                    type(orig_weight).__name__}")
         if not orig_weight.requires_grad:
             raise RuntimeError(
                 "Can only build ExpandedWeights objects of tensors that require_grad"
@@ -126,18 +126,19 @@ class ExpandedWeight(torch.Tensor):
         if kwargs is None:
             kwargs = {}
         if func in expanded_weights_rnn_decomps:
-            # in aten, choosing the input or data variants is done by parsing logic. This mimics some of that
+            # in aten, choosing the input or data variants is done by parsing
+            # logic. This mimics some of that
             decomp_opts = expanded_weights_rnn_decomps[func]
             use_input_variant = isinstance(
-                args[2], list
-            )  # data variant uses a list here
+                args[2], list)  # data variant uses a list here
             decomp = decomp_opts[0] if use_input_variant else decomp_opts[1]
 
             if decomp is not None:
                 with setup_rnn(use_input_variant, args, kwargs):
                     return decomp(*args, **kwargs)
         if func == torch._cudnn_rnn_flatten_weight:
-            # since we aren't using the fused cuda kernels for RNNs, don't do this
+            # since we aren't using the fused cuda kernels for RNNs, don't do
+            # this
             return
         if func in cls.handled_functions:
             return cls.handled_functions[func].apply(
@@ -146,8 +147,8 @@ class ExpandedWeight(torch.Tensor):
         # We cannot use a fallback here because we do not know the batch dimension for any regular tensor inputs,
         # i.e. torch.add(torch.Tensor, ExpandedWeight)
         raise RuntimeError(
-            f"Expanded Weights encountered but cannot handle function {func.__name__}"
-        )
+            f"Expanded Weights encountered but cannot handle function {
+                func.__name__}")
 
     @property
     def dtype(self):

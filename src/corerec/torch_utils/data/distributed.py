@@ -118,9 +118,7 @@ class DistributedSampler(Sampler[_T_co]):
             if padding_size <= len(indices):
                 indices += indices[:padding_size]
             else:
-                indices += (indices * math.ceil(padding_size / len(indices)))[
-                    :padding_size
-                ]
+                indices += (indices * math.ceil(padding_size / len(indices)))[:padding_size]
         else:
             # remove tail of data to make it evenly divisible.
             indices = indices[: self.total_size]

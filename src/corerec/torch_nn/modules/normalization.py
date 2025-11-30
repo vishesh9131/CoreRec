@@ -50,9 +50,7 @@ class LocalResponseNorm(Module):
     beta: float
     k: float
 
-    def __init__(
-        self, size: int, alpha: float = 1e-4, beta: float = 0.75, k: float = 1.0
-    ) -> None:
+    def __init__(self, size: int, alpha: float = 1e-4, beta: float = 0.75, k: float = 1.0) -> None:
         super().__init__()
         self.size = size
         self.alpha = alpha
@@ -72,9 +70,7 @@ class CrossMapLRN2d(Module):
     beta: float
     k: float
 
-    def __init__(
-        self, size: int, alpha: float = 1e-4, beta: float = 0.75, k: float = 1
-    ) -> None:
+    def __init__(self, size: int, alpha: float = 1e-4, beta: float = 0.75, k: float = 1) -> None:
         super().__init__()
         self.size = size
         self.alpha = alpha
@@ -192,13 +188,9 @@ class LayerNorm(Module):
         self.eps = eps
         self.elementwise_affine = elementwise_affine
         if self.elementwise_affine:
-            self.weight = Parameter(
-                torch.empty(self.normalized_shape, **factory_kwargs)
-            )
+            self.weight = Parameter(torch.empty(self.normalized_shape, **factory_kwargs))
             if bias:
-                self.bias = Parameter(
-                    torch.empty(self.normalized_shape, **factory_kwargs)
-                )
+                self.bias = Parameter(torch.empty(self.normalized_shape, **factory_kwargs))
             else:
                 self.register_parameter("bias", None)
         else:
@@ -214,14 +206,11 @@ class LayerNorm(Module):
                 init.zeros_(self.bias)
 
     def forward(self, input: Tensor) -> Tensor:
-        return F.layer_norm(
-            input, self.normalized_shape, self.weight, self.bias, self.eps
-        )
+        return F.layer_norm(input, self.normalized_shape, self.weight, self.bias, self.eps)
 
     def extra_repr(self) -> str:
-        return (
-            "{normalized_shape}, eps={eps}, "
-            "elementwise_affine={elementwise_affine}".format(**self.__dict__)
+        return "{normalized_shape}, eps={eps}, " "elementwise_affine={elementwise_affine}".format(
+            **self.__dict__
         )
 
 
@@ -313,9 +302,7 @@ class GroupNorm(Module):
         return F.group_norm(input, self.num_groups, self.weight, self.bias, self.eps)
 
     def extra_repr(self) -> str:
-        return "{num_groups}, {num_channels}, eps={eps}, " "affine={affine}".format(
-            **self.__dict__
-        )
+        return "{num_groups}, {num_channels}, eps={eps}, " "affine={affine}".format(**self.__dict__)
 
 
 class RMSNorm(Module):
@@ -380,9 +367,7 @@ class RMSNorm(Module):
         self.eps = eps
         self.elementwise_affine = elementwise_affine
         if self.elementwise_affine:
-            self.weight = Parameter(
-                torch.empty(self.normalized_shape, **factory_kwargs)
-            )
+            self.weight = Parameter(torch.empty(self.normalized_shape, **factory_kwargs))
         else:
             self.register_parameter("weight", None)
         self.reset_parameters()
@@ -404,9 +389,8 @@ class RMSNorm(Module):
         """
         Extra information about the module.
         """
-        return (
-            "{normalized_shape}, eps={eps}, "
-            "elementwise_affine={elementwise_affine}".format(**self.__dict__)
+        return "{normalized_shape}, eps={eps}, " "elementwise_affine={elementwise_affine}".format(
+            **self.__dict__
         )
 
 

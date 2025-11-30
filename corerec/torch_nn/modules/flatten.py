@@ -109,9 +109,11 @@ class Unflatten(Module):
     dim: Union[int, str]
     unflattened_size: Union[_size, NamedShape]
 
-    def __init__(
-        self, dim: Union[int, str], unflattened_size: Union[_size, NamedShape]
-    ) -> None:
+    def __init__(self,
+                 dim: Union[int,
+                            str],
+                 unflattened_size: Union[_size,
+                                         NamedShape]) -> None:
         super().__init__()
 
         if isinstance(dim, int):
@@ -129,9 +131,9 @@ class Unflatten(Module):
             for idx, elem in enumerate(input):
                 if not isinstance(elem, tuple):
                     raise TypeError(
-                        "unflattened_size must be tuple of tuples, "
-                        + f"but found element of type {type(elem).__name__} at pos {idx}"
-                    )
+                        "unflattened_size must be tuple of tuples, " +
+                        f"but found element of type {
+                            type(elem).__name__} at pos {idx}")
             return
         raise TypeError(
             "unflattened_size must be a tuple of tuples, "
@@ -143,13 +145,13 @@ class Unflatten(Module):
             for idx, elem in enumerate(input):
                 if not isinstance(elem, int):
                     raise TypeError(
-                        "unflattened_size must be tuple of ints, "
-                        + f"but found element of type {type(elem).__name__} at pos {idx}"
-                    )
+                        "unflattened_size must be tuple of ints, " +
+                        f"but found element of type {
+                            type(elem).__name__} at pos {idx}")
             return
         raise TypeError(
-            f"unflattened_size must be a tuple of ints, but found type {type(input).__name__}"
-        )
+            f"unflattened_size must be a tuple of ints, but found type {
+                type(input).__name__}")
 
     def forward(self, input: Tensor) -> Tensor:
         return input.unflatten(self.dim, self.unflattened_size)

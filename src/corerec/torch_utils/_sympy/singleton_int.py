@@ -40,16 +40,12 @@ class SingletonInt(sympy.AtomicExpr):
 
     def __mul__(self, other):
         if isinstance(other, SingletonInt):
-            raise ValueError(
-                "SingletonInt cannot be multiplied by another SingletonInt"
-            )
+            raise ValueError("SingletonInt cannot be multiplied by another SingletonInt")
         return SingletonInt(self._val, coeff=self._coeff * other)
 
     def __rmul__(self, other):
         if isinstance(other, SingletonInt):
-            raise ValueError(
-                "SingletonInt cannot be multiplied by another SingletonInt"
-            )
+            raise ValueError("SingletonInt cannot be multiplied by another SingletonInt")
         return SingletonInt(self._val, coeff=self._coeff * other)
 
     # Make sure we promptly raise an error instead of falling back to building

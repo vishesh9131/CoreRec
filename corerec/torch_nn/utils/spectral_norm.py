@@ -58,7 +58,10 @@ class SpectralNorm:
         height = weight_mat.size(0)
         return weight_mat.reshape(height, -1)
 
-    def compute_weight(self, module: Module, do_power_iteration: bool) -> torch.Tensor:
+    def compute_weight(
+            self,
+            module: Module,
+            do_power_iteration: bool) -> torch.Tensor:
         # NB: If `do_power_iteration` is set, the `u` and `v` vectors are
         #     updated in power iteration **in-place**. This is very important
         #     because in `DataParallel` forward, the vectors (being buffers) are
@@ -98,11 +101,22 @@ class SpectralNorm:
                 for _ in range(self.n_power_iterations):
                     # Spectral norm of weight equals to `u^T W v`, where `u` and `v`
                     # are the first left and right singular vectors.
-                    # This power iteration produces approximations of `u` and `v`.
+                    # This power iteration produces approximations of `u` and
+                    # `v`.
                     v = F.normalize(
-                        torch.mv(weight_mat.t(), u), dim=0, eps=self.eps, out=v
-                    )
-                    u = F.normalize(torch.mv(weight_mat, v), dim=0, eps=self.eps, out=u)
+                        torch.mv(
+                            weight_mat.t(),
+                            u),
+                        dim=0,
+                        eps=self.eps,
+                        out=v)
+                    u = F.normalize(
+                        torch.mv(
+                            weight_mat,
+                            v),
+                        dim=0,
+                        eps=self.eps,
+                        out=u)
                 if self.n_power_iterations > 0:
                     # See above on why we need to clone
                     u = u.clone(memory_format=torch.contiguous_format)
@@ -119,7 +133,9 @@ class SpectralNorm:
         delattr(module, self.name + "_u")
         delattr(module, self.name + "_v")
         delattr(module, self.name + "_orig")
-        module.register_parameter(self.name, torch.nn.Parameter(weight.detach()))
+        module.register_parameter(
+            self.name, torch.nn.Parameter(
+                weight.detach()))
 
     def __call__(self, module: Module, inputs: Any) -> None:
         setattr(
@@ -139,33 +155,37 @@ class SpectralNorm:
 
     @staticmethod
     def apply(
-        module: Module, name: str, n_power_iterations: int, dim: int, eps: float
-    ) -> "SpectralNorm":
+            module: Module,
+            name: str,
+            n_power_iterations: int,
+            dim: int,
+            eps: float) -> "SpectralNorm":
         for hook in module._forward_pre_hooks.values():
             if isinstance(hook, SpectralNorm) and hook.name == name:
                 raise RuntimeError(
-                    f"Cannot register two spectral_norm hooks on the same parameter {name}"
-                )
+                    f"Cannot register two spectral_norm hooks on the same parameter {name}")
 
         fn = SpectralNorm(name, n_power_iterations, dim, eps)
         weight = module._parameters[name]
         if weight is None:
             raise ValueError(
-                f"`SpectralNorm` cannot be applied as parameter `{name}` is None"
-            )
+                f"`SpectralNorm` cannot be applied as parameter `{name}` is None")
         if isinstance(weight, torch.nn.parameter.UninitializedParameter):
             raise ValueError(
                 "The module passed to `SpectralNorm` can't have uninitialized parameters. "
-                "Make sure to run the dummy forward before applying spectral normalization"
-            )
+                "Make sure to run the dummy forward before applying spectral normalization")
 
         with torch.no_grad():
             weight_mat = fn.reshape_weight_to_matrix(weight)
 
             h, w = weight_mat.size()
             # randomly initialize `u` and `v`
-            u = F.normalize(weight.new_empty(h).normal_(0, 1), dim=0, eps=fn.eps)
-            v = F.normalize(weight.new_empty(w).normal_(0, 1), dim=0, eps=fn.eps)
+            u = F.normalize(
+                weight.new_empty(h).normal_(
+                    0, 1), dim=0, eps=fn.eps)
+            v = F.normalize(
+                weight.new_empty(w).normal_(
+                    0, 1), dim=0, eps=fn.eps)
 
         delattr(module, fn.name)
         module.register_parameter(fn.name + "_orig", weight)
@@ -180,7 +200,8 @@ class SpectralNorm:
 
         module.register_forward_pre_hook(fn)
         module._register_state_dict_hook(SpectralNormStateDictHook(fn))
-        module._register_load_state_dict_pre_hook(SpectralNormLoadStateDictPreHook(fn))
+        module._register_load_state_dict_pre_hook(
+            SpectralNormLoadStateDictPreHook(fn))
         return fn
 
 
@@ -210,16 +231,18 @@ class SpectralNormLoadStateDictPreHook:
         error_msgs,
     ) -> None:
         fn = self.fn
-        version = local_metadata.get("spectral_norm", {}).get(
-            fn.name + ".version", None
-        )
+        version = local_metadata.get(
+            "spectral_norm", {}).get(
+            fn.name + ".version", None)
         if version is None or version < 1:
             weight_key = prefix + fn.name
             if (
-                version is None
-                and all(weight_key + s in state_dict for s in ("_orig", "_u", "_v"))
-                and weight_key not in state_dict
-            ):
+                version is None and all(
+                    weight_key +
+                    s in state_dict for s in (
+                        "_orig",
+                        "_u",
+                        "_v")) and weight_key not in state_dict):
                 # Detect if it is the updated state dict and just missing metadata.
                 # This could happen if the users are crafting a state dict themselves,
                 # so we just pretend that this is the newest.
@@ -255,7 +278,8 @@ class SpectralNormStateDictHook:
             local_metadata["spectral_norm"] = {}
         key = self.fn.name + ".version"
         if key in local_metadata["spectral_norm"]:
-            raise RuntimeError(f"Unexpected key in metadata['spectral_norm']: {key}")
+            raise RuntimeError(
+                f"Unexpected key in metadata['spectral_norm']: {key}")
         local_metadata["spectral_norm"][key] = self.fn._version
 
 
@@ -354,12 +378,16 @@ def remove_spectral_norm(module: T_module, name: str = "weight") -> T_module:
         raise ValueError(f"spectral_norm of '{name}' not found in {module}")
 
     for k, hook in module._state_dict_hooks.items():
-        if isinstance(hook, SpectralNormStateDictHook) and hook.fn.name == name:
+        if isinstance(
+                hook,
+                SpectralNormStateDictHook) and hook.fn.name == name:
             del module._state_dict_hooks[k]
             break
 
     for k, hook in module._load_state_dict_pre_hooks.items():
-        if isinstance(hook, SpectralNormLoadStateDictPreHook) and hook.fn.name == name:
+        if isinstance(
+                hook,
+                SpectralNormLoadStateDictPreHook) and hook.fn.name == name:
             del module._load_state_dict_pre_hooks[k]
             break
 

@@ -2,8 +2,9 @@
 from corerec.vish_graphs import (
     generate_random_graph,
     generate_large_random_graph,
-    scale_and_save_matrices
+    scale_and_save_matrices,
 )
+
 
 class GraphFiltering:
     """
@@ -34,6 +35,7 @@ class GraphFiltering:
             Updates the graph with new interactions or changes in the data, allowing for
             dynamic recommendations.
     """
+
     def __init__(self):
         self.graph = None
 
@@ -56,6 +58,7 @@ class GraphFiltering:
         Scale and save matrices to the specified directory.
         """
         scale_and_save_matrices(input_file, output_dir, num_matrices)
+
 
 # Example usage
 # graph_filter = GraphFiltering()

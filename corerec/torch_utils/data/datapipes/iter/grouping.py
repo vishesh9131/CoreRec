@@ -101,9 +101,11 @@ class BatcherIterDataPipe(IterDataPipe[DataChunk]):
             if self.drop_last:
                 return len(self.datapipe) // self.batch_size
             else:
-                return (len(self.datapipe) + self.batch_size - 1) // self.batch_size
+                return (len(self.datapipe) +
+                        self.batch_size - 1) // self.batch_size
         else:
-            raise TypeError(f"{type(self).__name__} instance doesn't have valid length")
+            raise TypeError(
+                f"{type(self).__name__} instance doesn't have valid length")
 
 
 @functional_datapipe("unbatch")
@@ -155,8 +157,8 @@ class UnBatcherIterDataPipe(IterDataPipe):
                     yield from self._dive(item, unbatch_level=unbatch_level - 1)
             else:
                 raise IndexError(
-                    f"unbatch_level {self.unbatch_level} exceeds the depth of the DataPipe"
-                )
+                    f"unbatch_level {
+                        self.unbatch_level} exceeds the depth of the DataPipe")
 
 
 @functional_datapipe("groupby")
@@ -250,13 +252,10 @@ class GrouperIterDataPipe(IterDataPipe[DataChunk]):
             and not self.drop_remaining
         ):
             raise RuntimeError(
-                "Failed to group items", str(self.buffer_elements[biggest_key])
-            )
+                "Failed to group items", str(
+                    self.buffer_elements[biggest_key]))
 
-        if (
-            self.guaranteed_group_size is None
-            or biggest_size >= self.guaranteed_group_size
-        ):
+        if self.guaranteed_group_size is None or biggest_size >= self.guaranteed_group_size:
             result_to_yield = self.buffer_elements[biggest_key]
 
         self.curr_buffer_size -= biggest_size
@@ -272,9 +271,9 @@ class GrouperIterDataPipe(IterDataPipe[DataChunk]):
             self.curr_buffer_size += 1
 
             if self.group_size is not None and self.group_size == len(
-                self.buffer_elements[key]
-            ):
-                result: DataChunk[Any] = self.wrapper_class(self.buffer_elements[key])
+                    self.buffer_elements[key]):
+                result: DataChunk[Any] = self.wrapper_class(
+                    self.buffer_elements[key])
                 yield (key, result) if self.keep_key else result
                 self.curr_buffer_size -= len(self.buffer_elements[key])
                 del self.buffer_elements[key]

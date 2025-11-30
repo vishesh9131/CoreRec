@@ -20,7 +20,11 @@ from torch.nn.attention._utils import (
 )
 
 
-__all__ = ["causal_upper_left", "causal_lower_right", "CausalVariant", "CausalBias"]
+__all__ = [
+    "causal_upper_left",
+    "causal_lower_right",
+    "CausalVariant",
+    "CausalBias"]
 
 
 torch._dynamo.allow_in_graph(can_use_flash_attention)
@@ -108,7 +112,11 @@ class CausalBias(torch.Tensor):
     .. warning:: This class is a prototype and subject to change.
     """
 
-    def __init__(self, variant: CausalVariant, seq_len_q: int, seq_len_kv: int):
+    def __init__(
+            self,
+            variant: CausalVariant,
+            seq_len_q: int,
+            seq_len_kv: int):
         """
         Initializes the CausalBias instance with a specified variant and sequence lengths.
 
@@ -131,20 +139,26 @@ class CausalBias(torch.Tensor):
     def _upper_left(self, device: torch.device) -> torch.Tensor:
         """Upper left causal bias"""
         return torch.tril(
-            torch.ones(self.seq_len_q, self.seq_len_kv, device=device, dtype=torch.bool)
-        )
+            torch.ones(
+                self.seq_len_q,
+                self.seq_len_kv,
+                device=device,
+                dtype=torch.bool))
 
     def _lower_right(self, device: torch.device) -> torch.Tensor:
         """Lower right causal bias"""
         diagonal_offset = self.seq_len_kv - self.seq_len_q
         return torch.tril(
             torch.ones(
-                self.seq_len_q, self.seq_len_kv, device=device, dtype=torch.bool
-            ),
+                self.seq_len_q,
+                self.seq_len_kv,
+                device=device,
+                dtype=torch.bool),
             diagonal=diagonal_offset,
         )
 
-    def _materialize(self, device: Optional[torch.device] = None) -> torch.Tensor:
+    def _materialize(self,
+                     device: Optional[torch.device] = None) -> torch.Tensor:
         """
         Materializes the causal bias into a tensor form.
 
@@ -214,22 +228,35 @@ class CausalBias(torch.Tensor):
                 scale=scale,
             )
         elif attn_mask.variant == CausalVariant.LOWER_RIGHT:
-            _validate_sdpa_input(query, key, value, None, dropout_p, is_causal, scale)
-            sdpa_params = SDPAParams(query, key, value, None, dropout_p, is_causal)
+            _validate_sdpa_input(
+                query,
+                key,
+                value,
+                None,
+                dropout_p,
+                is_causal,
+                scale)
+            sdpa_params = SDPAParams(
+                query, key, value, None, dropout_p, is_causal)
             if can_use_flash_attention(sdpa_params):
                 needs_padding = query.size(-1) % 8 != 0
                 og_head_size = query.size(-1)
                 og_scale = _calculate_scale(og_head_size, scale)
                 if needs_padding:
-                    query = torch.nn.functional.pad(query, (0, 8 - query.size(-1) % 8))
-                    key = torch.nn.functional.pad(key, (0, 8 - key.size(-1) % 8))
-                    value = torch.nn.functional.pad(value, (0, 8 - value.size(-1) % 8))
+                    query = torch.nn.functional.pad(
+                        query, (0, 8 - query.size(-1) % 8))
+                    key = torch.nn.functional.pad(
+                        key, (0, 8 - key.size(-1) % 8))
+                    value = torch.nn.functional.pad(
+                        value, (0, 8 - value.size(-1) % 8))
                 out = torch.ops.aten._scaled_dot_product_flash_attention(
                     query,
                     key,
                     value,
                     dropout_p,
-                    is_causal=True,  # TODO: Flash accepts causal = True and for this particular op it means lower right
+                    is_causal=True,
+                    # TODO: Flash accepts causal = True and for this particular
+                    # op it means lower right
                     return_debug_mask=False,
                     scale=og_scale,
                 )[0]
@@ -255,7 +282,8 @@ class CausalBias(torch.Tensor):
                 )[0].transpose(1, 2)
             else:
                 _raise_kernel_warnings(sdpa_params)
-                # We cant use efficient attention the only support for lower right is via materialization
+                # We cant use efficient attention the only support for lower
+                # right is via materialization
                 return F.scaled_dot_product_attention(
                     query,
                     key,
@@ -267,8 +295,8 @@ class CausalBias(torch.Tensor):
                 )
         else:
             raise ValueError(
-                f"CausalBias.variant must be a CausalVariant type, but found: {attn_mask.variant}"
-            )
+                f"CausalBias.variant must be a CausalVariant type, but found: {
+                    attn_mask.variant}")
 
     @classmethod
     def __torch_function__(cls, func, types, args=(), kwargs=None):
@@ -277,8 +305,7 @@ class CausalBias(torch.Tensor):
             kwargs = {}
         if func != torch.nn.functional.scaled_dot_product_attention:
             raise NotImplementedError(
-                "CausalBias only supports scaled_dot_product_attention"
-            )
+                "CausalBias only supports scaled_dot_product_attention")
         return cls._dispatch(*args, **kwargs)
 
     def __repr__(self):

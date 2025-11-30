@@ -18,7 +18,14 @@ Usage:
     print(explainable_predict(model, graph, node_index))
 """
 
-from corerec.common_import import *
+import numpy as np
+import pandas as pd
+import torch
+import sklearn
+import networkx as nx
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+
 
 def predict(model, graph, node_index, top_k=5, threshold=0.5):
     model.eval()
@@ -26,10 +33,16 @@ def predict(model, graph, node_index, top_k=5, threshold=0.5):
         input_data = torch.tensor(graph[node_index]).unsqueeze(0)
         output = model(input_data)
         scores = output.squeeze().numpy()
-    
-    recommended_indices = [i for i, score in enumerate(scores) if score > threshold]
-    recommended_indices = sorted(recommended_indices, key=lambda i: scores[i], reverse=True)[:top_k]
+
+    recommended_indices = [
+        i for i, score in enumerate(scores) if score > threshold]
+    recommended_indices = sorted(
+        recommended_indices,
+        key=lambda i: scores[i],
+        reverse=True)[
+        :top_k]
     return recommended_indices
+
 
 def explainable_predict(model, graph, node_index, top_k=5, threshold=0.5):
     model.eval()
@@ -38,8 +51,13 @@ def explainable_predict(model, graph, node_index, top_k=5, threshold=0.5):
         output = model(input_data)
         scores = output.squeeze().numpy()
 
-    recommended_indices = [i for i, score in enumerate(scores) if score > threshold]
-    recommended_indices = sorted(recommended_indices, key=lambda i: scores[i], reverse=True)[:top_k]
+    recommended_indices = [
+        i for i, score in enumerate(scores) if score > threshold]
+    recommended_indices = sorted(
+        recommended_indices,
+        key=lambda i: scores[i],
+        reverse=True)[
+        :top_k]
 
     explanations = []
     G = nx.from_numpy_array(graph)
@@ -47,8 +65,16 @@ def explainable_predict(model, graph, node_index, top_k=5, threshold=0.5):
 
     for idx in recommended_indices:
         node_neighbors = set(G.neighbors(idx))
-        jaccard = len(user_neighbors & node_neighbors) / len(user_neighbors | node_neighbors) if len(user_neighbors | node_neighbors) > 0 else 0
-        adamic_adar = sum(1 / np.log(len(list(G.neighbors(nn)))) for nn in user_neighbors & node_neighbors if len(list(G.neighbors(nn))) > 1)
+        jaccard = (
+            len(user_neighbors & node_neighbors) / len(user_neighbors | node_neighbors)
+            if len(user_neighbors | node_neighbors) > 0
+            else 0
+        )
+        adamic_adar = sum(
+            1 / np.log(len(list(G.neighbors(nn))))
+            for nn in user_neighbors & node_neighbors
+            if len(list(G.neighbors(nn))) > 1
+        )
 
         explanation_text = f"The recommendation is based on the similarity of node {idx} to your interests and its connections to relevant nodes."
 
@@ -57,7 +83,7 @@ def explainable_predict(model, graph, node_index, top_k=5, threshold=0.5):
             "score": scores[idx],
             "jaccard_similarity": jaccard,
             "adamic_adar_index": adamic_adar,
-            "explanation": explanation_text
+            "explanation": explanation_text,
         }
         explanations.append(explanation)
 

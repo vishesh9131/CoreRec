@@ -17,7 +17,9 @@ def load_module(rel_path: str):
 class TestContextAware(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load_module("corerec/engines/contentFilterEngine/context_personalization/context_aware.py")
+        cls.mod = load_module(
+            "corerec/engines/contentFilterEngine/context_personalization/context_aware.py"
+        )
         cls.ContextAwareRecommender = cls.mod.ContextAwareRecommender
 
     def test_init_and_weights(self):
@@ -27,7 +29,7 @@ class TestContextAware(unittest.TestCase):
             "time": {
                 "morning": {"genre_action": 1.5, "duration": 0.8},
                 "evening": {"genre_action": 0.7, "duration": 1.2},
-            }
+            },
         }
         tmp = Path(__file__).resolve().parent / "tmp_ctx_config.json"
         tmp.write_text(json.dumps(config))
@@ -55,7 +57,9 @@ class TestContextAware(unittest.TestCase):
             # Fit on interactions and recommend
             data = {1: [10, 11]}
             rec.fit(data)
-            out = rec.recommend(user_id=1, context={"time": "evening"}, top_n=2)
+            out = rec.recommend(
+                user_id=1, context={
+                    "time": "evening"}, top_n=2)
             self.assertTrue(all(isinstance(x, int) for x in out))
         finally:
             try:
@@ -65,4 +69,4 @@ class TestContextAware(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

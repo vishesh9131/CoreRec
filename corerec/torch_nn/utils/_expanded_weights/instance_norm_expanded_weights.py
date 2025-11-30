@@ -20,8 +20,7 @@ class InstanceNormPerSampleGrad(torch.autograd.Function):
     def forward(ctx, kwarg_names, _, *expanded_args_and_kwargs):
         instance_norm = partial(torch.instance_norm, cudnn_enabled=True)
         expanded_args, expanded_kwargs = standard_kwargs(
-            kwarg_names, expanded_args_and_kwargs
-        )
+            kwarg_names, expanded_args_and_kwargs)
         output = forward_helper(instance_norm, expanded_args, expanded_kwargs)
         ctx.input = expanded_args[0]
         ctx.running_mean, ctx.running_var = (
@@ -51,13 +50,14 @@ class InstanceNormPerSampleGrad(torch.autograd.Function):
             weight_ = unpack_expanded_weight_or_tensor(
                 weight, lambda orig_weight: orig_weight.repeat(b)
             )
-            running_mean_ = running_mean.repeat(b) if running_mean is not None else None
-            running_var_ = running_var.repeat(b) if running_var is not None else None
+            running_mean_ = running_mean.repeat(
+                b) if running_mean is not None else None
+            running_var_ = running_var.repeat(
+                b) if running_var is not None else None
             input_reshaped = input.contiguous().view(new_shape)
             grad_output_reshaped = grad_output.contiguous().view(new_shape)
-            mean = torch.mean(
-                input_reshaped, (0,) + tuple(range(2, input.dim())), False
-            )
+            mean = torch.mean(input_reshaped, (0,) +
+                              tuple(range(2, input.dim())), False)
             var = torch.var(
                 input_reshaped,
                 (0,) + tuple(range(2, input.dim())),
@@ -84,17 +84,21 @@ class InstanceNormPerSampleGrad(torch.autograd.Function):
         else:
             results.append(None)
 
-        # weight and bias don't compute batched gradients; no other arguments are differentiable (2 are not saved from the forward)
+        # weight and bias don't compute batched gradients; no other arguments
+        # are differentiable (2 are not saved from the forward)
         results = results + [None] * 7
 
         # set grad_sample field for weight and bias with per sample gradients
         set_grad_sample_if_exists(
             weight,
             lambda _: torch.einsum(
-                "ni...->ni", F.instance_norm(input, eps=eps) * grad_output
-            ),
+                "ni...->ni",
+                F.instance_norm(
+                    input,
+                    eps=eps) *
+                grad_output),
         )
         set_grad_sample_if_exists(
-            bias, lambda _: torch.einsum("ni...->ni", grad_output)
-        )
+            bias, lambda _: torch.einsum(
+                "ni...->ni", grad_output))
         return tuple(results)

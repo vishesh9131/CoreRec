@@ -32,9 +32,8 @@ def _keep_float(f):
     @functools.wraps(f)
     def inner(*args):
         r = f(*args)
-        if any(isinstance(a, sympy.Float) for a in args) and not isinstance(
-            r, sympy.Float
-        ):
+        if any(isinstance(a, sympy.Float)
+               for a in args) and not isinstance(r, sympy.Float):
             r = sympy.Float(float(r))
         return r
 
@@ -138,7 +137,11 @@ class FloorDiv(sympy.Function):
                 return sympy.nan
             else:
                 return sympy.Integer(math.floor(r))
-        if isinstance(base, sympy.Integer) and isinstance(divisor, sympy.Integer):
+        if isinstance(
+                base,
+                sympy.Integer) and isinstance(
+                divisor,
+                sympy.Integer):
             return sympy.Integer(int(base) // int(divisor))
         if isinstance(base, FloorDiv):
             return FloorDiv(base.args[0], base.args[1] * divisor)
@@ -157,8 +160,10 @@ class FloorDiv(sympy.Function):
             gcd = sympy.gcd(base, divisor)
             if gcd != 1:
                 return FloorDiv(
-                    sympy.simplify(base / gcd), sympy.simplify(divisor / gcd)
-                )
+                    sympy.simplify(
+                        base / gcd),
+                    sympy.simplify(
+                        divisor / gcd))
         except sympy.PolynomialError:
             pass  # https://github.com/pytorch/pytorch/issues/108276
 
@@ -218,15 +223,18 @@ class ModularIndexing(sympy.Function):
                 return ModularIndexing(sum(new_terms), divisor, modulus)
 
         if isinstance(base, FloorDiv):
-            return ModularIndexing(base.args[0], base.args[1] * divisor, modulus)
+            return ModularIndexing(
+                base.args[0], base.args[1] * divisor, modulus)
 
     def _eval_is_nonnegative(self):
         p, q = self.args[:2]
-        return fuzzy_eq(p.is_nonnegative, q.is_nonnegative)  # type: ignore[attr-defined]
+        # type: ignore[attr-defined]
+        return fuzzy_eq(p.is_nonnegative, q.is_nonnegative)
 
     def _eval_is_positive(self):
         p, q = self.args[:2]
-        return fuzzy_eq(p.is_positive, q.is_positive)  # type: ignore[attr-defined]
+        # type: ignore[attr-defined]
+        return fuzzy_eq(p.is_positive, q.is_positive)
 
 
 class Where(sympy.Function):
@@ -237,17 +245,20 @@ class Where(sympy.Function):
     nargs = (3,)
 
     def _eval_is_integer(self):
-        return True if self.args[1].is_integer and self.args[2].is_integer else None  # type: ignore[attr-defined]
+        # type: ignore[attr-defined]
+        return True if self.args[1].is_integer and self.args[2].is_integer else None
 
     def _eval_is_nonnegative(self):
         return (
             True
-            if self.args[1].is_nonnegative and self.args[2].is_nonnegative  # type: ignore[attr-defined]
+            # type: ignore[attr-defined]
+            if self.args[1].is_nonnegative and self.args[2].is_nonnegative
             else None
         )
 
     def _eval_is_positive(self):
-        return True if self.args[1].is_positive and self.args[2].is_positive else None  # type: ignore[attr-defined]
+        # type: ignore[attr-defined]
+        return True if self.args[1].is_positive and self.args[2].is_positive else None
 
     @classmethod
     def eval(cls, c, p, q):
@@ -308,10 +319,12 @@ class PythonMod(sympy.Function):
 
     # NB: args[1] for PythonMod
     def _eval_is_nonnegative(self):
-        return True if self.args[1].is_positive else None  # type: ignore[attr-defined]
+        # type: ignore[attr-defined]
+        return True if self.args[1].is_positive else None
 
     def _eval_is_nonpositive(self):
-        return True if self.args[1].is_negative else None  # type: ignore[attr-defined]
+        # type: ignore[attr-defined]
+        return True if self.args[1].is_negative else None
 
 
 # Generic modulus: only defined on non-negative arguments
@@ -532,7 +545,11 @@ class FloatTrueDiv(sympy.Function):
         if divisor.is_zero:
             raise ZeroDivisionError("division by zero")
 
-        if isinstance(base, sympy.Number) and isinstance(divisor, sympy.Number):
+        if isinstance(
+                base,
+                sympy.Number) and isinstance(
+                divisor,
+                sympy.Number):
             return sympy.Float(float(base) / float(divisor))
 
 
@@ -563,7 +580,11 @@ class IntTrueDiv(sympy.Function):
             # Don't have to worry about precision here, you're getting zero or
             # inf from the division
             return sympy.Float(float(base) / float(divisor))
-        if isinstance(base, sympy.Integer) and isinstance(divisor, sympy.Integer):
+        if isinstance(
+                base,
+                sympy.Integer) and isinstance(
+                divisor,
+                sympy.Integer):
             return sympy.Float(int(base) / int(divisor))
 
 
@@ -583,7 +604,8 @@ class IsNonOverlappingAndDenseIndicator(sympy.Function):
         sizes = args[0:dim]
         strides = args[dim:]
 
-        # sym_node imported in torch.__init__. Local import to avoid an import cycle
+        # sym_node imported in torch.__init__. Local import to avoid an import
+        # cycle
         from torch.fx.experimental.symbolic_shapes import (
             eval_is_non_overlapping_and_dense,
         )
@@ -614,8 +636,7 @@ class IsNonOverlappingAndDenseIndicator(sympy.Function):
             # When all strides are integral, we can sort, and the size for the
             # largest stride doesn't matter and can be arbitrarily symbolic
             s_sizes, s_strides = zip(
-                *sorted(zip(sizes, strides), key=operator.itemgetter(1))
-            )
+                *sorted(zip(sizes, strides), key=operator.itemgetter(1)))
             # Put something arbitrary in the max size spot, it'll be ignored
             if all(isinstance(a, sympy.Integer) for a in s_sizes[:-1]):
                 s_sizes = s_sizes[:-1] + (42,)
@@ -694,7 +715,11 @@ class RoundDecimal(sympy.Function):
     def eval(cls, number, ndigits):
         # assert number.is_integer is not True, number
 
-        if isinstance(number, sympy.Number) and isinstance(ndigits, sympy.Integer):
+        if isinstance(
+                number,
+                sympy.Number) and isinstance(
+                ndigits,
+                sympy.Integer):
             return sympy.Float(round(float(number), int(ndigits)))
 
 

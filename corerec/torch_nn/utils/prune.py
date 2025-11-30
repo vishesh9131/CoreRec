@@ -107,7 +107,9 @@ class BasePruningMethod(ABC):
             for k, hook in module._forward_pre_hooks.items():
                 # if it exists, take existing thing, remove hook, then
                 # go through normal thing
-                if isinstance(hook, BasePruningMethod) and hook._tensor_name == name:
+                if isinstance(
+                        hook,
+                        BasePruningMethod) and hook._tensor_name == name:
                     old_method = hook
                     hooks_to_remove.append(k)
                     found += 1
@@ -184,7 +186,8 @@ class BasePruningMethod(ABC):
         # computation etc., you'd want to roll back.
         try:
             # get the final mask, computed according to the specific method
-            mask = method.compute_mask(importance_scores, default_mask=default_mask)
+            mask = method.compute_mask(
+                importance_scores, default_mask=default_mask)
             # reparameterize by saving mask to `module[name + '_mask']`...
             module.register_buffer(name + "_mask", mask)
             # ... and the new pruned tensor to `module[name]`
@@ -229,8 +232,10 @@ class BasePruningMethod(ABC):
             ), "importance_scores should have the same shape as tensor t"
         else:
             importance_scores = t
-        default_mask = default_mask if default_mask is not None else torch.ones_like(t)
-        return t * self.compute_mask(importance_scores, default_mask=default_mask)
+        default_mask = default_mask if default_mask is not None else torch.ones_like(
+            t)
+        return t * self.compute_mask(importance_scores,
+                                     default_mask=default_mask)
 
     def remove(self, module):
         r"""Remove the pruning reparameterization from a module.
@@ -291,13 +296,14 @@ class PruningContainer(BasePruningMethod):
         """
         # check that we're adding a pruning method to the container
         if not isinstance(method, BasePruningMethod) and method is not None:
-            raise TypeError(f"{type(method)} is not a BasePruningMethod subclass")
+            raise TypeError(
+                f"{type(method)} is not a BasePruningMethod subclass")
         elif method is not None and self._tensor_name != method._tensor_name:
             raise ValueError(
-                "Can only add pruning methods acting on "
-                f"the parameter named '{self._tensor_name}' to PruningContainer {self}."
-                + f" Found '{method._tensor_name}'"
-            )
+                "Can only add pruning methods acting on " f"the parameter named '{
+                    self._tensor_name}' to PruningContainer {self}." +
+                f" Found '{
+                    method._tensor_name}'")
         # if all checks passed, add to _pruning_methods tuple
         self._pruning_methods += (method,)  # type: ignore[operator]
 
@@ -356,7 +362,8 @@ class PruningContainer(BasePruningMethod):
             new_mask = mask  # start off from existing mask
             new_mask = new_mask.to(dtype=t.dtype)
 
-            # compute a slice of t onto which the new pruning method will operate
+            # compute a slice of t onto which the new pruning method will
+            # operate
             if method.PRUNING_TYPE == "unstructured":
                 # prune entries of t where the mask is 1
                 slc = mask == 1
@@ -367,8 +374,7 @@ class PruningContainer(BasePruningMethod):
                 if not hasattr(method, "dim"):
                     raise AttributeError(
                         "Pruning methods of PRUNING_TYPE "
-                        '"structured" need to have the attribute `dim` defined.'
-                    )
+                        '"structured" need to have the attribute `dim` defined.')
 
                 # find the channels to keep by removing the ones that have been
                 # zeroed out already (i.e. where sum(entries) == 0)
@@ -380,10 +386,11 @@ class PruningContainer(BasePruningMethod):
                 # if dim is still negative after subtracting it from n_dims
                 if dim < 0:
                     raise IndexError(
-                        f"Index is out of bounds for tensor with dimensions {n_dims}"
-                    )
-                # find channels along dim = dim that aren't already tots 0ed out
-                keep_channel = mask.sum(dim=[d for d in range(n_dims) if d != dim]) != 0
+                        f"Index is out of bounds for tensor with dimensions {n_dims}")
+                # find channels along dim = dim that aren't already tots 0ed
+                # out
+                keep_channel = mask.sum(
+                    dim=[d for d in range(n_dims) if d != dim]) != 0
                 # create slice to identify what to prune
                 slc = [slice(None)] * n_dims
                 slc[dim] = keep_channel
@@ -393,7 +400,9 @@ class PruningContainer(BasePruningMethod):
                 slc = [slice(None)] * n_dims
 
             else:
-                raise ValueError(f"Unrecognized PRUNING_TYPE {method.PRUNING_TYPE}")
+                raise ValueError(
+                    f"Unrecognized PRUNING_TYPE {
+                        method.PRUNING_TYPE}")
 
             # compute the new mask on the unpruned slice of the tensor t
             partial_mask = method.compute_mask(t[slc], default_mask=mask[slc])
@@ -523,7 +532,8 @@ class L1Unstructured(BasePruningMethod):
         if nparams_toprune != 0:  # k=0 not supported by torch.kthvalue
             # largest=True --> top k; largest=False --> bottom k
             # Prune the smallest k
-            topk = torch.topk(torch.abs(t).view(-1), k=nparams_toprune, largest=False)
+            topk = torch.topk(torch.abs(t).view(-1),
+                              k=nparams_toprune, largest=False)
             # topk will have .indices and .values
             mask.view(-1)[topk.indices] = 0
 
@@ -551,9 +561,8 @@ class L1Unstructured(BasePruningMethod):
                 elements in the parameter being pruned.
                 If unspecified or None, the module parameter will be used in its place.
         """
-        return super().apply(
-            module, name, amount=amount, importance_scores=importance_scores
-        )
+        return super().apply(module, name, amount=amount,
+                             importance_scores=importance_scores)
 
 
 class RandomStructured(BasePruningMethod):
@@ -928,8 +937,10 @@ def l1_unstructured(module, name, amount, importance_scores=None):
         odict_keys(['bias', 'weight_orig', 'weight_mask'])
     """
     L1Unstructured.apply(
-        module, name, amount=amount, importance_scores=importance_scores
-    )
+        module,
+        name,
+        amount=amount,
+        importance_scores=importance_scores)
     return module
 
 
@@ -1015,13 +1026,16 @@ def ln_structured(module, name, amount, n, dim, importance_scores=None):
         ...     nn.Conv2d(5, 3, 2), 'weight', amount=0.3, dim=1, n=float('-inf')
         ... )
     """
-    LnStructured.apply(
-        module, name, amount, n, dim, importance_scores=importance_scores
-    )
+    LnStructured.apply(module, name, amount, n, dim,
+                       importance_scores=importance_scores)
     return module
 
 
-def global_unstructured(parameters, pruning_method, importance_scores=None, **kwargs):
+def global_unstructured(
+        parameters,
+        pruning_method,
+        importance_scores=None,
+        **kwargs):
     r"""
     Globally prunes tensors corresponding to all parameters in ``parameters`` by applying the specified ``pruning_method``.
 
@@ -1088,7 +1102,8 @@ def global_unstructured(parameters, pruning_method, importance_scores=None, **kw
 
     importance_scores = importance_scores if importance_scores is not None else {}
     if not isinstance(importance_scores, dict):
-        raise TypeError("global_unstructured(): importance_scores must be of type dict")
+        raise TypeError(
+            "global_unstructured(): importance_scores must be of type dict")
 
     # flatten importance scores to consider them all at once in global pruning
     relevant_importance_scores = torch.nn.utils.parameters_to_vector(
@@ -1122,7 +1137,8 @@ def global_unstructured(parameters, pruning_method, importance_scores=None, **kw
 
     # use the `compute_mask` method from `PruningContainer` to combine the
     # mask computed by the new method with the pre-existing mask
-    final_mask = container.compute_mask(relevant_importance_scores, default_mask)
+    final_mask = container.compute_mask(
+        relevant_importance_scores, default_mask)
 
     # Pointer for slicing the mask to match the shape of each parameter
     pointer = 0
@@ -1131,7 +1147,7 @@ def global_unstructured(parameters, pruning_method, importance_scores=None, **kw
         # The length of the parameter
         num_param = param.numel()
         # Slice the mask, reshape it
-        param_mask = final_mask[pointer : pointer + num_param].view_as(param)
+        param_mask = final_mask[pointer: pointer + num_param].view_as(param)
         # Assign the correct pre-computed mask to each parameter and add it
         # to the forward_pre_hooks like any other pruning method
         custom_from_mask(module, name, mask=param_mask)
@@ -1251,15 +1267,15 @@ def _validate_pruning_amount_init(amount):
         tensor to be pruned, which is known only at prune.
     """
     if not isinstance(amount, numbers.Real):
-        raise TypeError(f"Invalid type for amount: {amount}. Must be int or float.")
+        raise TypeError(
+            f"Invalid type for amount: {amount}. Must be int or float.")
 
     if (isinstance(amount, numbers.Integral) and amount < 0) or (
         not isinstance(amount, numbers.Integral)  # so it's a float
         and (float(amount) > 1.0 or float(amount) < 0.0)
     ):
         raise ValueError(
-            f"amount={amount} should either be a float in the range [0, 1] or a non-negative integer"
-        )
+            f"amount={amount} should either be a float in the range [0, 1] or a non-negative integer")
 
 
 def _validate_pruning_amount(amount, tensor_size):
@@ -1282,8 +1298,7 @@ def _validate_pruning_amount(amount, tensor_size):
 
     if isinstance(amount, numbers.Integral) and amount > tensor_size:
         raise ValueError(
-            f"amount={amount} should be smaller than the number of parameters to prune={tensor_size}"
-        )
+            f"amount={amount} should be smaller than the number of parameters to prune={tensor_size}")
 
 
 def _validate_structured_pruning(t):

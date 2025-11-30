@@ -81,10 +81,12 @@ class MapperIterDataPipe(IterDataPipe[_T_co]):
 
         self.input_col = input_col
         if input_col is None and output_col is not None:
-            raise ValueError("`output_col` must be None when `input_col` is None.")
+            raise ValueError(
+                "`output_col` must be None when `input_col` is None.")
         if isinstance(output_col, (list, tuple)):
             if len(output_col) > 1:
-                raise ValueError("`output_col` must be a single-element list or tuple")
+                raise ValueError(
+                    "`output_col` must be a single-element list or tuple")
             output_col = output_col[0]
         self.output_col = output_col
         validate_input_col(fn, input_col)
@@ -101,7 +103,8 @@ class MapperIterDataPipe(IterDataPipe[_T_co]):
         else:
             res = self.fn(data[self.input_col])
 
-        # Copy tuple to list and run in-place modification because tuple is immutable.
+        # Copy tuple to list and run in-place modification because tuple is
+        # immutable.
         if isinstance(data, tuple):
             t_flag = True
             data = list(data)
@@ -131,7 +134,8 @@ class MapperIterDataPipe(IterDataPipe[_T_co]):
     def __len__(self) -> int:
         if isinstance(self.datapipe, Sized):
             return len(self.datapipe)
-        raise TypeError(f"{type(self).__name__} instance doesn't have valid length")
+        raise TypeError(
+            f"{type(self).__name__} instance doesn't have valid length")
 
 
 def _collate_helper(conversion, item):
@@ -152,8 +156,7 @@ def _collate_helper(conversion, item):
         if name in conversion:
             if not callable(conversion[name]):
                 raise RuntimeError(
-                    "Collate (DF)DataPipe requires callable as dict values"
-                )
+                    "Collate (DF)DataPipe requires callable as dict values")
             collation_fn = conversion[name]
         else:
             # TODO(VitalyFedyunin): Add default collation into df_wrapper
@@ -171,7 +174,8 @@ def _collate_helper(conversion, item):
         tuple_values.append(value)
 
     # TODO(VitalyFedyunin): We can dynamically extract types from the tuple_values here
-    # TODO(VitalyFedyunin): Instead of ignoring mypy error, make sure tuple_names is not empty
+    # TODO(VitalyFedyunin): Instead of ignoring mypy error, make sure
+    # tuple_names is not empty
     tpl_cls = namedtuple("CollateResult", tuple_names)  # type: ignore[misc]
     tuple = tpl_cls(*tuple_values)
     return tuple
@@ -220,16 +224,20 @@ class CollatorIterDataPipe(MapperIterDataPipe):
         [tensor(3.), tensor(4.), tensor(5.), tensor(6.)]
     """
 
-    def __init__(
-        self,
-        datapipe: IterDataPipe,
-        conversion: Union[
-            Callable[..., Any], Dict[Union[str, Any], Union[Callable, Any]], None
-        ] = default_collate,
-        collate_fn: Optional[Callable] = None,
-    ) -> None:
+    def __init__(self,
+                 datapipe: IterDataPipe,
+                 conversion: Union[Callable[...,
+                                            Any],
+                                   Dict[Union[str,
+                                              Any],
+                                        Union[Callable,
+                                              Any]],
+                                   None] = default_collate,
+                 collate_fn: Optional[Callable] = None,
+                 ) -> None:
         # TODO(VitalyFedyunin): Replace `Callable[..., Any]` with `Callable[[IColumn], Any]`
-        # TODO(VitalyFedyunin): Replace with `Dict[Union[str, IColumn], Union[Callable, Enum]]`
+        # TODO(VitalyFedyunin): Replace with `Dict[Union[str, IColumn],
+        # Union[Callable, Enum]]`
         if collate_fn is not None:
             super().__init__(datapipe, fn=collate_fn)
         else:

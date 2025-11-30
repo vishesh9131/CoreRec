@@ -248,9 +248,7 @@ class Embedding(Module):
             >>> embedding(input)
             tensor([[ 4.0000,  5.1000,  6.3000]])
         """
-        assert (
-            embeddings.dim() == 2
-        ), "Embeddings parameter is expected to be 2-dimensional"
+        assert embeddings.dim() == 2, "Embeddings parameter is expected to be 2-dimensional"
         rows, cols = embeddings.shape
         embedding = cls(
             num_embeddings=rows,
@@ -401,9 +399,7 @@ class EmbeddingBag(Module):
                 padding_idx = self.num_embeddings + padding_idx
         self.padding_idx = padding_idx
         if _weight is None:
-            self.weight = Parameter(
-                torch.empty((num_embeddings, embedding_dim), **factory_kwargs)
-            )
+            self.weight = Parameter(torch.empty((num_embeddings, embedding_dim), **factory_kwargs))
             self.reset_parameters()
         else:
             assert list(_weight.shape) == [
@@ -526,9 +522,7 @@ class EmbeddingBag(Module):
             >>> embeddingbag(input)
             tensor([[ 2.5000,  3.7000,  4.6500]])
         """
-        assert (
-            embeddings.dim() == 2
-        ), "Embeddings parameter is expected to be 2-dimensional"
+        assert embeddings.dim() == 2, "Embeddings parameter is expected to be 2-dimensional"
         rows, cols = embeddings.shape
         embeddingbag = cls(
             num_embeddings=rows,

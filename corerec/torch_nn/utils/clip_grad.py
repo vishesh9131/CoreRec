@@ -77,23 +77,25 @@ def clip_grad_norm_(
     )  # type: ignore[assignment]
 
     norms: List[Tensor] = []
-    for (device, _), ([device_grads], _) in grouped_grads.items():  # type: ignore[assignment]
+    for (device, _), ([device_grads],
+                      _) in grouped_grads.items():  # type: ignore[assignment]
         if (foreach is None and _has_foreach_support(device_grads, device)) or (
-            foreach and _device_has_foreach_support(device)
-        ):
+                foreach and _device_has_foreach_support(device)):
             norms.extend(torch._foreach_norm(device_grads, norm_type))
         elif foreach:
             raise RuntimeError(
-                f"foreach=True was passed, but can't use the foreach API on {device.type} tensors"
-            )
+                f"foreach=True was passed, but can't use the foreach API on {
+                    device.type} tensors")
         else:
-            norms.extend([torch.linalg.vector_norm(g, norm_type) for g in device_grads])
+            norms.extend([torch.linalg.vector_norm(g, norm_type)
+                         for g in device_grads])
 
     total_norm = torch.linalg.vector_norm(
         torch.stack([norm.to(first_device) for norm in norms]), norm_type
     )
 
-    if error_if_nonfinite and torch.logical_or(total_norm.isnan(), total_norm.isinf()):
+    if error_if_nonfinite and torch.logical_or(
+            total_norm.isnan(), total_norm.isinf()):
         raise RuntimeError(
             f"The total norm of order {norm_type} for gradients from "
             "`parameters` is non-finite, so it cannot be clipped. To disable "
@@ -105,15 +107,15 @@ def clip_grad_norm_(
     # avoids a `if clip_coef < 1:` conditional which can require a CPU <=> device synchronization
     # when the gradients do not reside in CPU memory.
     clip_coef_clamped = torch.clamp(clip_coef, max=1.0)
-    for (device, _), ([device_grads], _) in grouped_grads.items():  # type: ignore[assignment]
+    for (device, _), ([device_grads],
+                      _) in grouped_grads.items():  # type: ignore[assignment]
         if (foreach is None and _has_foreach_support(device_grads, device)) or (
-            foreach and _device_has_foreach_support(device)
-        ):
+                foreach and _device_has_foreach_support(device)):
             torch._foreach_mul_(device_grads, clip_coef_clamped.to(device))
         elif foreach:
             raise RuntimeError(
-                f"foreach=True was passed, but can't use the foreach API on {device.type} tensors"
-            )
+                f"foreach=True was passed, but can't use the foreach API on {
+                    device.type} tensors")
         else:
             clip_coef_clamped_device = clip_coef_clamped.to(device)
             for g in device_grads:
@@ -140,7 +142,12 @@ def clip_grad_norm(
         This method is now deprecated in favor of
         :func:`torch.nn.utils.clip_grad_norm_`.
     """
-    return clip_grad_norm_(parameters, max_norm, norm_type, error_if_nonfinite, foreach)
+    return clip_grad_norm_(
+        parameters,
+        max_norm,
+        norm_type,
+        error_if_nonfinite,
+        foreach)
 
 
 @_no_grad
@@ -171,17 +178,16 @@ def clip_grad_value_(
     grads = [p.grad for p in parameters if p.grad is not None]
     grouped_grads = _group_tensors_by_device_and_dtype([grads])
 
-    for (device, _), ([grads], _) in grouped_grads.items():  # type: ignore[assignment]
-        if (
-            foreach is None
-            and _has_foreach_support(cast(List[Tensor], grads), device=device)
-        ) or (foreach and _device_has_foreach_support(device)):
+    for (device, _), ([grads], _) in grouped_grads.items(
+    ):  # type: ignore[assignment]
+        if (foreach is None and _has_foreach_support(cast(List[Tensor], grads), device=device)) or (
+                foreach and _device_has_foreach_support(device)):
             torch._foreach_clamp_min_(cast(List[Tensor], grads), -clip_value)
             torch._foreach_clamp_max_(cast(List[Tensor], grads), clip_value)
         elif foreach:
             raise RuntimeError(
-                f"foreach=True was passed, but can't use the foreach API on {device.type} tensors"
-            )
+                f"foreach=True was passed, but can't use the foreach API on {
+                    device.type} tensors")
         else:
             for grad in grads:
                 cast(Tensor, grad).clamp_(min=-clip_value, max=clip_value)

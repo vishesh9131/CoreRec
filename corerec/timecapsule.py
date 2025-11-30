@@ -1,6 +1,6 @@
-# This is a time capsule module for the corerec 
+# This is a time capsule module for the corerec
 # ###############################################################################################################
-#                           --CoreRec: Connecting to the Unseen--                            
+#                           --CoreRec: Connecting to the Unseen--
 # CoreRec module is designed for graph-based recommendation systems using neural network architectures. It includes:
 #     1. GraphTransformer: A neural network model using Transformer architecture for processing graph data.
 #     2. GraphDataset: A custom dataset class for handling graph data.
@@ -11,8 +11,17 @@
 # ###############################################################################################################
 
 """
-from common_import import *
-from async_ddp import *
+# imports
+import numpy as np
+import pandas as pd
+import torch
+import sklearn
+import networkx as nx
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+import torch.distributed as dist
+from torch.multiprocessing import Process
+
 from torch_geometric.data import Data
 from torch.utils.data import Dataset
 from torch.nn import Linear, ModuleList, Module
@@ -21,7 +30,7 @@ from torch.nn.modules.transformer import TransformerEncoder, TransformerEncoderL
 class GraphTransformer(Module):
     '''
     This is a transformer model is used from ;
-    link :  https://github.com/pytorch/pytorch/blob/main/torch/nn/modules/transformer.py 
+    link :  https://github.com/pytorch/pytorch/blob/main/torch/nn/modules/transformer.py
     '''
     def __init__(self, num_layers, d_model, num_heads, d_feedforward, input_dim, num_weights=10, use_weights=True):
         super(GraphTransformer, self).__init__()
@@ -108,7 +117,7 @@ def train_model(model, data_loader, criterion, optimizer, num_epochs):
 
 
 def predict(model, graph, node_index,top_k=5):
-    
+
     model.eval()
     with torch.no_grad():
         input_data = torch.tensor(graph[node_index]).unsqueeze(0)  # Get the input node's features
@@ -124,7 +133,7 @@ def predict(model, graph, node_index, top_k=5, threshold=0.5):
         input_data = torch.tensor(graph[node_index]).unsqueeze(0)  # Get the input node's features
         output = model(input_data)
         scores = output.squeeze().numpy()
-    
+
     # Apply threshold
     recommended_indices = [i for i, score in enumerate(scores) if score > threshold]
     recommended_indices = sorted(recommended_indices, key=lambda i: scores[i], reverse=True)[:top_k]
@@ -175,7 +184,7 @@ def draw_graph(adj_matrix, top_nodes, recommended_nodes=None):
 
     plt.title("Recommended Nodes Highlighted in Blue and Top Nodes in Red")
     plt.show()
-    
+
 
 
 
@@ -267,4 +276,3 @@ def explainable_predict(model, graph, node_index, top_k=5, threshold=0.5):
     return recommended_indices, explanations
 
 """
-

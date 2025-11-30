@@ -91,7 +91,9 @@ class CircularPad1d(_CircularPadNd):
 
     def _check_input_dim(self, input):
         if input.dim() != 2 and input.dim() != 3:
-            raise ValueError(f"expected 2D or 3D input (got {input.dim()}D input)")
+            raise ValueError(
+                f"expected 2D or 3D input (got {
+                    input.dim()}D input)")
 
 
 class CircularPad2d(_CircularPadNd):
@@ -150,7 +152,9 @@ class CircularPad2d(_CircularPadNd):
 
     def _check_input_dim(self, input):
         if input.dim() != 3 and input.dim() != 4:
-            raise ValueError(f"expected 3D or 4D input (got {input.dim()}D input)")
+            raise ValueError(
+                f"expected 3D or 4D input (got {
+                    input.dim()}D input)")
 
 
 class CircularPad3d(_CircularPadNd):
@@ -199,7 +203,9 @@ class CircularPad3d(_CircularPadNd):
 
     def _check_input_dim(self, input):
         if input.dim() != 4 and input.dim() != 5:
-            raise ValueError(f"expected 4D or 5D input (got {input.dim()}D input)")
+            raise ValueError(
+                f"expected 4D or 5D input (got {
+                    input.dim()}D input)")
 
 
 class _ConstantPadNd(Module):

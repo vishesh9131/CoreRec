@@ -1,7 +1,8 @@
+from typing import Union
+from pathlib import Path
 """
 Geoimc - NOT YET IMPLEMENTED
 
-WARNING: This feature is currently under development and not ready for production use.
 
 For similar functionality, please use: LightGCN
 
@@ -10,6 +11,8 @@ Track progress: https://github.com/vishesh9131/CoreRec/issues
 """
 
 
+from corerec.api.exceptions import ModelNotFittedError
+        
 class GeoIMCBase:
     """
     Geoimc - Placeholder for future implementation.
@@ -29,3 +32,17 @@ class GeoIMCBase:
             f"Track implementation progress:\n"
             f"https://github.com/vishesh9131/CoreRec/issues"
         )
+
+        @classmethod
+        def load(cls, path: Union[str, Path], **kwargs):
+            import pickle
+            from pathlib import Path
+        
+            with open(path, 'rb') as f:
+                model = pickle.load(f)
+        
+            if hasattr(model, 'verbose') and model.verbose:
+                import logging
+                logging.info(f"Model loaded from {path}")
+        
+            return model

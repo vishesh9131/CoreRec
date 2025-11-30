@@ -1,9 +1,6 @@
-from corerec.engines.contentFilterEngine.performance_scalability.scalable_algorithms import ScalableAlgorithms
-from corerec.engines.contentFilterEngine.other_approaches import (
-    OTH_RULE_BASED,
-    OTH_SENTIMENT_ANALYSIS,
-    OTH_ONTOLOGY_BASED
-)
+import corerec as cr
+from functools import partial
+
 
 def filter_content_item(item, rule_filter, sentiment_filter, ontology_filter):
     """
@@ -13,7 +10,7 @@ def filter_content_item(item, rule_filter, sentiment_filter, ontology_filter):
     - item (str): The content to filter.
     - rule_filter (RuleBasedFilter): An instance of RuleBasedFilter.
     - sentiment_filter (SentimentAnalysisFilter): An instance of SentimentAnalysisFilter.
-    - ontology_filter (OntologyBasedFilter): An instance of OntologyBasedFilter.
+    - ontology_filter (OntologyBasedFilter): An instance of OntologyBasedFilter or None.
 
     Returns:
     - dict: Aggregated filtering results.
@@ -21,17 +18,21 @@ def filter_content_item(item, rule_filter, sentiment_filter, ontology_filter):
     result = {}
     # Apply Rule-Based Filter
     rule_result = rule_filter.filter_content(item)
-    result['rule_based'] = rule_result
+    result["rule_based"] = rule_result
 
     # Apply Sentiment Analysis Filter
     sentiment_result = sentiment_filter.filter_content(item)
-    result['sentiment_analysis'] = sentiment_result
+    result["sentiment_analysis"] = sentiment_result
 
     # Apply Ontology-Based Filter
-    ontology_result = ontology_filter.filter_content(item)
-    result['ontology_based'] = ontology_result
+    if ontology_filter:
+        ontology_result = ontology_filter.filter_content(item)
+        result["ontology_based"] = ontology_result
+    else:
+        result["ontology_based"] = {"status": "skipped", "reason": "ontology file not found"}
 
     return result
+
 
 def main():
     # Sample data
@@ -43,20 +44,43 @@ def main():
     ]
 
     # Initialize Filters
-    rule_filter = OTH_RULE_BASED()
+    rule_filter = cr.RuleBased()
     rule_filter.add_rule("sci-fi", "flag")
     rule_filter.add_rule("fantastic", "allow")
 
-    sentiment_filter = OTH_SENTIMENT_ANALYSIS(threshold=0.2)
+    sentiment_filter = cr.SentimentAnalysis(threshold=0.2)
 
-    ontology_filter = OTH_ONTOLOGY_BASED("src/SANDBOX/contentFilterExample/exampleotheraoprach/ontologies/ontology.owl")
+    # Try different possible paths for the ontology file
+    import os
+    possible_ontology_paths = [
+        "src/SANDBOX/contentFilterExample/exampleotheraoprach/ontologies/ontology.owl",
+        "src/SANDBOX/contentFilterExample/otheraoprach_eg/ontologies/ontology.owl",
+        "examples/ContentFilterExamples/eg_otherApproach/ontologies/ontology.owl",
+    ]
+    
+    ontology_path = None
+    for path in possible_ontology_paths:
+        if os.path.exists(path):
+            ontology_path = path
+            break
+    
+    ontology_filter = None
+    if ontology_path:
+        try:
+            ontology_filter = cr.OntologyBased(ontology_path)
+        except Exception as e:
+            print(f"Warning: Could not load ontology file: {e}")
+    else:
+        print("Warning: Ontology file not found. Skipping ontology-based filtering.")
 
     # Initialize Scalable Algorithms
-    scalable = ScalableAlgorithms()
+    scalable = cr.ScalableAlgorithms()
 
-    # Define a wrapper function for parallel processing
-    def process_item(item):
-        return filter_content_item(item, rule_filter, sentiment_filter, ontology_filter)
+    # Create a partial function with filters bound
+    process_item = partial(filter_content_item, 
+                          rule_filter=rule_filter, 
+                          sentiment_filter=sentiment_filter,
+                          ontology_filter=ontology_filter)
 
     # Use parallel_process to filter content concurrently
     filtered_results = scalable.parallel_process(process_item, content_data)
@@ -66,6 +90,7 @@ def main():
         print(f"Content Item {idx}:")
         print(res)
         print("-" * 40)
+
 
 if __name__ == "__main__":
     main()

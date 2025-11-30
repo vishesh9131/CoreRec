@@ -1,0 +1,37 @@
+Major Deep Learning (8)
+    ' Wide & Deep (Google)
+    ' YouTube DNN (Google)
+    ' NFM (Neural Factorization Machine)
+    ' PNN (Product-based Neural Network)
+    ' MMoE (Multi-task)
+    ' PLE (Multi-task)
+    ' Monolith (ByteDance)
+    ' TDM (Tree-based Deep Model)
+Sequential & Time-Aware (5)
+    NextItNet (Dilated Convolutions)
+    TiSASRec (Time Interval SASRec)
+    SLi-Rec (Long/Short-term)
+    SSE-PT (Stochastic Shared Embeddings)
+    SSR (Sequential)
+News Recommendation (4)
+    NPA (Personalized Attention)
+    NRMS (Multi-Head Self-Attention)
+    LSTUR (Long/Short-term User Rep)
+    NAML (Attentive Multi-View)
+Content & NLP Based (5)
+    TF-IDF
+    LDA (Topic Modeling)
+    LSA (Latent Semantic Analysis)
+    Word2Vec (Item2Vec)
+    Zero-Shot
+Traditional & Others (10)
+    LightGBM
+    SVM (Ranking)
+    SAR (Simple Algorithm)
+    KNN (User/Item)
+Co-Clustering
+    SlopeOne
+    RALM
+    SUM
+    Interactive Filtering
+    Hybrid Methods

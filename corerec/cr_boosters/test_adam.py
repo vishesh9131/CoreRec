@@ -4,11 +4,12 @@ from torch import Tensor
 from cr_boosters.adam import Adam, adam
 import math
 
+
 class TestAdam(unittest.TestCase):
     def test_adam_initialization(self):
         params = [torch.tensor([1.0, 2.0], requires_grad=True)]
         optimizer = Adam(params)
-        self.assertEqual(optimizer.defaults['lr'], 1e-3)
+        self.assertEqual(optimizer.defaults["lr"], 1e-3)
 
     def test_adam_function(self):
         params = [torch.tensor([1.0, 2.0], requires_grad=True)]
@@ -17,9 +18,23 @@ class TestAdam(unittest.TestCase):
         exp_avg_sqs = [torch.zeros_like(params[0])]
         max_exp_avg_sqs = [torch.zeros_like(params[0])]
         state_steps = [torch.tensor(0)]
-        
-        adam(params, grads, exp_avgs, exp_avg_sqs, max_exp_avg_sqs, state_steps, amsgrad=False, beta1=0.9, beta2=0.999, lr=0.001, weight_decay=0, eps=1e-8, maximize=False)
-           
+
+        adam(
+            params,
+            grads,
+            exp_avgs,
+            exp_avg_sqs,
+            max_exp_avg_sqs,
+            state_steps,
+            amsgrad=False,
+            beta1=0.9,
+            beta2=0.999,
+            lr=0.001,
+            weight_decay=0,
+            eps=1e-8,
+            maximize=False,
+        )
+
         # Calculate expected values based on the Adam update rule
         beta1, beta2 = 0.9, 0.999
         lr, eps = 0.001, 1e-8
@@ -34,5 +49,6 @@ class TestAdam(unittest.TestCase):
         self.assertAlmostEqual(params[0][0].item(), expected_value, places=4)
         self.assertAlmostEqual(params[0][1].item(), expected_value, places=4)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

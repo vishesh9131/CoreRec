@@ -12,7 +12,8 @@ from torch.utils.data.datapipes.datapipe import IterDataPipe, MapDataPipe
 __all__ = ["traverse", "traverse_dps"]
 
 DataPipe = Union[IterDataPipe, MapDataPipe]
-DataPipeGraph = Dict[int, Tuple[DataPipe, "DataPipeGraph"]]  # type: ignore[misc]
+# type: ignore[misc]
+DataPipeGraph = Dict[int, Tuple[DataPipe, "DataPipeGraph"]]
 
 
 def _stub_unpickler():
@@ -24,9 +25,9 @@ def _list_connected_datapipes(
     scan_obj: DataPipe, only_datapipe: bool, cache: Set[int]
 ) -> List[DataPipe]:
     f = io.BytesIO()
-    p = pickle.Pickler(
-        f
-    )  # Not going to work for lambdas, but dill infinite loops on typing and can't be used as is
+    # Not going to work for lambdas, but dill infinite loops on typing and
+    # can't be used as is
+    p = pickle.Pickler(f)
     if dill_available():
         from dill import Pickler as dill_Pickler
 
@@ -57,11 +58,13 @@ def _list_connected_datapipes(
             raise NotImplementedError
         else:
             captured_connections.append(obj)
-            # Adding id to remove duplicate DataPipe serialized at the same level
+            # Adding id to remove duplicate DataPipe serialized at the same
+            # level
             cache.add(id(obj))
             return _stub_unpickler, ()
 
-    datapipe_classes: Tuple[Type[DataPipe]] = (IterDataPipe, MapDataPipe)  # type: ignore[assignment]
+    datapipe_classes: Tuple[Type[DataPipe]] = (
+        IterDataPipe, MapDataPipe)  # type: ignore[assignment]
 
     try:
         for cls in datapipe_classes:
@@ -105,7 +108,9 @@ def traverse_dps(datapipe: DataPipe) -> DataPipeGraph:
     return _traverse_helper(datapipe, only_datapipe=True, cache=cache)
 
 
-def traverse(datapipe: DataPipe, only_datapipe: Optional[bool] = None) -> DataPipeGraph:
+def traverse(
+        datapipe: DataPipe,
+        only_datapipe: Optional[bool] = None) -> DataPipeGraph:
     r"""
     Traverse the DataPipes and their attributes to extract the DataPipe graph.
 
@@ -127,8 +132,7 @@ def traverse(datapipe: DataPipe, only_datapipe: Optional[bool] = None) -> DataPi
     """
     msg = (
         "`traverse` function and will be removed after 1.13. "
-        "Please use `traverse_dps` instead."
-    )
+        "Please use `traverse_dps` instead.")
     if not only_datapipe:
         msg += " And, the behavior will be changed to the equivalent of `only_datapipe=True`."
     warnings.warn(msg, FutureWarning)
@@ -140,22 +144,25 @@ def traverse(datapipe: DataPipe, only_datapipe: Optional[bool] = None) -> DataPi
 
 # Add cache here to prevent infinite recursion on DataPipe
 def _traverse_helper(
-    datapipe: DataPipe, only_datapipe: bool, cache: Set[int]
-) -> DataPipeGraph:
+        datapipe: DataPipe,
+        only_datapipe: bool,
+        cache: Set[int]) -> DataPipeGraph:
     if not isinstance(datapipe, (IterDataPipe, MapDataPipe)):
         raise RuntimeError(
-            f"Expected `IterDataPipe` or `MapDataPipe`, but {type(datapipe)} is found"
-        )
+            f"Expected `IterDataPipe` or `MapDataPipe`, but {
+                type(datapipe)} is found")
 
     dp_id = id(datapipe)
     if dp_id in cache:
         return {}
     cache.add(dp_id)
-    # Using cache.copy() here is to prevent the same DataPipe pollutes the cache on different paths
+    # Using cache.copy() here is to prevent the same DataPipe pollutes the
+    # cache on different paths
     items = _list_connected_datapipes(datapipe, only_datapipe, cache.copy())
     d: DataPipeGraph = {dp_id: (datapipe, {})}
     for item in items:
         # Using cache.copy() here is to prevent recursion on a single path rather than global graph
-        # Single DataPipe can present multiple times in different paths in graph
+        # Single DataPipe can present multiple times in different paths in
+        # graph
         d[dp_id][1].update(_traverse_helper(item, only_datapipe, cache.copy()))
     return d

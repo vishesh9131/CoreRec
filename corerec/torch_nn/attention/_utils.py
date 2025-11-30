@@ -14,7 +14,9 @@ def _input_requires_grad(*tensors: torch.Tensor) -> bool:
     return any(t.requires_grad for t in tensors)
 
 
-def _postprocess_flash_output(inpt_tensor: torch.Tensor, og_size: int) -> torch.Tensor:
+def _postprocess_flash_output(
+        inpt_tensor: torch.Tensor,
+        og_size: int) -> torch.Tensor:
     """Handles the unpad of the last dimension"""
     if inpt_tensor.size(-1) != og_size:
         return inpt_tensor[..., :og_size]
@@ -54,6 +56,7 @@ def _validate_sdpa_input(
         )
     if query.dim() < 2 or key.dim() < 2 or value.dim() < 2:
         raise ValueError(
-            f"Expected query, key, and value to all be  at least 2 dimensional, but got query.dim: "
-            f"{query.dim()}, key.dim: {key.dim()} and value.dim: {value.dim()} instead."
-        )
+            f"Expected query, key, and value to all be  at least 2 dimensional, but got query.dim: " f"{
+                query.dim()}, key.dim: {
+                key.dim()} and value.dim: {
+                value.dim()} instead.")

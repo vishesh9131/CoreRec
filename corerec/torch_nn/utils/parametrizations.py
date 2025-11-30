@@ -27,7 +27,8 @@ def _make_orthogonal(A):
     """
     X, tau = torch.geqrf(A)
     Q = torch.linalg.householder_product(X, tau)
-    # The diagonal of X is the diagonal of R (which is always real) so we normalise by its signs
+    # The diagonal of X is the diagonal of R (which is always real) so we
+    # normalise by its signs
     Q *= X.diagonal(dim1=-2, dim2=-1).sgn().unsqueeze(-2)
     return Q
 
@@ -42,8 +43,11 @@ class _Orthogonal(Module):
     base: Tensor
 
     def __init__(
-        self, weight, orthogonal_map: _OrthMaps, *, use_trivialization=True
-    ) -> None:
+            self,
+            weight,
+            orthogonal_map: _OrthMaps,
+            *,
+            use_trivialization=True) -> None:
         super().__init__()
 
         # Note [Householder complex]
@@ -60,8 +64,7 @@ class _Orthogonal(Module):
         # An equivalent reasoning holds for rectangular matrices
         if weight.is_complex() and orthogonal_map == _OrthMaps.householder:
             raise ValueError(
-                "The householder parametrization does not support complex tensors."
-            )
+                "The householder parametrization does not support complex tensors.")
 
         self.shape = weight.shape
         self.orthogonal_map = orthogonal_map
@@ -75,17 +78,13 @@ class _Orthogonal(Module):
             X = X.mT
             n, k = k, n
         # Here n > k and X is a tall matrix
-        if (
-            self.orthogonal_map == _OrthMaps.matrix_exp
-            or self.orthogonal_map == _OrthMaps.cayley
-        ):
+        if self.orthogonal_map == _OrthMaps.matrix_exp or self.orthogonal_map == _OrthMaps.cayley:
             # We just need n x k - k(k-1)/2 parameters
             X = X.tril()
             if n != k:
                 # Embed into a square matrix
                 X = torch.cat(
-                    [X, X.new_zeros(n, n - k).expand(*X.shape[:-2], -1, -1)], dim=-1
-                )
+                    [X, X.new_zeros(n, n - k).expand(*X.shape[:-2], -1, -1)], dim=-1)
             A = X - X.mH
             # A is skew-symmetric (or skew-hermitian)
             if self.orthogonal_map == _OrthMaps.matrix_exp:
@@ -94,19 +93,27 @@ class _Orthogonal(Module):
                 # Computes the Cayley retraction (I+A/2)(I-A/2)^{-1}
                 Id = torch.eye(n, dtype=A.dtype, device=A.device)
                 Q = torch.linalg.solve(
-                    torch.add(Id, A, alpha=-0.5), torch.add(Id, A, alpha=0.5)
-                )
+                    torch.add(
+                        Id,
+                        A,
+                        alpha=-0.5),
+                    torch.add(
+                        Id,
+                        A,
+                        alpha=0.5))
             # Q is now orthogonal (or unitary) of size (..., n, n)
             if n != k:
                 Q = Q[..., :k]
             # Q is now the size of the X (albeit perhaps transposed)
         else:
-            # X is real here, as we do not support householder with complex numbers
+            # X is real here, as we do not support householder with complex
+            # numbers
             A = X.tril(diagonal=-1)
             tau = 2.0 / (1.0 + (A * A).sum(dim=-2))
             Q = torch.linalg.householder_product(A, tau)
             # The diagonal of X is 1's and -1's
-            # We do not want to differentiate through this or update the diagonal of X hence the casting
+            # We do not want to differentiate through this or update the
+            # diagonal of X hence the casting
             Q = Q * X.diagonal(dim1=-2, dim2=-1).int().unsqueeze(-2)
 
         if hasattr(self, "base"):
@@ -119,9 +126,9 @@ class _Orthogonal(Module):
     def right_inverse(self, Q: torch.Tensor) -> torch.Tensor:
         if Q.shape != self.shape:
             raise ValueError(
-                f"Expected a matrix or batch of matrices of shape {self.shape}. "
-                f"Got a tensor of shape {Q.shape}."
-            )
+                f"Expected a matrix or batch of matrices of shape {
+                    self.shape}. " f"Got a tensor of shape {
+                    Q.shape}.")
 
         Q_init = Q
         n, k = Q.size(-2), Q.size(-1)
@@ -148,8 +155,7 @@ class _Orthogonal(Module):
             ):
                 raise NotImplementedError(
                     "It is not possible to assign to the matrix exponential "
-                    "or the Cayley parametrizations when use_trivialization=False."
-                )
+                    "or the Cayley parametrizations when use_trivialization=False.")
 
             # If parametrization == _OrthMaps.householder, make Q orthogonal via the QR decomposition.
             # Here Q is always real because we do not support householder and complex matrices.
@@ -173,8 +179,7 @@ class _Orthogonal(Module):
             else:
                 # Complete Q into a full n x n orthogonal matrix
                 N = torch.randn(
-                    *(Q.size()[:-2] + (n, n - k)), dtype=Q.dtype, device=Q.device
-                )
+                    *(Q.size()[:-2] + (n, n - k)), dtype=Q.dtype, device=Q.device)
                 Q = torch.cat([Q, N], dim=-1)
                 Q = _make_orthogonal(Q)
             self.base = Q
@@ -282,16 +287,14 @@ def orthogonal(
     weight = getattr(module, name, None)
     if not isinstance(weight, Tensor):
         raise ValueError(
-            f"Module '{module}' has no parameter or buffer with name '{name}'"
-        )
+            f"Module '{module}' has no parameter or buffer with name '{name}'")
 
     # We could implement this for 1-dim tensors as the maps on the sphere
     # but I believe it'd bite more people than it'd help
     if weight.ndim < 2:
         raise ValueError(
-            "Expected a matrix or batch of matrices. "
-            f"Got a tensor of {weight.ndim} dimensions."
-        )
+            "Expected a matrix or batch of matrices. " f"Got a tensor of {
+                weight.ndim} dimensions.")
 
     if orthogonal_map is None:
         orthogonal_map = (
@@ -306,7 +309,10 @@ def orthogonal(
             'orthogonal_map has to be one of "matrix_exp", "cayley", "householder". '
             f"Got: {orthogonal_map}"
         )
-    orth = _Orthogonal(weight, orth_enum, use_trivialization=use_trivialization)
+    orth = _Orthogonal(
+        weight,
+        orth_enum,
+        use_trivialization=use_trivialization)
     parametrize.register_parametrization(module, name, orth, unsafe=True)
     return module
 
@@ -375,7 +381,8 @@ def weight_norm(module: Module, name: str = "weight", dim: int = 0):
 
     """
     _weight_norm = _WeightNorm(dim)
-    parametrize.register_parametrization(module, name, _weight_norm, unsafe=True)
+    parametrize.register_parametrization(
+        module, name, _weight_norm, unsafe=True)
 
     def _weight_norm_compat_hook(
         state_dict,
@@ -422,7 +429,8 @@ class _SpectralNorm(Module):
         self.dim = dim if dim >= 0 else dim + ndim
         self.eps = eps
         if ndim > 1:
-            # For ndim == 1 we do not need to approximate anything (see _SpectralNorm.forward)
+            # For ndim == 1 we do not need to approximate anything (see
+            # _SpectralNorm.forward)
             self.n_power_iterations = n_power_iterations
             weight_mat = self._reshape_weight_to_matrix(weight)
             h, w = weight_mat.size()
@@ -443,13 +451,13 @@ class _SpectralNorm(Module):
         if self.dim != 0:
             # permute dim to front
             weight = weight.permute(
-                self.dim, *(d for d in range(weight.dim()) if d != self.dim)
-            )
+                self.dim, *(d for d in range(weight.dim()) if d != self.dim))
 
         return weight.flatten(1)
 
     @torch.autograd.no_grad()
-    def _power_method(self, weight_mat: torch.Tensor, n_power_iterations: int) -> None:
+    def _power_method(self, weight_mat: torch.Tensor,
+                      n_power_iterations: int) -> None:
         # See original note at torch/nn/utils/spectral_norm.py
         # NB: If `do_power_iteration` is set, the `u` and `v` vectors are
         #     updated in power iteration **in-place**. This is very important
@@ -607,8 +615,7 @@ def spectral_norm(
     weight = getattr(module, name, None)
     if not isinstance(weight, Tensor):
         raise ValueError(
-            f"Module '{module}' has no parameter or buffer with name '{name}'"
-        )
+            f"Module '{module}' has no parameter or buffer with name '{name}'")
 
     if dim is None:
         if isinstance(

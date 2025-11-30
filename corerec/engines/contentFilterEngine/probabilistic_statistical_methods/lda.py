@@ -7,6 +7,7 @@ from typing import List, Any
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class LDA:
     def __init__(self, n_components: int = 10, max_iter: int = 10):
         """
@@ -16,8 +17,10 @@ class LDA:
         - n_components (int): Number of topics.
         - max_iter (int): Maximum number of iterations for the EM algorithm.
         """
-        self.vectorizer = CountVectorizer(stop_words='english')
-        self.lda_model = LatentDirichletAllocation(n_components=n_components, max_iter=max_iter, random_state=42)
+        self.vectorizer = CountVectorizer(stop_words="english")
+        self.lda_model = LatentDirichletAllocation(
+            n_components=n_components, max_iter=max_iter, random_state=42
+        )
         logger.info(f"LDA initialized with {n_components} topics and {max_iter} max iterations.")
 
     def fit(self, documents: List[str]):
@@ -27,9 +30,9 @@ class LDA:
         Parameters:
         - documents (List[str]): List of documents to train the model.
         """
-        # Validate inputs
-        validate_fit_inputs(user_ids, item_ids, ratings)
-        
+        if not documents:
+            raise ValueError("Documents list cannot be empty.")
+
         logger.info("Fitting LDA model on documents.")
         count_matrix = self.vectorizer.fit_transform(documents)
         self.lda_model.fit(count_matrix)
@@ -60,13 +63,13 @@ class LDA:
         Returns:
         - List[int]: List of recommended item indices.
         """
-        # Validate inputs
-        validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
-        validate_top_k(top_k if 'top_k' in locals() else 10)
-        
+        if top_n <= 0:
+            raise ValueError("top_n must be positive")
+
+        if not hasattr(self.lda_model, 'components_'):
+            raise ValueError("Model must be fitted before calling recommend.")
+
         logger.info("Generating recommendations using LDA.")
-        query_vec = self.transform([query])
         topic_distribution = self.lda_model.transform(self.vectorizer.transform([query]))
         similarity_scores = (topic_distribution @ self.lda_model.components_.T).flatten()
         top_indices = similarity_scores.argsort()[::-1][:top_n]

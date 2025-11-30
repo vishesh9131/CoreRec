@@ -169,9 +169,7 @@ class ImageHandler:
     """
 
     def __init__(self, imagespec):
-        assert imagespec in list(
-            imagespecs.keys()
-        ), f"unknown image specification: {imagespec}"
+        assert imagespec in list(imagespecs.keys()), f"unknown image specification: {imagespec}"
         self.imagespec = imagespec.lower()
 
     def __call__(self, extension, data):

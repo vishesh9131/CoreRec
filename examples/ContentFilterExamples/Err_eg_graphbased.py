@@ -3,8 +3,9 @@ import networkx as nx
 from corerec.engines.contentFilterEngine.graph_based_algorithms import (
     GRA_GRAPH_FILTERING,
     GRA_GNN,
-    GRA_SEMANTIC_MODELS
+    GRA_SEMANTIC_MODELS,
 )
+
 
 def load_movies(file_path: str) -> pd.DataFrame:
     """
@@ -16,15 +17,12 @@ def load_movies(file_path: str) -> pd.DataFrame:
     Returns:
     - pd.DataFrame: DataFrame containing movie information.
     """
-    column_names = ['movie_id', 'title', 'genres']
+    column_names = ["movie_id", "title", "genres"]
     movies = pd.read_csv(
-        file_path,
-        sep='::',
-        engine='python',
-        names=column_names,
-        encoding='latin-1'
+        file_path, sep="::", engine="python", names=column_names, encoding="latin-1"
     )
     return movies
+
 
 def build_genre_graph(movies_df: pd.DataFrame) -> nx.Graph:
     """
@@ -41,9 +39,9 @@ def build_genre_graph(movies_df: pd.DataFrame) -> nx.Graph:
 
     # Create a mapping from genres to movies
     for _, row in movies_df.iterrows():
-        movie_id = row['movie_id']
-        genres = row['genres'].split('|')
-        G.add_node(movie_id, title=row['title'], genres=genres)
+        movie_id = row["movie_id"]
+        genres = row["genres"].split("|")
+        G.add_node(movie_id, title=row["title"], genres=genres)
         for genre in genres:
             if genre not in genre_to_movies:
                 genre_to_movies[genre] = []
@@ -57,9 +55,10 @@ def build_genre_graph(movies_df: pd.DataFrame) -> nx.Graph:
 
     return G
 
+
 def main():
     # Load movies data
-    movies_file = 'src/SANDBOX/dataset/ml-1m/movies.dat'
+    movies_file = "src/SANDBOX/dataset/ml-1m/movies.dat"
     movies_df = load_movies(movies_file)
 
     # Build genre graph
@@ -81,6 +80,7 @@ def main():
 
     # Find the optimal path
     semantic_models.find_optimal_path(0)
+
 
 if __name__ == "__main__":
     main()

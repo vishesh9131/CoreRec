@@ -136,74 +136,75 @@ from . import special_techniques as special
 
 __all__ = [
     # Popular algorithms (direct access)
-    'TFIDFRecommender',
-    'AttentionMechanisms',
-    'EnsembleRecommender',
-    'HybridCollaborative',
-    'DSSM',
-    'ContentMIND',
-    'YoutubeDNN',
-    'Word2VecRecommender',
-    'Doc2VecRecommender',
-    
+    "TFIDFRecommender",
+    "AttentionMechanisms",
+    "EnsembleRecommender",
+    "HybridCollaborative",
+    "DSSM",
+    "ContentMIND",
+    "YoutubeDNN",
+    "Word2VecRecommender",
+    "Doc2VecRecommender",
     # Organized sub-modules
-    'traditional',      # Traditional ML (TF-IDF, SVM, etc.)
-    'nn',              # Neural Networks (DSSM, MIND, etc.)
-    'context',         # Context & Personalization
-    'embedding',       # Embedding Learning (Word2Vec, etc.)
-    'fairness',        # Fairness & Explainability
-    'graph',           # Graph-based methods
-    'hybrid',          # Hybrid & Ensemble methods
-    'learning',        # Learning Paradigms
-    'misc',            # Miscellaneous techniques
-    'multimodal',      # Multi-modal methods
-    'other',           # Other approaches
-    'performance',     # Performance & Scalability
-    'probabilistic',   # Probabilistic methods
-    'special',         # Special techniques
+    "traditional",  # Traditional ML (TF-IDF, SVM, etc.)
+    "nn",  # Neural Networks (DSSM, MIND, etc.)
+    "context",  # Context & Personalization
+    "embedding",  # Embedding Learning (Word2Vec, etc.)
+    "fairness",  # Fairness & Explainability
+    "graph",  # Graph-based methods
+    "hybrid",  # Hybrid & Ensemble methods
+    "learning",  # Learning Paradigms
+    "misc",  # Miscellaneous techniques
+    "multimodal",  # Multi-modal methods
+    "other",  # Other approaches
+    "performance",  # Performance & Scalability
+    "probabilistic",  # Probabilistic methods
+    "special",  # Special techniques
 ]
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
 
+
 def list_algorithms():
     """List all available algorithms with direct access."""
     algorithms = []
-    
+
     if TFIDFRecommender is not None:
-        algorithms.append('TFIDFRecommender')
+        algorithms.append("TFIDFRecommender")
     if AttentionMechanisms is not None:
-        algorithms.append('AttentionMechanisms')
+        algorithms.append("AttentionMechanisms")
     if EnsembleRecommender is not None:
-        algorithms.append('EnsembleRecommender')
+        algorithms.append("EnsembleRecommender")
     if HybridCollaborative is not None:
-        algorithms.append('HybridCollaborative')
+        algorithms.append("HybridCollaborative")
     if DSSM is not None:
-        algorithms.append('DSSM')
+        algorithms.append("DSSM")
     if ContentMIND is not None:
-        algorithms.append('ContentMIND')
+        algorithms.append("ContentMIND")
     if YoutubeDNN is not None:
-        algorithms.append('YoutubeDNN')
+        algorithms.append("YoutubeDNN")
     if Word2VecRecommender is not None:
-        algorithms.append('Word2VecRecommender')
+        algorithms.append("Word2VecRecommender")
     if Doc2VecRecommender is not None:
-        algorithms.append('Doc2VecRecommender')
-    
+        algorithms.append("Doc2VecRecommender")
+
     return algorithms
+
 
 def list_categories():
     """List all algorithm categories."""
     return [
-        'traditional (Traditional ML)',
-        'nn (Neural Networks)',
-        'context (Context & Personalization)',
-        'embedding (Embedding Learning)',
-        'fairness (Fairness & Explainability)',
-        'graph (Graph-Based)',
-        'hybrid (Hybrid & Ensemble)',
-        'learning (Learning Paradigms)',
-        'multimodal (Multi-Modal)',
-        'probabilistic (Probabilistic Methods)',
-        'special (Special Techniques)',
+        "traditional (Traditional ML)",
+        "nn (Neural Networks)",
+        "context (Context & Personalization)",
+        "embedding (Embedding Learning)",
+        "fairness (Fairness & Explainability)",
+        "graph (Graph-Based)",
+        "hybrid (Hybrid & Ensemble)",
+        "learning (Learning Paradigms)",
+        "multimodal (Multi-Modal)",
+        "probabilistic (Probabilistic Methods)",
+        "special (Special Techniques)",
     ]

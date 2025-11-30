@@ -18,7 +18,12 @@ class _LazyProtocol(Protocol):
     def _register_load_state_dict_pre_hook(self, hook):
         ...
 
-    def register_forward_pre_hook(self, hook, *, prepend=False, with_kwargs=False):
+    def register_forward_pre_hook(
+            self,
+            hook,
+            *,
+            prepend=False,
+            with_kwargs=False):
         ...
 
     def _lazy_load_hook(
@@ -185,12 +190,17 @@ class LazyModuleMixin:
     def __init__(self: _LazyProtocol, *args, **kwargs):
         # Mypy doesnt like this super call in a mixin
         super().__init__(*args, **kwargs)  # type: ignore[misc]
-        self._load_hook = self._register_load_state_dict_pre_hook(self._lazy_load_hook)
+        self._load_hook = self._register_load_state_dict_pre_hook(
+            self._lazy_load_hook)
         self._initialize_hook = self.register_forward_pre_hook(
             self._infer_parameters, with_kwargs=True
         )
 
-    def _save_to_state_dict(self: _LazyProtocol, destination, prefix, keep_vars):
+    def _save_to_state_dict(
+            self: _LazyProtocol,
+            destination,
+            prefix,
+            keep_vars):
         # This should be ideally implemented as a hook,
         # but we should override `detach` in the UninitializedParameter to return itself
         # which is not clean
@@ -225,8 +235,7 @@ class LazyModuleMixin:
         for the details of the hook specification.
         """
         for name, param in itertools.chain(
-            self._parameters.items(), self._buffers.items()
-        ):
+                self._parameters.items(), self._buffers.items()):
             key = prefix + name
             if key in state_dict and param is not None:
                 input_param = state_dict[key]
@@ -244,8 +253,8 @@ class LazyModuleMixin:
         forward pass when doing parameter shape inference.
         """
         raise NotImplementedError(
-            f"initialize_parameters is not implemented for {self.__class__.__name__}"
-        )
+            f"initialize_parameters is not implemented for {
+                self.__class__.__name__}")
 
     def has_uninitialized_params(self: _LazyProtocol):
         r"""Check if a module has parameters that are not initialized."""
@@ -285,5 +294,4 @@ class LazyModuleMixin:
     def _replicate_for_data_parallel(self: _LazyProtocol):
         raise RuntimeError(
             "Modules with uninitialized parameters can't be used with `DataParallel`. "
-            "Run a dummy forward pass to correctly initialize the modules"
-        )
+            "Run a dummy forward pass to correctly initialize the modules")

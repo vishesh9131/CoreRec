@@ -47,9 +47,9 @@ def parallel_apply(
     element of :attr:`inputs` can either be a single object as the only argument
     to a module, or a collection of positional arguments.
     """
-    assert len(modules) == len(
-        inputs
-    ), f"The number of modules {len(modules)} is not equal to the number of inputs {len(inputs)}"
+    assert len(modules) == len(inputs), f"The number of modules {
+        len(modules)} is not equal to the number of inputs {
+        len(inputs)}"
     if kwargs_tup is not None:
         assert len(modules) == len(kwargs_tup)
     else:
@@ -92,7 +92,8 @@ def parallel_apply(
             with torch.cuda.device(device), torch.cuda.stream(stream), autocast(
                 enabled=autocast_enabled
             ):
-                # this also avoids accidental slicing of `input` if it is a Tensor
+                # this also avoids accidental slicing of `input` if it is a
+                # Tensor
                 if not isinstance(input, (list, tuple)):
                     input = (input,)
                 output = module(*input, **kwargs)
@@ -101,14 +102,11 @@ def parallel_apply(
         except Exception:
             with lock:
                 results[i] = ExceptionWrapper(
-                    where=f"in replica {i} on device {device}"
-                )
+                    where=f"in replica {i} on device {device}")
 
     if len(modules) > 1:
         threads = [
-            threading.Thread(
-                target=_worker, args=(i, module, input, kwargs, device, stream)
-            )
+            threading.Thread(target=_worker, args=(i, module, input, kwargs, device, stream))
             for i, (module, input, kwargs, device, stream) in enumerate(
                 zip(modules, inputs, kwargs_tup, devices, streams)
             )
@@ -119,7 +117,13 @@ def parallel_apply(
         for thread in threads:
             thread.join()
     else:
-        _worker(0, modules[0], inputs[0], kwargs_tup[0], devices[0], streams[0])
+        _worker(
+            0,
+            modules[0],
+            inputs[0],
+            kwargs_tup[0],
+            devices[0],
+            streams[0])
 
     outputs = []
     for i in range(len(inputs)):

@@ -40,7 +40,10 @@ class ShardingFilterIterDataPipe(_ShardingIterDataPipe):
         source_datapipe: Iterable DataPipe that will be sharded
     """
 
-    def __init__(self, source_datapipe: IterDataPipe, sharding_group_filter=None):
+    def __init__(
+            self,
+            source_datapipe: IterDataPipe,
+            sharding_group_filter=None):
         self.source_datapipe = source_datapipe
         self.sharding_group_filter = sharding_group_filter
         self.groups: Dict[int, Tuple[int, int]] = {}
@@ -48,23 +51,19 @@ class ShardingFilterIterDataPipe(_ShardingIterDataPipe):
         self.instance_id = 0
         self._update_num_of_instances()
 
-    def apply_sharding(
-        self, num_of_instances, instance_id, sharding_group=SHARDING_PRIORITIES.DEFAULT
-    ):
+    def apply_sharding(self, num_of_instances, instance_id,
+                       sharding_group=SHARDING_PRIORITIES.DEFAULT):
         if instance_id >= num_of_instances:
             raise ValueError(
-                f"instance_id({instance_id}) should be smaller than num_of_instances({num_of_instances})"
-            )
+                f"instance_id({instance_id}) should be smaller than num_of_instances({num_of_instances})")
         if sharding_group == SHARDING_PRIORITIES.DEFAULT:
             if len(self.groups) and SHARDING_PRIORITIES.DEFAULT not in self.groups:
                 raise RuntimeError(
-                    "ShardingFilter cannot mix DEFAULT and non DEFAULT groups"
-                )
+                    "ShardingFilter cannot mix DEFAULT and non DEFAULT groups")
         else:
             if SHARDING_PRIORITIES.DEFAULT in self.groups:
                 raise RuntimeError(
-                    "ShardingFilter cannot mix DEFAULT and non DEFAULT groups"
-                )
+                    "ShardingFilter cannot mix DEFAULT and non DEFAULT groups")
         self.groups[sharding_group] = (num_of_instances, instance_id)
         self._update_num_of_instances()
 
@@ -90,11 +89,11 @@ class ShardingFilterIterDataPipe(_ShardingIterDataPipe):
 
     def __len__(self):
         if isinstance(self.source_datapipe, Sized):
-            return len(self.source_datapipe) // self.num_of_instances + (
-                1
-                if (
-                    self.instance_id < len(self.source_datapipe) % self.num_of_instances
-                )
-                else 0
-            )
-        raise TypeError(f"{type(self).__name__} instance doesn't have valid length")
+            return len(
+                self.source_datapipe) // self.num_of_instances + (
+                1 if (
+                    self.instance_id < len(
+                        self.source_datapipe) %
+                    self.num_of_instances) else 0)
+        raise TypeError(
+            f"{type(self).__name__} instance doesn't have valid length")

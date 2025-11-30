@@ -17,7 +17,9 @@ if __name__ == "__main__":
     users, items, ratings = data["users"], data["items"], data["ratings"]
 
     # New API: Direct access to GNNRec from engines
-    model = engines.GNNRec(embedding_dim=32, num_gnn_layers=1, epochs=1, batch_size=1024, device="cpu")
+    model = engines.GNNRec(
+        embedding_dim=32, num_gnn_layers=1, epochs=1, batch_size=1024, device="cpu"
+    )
     model.fit(users, items, ratings)
     recs = model.recommend(users[0], top_n=10, exclude_seen=True)
     print("GNNRec recommendations for", users[0], ":", recs)

@@ -93,12 +93,15 @@ def fuse_conv_bn_weights(
     else:
         shape = [-1, 1] + [1] * (len(conv_w.shape) - 2)
 
-    fused_conv_w = (conv_w * (bn_w * bn_var_rsqrt).reshape(shape)).to(
-        dtype=conv_weight_dtype
-    )
-    fused_conv_b = ((conv_b - bn_rm) * bn_var_rsqrt * bn_w + bn_b).to(
-        dtype=conv_bias_dtype
-    )
+    fused_conv_w = (conv_w * (bn_w * bn_var_rsqrt).reshape(shape)
+                    ).to(dtype=conv_weight_dtype)
+    fused_conv_b = (
+        (conv_b -
+         bn_rm) *
+        bn_var_rsqrt *
+        bn_w +
+        bn_b).to(
+        dtype=conv_bias_dtype)
 
     return (
         torch.nn.Parameter(fused_conv_w, conv_w.requires_grad),
@@ -184,6 +187,6 @@ def fuse_linear_bn_weights(
     fused_w = linear_w * bn_scale.unsqueeze(-1)
     fused_b = (linear_b - bn_rm) * bn_scale + bn_b
 
-    return torch.nn.Parameter(fused_w, linear_w.requires_grad), torch.nn.Parameter(
-        fused_b, linear_b.requires_grad
-    )
+    return torch.nn.Parameter(
+        fused_w, linear_w.requires_grad), torch.nn.Parameter(
+        fused_b, linear_b.requires_grad)

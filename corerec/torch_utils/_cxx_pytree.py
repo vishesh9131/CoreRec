@@ -91,7 +91,8 @@ DumpableContext = Any  # Any json dumpable text
 ToDumpableContextFn = Callable[[Context], DumpableContext]
 FromDumpableContextFn = Callable[[DumpableContext], Context]
 KeyPath = Tuple[KeyEntry, ...]
-FlattenWithKeysFunc = Callable[[PyTree], Tuple[List[Tuple[KeyEntry, Any]], Any]]
+FlattenWithKeysFunc = Callable[[PyTree],
+                               Tuple[List[Tuple[KeyEntry, Any]], Any]]
 
 
 def _reverse_args(func: UnflattenFunc) -> OpTreeUnflattenFunc:
@@ -144,7 +145,8 @@ def register_pytree_node(
         ... )
     """
     if flatten_with_keys_fn is not None:
-        raise NotImplementedError("KeyPaths are not yet supported in cxx_pytree.")
+        raise NotImplementedError(
+            "KeyPaths are not yet supported in cxx_pytree.")
 
     _private_register_pytree_node(
         cls,
@@ -532,12 +534,14 @@ MapOnlyFn = Callable[[T], Callable[[Any], Any]]
 # These specializations help with type inference on the lambda passed to this
 # function
 @overload
-def map_only(__type_or_types_or_pred: Type2[T, S]) -> MapOnlyFn[Fn2[T, S, Any]]:
+def map_only(
+        __type_or_types_or_pred: Type2[T, S]) -> MapOnlyFn[Fn2[T, S, Any]]:
     ...
 
 
 @overload
-def map_only(__type_or_types_or_pred: Type3[T, S, U]) -> MapOnlyFn[Fn3[T, S, U, Any]]:
+def map_only(
+        __type_or_types_or_pred: Type3[T, S, U]) -> MapOnlyFn[Fn3[T, S, U, Any]]:
     ...
 
 
@@ -553,7 +557,8 @@ def map_only(__type_or_types_or_pred: TypeAny) -> MapOnlyFn[FnAny[Any]]:
 
 
 @overload
-def map_only(__type_or_types_or_pred: Callable[[Any], bool]) -> MapOnlyFn[FnAny[Any]]:
+def map_only(__type_or_types_or_pred: Callable[[
+             Any], bool]) -> MapOnlyFn[FnAny[Any]]:
     ...
 
 
@@ -578,18 +583,21 @@ def map_only(
 
     You can also directly use 'tree_map_only'
     """
-    if isinstance(__type_or_types_or_pred, (type, tuple)) or (
-        sys.version_info >= (3, 10)
-        and isinstance(__type_or_types_or_pred, types.UnionType)
-    ):
+    if isinstance(
+        __type_or_types_or_pred, (type, tuple)) or (
+        sys.version_info >= (
+            3, 10) and isinstance(
+                __type_or_types_or_pred, types.UnionType)):
 
         def pred(x: Any) -> bool:
-            return isinstance(x, __type_or_types_or_pred)  # type: ignore[arg-type]
+            # type: ignore[arg-type]
+            return isinstance(x, __type_or_types_or_pred)
 
     elif callable(__type_or_types_or_pred):
         pred = __type_or_types_or_pred  # type: ignore[assignment]
     else:
-        raise TypeError("Argument must be a type, a tuple of types, or a callable.")
+        raise TypeError(
+            "Argument must be a type, a tuple of types, or a callable.")
 
     def wrapper(func: Callable[[T], Any]) -> Callable[[Any], Any]:
         @functools.wraps(func)
@@ -649,7 +657,8 @@ def tree_map_only(
     tree: PyTree,
     is_leaf: Optional[Callable[[PyTree], bool]] = None,
 ) -> PyTree:
-    return tree_map(map_only(__type_or_types_or_pred)(func), tree, is_leaf=is_leaf)
+    return tree_map(map_only(__type_or_types_or_pred)
+                    (func), tree, is_leaf=is_leaf)
 
 
 @overload
@@ -698,7 +707,8 @@ def tree_map_only_(
     tree: PyTree,
     is_leaf: Optional[Callable[[PyTree], bool]] = None,
 ) -> PyTree:
-    return tree_map_(map_only(__type_or_types_or_pred)(func), tree, is_leaf=is_leaf)
+    return tree_map_(map_only(__type_or_types_or_pred)
+                     (func), tree, is_leaf=is_leaf)
 
 
 def tree_all(
@@ -880,7 +890,10 @@ def treespec_dumps(treespec: TreeSpec, protocol: Optional[int] = None) -> str:
         treespec_dumps as _treespec_dumps,
     )
 
-    orig_treespec = _tree_structure(tree_unflatten([0] * treespec.num_leaves, treespec))
+    orig_treespec = _tree_structure(
+        tree_unflatten(
+            [0] * treespec.num_leaves,
+            treespec))
     return _treespec_dumps(orig_treespec, protocol=protocol)
 
 
@@ -917,7 +930,8 @@ class LeafSpecMeta(type(TreeSpec)):  # type: ignore[misc]
 
 class LeafSpec(TreeSpec, metaclass=LeafSpecMeta):
     def __new__(cls) -> "LeafSpec":
-        return optree.treespec_leaf(none_is_leaf=True)  # type: ignore[return-value]
+        return optree.treespec_leaf(
+            none_is_leaf=True)  # type: ignore[return-value]
 
 
 def tree_flatten_with_path(

@@ -379,9 +379,7 @@ class PruningContainer(BasePruningMethod):
                     dim = n_dims + dim
                 # if dim is still negative after subtracting it from n_dims
                 if dim < 0:
-                    raise IndexError(
-                        f"Index is out of bounds for tensor with dimensions {n_dims}"
-                    )
+                    raise IndexError(f"Index is out of bounds for tensor with dimensions {n_dims}")
                 # find channels along dim = dim that aren't already tots 0ed out
                 keep_channel = mask.sum(dim=[d for d in range(n_dims) if d != dim]) != 0
                 # create slice to identify what to prune
@@ -551,9 +549,7 @@ class L1Unstructured(BasePruningMethod):
                 elements in the parameter being pruned.
                 If unspecified or None, the module parameter will be used in its place.
         """
-        return super().apply(
-            module, name, amount=amount, importance_scores=importance_scores
-        )
+        return super().apply(module, name, amount=amount, importance_scores=importance_scores)
 
 
 class RandomStructured(BasePruningMethod):
@@ -927,9 +923,7 @@ def l1_unstructured(module, name, amount, importance_scores=None):
         >>> m.state_dict().keys()
         odict_keys(['bias', 'weight_orig', 'weight_mask'])
     """
-    L1Unstructured.apply(
-        module, name, amount=amount, importance_scores=importance_scores
-    )
+    L1Unstructured.apply(module, name, amount=amount, importance_scores=importance_scores)
     return module
 
 
@@ -1015,9 +1009,7 @@ def ln_structured(module, name, amount, n, dim, importance_scores=None):
         ...     nn.Conv2d(5, 3, 2), 'weight', amount=0.3, dim=1, n=float('-inf')
         ... )
     """
-    LnStructured.apply(
-        module, name, amount, n, dim, importance_scores=importance_scores
-    )
+    LnStructured.apply(module, name, amount, n, dim, importance_scores=importance_scores)
     return module
 
 

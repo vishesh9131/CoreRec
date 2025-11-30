@@ -58,7 +58,8 @@ def _is_jit_enabled() -> "EnabledProxy":
 #
 # currently a module cannot be replicated properly if the descendants of
 # any ScriptModule contains python module (type 1 above)
-def _replicatable_module(module: Module, memo: Optional[Set[Module]] = None) -> bool:
+def _replicatable_module(module: Module,
+                         memo: Optional[Set[Module]] = None) -> bool:
     # module.modules() contains module itself as the first element
     def descendant_modules(module: Module) -> Iterator[Module]:
         gen = module.modules()
@@ -74,9 +75,8 @@ def _replicatable_module(module: Module, memo: Optional[Set[Module]] = None) -> 
     memo.add(module)
     if _is_script_module(module):
         memo.update(descendant_modules(module))
-        return all(
-            _is_script_module(descendant) for descendant in descendant_modules(module)
-        )
+        return all(_is_script_module(descendant)
+                   for descendant in descendant_modules(module))
 
     for child in module.children():
         # since any unreplicatable module will cause the check to return
@@ -103,7 +103,7 @@ def _broadcast_coalesced_reshape(
         if len(tensors) > 0:
             tensor_copies = Broadcast.apply(devices, *tensors)
             return [
-                tensor_copies[i : i + len(tensors)]
+                tensor_copies[i: i + len(tensors)]
                 for i in range(0, len(tensor_copies), len(tensors))
             ]
         else:
@@ -121,8 +121,7 @@ def replicate(
     if not _replicatable_module(network):
         raise RuntimeError(
             "Cannot replicate network where python modules are "
-            "childrens of ScriptModule"
-        )
+            "childrens of ScriptModule")
 
     if not devices:
         return []
@@ -144,12 +143,14 @@ def replicate(
             buffers_not_rg.append(buf)
 
     buffer_indices_rg = {buf: idx for idx, buf in enumerate(buffers_rg)}
-    buffer_indices_not_rg = {buf: idx for idx, buf in enumerate(buffers_not_rg)}
+    buffer_indices_not_rg = {
+        buf: idx for idx,
+        buf in enumerate(buffers_not_rg)}
 
-    buffer_copies_rg = _broadcast_coalesced_reshape(buffers_rg, devices, detach=detach)
+    buffer_copies_rg = _broadcast_coalesced_reshape(
+        buffers_rg, devices, detach=detach)
     buffer_copies_not_rg = _broadcast_coalesced_reshape(
-        buffers_not_rg, devices, detach=True
-    )
+        buffers_not_rg, devices, detach=True)
 
     modules = list(network.modules())
     module_copies: List[List[Module]] = [[] for _ in devices]

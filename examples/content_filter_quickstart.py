@@ -55,4 +55,4 @@ def run_factory():
 
 if __name__ == "__main__":
     run_tfidf()
-    run_factory() 
+    run_factory()

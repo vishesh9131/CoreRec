@@ -44,6 +44,7 @@ import os.path
 # - Before running the compiled code, enter the
 #   report_compile_source_on_error() context manager.
 
+
 @contextlib.contextmanager
 def report_compile_source_on_error():
     try:
@@ -83,15 +84,15 @@ def report_compile_source_on_error():
                 # Don't delete the temporary file so the user can inspect it
                 # TODO: This creates a temporary file for every frame, but we
                 # technically only need one per distinct __compile_source__
-                with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix=".py") as f:
+                with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".py") as f:
                     f.write(source)
                 # Create a frame.  Python doesn't let you construct
                 # FrameType directly, so just make one with compile
                 frame = tb.tb_frame
-                code = compile('__inspect_currentframe()', f.name, 'eval')
+                code = compile("__inspect_currentframe()", f.name, "eval")
                 code = code.replace(co_name=frame.f_code.co_name)
                 # Python 3.11 only
-                if hasattr(frame.f_code, 'co_linetable'):
+                if hasattr(frame.f_code, "co_linetable"):
                     # We can't copy ALL of the metadata over, because you
                     # can cause Python to segfault this way.  What exactly
                     # do we need?  We need enough information for
@@ -103,20 +104,16 @@ def report_compile_source_on_error():
                     # this iterator is initialized from co_linetable and
                     # co_firstfileno.  So copy these we must!
                     code = code.replace(  # type: ignore[call-arg]
-                        co_linetable=frame.f_code.co_linetable,  # type: ignore[attr-defined]
-                        co_firstlineno=frame.f_code.co_firstlineno,  # type: ignore[attr-defined]
+                        # type: ignore[attr-defined]
+                        co_linetable=frame.f_code.co_linetable,
+                        # type: ignore[attr-defined]
+                        co_firstlineno=frame.f_code.co_firstlineno,
                     )
                 fake_frame = eval(
-                    code,
-                    frame.f_globals,
-                    {
-                        **frame.f_locals,
-                        '__inspect_currentframe': inspect.currentframe
-                    }
-                )
+                    code, frame.f_globals, {
+                        **frame.f_locals, "__inspect_currentframe": inspect.currentframe}, )
                 fake_tb = TracebackType(
-                    None, fake_frame, tb.tb_lasti, tb.tb_lineno
-                )
+                    None, fake_frame, tb.tb_lasti, tb.tb_lineno)
                 stack.append(fake_tb)
             else:
                 stack.append(tb)
@@ -131,6 +128,7 @@ def report_compile_source_on_error():
 
         raise exc.with_traceback(tb_next)  # noqa: B904
 
+
 def shorten_filename(fn, *, base=None):
     """Shorten a source filepath, with the assumption that torch/ subdirectories don't need to be shown to user."""
     if base is None:
@@ -143,6 +141,7 @@ def shorten_filename(fn, *, base=None):
     else:
         return fn[len(prefix) + 1:]
 
+
 def format_frame(frame, *, base=None, line=False):
     """
     Format a FrameSummary in a short way, without printing full absolute path or code.
@@ -152,14 +151,22 @@ def format_frame(frame, *, base=None, line=False):
     extra_line = ""
     if line:
         extra_line = f"{frame.line}  # "
-    return f"{extra_line}{shorten_filename(frame.filename, base=base)}:{frame.lineno} in {frame.name}"
+    return (
+        f"{extra_line}{
+            shorten_filename(
+                frame.filename,
+                base=base)}:{
+            frame.lineno} in {
+                    frame.name}")
+
 
 def format_traceback_short(tb):
     """Format a TracebackType in a short way, printing only the inner-most frame."""
     return format_frame(traceback.extract_tb(tb)[-1])
 
+
 class CapturedTraceback:
-    __slots__ = ['tb', 'skip']
+    __slots__ = ["tb", "skip"]
 
     def __init__(self, tb, skip=0):
         self.tb = tb
@@ -176,15 +183,17 @@ class CapturedTraceback:
             return traceback.StackSummary()
 
         return _extract_symbolized_tb(
-            torch._C._profiler.symbolize_tracebacks([self.tb])[0],
-            self.skip
+            torch._C._profiler.symbolize_tracebacks([self.tb])[0], self.skip
         )
 
     def __getstate__(self):
-        return (None, {
-            'tb': None,  # TB is not pickleable
-            'skip': self.skip,
-        })
+        return (
+            None,
+            {
+                "tb": None,  # TB is not pickleable
+                "skip": self.skip,
+            },
+        )
 
     @staticmethod
     def extract(*, script=False, cpp=False, skip=0):
@@ -204,10 +213,11 @@ class CapturedTraceback:
             assert skip == 0, "skip with script/cpp NYI"
 
         return CapturedTraceback(
-            torch._C._profiler.gather_traceback(python=True, script=script, cpp=cpp),
+            torch._C._profiler.gather_traceback(
+                python=True, script=script, cpp=cpp),
             # Elide extract() frame if we don't have script/cpp frames.  If
             # we do have those frames, it doesn't work so force zero.
-            0 if script or cpp else skip + 1
+            0 if script or cpp else skip + 1,
         )
 
     def format(self):
@@ -237,7 +247,8 @@ class CapturedTraceback:
                 rs.append(None)
                 delayed_idxs.append(i)
 
-        stbs = torch._C._profiler.symbolize_tracebacks([tbs[i].tb for i in delayed_idxs])
+        stbs = torch._C._profiler.symbolize_tracebacks(
+            [tbs[i].tb for i in delayed_idxs])
         for i, stb in zip(delayed_idxs, stbs):
             rs[i] = traceback.format_list(tbs[i].summary())
 
@@ -251,5 +262,9 @@ def _extract_symbolized_tb(tb, skip):
     """
     stack = traceback.StackSummary()
     for f in reversed(tb[skip:]):
-        stack.append(traceback.FrameSummary(f['filename'], f['line'], f['name']))
+        stack.append(
+            traceback.FrameSummary(
+                f["filename"],
+                f["line"],
+                f["name"]))
     return stack

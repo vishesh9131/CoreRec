@@ -50,12 +50,14 @@ def install_config_module(module):
                 visit(value, proxy, f"{name}.")
                 setattr(dest, key, proxy)
             else:
-                raise AssertionError(f"Unhandled config {key}={value} ({type(value)})")
+                raise AssertionError(
+                    f"Unhandled config {key}={value} ({type(value)})")
 
     config: Dict[str, Any] = dict()
     default: Dict[str, Any] = dict()
 
-    compile_ignored_keys = get_assignments_with_compile_ignored_comments(module)
+    compile_ignored_keys = get_assignments_with_compile_ignored_comments(
+        module)
 
     visit(module, module, "")
     module._config = config
@@ -76,7 +78,8 @@ def get_assignments_with_compile_ignored_comments(module):
     assignments = set()
 
     # Tokenize the source code to retrieve comments
-    tokens = tokenize.tokenize(io.BytesIO(source_code.encode("utf-8")).readline)
+    tokens = tokenize.tokenize(io.BytesIO(
+        source_code.encode("utf-8")).readline)
     current_comment = "", -1
     prev_name = ""
 
@@ -127,8 +130,7 @@ class ConfigModule(ModuleType):
 
     def __init__(self):
         raise NotImplementedError(
-            f"use {__name__}.install_config_module(sys.modules[__name__])"
-        )
+            f"use {__name__}.install_config_module(sys.modules[__name__])")
 
     def __setattr__(self, name, value):
         if name in self._bypass_keys:
@@ -143,7 +145,8 @@ class ConfigModule(ModuleType):
             return self._config[name]
         except KeyError as e:
             # make hasattr() work properly
-            raise AttributeError(f"{self.__name__}.{name} does not exist") from e
+            raise AttributeError(
+                f"{self.__name__}.{name} does not exist") from e
 
     def __delattr__(self, name):
         # must support delete because unittest.mock.patch deletes
@@ -163,9 +166,8 @@ class ConfigModule(ModuleType):
         for key in sorted(self._config):
             if key.startswith("_"):
                 continue
-            if any(
-                key.startswith(e) for e in self._config["_cache_config_ignore_prefix"]
-            ):
+            if any(key.startswith(e)
+                   for e in self._config["_cache_config_ignore_prefix"]):
                 continue
             config[key] = self._config[key]
         return config
@@ -188,12 +190,11 @@ class ConfigModule(ModuleType):
         """Hashes the configs that are not compile_ignored"""
         if self._is_dirty or self._hash_digest is None:
             dict_to_hash = {
-                k: v
-                for k, v in self._config.items()
-                if k not in self._compile_ignored_keys
-            }
+                k: v for k,
+                v in self._config.items() if k not in self._compile_ignored_keys}
             string_to_hash = repr(sorted(dict_to_hash.items()))
-            self._hash_digest = hashlib.md5(string_to_hash.encode("utf-8")).digest()
+            self._hash_digest = hashlib.md5(
+                string_to_hash.encode("utf-8")).digest()
             self._is_dirty = False
         return self._hash_digest
 
@@ -208,7 +209,8 @@ class ConfigModule(ModuleType):
     def shallow_copy_dict(self) -> Dict[str, Any]:
         return {**self._config}
 
-    def load_config(self, maybe_pickled_config: Union[bytes, Dict[str, Any]]) -> None:
+    def load_config(
+            self, maybe_pickled_config: Union[bytes, Dict[str, Any]]) -> None:
         """Restore from a prior call to save_config() or shallow_copy_dict()"""
         if not isinstance(maybe_pickled_config, dict):
             config = pickle.loads(maybe_pickled_config)
@@ -256,7 +258,9 @@ class ConfigModule(ModuleType):
             # patch(key=True) syntax
             changes = kwargs
             assert arg2 is None
-        assert isinstance(changes, dict), f"expected `dict` got {type(changes)}"
+        assert isinstance(
+            changes, dict), f"expected `dict` got {
+            type(changes)}"
         prior: Dict[str, Any] = {}
         config = self
         dirty = False

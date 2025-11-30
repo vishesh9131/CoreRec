@@ -9,7 +9,7 @@ while adding an import statement here.
 """
 
 __all__ = [
-    'LinearBn1d',
+    "LinearBn1d",
 ]
 
 from torch.ao.nn.intrinsic.qat import LinearBn1d

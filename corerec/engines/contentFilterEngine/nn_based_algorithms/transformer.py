@@ -3,8 +3,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class TransformerModel(nn.Module):
-    def __init__(self, input_dim, embed_dim, num_heads, hidden_dim, num_layers, dropout=0.1, num_classes=2):
+    def __init__(
+        self, input_dim, embed_dim, num_heads, hidden_dim, num_layers, dropout=0.1, num_classes=2
+    ):
         """
         Initialize the Transformer model.
 
@@ -20,7 +23,9 @@ class TransformerModel(nn.Module):
         super(TransformerModel, self).__init__()
         self.embedding = nn.Linear(input_dim, embed_dim)
         self.pos_encoder = PositionalEncoding(embed_dim, dropout)
-        encoder_layers = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=num_heads, dim_feedforward=hidden_dim, dropout=dropout)
+        encoder_layers = nn.TransformerEncoderLayer(
+            d_model=embed_dim, nhead=num_heads, dim_feedforward=hidden_dim, dropout=dropout
+        )
         self.transformer_encoder = nn.TransformerEncoder(encoder_layers, num_layers=num_layers)
         self.fc_out = nn.Linear(embed_dim, num_classes)
         self.dropout = nn.Dropout(dropout)
@@ -47,6 +52,7 @@ class TransformerModel(nn.Module):
         out = self.fc_out(memory)  # (batch_size, num_classes)
         return out
 
+
 class PositionalEncoding(nn.Module):
     def __init__(self, embed_dim, dropout=0.1, max_len=5000):
         """
@@ -62,11 +68,13 @@ class PositionalEncoding(nn.Module):
 
         pe = torch.zeros(max_len, embed_dim)
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, embed_dim, 2).float() * (-torch.log(torch.tensor(10000.0)) / embed_dim))
+        div_term = torch.exp(
+            torch.arange(0, embed_dim, 2).float() * (-torch.log(torch.tensor(10000.0)) / embed_dim)
+        )
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(1)  # (max_len, 1, embed_dim)
-        self.register_buffer('pe', pe)
+        self.register_buffer("pe", pe)
 
     def forward(self, x):
         """
@@ -78,5 +86,5 @@ class PositionalEncoding(nn.Module):
         Returns:
             torch.Tensor: Positionally encoded tensor.
         """
-        x = x + self.pe[:x.size(0), :]
+        x = x + self.pe[: x.size(0), :]
         return self.dropout(x)

@@ -13,7 +13,8 @@ _HAS_GFILE_JOIN = hasattr(tf.io.gfile, "join")
 def _gfile_join(a, b):
     # The join API is different between tensorboard's TF stub and TF:
     # https://github.com/tensorflow/tensorboard/issues/6080
-    # We need to try both because `tf` may point to either the stub or the real TF.
+    # We need to try both because `tf` may point to either the stub or the
+    # real TF.
     if _HAS_GFILE_JOIN:
         return tf.io.gfile.join(a, b)
     else:
@@ -28,14 +29,16 @@ def make_tsv(metadata, save_path, metadata_header=None):
         assert len(metadata_header) == len(
             metadata[0]
         ), "len of header must be equal to the number of columns in metadata"
-        metadata = ["\t".join(str(e) for e in l) for l in [metadata_header] + metadata]
+        metadata = ["\t".join(str(e) for e in l)
+                    for l in [metadata_header] + metadata]
 
     metadata_bytes = tf.compat.as_bytes("\n".join(metadata) + "\n")
     with tf.io.gfile.GFile(_gfile_join(save_path, "metadata.tsv"), "wb") as f:
         f.write(metadata_bytes)
 
 
-# https://github.com/tensorflow/tensorboard/issues/44 image label will be squared
+# https://github.com/tensorflow/tensorboard/issues/44 image label will be
+# squared
 def make_sprite(label_img, save_path):
     from PIL import Image
     from io import BytesIO
@@ -50,8 +53,14 @@ def make_sprite(label_img, save_path):
         (arranged_img_CHW.shape[2], arranged_img_CHW.shape[2], 3)
     )
     arranged_img_HWC = arranged_img_CHW.transpose(1, 2, 0)  # chw -> hwc
-    arranged_augment_square_HWC[: arranged_img_HWC.shape[0], :, :] = arranged_img_HWC
-    im = Image.fromarray(np.uint8((arranged_augment_square_HWC * 255).clip(0, 255)))
+    arranged_augment_square_HWC[: arranged_img_HWC.shape[0],
+                                :, :] = arranged_img_HWC
+    im = Image.fromarray(
+        np.uint8(
+            (arranged_augment_square_HWC *
+             255).clip(
+                0,
+                255)))
 
     with BytesIO() as buf:
         im.save(buf, format="PNG")
@@ -69,7 +78,8 @@ def get_embedding_info(metadata, label_img, subdir, global_step, tag):
         info.metadata_path = _gfile_join(subdir, "metadata.tsv")
     if label_img is not None:
         info.sprite.image_path = _gfile_join(subdir, "sprite.png")
-        info.sprite.single_image_dim.extend([label_img.size(3), label_img.size(2)])
+        info.sprite.single_image_dim.extend(
+            [label_img.size(3), label_img.size(2)])
     return info
 
 

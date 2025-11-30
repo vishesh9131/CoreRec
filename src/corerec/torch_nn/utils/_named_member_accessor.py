@@ -34,11 +34,7 @@ def swap_tensor(
 ) -> torch.Tensor:
     if not isinstance(module, torch.nn.Module):
         raise TypeError(f"{module} is not an instance of torch.nn.Module")
-    if (
-        tensor is not _MISSING
-        and not isinstance(tensor, torch.Tensor)
-        and tensor is not None
-    ):
+    if tensor is not _MISSING and not isinstance(tensor, torch.Tensor) and tensor is not None:
         raise TypeError(f"{tensor} is not an instance of torch.Tensor")
     if "." in name:
         raise KeyError('tensor name can\'t contain "."')
@@ -63,18 +59,14 @@ def swap_tensor(
             orig_tensor = getattr(module, name)
         except AttributeError as ex:
             if not allow_missing:
-                raise AttributeError(
-                    f"{module._get_name()} has no attribute `{name}`"
-                ) from ex
+                raise AttributeError(f"{module._get_name()} has no attribute `{name}`") from ex
             orig_tensor = _MISSING
         if (
             orig_tensor is not _MISSING
             and not isinstance(orig_tensor, torch.Tensor)
             and orig_tensor is not None
         ):
-            raise TypeError(
-                f"attribute `{name}`: {orig_tensor} is not an instance of torch.Tensor"
-            )
+            raise TypeError(f"attribute `{name}`: {orig_tensor} is not an instance of torch.Tensor")
         if tensor is not _MISSING:
             setattr(module, name, tensor)
         elif hasattr(module, name):
@@ -143,9 +135,7 @@ class NamedMemberAccessor:
             try:
                 submodule = getattr(module, attr)
             except AttributeError as ex:
-                raise AttributeError(
-                    f"{module._get_name()} has no attribute `{attr}`"
-                ) from ex
+                raise AttributeError(f"{module._get_name()} has no attribute `{attr}`") from ex
             if not isinstance(submodule, torch.nn.Module):
                 raise TypeError(  # noqa: B904
                     f"submodule `{name}`: {submodule} is not an instance of torch.nn.Module"
@@ -178,9 +168,7 @@ class NamedMemberAccessor:
         try:
             tensor = getattr(submodule, attr)
         except AttributeError as ex:
-            raise AttributeError(
-                f"{submodule._get_name()} has no attribute `{name}`"
-            ) from ex
+            raise AttributeError(f"{submodule._get_name()} has no attribute `{name}`") from ex
         if not isinstance(tensor, torch.Tensor) and tensor is not None:
             raise TypeError(f"{tensor} is not an instance of torch.Tensor")
         return tensor  # type: ignore[return-value]
@@ -207,9 +195,7 @@ class NamedMemberAccessor:
         try:
             delattr(submodule, attr)
         except AttributeError as ex:
-            raise AttributeError(
-                f"{submodule._get_name()} has no attribute `{name}`"
-            ) from ex
+            raise AttributeError(f"{submodule._get_name()} has no attribute `{name}`") from ex
 
     def swap_tensor(
         self, name: str, value: torch.Tensor, allow_missing: bool = False
@@ -221,9 +207,7 @@ class NamedMemberAccessor:
         use accessor.swap_tensor("layer1.conv1.weight", value)
         """
         prefix, _, attr = name.rpartition(".")
-        return swap_tensor(
-            self.get_submodule(prefix), attr, value, allow_missing=allow_missing
-        )
+        return swap_tensor(self.get_submodule(prefix), attr, value, allow_missing=allow_missing)
 
     # Batched operations
 

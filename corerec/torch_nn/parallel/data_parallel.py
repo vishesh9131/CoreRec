@@ -36,8 +36,9 @@ def _check_balance(device_ids: Sequence[Union[int, torch.device]]) -> None:
         max_pos, max_val = max(enumerate(values), key=operator.itemgetter(1))
         if min_val / max_val < 0.75:
             warnings.warn(
-                imbalance_warn.format(device_ids[min_pos], device_ids[max_pos])
-            )
+                imbalance_warn.format(
+                    device_ids[min_pos],
+                    device_ids[max_pos]))
             return True
         return False
 
@@ -176,27 +177,28 @@ class DataParallel(Module, Generic[T]):
             for t in chain(self.module.parameters(), self.module.buffers()):
                 if t.device != self.src_device_obj:
                     raise RuntimeError(
-                        "module must have its parameters and buffers "
-                        f"on device {self.src_device_obj} (device_ids[0]) but found one of "
-                        f"them on device: {t.device}"
-                    )
+                        "module must have its parameters and buffers " f"on device {
+                            self.src_device_obj} (device_ids[0]) but found one of " f"them on device: {
+                            t.device}")
 
-            inputs, module_kwargs = self.scatter(inputs, kwargs, self.device_ids)
+            inputs, module_kwargs = self.scatter(
+                inputs, kwargs, self.device_ids)
             # for forward function without any inputs, empty list and dict will be created
-            # so the module can be executed on one device which is the first one in device_ids
+            # so the module can be executed on one device which is the first
+            # one in device_ids
             if not inputs and not module_kwargs:
                 inputs = ((),)
                 module_kwargs = ({},)
 
             if len(self.device_ids) == 1:
                 return self.module(*inputs[0], **module_kwargs[0])
-            replicas = self.replicate(self.module, self.device_ids[: len(inputs)])
+            replicas = self.replicate(
+                self.module, self.device_ids[: len(inputs)])
             outputs = self.parallel_apply(replicas, inputs, module_kwargs)
             return self.gather(outputs, self.output_device)
 
-    def replicate(
-        self, module: T, device_ids: Sequence[Union[int, torch.device]]
-    ) -> List[T]:
+    def replicate(self, module: T,
+                  device_ids: Sequence[Union[int, torch.device]]) -> List[T]:
         return replicate(module, device_ids, not torch.is_grad_enabled())
 
     def scatter(
@@ -210,11 +212,13 @@ class DataParallel(Module, Generic[T]):
     def parallel_apply(
         self, replicas: Sequence[T], inputs: Sequence[Any], kwargs: Any
     ) -> List[Any]:
-        return parallel_apply(
-            replicas, inputs, kwargs, self.device_ids[: len(replicas)]
-        )
+        return parallel_apply(replicas, inputs, kwargs,
+                              self.device_ids[: len(replicas)])
 
-    def gather(self, outputs: Any, output_device: Union[int, torch.device]) -> Any:
+    def gather(self,
+               outputs: Any,
+               output_device: Union[int,
+                                    torch.device]) -> Any:
         return gather(outputs, output_device, dim=self.dim)
 
 
@@ -269,9 +273,11 @@ def data_parallel(
                 f"them on device: {t.device}"
             )
 
-    inputs, module_kwargs = scatter_kwargs(inputs, module_kwargs, device_ids, dim)
+    inputs, module_kwargs = scatter_kwargs(
+        inputs, module_kwargs, device_ids, dim)
     # for module without any inputs, empty list and dict will be created
-    # so the module can be executed on one device which is the first one in device_ids
+    # so the module can be executed on one device which is the first one in
+    # device_ids
     if not inputs and not module_kwargs:
         inputs = ((),)
         module_kwargs = ({},)

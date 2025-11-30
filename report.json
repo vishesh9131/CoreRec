@@ -1,0 +1,878 @@
+{
+  "generated_at": "2025-11-30 13:42:18",
+  "project_root": "/Users/visheshyadav/Documents/GitHub/CoreRec",
+  "reports": [
+    {
+      "algorithm": "all_algorithms",
+      "module": "tests.contentFilterEngine.all_algorithms_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/all_algorithms_test.py",
+      "total": 2,
+      "passed": 0,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 2,
+      "duration_s": 0.018,
+      "cases": [
+        {
+          "test_id": "test_import_all_algorithm_modules (tests.contentFilterEngine.all_algorithms_test.TestAllContentFilterAlgorithms.test_import_all_algorithm_modules) (module='cr_contentFilterFactory.py')",
+          "outcome": "skipped",
+          "message": "Optional dep missing for cr_contentFilterFactory.py: attempted relative import with no known parent package"
+        },
+        {
+          "test_id": "test_import_all_algorithm_modules (tests.contentFilterEngine.all_algorithms_test.TestAllContentFilterAlgorithms.test_import_all_algorithm_modules) (module='hybrid_ensemble_methods/example_usage.py')",
+          "outcome": "skipped",
+          "message": "Optional dep missing for example_usage.py: No module named 'attention_mechanisms'"
+        }
+      ]
+    },
+    {
+      "algorithm": "context_personalization_context_aware",
+      "module": "tests.contentFilterEngine.context_personalization_context_aware_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/context_personalization_context_aware_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.001,
+      "cases": [
+        {
+          "test_id": "test_init_and_weights (tests.contentFilterEngine.context_personalization_context_aware_test.TestContextAware.test_init_and_weights)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "context_personalization_import",
+      "module": "tests.contentFilterEngine.context_personalization_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/context_personalization_import_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.001,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.context_personalization_import_test.TestImportContextPersonalization.test_import_all)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "context_personalization_item_profiling",
+      "module": "tests.contentFilterEngine.context_personalization_item_profiling_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/context_personalization_item_profiling_test.py",
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.001,
+      "cases": [
+        {
+          "test_id": "test_fit_builds_profiles (tests.contentFilterEngine.context_personalization_item_profiling_test.TestItemProfiling.test_fit_builds_profiles)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_recommend_with_profiles (tests.contentFilterEngine.context_personalization_item_profiling_test.TestItemProfiling.test_recommend_with_profiles)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_recommend_without_fitting (tests.contentFilterEngine.context_personalization_item_profiling_test.TestItemProfiling.test_recommend_without_fitting)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "context_personalization_user_profiling",
+      "module": "tests.contentFilterEngine.context_personalization_user_profiling_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/context_personalization_user_profiling_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.008,
+      "cases": [
+        {
+          "test_id": "test_fit_and_recommend (tests.contentFilterEngine.context_personalization_user_profiling_test.TestUserProfiling.test_fit_and_recommend)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "cr_contentFilterFactory",
+      "module": "tests.contentFilterEngine.cr_contentFilterFactory_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/cr_contentFilterFactory_test.py",
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.0,
+      "cases": [
+        {
+          "test_id": "test_get_recommender_tfidf (tests.contentFilterEngine.cr_contentFilterFactory_test.TestContentFilterFactory.test_get_recommender_tfidf)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_get_recommender_unsupported (tests.contentFilterEngine.cr_contentFilterFactory_test.TestContentFilterFactory.test_get_recommender_unsupported)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "embedding_rep_learning_doc2vec",
+      "module": "tests.contentFilterEngine.embedding_rep_learning_doc2vec_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/embedding_rep_learning_doc2vec_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.008,
+      "cases": [
+        {
+          "test_id": "test_train_and_get_embedding (tests.contentFilterEngine.embedding_rep_learning_doc2vec_test.TestSimpleDoc2Vec.test_train_and_get_embedding)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "embedding_rep_learning_personalized_embeddings",
+      "module": "tests.contentFilterEngine.embedding_rep_learning_personalized_embeddings_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/embedding_rep_learning_personalized_embeddings_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.001,
+      "cases": [
+        {
+          "test_id": "test_doc2vec_flow (tests.contentFilterEngine.embedding_rep_learning_personalized_embeddings_test.TestPersonalizedEmbeddings.test_doc2vec_flow)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "embedding_rep_learning_word2vec",
+      "module": "tests.contentFilterEngine.embedding_rep_learning_word2vec_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/embedding_rep_learning_word2vec_test.py",
+      "total": 1,
+      "passed": 0,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 1,
+      "duration_s": 0.0,
+      "cases": [
+        {
+          "test_id": "test_forward_embedding_shape (tests.contentFilterEngine.embedding_rep_learning_word2vec_test.TestWord2VecMinimal.test_forward_embedding_shape)",
+          "outcome": "skipped",
+          "message": "Skipping Word2Vec minimal test due to recursion in current implementation"
+        }
+      ]
+    },
+    {
+      "algorithm": "embedding_representation_learning_import",
+      "module": "tests.contentFilterEngine.embedding_representation_learning_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/embedding_representation_learning_import_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.001,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.embedding_representation_learning_import_test.TestImportEmbeddingRepresentation.test_import_all)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "fairness_explainability_explainable",
+      "module": "tests.contentFilterEngine.fairness_explainability_explainable_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/fairness_explainability_explainable_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.0,
+      "cases": [
+        {
+          "test_id": "test_generate_and_get (tests.contentFilterEngine.fairness_explainability_explainable_test.TestExplainable.test_generate_and_get)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "fairness_explainability_fairness_aware",
+      "module": "tests.contentFilterEngine.fairness_explainability_fairness_aware_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/fairness_explainability_fairness_aware_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.006,
+      "cases": [
+        {
+          "test_id": "test_evaluate_and_ensure (tests.contentFilterEngine.fairness_explainability_fairness_aware_test.TestFairnessAware.test_evaluate_and_ensure)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "fairness_explainability_import",
+      "module": "tests.contentFilterEngine.fairness_explainability_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/fairness_explainability_import_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.001,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.fairness_explainability_import_test.TestImportFairnessExplainability.test_import_all)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "fairness_explainability_privacy_preserving",
+      "module": "tests.contentFilterEngine.fairness_explainability_privacy_preserving_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/fairness_explainability_privacy_preserving_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.004,
+      "cases": [
+        {
+          "test_id": "test_anonymize_and_dp (tests.contentFilterEngine.fairness_explainability_privacy_preserving_test.TestPrivacyPreserving.test_anonymize_and_dp)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "graph_based_algorithms_graph_filtering",
+      "module": "tests.contentFilterEngine.graph_based_algorithms_graph_filtering_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/graph_based_algorithms_graph_filtering_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.0,
+      "cases": [
+        {
+          "test_id": "test_generate_and_scale (tests.contentFilterEngine.graph_based_algorithms_graph_filtering_test.TestGraphFiltering.test_generate_and_scale)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "graph_based_algorithms_import",
+      "module": "tests.contentFilterEngine.graph_based_algorithms_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/graph_based_algorithms_import_test.py",
+      "total": 2,
+      "passed": 0,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 2,
+      "duration_s": 0.002,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.graph_based_algorithms_import_test.TestImportGraphBased.test_import_all) (module='gnn.py')",
+          "outcome": "skipped",
+          "message": "Optional dep missing for gnn.py: cannot import name 'draw_graph' from 'corerec.vish_graphs' (unknown location)"
+        },
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.graph_based_algorithms_import_test.TestImportGraphBased.test_import_all) (module='semantic_models.py')",
+          "outcome": "skipped",
+          "message": "Optional dep missing for semantic_models.py: cannot import name 'run_optimal_path' from 'corerec.vish_graphs' (unknown location)"
+        }
+      ]
+    },
+    {
+      "algorithm": "graph_based_algorithms_semantic_models",
+      "module": "tests.contentFilterEngine.graph_based_algorithms_semantic_models_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/graph_based_algorithms_semantic_models_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.0,
+      "cases": [
+        {
+          "test_id": "test_set_and_find_path (tests.contentFilterEngine.graph_based_algorithms_semantic_models_test.TestSemanticModels.test_set_and_find_path)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "hybrid_ensemble_methods_import",
+      "module": "tests.contentFilterEngine.hybrid_ensemble_methods_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/hybrid_ensemble_methods_import_test.py",
+      "total": 1,
+      "passed": 0,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 1,
+      "duration_s": 0.003,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.hybrid_ensemble_methods_import_test.TestImportHybridEnsemble.test_import_all) (module='example_usage.py')",
+          "outcome": "skipped",
+          "message": "Optional dep missing for example_usage.py: No module named 'attention_mechanisms'"
+        }
+      ]
+    },
+    {
+      "algorithm": "hybrid_ensemble_methods",
+      "module": "tests.contentFilterEngine.hybrid_ensemble_methods_tests",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/hybrid_ensemble_methods_tests.py",
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.003,
+      "cases": [
+        {
+          "test_id": "test_attention_module_imports (tests.contentFilterEngine.hybrid_ensemble_methods_tests.TestHybridEnsembleModules.test_attention_module_imports)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_ensemble_methods_imports (tests.contentFilterEngine.hybrid_ensemble_methods_tests.TestHybridEnsembleModules.test_ensemble_methods_imports)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_hybrid_collaborative_imports (tests.contentFilterEngine.hybrid_ensemble_methods_tests.TestHybridEnsembleModules.test_hybrid_collaborative_imports)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "learning_paradigms_import",
+      "module": "tests.contentFilterEngine.learning_paradigms_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/learning_paradigms_import_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.001,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.learning_paradigms_import_test.TestImportLearningParadigms.test_import_all)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "learning_paradigms",
+      "module": "tests.contentFilterEngine.learning_paradigms_tests",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/learning_paradigms_tests.py",
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.02,
+      "cases": [
+        {
+          "test_id": "test_meta_learning_train_and_predict (tests.contentFilterEngine.learning_paradigms_tests.TestLearningParadigms.test_meta_learning_train_and_predict)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_transfer_learning_train_and_predict (tests.contentFilterEngine.learning_paradigms_tests.TestLearningParadigms.test_transfer_learning_train_and_predict)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_zero_shot_predict (tests.contentFilterEngine.learning_paradigms_tests.TestLearningParadigms.test_zero_shot_predict)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "miscellaneous_techniques_import",
+      "module": "tests.contentFilterEngine.miscellaneous_techniques_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/miscellaneous_techniques_import_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.007,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.miscellaneous_techniques_import_test.TestImportMiscellaneous.test_import_all)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "miscellaneous_techniques",
+      "module": "tests.contentFilterEngine.miscellaneous_techniques_tests",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/miscellaneous_techniques_tests.py",
+      "total": 3,
+      "passed": 2,
+      "failed": 0,
+      "errors": 1,
+      "skipped": 0,
+      "duration_s": 0.143,
+      "cases": [
+        {
+          "test_id": "test_cold_start (tests.contentFilterEngine.miscellaneous_techniques_tests.TestMiscTechniques.test_cold_start)",
+          "outcome": "error",
+          "message": "Traceback (most recent call last):\n  File \"/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/miscellaneous_techniques_tests.py\", line 63, in test_cold_start\n    cs.fit(item_features, inter)\n  File \"/Users/visheshyadav/Documents/GitHub/CoreRec/corerec/engines/contentFilterEngine/miscellaneous_techniques/cold_start.py\", line 32, in fit\n    validate_fit_inputs(user_ids, item_ids, ratings)\n    ^^^^^^^^^^^^^^^^^^^\nNameError: name 'validate_fit_inputs' is not defined\n"
+        },
+        {
+          "test_id": "test_feature_selection_variants (tests.contentFilterEngine.miscellaneous_techniques_tests.TestMiscTechniques.test_feature_selection_variants)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_noise_handling_methods (tests.contentFilterEngine.miscellaneous_techniques_tests.TestMiscTechniques.test_noise_handling_methods)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "multi_modal_cross_domain_methods_import",
+      "module": "tests.contentFilterEngine.multi_modal_cross_domain_methods_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/multi_modal_cross_domain_methods_import_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.001,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.multi_modal_cross_domain_methods_import_test.TestImportMultiModalCrossDomain.test_import_all)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "multi_modal_cross_domain_methods",
+      "module": "tests.contentFilterEngine.multi_modal_cross_domain_methods_tests",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/multi_modal_cross_domain_methods_tests.py",
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.218,
+      "cases": [
+        {
+          "test_id": "test_cross_domain_transfer_eval (tests.contentFilterEngine.multi_modal_cross_domain_methods_tests.TestMultiModalCrossDomain.test_cross_domain_transfer_eval)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_cross_lingual_translate (tests.contentFilterEngine.multi_modal_cross_domain_methods_tests.TestMultiModalCrossDomain.test_cross_lingual_translate)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_multi_modal_forward (tests.contentFilterEngine.multi_modal_cross_domain_methods_tests.TestMultiModalCrossDomain.test_multi_modal_forward)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "nn_based_algorithms_import",
+      "module": "tests.contentFilterEngine.nn_based_algorithms_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/nn_based_algorithms_import_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.003,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.nn_based_algorithms_import_test.TestImportNNBased.test_import_all)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "nn_based_algorithms_light",
+      "module": "tests.contentFilterEngine.nn_based_algorithms_light_tests",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/nn_based_algorithms_light_tests.py",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.14,
+      "cases": [
+        {
+          "test_id": "test_autoencoder_forward (tests.contentFilterEngine.nn_based_algorithms_light_tests.TestNNBasedAlgorithmsLight.test_autoencoder_forward)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_cnn_forward (tests.contentFilterEngine.nn_based_algorithms_light_tests.TestNNBasedAlgorithmsLight.test_cnn_forward)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_rnn_forward (tests.contentFilterEngine.nn_based_algorithms_light_tests.TestNNBasedAlgorithmsLight.test_rnn_forward)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_transformer_forward (tests.contentFilterEngine.nn_based_algorithms_light_tests.TestNNBasedAlgorithmsLight.test_transformer_forward)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "other_approaches_import",
+      "module": "tests.contentFilterEngine.other_approaches_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/other_approaches_import_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.001,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.other_approaches_import_test.TestImportOtherApproaches.test_import_all)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "other_approaches",
+      "module": "tests.contentFilterEngine.other_approaches_tests",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/other_approaches_tests.py",
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.027,
+      "cases": [
+        {
+          "test_id": "test_ontology_based_skip_if_missing (tests.contentFilterEngine.other_approaches_tests.TestOtherApproaches.test_ontology_based_skip_if_missing)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_rule_based (tests.contentFilterEngine.other_approaches_tests.TestOtherApproaches.test_rule_based)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_sentiment_analysis (tests.contentFilterEngine.other_approaches_tests.TestOtherApproaches.test_sentiment_analysis)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "performance_scalability_import",
+      "module": "tests.contentFilterEngine.performance_scalability_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/performance_scalability_import_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.001,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.performance_scalability_import_test.TestImportPerformanceScalability.test_import_all)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "performance_scalability",
+      "module": "tests.contentFilterEngine.performance_scalability_tests",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/performance_scalability_tests.py",
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 10.781,
+      "cases": [
+        {
+          "test_id": "test_feature_extraction_fit (tests.contentFilterEngine.performance_scalability_tests.TestPerformanceScalability.test_feature_extraction_fit)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_load_balancing (tests.contentFilterEngine.performance_scalability_tests.TestPerformanceScalability.test_load_balancing)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_scalable_algorithms (tests.contentFilterEngine.performance_scalability_tests.TestPerformanceScalability.test_scalable_algorithms)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "probabilistic_statistical_methods_import",
+      "module": "tests.contentFilterEngine.probabilistic_statistical_methods_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/probabilistic_statistical_methods_import_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.003,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.probabilistic_statistical_methods_import_test.TestImportProbabilisticStatistical.test_import_all)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "probabilistic_statistical_methods",
+      "module": "tests.contentFilterEngine.probabilistic_statistical_methods_tests",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/probabilistic_statistical_methods_tests.py",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.041,
+      "cases": [
+        {
+          "test_id": "test_bayesian_fit_predict (tests.contentFilterEngine.probabilistic_statistical_methods_tests.TestProbabilisticStatisticalMethods.test_bayesian_fit_predict)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_fuzzy_logic_evaluate (tests.contentFilterEngine.probabilistic_statistical_methods_tests.TestProbabilisticStatisticalMethods.test_fuzzy_logic_evaluate)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_lda_fit_transform (tests.contentFilterEngine.probabilistic_statistical_methods_tests.TestProbabilisticStatisticalMethods.test_lda_fit_transform)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_lsa_fit_transform (tests.contentFilterEngine.probabilistic_statistical_methods_tests.TestProbabilisticStatisticalMethods.test_lsa_fit_transform)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "special_techniques_import",
+      "module": "tests.contentFilterEngine.special_techniques_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/special_techniques_import_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.002,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.special_techniques_import_test.TestImportSpecialTechniques.test_import_all)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "special_techniques",
+      "module": "tests.contentFilterEngine.special_techniques_tests",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/special_techniques_tests.py",
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.002,
+      "cases": [
+        {
+          "test_id": "test_dynamic_filtering (tests.contentFilterEngine.special_techniques_tests.TestSpecialTechniques.test_dynamic_filtering)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_interactive_filtering (tests.contentFilterEngine.special_techniques_tests.TestSpecialTechniques.test_interactive_filtering)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_temporal_import (tests.contentFilterEngine.special_techniques_tests.TestSpecialTechniques.test_temporal_import)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "tfidf_recommender",
+      "module": "tests.contentFilterEngine.tfidf_recommender_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/tfidf_recommender_test.py",
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.002,
+      "cases": [
+        {
+          "test_id": "test_recommend_combined_scores (tests.contentFilterEngine.tfidf_recommender_test.TestTFIDFRecommender.test_recommend_combined_scores)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_recommend_returns_int_indices (tests.contentFilterEngine.tfidf_recommender_test.TestTFIDFRecommender.test_recommend_returns_int_indices)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_recommend_similarity_order (tests.contentFilterEngine.tfidf_recommender_test.TestTFIDFRecommender.test_recommend_similarity_order)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_similarity_matrix_shape (tests.contentFilterEngine.tfidf_recommender_test.TestTFIDFRecommender.test_similarity_matrix_shape)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_similarity_self_highest (tests.contentFilterEngine.tfidf_recommender_test.TestTFIDFRecommender.test_similarity_self_highest)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "traditional_ml_algorithms_import",
+      "module": "tests.contentFilterEngine.traditional_ml_algorithms_import_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/traditional_ml_algorithms_import_test.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.002,
+      "cases": [
+        {
+          "test_id": "test_import_all (tests.contentFilterEngine.traditional_ml_algorithms_import_test.TestImportTraditionalML.test_import_all)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "traditional_ml_algorithms",
+      "module": "tests.contentFilterEngine.traditional_ml_algorithms_tests",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/contentFilterEngine/traditional_ml_algorithms_tests.py",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 0.001,
+      "cases": [
+        {
+          "test_id": "test_imports (tests.contentFilterEngine.traditional_ml_algorithms_tests.TestTraditionalMLImports.test_imports)",
+          "outcome": "passed",
+          "message": ""
+        }
+      ]
+    },
+    {
+      "algorithm": "engines_models_smoke",
+      "module": "tests.engines_models_smoke_test",
+      "file": "/Users/visheshyadav/Documents/GitHub/CoreRec/tests/engines_models_smoke_test.py",
+      "total": 6,
+      "passed": 5,
+      "failed": 0,
+      "errors": 1,
+      "skipped": 0,
+      "duration_s": 0.264,
+      "cases": [
+        {
+          "test_id": "test_dcn (tests.engines_models_smoke_test.TestEnginesModelsSmoke.test_dcn)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_deepfm (tests.engines_models_smoke_test.TestEnginesModelsSmoke.test_deepfm)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_gnnrec (tests.engines_models_smoke_test.TestEnginesModelsSmoke.test_gnnrec)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_mind (tests.engines_models_smoke_test.TestEnginesModelsSmoke.test_mind)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_nasrec (tests.engines_models_smoke_test.TestEnginesModelsSmoke.test_nasrec)",
+          "outcome": "passed",
+          "message": ""
+        },
+        {
+          "test_id": "test_sasrec (tests.engines_models_smoke_test.TestEnginesModelsSmoke.test_sasrec)",
+          "outcome": "error",
+          "message": "Traceback (most recent call last):\n  File \"/Users/visheshyadav/Documents/GitHub/CoreRec/tests/engines_models_smoke_test.py\", line 184, in test_sasrec\n    model.fit(inter, user_ids, item_ids)\n  File \"/Users/visheshyadav/Documents/GitHub/CoreRec/corerec/engines/sasrec.py\", line 434, in fit\n    raise ValueError(\"user_ids must be a non-empty list\")\nValueError: user_ids must be a non-empty list\n"
+        }
+      ]
+    }
+  ]
+}

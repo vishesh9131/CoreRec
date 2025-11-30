@@ -2,8 +2,18 @@
 import torch
 import torch.nn as nn
 
+
 class RNNModel(nn.Module):
-    def __init__(self, input_dim, embed_dim, hidden_dim, num_layers, dropout=0.1, bidirectional=True, num_classes=2):
+    def __init__(
+        self,
+        input_dim,
+        embed_dim,
+        hidden_dim,
+        num_layers,
+        dropout=0.1,
+        bidirectional=True,
+        num_classes=2,
+    ):
         """
         Initialize the RNN model.
 
@@ -24,7 +34,7 @@ class RNNModel(nn.Module):
             num_layers=num_layers,
             dropout=dropout if num_layers > 1 else 0,
             bidirectional=bidirectional,
-            batch_first=True
+            batch_first=True,
         )
         self.dropout = nn.Dropout(dropout)
         self.fc_out = nn.Linear(hidden_dim * 2 if bidirectional else hidden_dim, num_classes)
@@ -45,8 +55,8 @@ class RNNModel(nn.Module):
         if self.rnn.bidirectional:
             # Concatenate the final forward and backward hidden states
             last_hidden = torch.cat(
-                (rnn_out[:, -1, :self.rnn.hidden_size], rnn_out[:, 0, self.rnn.hidden_size:]),
-                dim=1
+                (rnn_out[:, -1, : self.rnn.hidden_size], rnn_out[:, 0, self.rnn.hidden_size :]),
+                dim=1,
             )
         else:
             last_hidden = rnn_out[:, -1, :]

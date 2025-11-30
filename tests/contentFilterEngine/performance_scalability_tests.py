@@ -2,7 +2,13 @@ import unittest
 from pathlib import Path
 from importlib.util import spec_from_file_location, module_from_spec
 
-BASE = Path(__file__).resolve().parents[2] / "corerec" / "engines" / "contentFilterEngine" / "performance_scalability"
+BASE = (
+    Path(__file__).resolve().parents[2]
+    / "corerec"
+    / "engines"
+    / "contentFilterEngine"
+    / "performance_scalability"
+)
 
 
 def load(fname: str):
@@ -21,7 +27,7 @@ class TestPerformanceScalability(unittest.TestCase):
         self.assertEqual(sum(len(c) for c in chunks), 10)
         # Parallel process with a picklable builtin
         res = sorted(sa.parallel_process(abs, list(range(5))))
-        self.assertEqual(res, [0,1,2,3,4])
+        self.assertEqual(res, [0, 1, 2, 3, 4])
 
     def test_load_balancing(self):
         m = load("load_balancing.py")
@@ -29,16 +35,17 @@ class TestPerformanceScalability(unittest.TestCase):
         for i in range(5):
             lb.add_task(lambda x: x + 1, i)
         results = sorted(lb.get_results())
-        self.assertEqual(results, [1,2,3,4,5])
+        self.assertEqual(results, [1, 2, 3, 4, 5])
         lb.shutdown()
 
     def test_feature_extraction_fit(self):
         m = load("feature_extraction.py")
         fe = m.FeatureExtraction(max_features=20)
-        X = fe.fit_transform(["this is a test", "another test of features"])  # smoke
+        X = fe.fit_transform(
+            ["this is a test", "another test of features"])  # smoke
         self.assertEqual(X.shape[0], 2)
         # Skip transform due to lsa_model absence in current implementation
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

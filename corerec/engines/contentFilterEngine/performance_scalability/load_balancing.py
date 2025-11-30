@@ -4,9 +4,11 @@ from queue import Queue
 from threading import Thread
 import time
 import threading
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class LoadBalancing:
     def __init__(self, num_workers=4):
@@ -46,7 +48,9 @@ class LoadBalancing:
             try:
                 result = func(*args, **kwargs)
                 self.results.append(result)
-                logger.debug(f"{threading.current_thread().name} processed a task with result: {result}")
+                logger.debug(
+                    f"{threading.current_thread().name} processed a task with result: {result}"
+                )
             except Exception as e:
                 logger.error(f"Error processing task: {e}")
             finally:

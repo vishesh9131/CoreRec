@@ -32,7 +32,7 @@
 #         edge_color = 'gray'
 #         edge_alpha = 0.1 if transparent_labeled and (node_labels is None or i not in node_labels or j not in node_labels) else 0.5
 #         nx.draw_networkx_edges(G, pos, edgelist=[(i, j)], width=1.0, alpha=edge_alpha, edge_color=edge_color)
-        
+
 #         if edge_weights is not None:
 #             mid_x = (pos[i][0] + pos[j][0]) / 2
 #             mid_y = (pos[i][1] + pos[j][1]) / 2
@@ -84,7 +84,7 @@
 #                     edge_alpha = 0.1 if transparent_labeled and (node_labels is None or i not in node_labels or j not in node_labels) else 1.0
 #                     edge_color = 'gray'
 #                     ax.plot([pos[i][0], pos[j][0]], [pos[i][1], pos[j][1]], [pos[i][2], pos[j][2]], color=edge_color, alpha=edge_alpha)
-                    
+
 #                     # Display edge weights
 #                     if edge_weights is not None:
 #                         mid_x = (pos[i][0] + pos[j][0]) / 2

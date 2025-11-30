@@ -10,15 +10,16 @@ import numpy as np
 from datetime import datetime
 from glob import glob
 
-from corerec.sshh import *
+# Configure logging (sshh.py suppresses warnings from common libraries)
+import corerec.sshh  # noqa: F401
 
 
 class BaseCorerec(ABC):
     """
     DEPRECATED: Use corerec.api.base_recommender.BaseRecommender instead.
-    
+
     This class is maintained for backward compatibility but will be removed in v1.0.0.
-    
+
     Generic class for a recommender model. All recommendation models should inherit from this class.
 
     Parameters
@@ -64,15 +65,19 @@ class BaseCorerec(ABC):
         Average value over the rating observations.
     """
 
-    def __init__(self, name: str, trainable: bool = True, verbose: bool = False):
+    def __init__(
+            self,
+            name: str,
+            trainable: bool = True,
+            verbose: bool = False):
         # Issue deprecation warning
         warnings.warn(
             "BaseCorerec is deprecated and will be removed in v1.0.0. "
             "Please use corerec.api.base_recommender.BaseRecommender instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
-        
+
         self.name = name
         self.trainable = trainable
         self.verbose = verbose
@@ -96,12 +101,14 @@ class BaseCorerec(ABC):
     @property
     def total_users(self):
         """Total number of users including users in test and validation if exists"""
-        return len(self.uid_map) if self.uid_map is not None else self.num_users
+        return len(
+            self.uid_map) if self.uid_map is not None else self.num_users
 
     @property
     def total_items(self):
         """Total number of items including users in test and validation if exists"""
-        return len(self.iid_map) if self.iid_map is not None else self.num_items
+        return len(
+            self.iid_map) if self.iid_map is not None else self.num_items
 
     @property
     def user_ids(self):
@@ -142,7 +149,8 @@ class BaseCorerec(ABC):
             return []
 
         init_signature = inspect.signature(init)
-        parameters = [p for p in init_signature.parameters.values() if p.name != "self"]
+        parameters = [p for p in init_signature.parameters.values()
+                      if p.name != "self"]
         return sorted([p.name for p in parameters])
 
     def clone(self, new_params=None):
@@ -150,7 +158,8 @@ class BaseCorerec(ABC):
         new_params = {} if new_params is None else new_params
         init_params = {}
         for name in self._get_init_params():
-            init_params[name] = new_params.get(name, copy.deepcopy(getattr(self, name)))
+            init_params[name] = new_params.get(
+                name, copy.deepcopy(getattr(self, name)))
         return self.__class__(**init_params)
 
     def save(self, save_dir=None, save_trainset=False, metadata=None):
@@ -164,8 +173,9 @@ class BaseCorerec(ABC):
         model_file = os.path.join(model_dir, "{}.pkl".format(timestamp))
 
         saved_model = copy.deepcopy(self)
-        pickle.dump(saved_model, open(model_file, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
-        
+        pickle.dump(saved_model, open(model_file, "wb"),
+                    protocol=pickle.HIGHEST_PROTOCOL)
+
         if self.verbose:
             print("{} model is saved to {}".format(self.name, model_file))
 
@@ -175,7 +185,12 @@ class BaseCorerec(ABC):
 
         if save_trainset:
             trainset_file = model_file + ".trainset"
-            pickle.dump(self.train_set, open(trainset_file, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(
+                self.train_set,
+                open(
+                    trainset_file,
+                    "wb"),
+                protocol=pickle.HIGHEST_PROTOCOL)
             metadata["trainset_file"] = os.path.basename(trainset_file)
 
         with open(model_file + ".meta", "w", encoding="utf-8") as f:
@@ -197,10 +212,14 @@ class BaseCorerec(ABC):
         return model
 
     @abstractmethod
-    def fit(self, interaction_matrix, user_ids: List[int], item_ids: List[int]):
+    def fit(
+            self,
+            interaction_matrix,
+            user_ids: List[int],
+            item_ids: List[int]):
         """
         Train the recommender system using the provided interaction matrix.
-        
+
         Parameters:
         - interaction_matrix (scipy.sparse matrix): User-item interaction matrix.
         - user_ids (List[int]): List of user IDs.
@@ -212,11 +231,11 @@ class BaseCorerec(ABC):
     def recommend(self, user_id: int, top_n: int = 10) -> List[int]:
         """
         Generate top-N item recommendations for a given user.
-        
+
         Parameters:
         - user_id (int): The ID of the user.
         - top_n (int): The number of recommendations to generate.
-        
+
         Returns:
         - List[int]: List of recommended item IDs.
         """
@@ -260,7 +279,12 @@ class BaseCorerec(ABC):
 
         if self.stopped_epoch > 0:
             print("Early stopping:")
-            print(f"- best epoch = {self.best_epoch}, stopped epoch = {self.stopped_epoch}")
-            print(f"- best monitored value = {self.best_value:.6f} (delta = {current_value - self.best_value:.6f})")
+            print(
+                f"- best epoch = {self.best_epoch}, stopped epoch = {self.stopped_epoch}")
+            print(
+                f"- best monitored value = {
+                    self.best_value:.6f} (delta = {
+                    current_value -
+                    self.best_value:.6f})")
             return True
-        return False 
+        return False

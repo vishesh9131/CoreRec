@@ -34,28 +34,25 @@ num_heads = 8
 d_feedforward = 512
 input_dim = len(adj_matrix[0])
 
-    # Initialize model, loss function, and optimizer
+# Initialize model, loss function, and optimizer
 model = cs.GraphTransformer(num_layers, d_model, num_heads, d_feedforward, input_dim)
 criterion = MSELoss()
 optimizer = cs.optim.Adam(model.parameters(), lr=0.001)
 top_nodes = vg.find_top_nodes(adj_matrix, num_nodes=5)
 
-    # Train the model
+# Train the model
 num_epochs = 100
 cs.train_model(model, data_loader, criterion, optimizer, num_epochs)
 
 
-    # Predict recommendations for a specific node
-node_index = 2   #target node
+# Predict recommendations for a specific node
+node_index = 2  # target node
 recommended_nodes = cs.predict(model, adj_matrix, node_index, top_k=5, threshold=0.5)
 print(f"Recommended nodes for node {node_index}: {recommended_nodes}")
 
 
 # Draw the graph
-vg.draw_graph_3d(adj_matrix, top_nodes, recommended_nodes,transparent_labeled=False)
+vg.draw_graph_3d(adj_matrix, top_nodes, recommended_nodes, transparent_labeled=False)
 
-    # Draw the graph in 3D
+# Draw the graph in 3D
 # vg.draw_graph_3d(adj_matrix, top_nodes, recommended_nodes,transparent_labeled=False)
-
-
-

@@ -23,15 +23,21 @@ except ModuleNotFoundError:
     print("tabulate is not installed, please pip install tabulate to use this utility")
 
 if HAS_TABULATE:
+
     def _enable_tensor_cores():
         global _warned_tensor_cores
 
         if torch.cuda.is_available():
-            if torch.backends.cuda.matmul.allow_tf32 is False and torch.cuda.get_device_capability() >= (8, 0):
+            if (
+                torch.backends.cuda.matmul.allow_tf32 is False
+                and torch.cuda.get_device_capability() >= (8, 0)
+            ):
                 torch.set_float32_matmul_precision("high")
                 if not _warned_tensor_cores:
                     print("Your GPU supports tensor cores")
-                    print("we will enable it automatically by setting `torch.set_float32_matmul_precision('high')`")
+                    print(
+                        "we will enable it automatically by setting `torch.set_float32_matmul_precision('high')`"
+                    )
                     _warned_tensor_cores = True
 
     def _disable_tensor_cores():
@@ -61,9 +67,13 @@ if HAS_TABULATE:
         # Create the Timer object
         timer = Timer(
             stmt=stmt,
-            globals={"model": model, "sample_input": sample_input, "optimizer": optimizer, "loss_fn": loss_fn},
+            globals={
+                "model": model,
+                "sample_input": sample_input,
+                "optimizer": optimizer,
+                "loss_fn": loss_fn,
+            },
         )
-
 
         result = timer.timeit(number=num_iters)
 
@@ -78,7 +88,7 @@ if HAS_TABULATE:
         backend: Optional[str] = None,
         mode: Optional[str] = "default",
         optimizer: Optional[torch.optim.Optimizer] = None,
-        loss_fn : Union[torch.nn.Module, Callable, None] = None,
+        loss_fn: Union[torch.nn.Module, Callable, None] = None,
     ):
         """
         Use this utility to benchmark torch.compile
@@ -112,16 +122,14 @@ if HAS_TABULATE:
         compilation_time = round(compilation_time, 2) if compilation_time else None
         running_time = round(running_time, 2) if running_time else None
 
-
         return compilation_time, running_time
 
-
     def bench_all(
-        model : Union[torch.nn.Module, Callable],
+        model: Union[torch.nn.Module, Callable],
         sample_input: Union[torch.Tensor, Any],
-        num_iters : int = 5,
+        num_iters: int = 5,
         optimizer: Optional[torch.optim.Optimizer] = None,
-        loss_fn : Union[torch.nn.Module, Callable, None] = None,
+        loss_fn: Union[torch.nn.Module, Callable, None] = None,
     ):
         """
         This is a simple utility that can be used to benchmark torch.compile
@@ -139,9 +147,14 @@ if HAS_TABULATE:
         If a compilation fails for any reason including the dependency not being included
         then we will print Failed to compile {backend} with mode {mode}
         """
-        field_names = ["Train/Inference", "Backend", "Mode", "Compilation Time", "Average Running Time"]
+        field_names = [
+            "Train/Inference",
+            "Backend",
+            "Mode",
+            "Compilation Time",
+            "Average Running Time",
+        ]
         table = []
-
 
         eager_time = None
         torch._dynamo.reset()
@@ -151,9 +164,10 @@ if HAS_TABULATE:
         )
 
         for backend in torch._dynamo.list_backends():
-
             if backend == "inductor":
-                mode_options = cast(List[Optional[str]], list(torch._inductor.list_mode_options().keys())) + [None]
+                mode_options = cast(
+                    List[Optional[str]], list(torch._inductor.list_mode_options().keys())
+                ) + [None]
                 for mode in mode_options:
                     if mode == "default":
                         continue
@@ -162,30 +176,36 @@ if HAS_TABULATE:
                         if torch.cuda.is_available():
                             _enable_tensor_cores()
                         compilation_time, running_time = benchmark_compile(
-                            model, sample_input, num_iters, backend, mode, optimizer, loss_fn)
+                            model, sample_input, num_iters, backend, mode, optimizer, loss_fn
+                        )
                     finally:
                         if torch.cuda.is_available():
                             _disable_tensor_cores()
-                            table.append([
-                                ("Training" if optimizer else "Inference"),
-                                backend if backend else "-",
-                                mode if mode is not None else "-",
-                                f"{compilation_time} ms " if compilation_time else "-",
-                                f"{running_time} ms " if running_time else "-",
-                            ])
+                            table.append(
+                                [
+                                    ("Training" if optimizer else "Inference"),
+                                    backend if backend else "-",
+                                    mode if mode is not None else "-",
+                                    f"{compilation_time} ms " if compilation_time else "-",
+                                    f"{running_time} ms " if running_time else "-",
+                                ]
+                            )
 
             else:
                 torch._dynamo.reset()
                 compilation_time, running_time = benchmark_compile(
-                    model, sample_input, num_iters, backend, None, optimizer, loss_fn)
+                    model, sample_input, num_iters, backend, None, optimizer, loss_fn
+                )
 
                 if running_time is not None:
-                    table.append([
-                        ("Training" if optimizer else "Inference"),
-                        backend, "-",
-                        f"{compilation_time} ms " or "-",
-                        f"{running_time} ms ",
-                    ])
-
+                    table.append(
+                        [
+                            ("Training" if optimizer else "Inference"),
+                            backend,
+                            "-",
+                            f"{compilation_time} ms " or "-",
+                            f"{running_time} ms ",
+                        ]
+                    )
 
         return tabulate(table, headers=field_names, tablefmt="github")

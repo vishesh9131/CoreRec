@@ -1,12 +1,21 @@
 # corerec/engines/unionizedFilterEngine/bpr_recommender.py
 
-from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_base import MatrixFactorizationBase
+from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_base import (
+    MatrixFactorizationBase,
+)
 from scipy.sparse import csr_matrix
 from typing import List
 import numpy as np
+
+
 class BPRRecommender(MatrixFactorizationBase):
-    def __init__(self, num_factors: int = 20, learning_rate: float = 0.01, 
-                 regularization: float = 0.02, epochs: int = 20):
+    def __init__(
+        self,
+        num_factors: int = 20,
+        learning_rate: float = 0.01,
+        regularization: float = 0.02,
+        epochs: int = 20,
+    ):
         super().__init__(num_factors, learning_rate, regularization, epochs)
 
     def fit(self, interaction_matrix: csr_matrix, user_ids: List[int], item_ids: List[int]):
@@ -26,9 +35,16 @@ class BPRRecommender(MatrixFactorizationBase):
                     x_uij = x_ui - x_uj
                     # BPR Optimization
                     gradient = 1 / (1 + np.exp(x_uij))
-                    self.user_factors[u] += self.learning_rate * (gradient * (self.item_factors[i] - self.item_factors[j]) - self.regularization * self.user_factors[u])
-                    self.item_factors[i] += self.learning_rate * (gradient * self.user_factors[u] - self.regularization * self.item_factors[i])
-                    self.item_factors[j] -= self.learning_rate * (gradient * self.user_factors[u] + self.regularization * self.item_factors[j])
+                    self.user_factors[u] += self.learning_rate * (
+                        gradient * (self.item_factors[i] - self.item_factors[j])
+                        - self.regularization * self.user_factors[u]
+                    )
+                    self.item_factors[i] += self.learning_rate * (
+                        gradient * self.user_factors[u] - self.regularization * self.item_factors[i]
+                    )
+                    self.item_factors[j] -= self.learning_rate * (
+                        gradient * self.user_factors[u] + self.regularization * self.item_factors[j]
+                    )
 
             loss = self.compute_loss(interaction_matrix)
             print(f"Epoch {epoch+1}/{self.epochs}, Loss: {loss:.4f}")

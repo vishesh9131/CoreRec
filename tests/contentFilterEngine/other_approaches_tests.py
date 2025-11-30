@@ -2,7 +2,13 @@ import unittest
 from pathlib import Path
 from importlib.util import spec_from_file_location, module_from_spec
 
-BASE = Path(__file__).resolve().parents[2] / "corerec" / "engines" / "contentFilterEngine" / "other_approaches"
+BASE = (
+    Path(__file__).resolve().parents[2]
+    / "corerec"
+    / "engines"
+    / "contentFilterEngine"
+    / "other_approaches"
+)
 
 
 def load(fname: str):
@@ -16,7 +22,8 @@ def load(fname: str):
 class TestOtherApproaches(unittest.TestCase):
     def test_rule_based(self):
         m = load("rule_based.py")
-        rb = m.RuleBasedFilter(rules=[{"keyword": "spam", "action": "block"}, {"keyword": "warn", "action": "flag"}])
+        rb = m.RuleBasedFilter(rules=[{"keyword": "spam", "action": "block"}, {
+            "keyword": "warn", "action": "flag"}])
         res1 = rb.filter_content("This is SPAM content")
         self.assertEqual(res1["status"], "blocked")
         res2 = rb.filter_content("Just warn this")
@@ -46,4 +53,4 @@ class TestOtherApproaches(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

@@ -181,9 +181,7 @@ class RReLU(Module):
     upper: float
     inplace: bool
 
-    def __init__(
-        self, lower: float = 1.0 / 8, upper: float = 1.0 / 3, inplace: bool = False
-    ):
+    def __init__(self, lower: float = 1.0 / 8, upper: float = 1.0 / 3, inplace: bool = False):
         super().__init__()
         self.lower = lower
         self.upper = upper
@@ -959,9 +957,7 @@ def _arg_requires_grad(x: Optional[torch.Tensor]) -> bool:
 
 def _is_make_fx_tracing():
     if not torch.jit.is_scripting():
-        torch_dispatch_mode_stack = (
-            torch.utils._python_dispatch._get_current_dispatch_mode_stack()
-        )
+        torch_dispatch_mode_stack = torch.utils._python_dispatch._get_current_dispatch_mode_stack()
         return any(
             type(x) == torch.fx.experimental.proxy_tensor.ProxyTorchDispatchMode
             for x in torch_dispatch_mode_stack
@@ -1072,15 +1068,9 @@ class MultiheadAttention(Module):
         ), "embed_dim must be divisible by num_heads"
 
         if not self._qkv_same_embed_dim:
-            self.q_proj_weight = Parameter(
-                torch.empty((embed_dim, embed_dim), **factory_kwargs)
-            )
-            self.k_proj_weight = Parameter(
-                torch.empty((embed_dim, self.kdim), **factory_kwargs)
-            )
-            self.v_proj_weight = Parameter(
-                torch.empty((embed_dim, self.vdim), **factory_kwargs)
-            )
+            self.q_proj_weight = Parameter(torch.empty((embed_dim, embed_dim), **factory_kwargs))
+            self.k_proj_weight = Parameter(torch.empty((embed_dim, self.kdim), **factory_kwargs))
+            self.v_proj_weight = Parameter(torch.empty((embed_dim, self.vdim), **factory_kwargs))
             self.register_parameter("in_proj_weight", None)
         else:
             self.in_proj_weight = Parameter(
@@ -1241,7 +1231,9 @@ class MultiheadAttention(Module):
             # When lifting this restriction, don't forget to either
             # enforce that the dtypes all match or test cases where
             # they don't!
-            why_not_fast_path = "non-self attention was used (query, key, and value are not the same Tensor)"
+            why_not_fast_path = (
+                "non-self attention was used (query, key, and value are not the same Tensor)"
+            )
         elif self.in_proj_bias is not None and query.dtype != self.in_proj_bias.dtype:
             why_not_fast_path = f"dtypes of query ({query.dtype}) and self.in_proj_bias ({self.in_proj_bias.dtype}) don't match"
         elif self.in_proj_weight is None:
@@ -1263,9 +1255,7 @@ class MultiheadAttention(Module):
             why_not_fast_path = "add_zero_attn was enabled"
         elif not self._qkv_same_embed_dim:
             why_not_fast_path = "_qkv_same_embed_dim was not True"
-        elif query.is_nested and (
-            key_padding_mask is not None or attn_mask is not None
-        ):
+        elif query.is_nested and (key_padding_mask is not None or attn_mask is not None):
             why_not_fast_path = "supplying both src_key_padding_mask and src_mask at the same time \
                                  is not supported with NestedTensor input"
         elif torch.is_autocast_enabled():
@@ -1292,17 +1282,13 @@ class MultiheadAttention(Module):
                     "some Tensor argument's device is neither one of "
                     f"cpu, cuda or {torch.utils.backend_registration._privateuse1_backend_name}"
                 )
-            elif torch.is_grad_enabled() and any(
-                _arg_requires_grad(x) for x in tensor_args
-            ):
+            elif torch.is_grad_enabled() and any(_arg_requires_grad(x) for x in tensor_args):
                 why_not_fast_path = (
                     "grad is enabled and at least one of query or the "
                     "input/output projection weights or biases requires_grad"
                 )
             if not why_not_fast_path:
-                merged_mask, mask_type = self.merge_masks(
-                    attn_mask, key_padding_mask, query
-                )
+                merged_mask, mask_type = self.merge_masks(attn_mask, key_padding_mask, query)
 
                 if self.in_proj_bias is not None and self.in_proj_weight is not None:
                     return torch._native_multi_head_attention(
@@ -1433,9 +1419,9 @@ class MultiheadAttention(Module):
             merged_mask = attn_mask_expanded
 
             if key_padding_mask is not None:
-                key_padding_mask_expanded = key_padding_mask.view(
-                    batch_size, 1, 1, seq_len
-                ).expand(-1, self.num_heads, -1, -1)
+                key_padding_mask_expanded = key_padding_mask.view(batch_size, 1, 1, seq_len).expand(
+                    -1, self.num_heads, -1, -1
+                )
                 merged_mask = attn_mask_expanded + key_padding_mask_expanded
 
         # no attn_mask and no key_padding_mask, returns None, None

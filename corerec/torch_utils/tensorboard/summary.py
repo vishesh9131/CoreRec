@@ -51,6 +51,7 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
+
 def half_to_int(f: float) -> int:
     """Casts a half-precision float value into an integer.
 
@@ -64,6 +65,7 @@ def half_to_int(f: float) -> int:
     buf = struct.pack("f", f)
     return struct.unpack("i", buf)[0]
 
+
 def int_to_half(i: int) -> float:
     """Casts an integer value to a half-precision float.
 
@@ -74,14 +76,18 @@ def int_to_half(i: int) -> float:
     buf = struct.pack("i", i)
     return struct.unpack("f", buf)[0]
 
+
 def _tensor_to_half_val(t: torch.Tensor) -> List[int]:
     return [half_to_int(x) for x in t.flatten().tolist()]
+
 
 def _tensor_to_complex_val(t: torch.Tensor) -> List[float]:
     return torch.view_as_real(t).flatten().tolist()
 
+
 def _tensor_to_list(t: torch.Tensor) -> List[Any]:
     return t.flatten().tolist()
+
 
 # type maps: torch.Tensor type -> (protobuf type, protobuf val field)
 _TENSOR_TYPE_MAP = {
@@ -135,11 +141,8 @@ def _draw_single_box(
     font = ImageFont.load_default()
     draw = ImageDraw.Draw(image)
     (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
-    draw.line(
-        [(left, top), (left, bottom), (right, bottom), (right, top), (left, top)],
-        width=thickness,
-        fill=color,
-    )
+    draw.line([(left, top), (left, bottom), (right, bottom),
+               (right, top), (left, top)], width=thickness, fill=color, )
     if display_str:
         text_bottom = bottom
         # Reverse list and print from bottom to top.
@@ -214,21 +217,20 @@ def hparams(hparam_dict=None, metric_dict=None, hparam_domain_discrete=None):
     # hparam_infos=[hp], metric_infos=[mt], user='tw')
 
     if not isinstance(hparam_dict, dict):
-        logger.warning("parameter: hparam_dict should be a dictionary, nothing logged.")
+        logger.warning(
+            "parameter: hparam_dict should be a dictionary, nothing logged.")
         raise TypeError(
-            "parameter: hparam_dict should be a dictionary, nothing logged."
-        )
+            "parameter: hparam_dict should be a dictionary, nothing logged.")
     if not isinstance(metric_dict, dict):
-        logger.warning("parameter: metric_dict should be a dictionary, nothing logged.")
+        logger.warning(
+            "parameter: metric_dict should be a dictionary, nothing logged.")
         raise TypeError(
-            "parameter: metric_dict should be a dictionary, nothing logged."
-        )
+            "parameter: metric_dict should be a dictionary, nothing logged.")
 
     hparam_domain_discrete = hparam_domain_discrete or {}
     if not isinstance(hparam_domain_discrete, dict):
         raise TypeError(
-            "parameter: hparam_domain_discrete should be a dictionary, nothing logged."
-        )
+            "parameter: hparam_domain_discrete should be a dictionary, nothing logged.")
     for k, v in hparam_domain_discrete.items():
         if (
             k not in hparam_dict
@@ -236,8 +238,7 @@ def hparams(hparam_dict=None, metric_dict=None, hparam_domain_discrete=None):
             or not all(isinstance(d, type(hparam_dict[k])) for d in v)
         ):
             raise TypeError(
-                f"parameter: hparam_domain_discrete[{k}] should be a list of same type as hparam_dict[{k}]."
-            )
+                f"parameter: hparam_domain_discrete[{k}] should be a list of same type as hparam_dict[{k}].")
     hps = []
 
     ssi = SessionStartInfo()
@@ -249,10 +250,7 @@ def hparams(hparam_dict=None, metric_dict=None, hparam_domain_discrete=None):
 
             if k in hparam_domain_discrete:
                 domain_discrete: Optional[struct_pb2.ListValue] = struct_pb2.ListValue(
-                    values=[
-                        struct_pb2.Value(number_value=d)
-                        for d in hparam_domain_discrete[k]
-                    ]
+                    values=[struct_pb2.Value(number_value=d) for d in hparam_domain_discrete[k]]
                 )
             else:
                 domain_discrete = None
@@ -271,10 +269,7 @@ def hparams(hparam_dict=None, metric_dict=None, hparam_domain_discrete=None):
 
             if k in hparam_domain_discrete:
                 domain_discrete = struct_pb2.ListValue(
-                    values=[
-                        struct_pb2.Value(string_value=d)
-                        for d in hparam_domain_discrete[k]
-                    ]
+                    values=[struct_pb2.Value(string_value=d) for d in hparam_domain_discrete[k]]
                 )
             else:
                 domain_discrete = None
@@ -293,10 +288,7 @@ def hparams(hparam_dict=None, metric_dict=None, hparam_domain_discrete=None):
 
             if k in hparam_domain_discrete:
                 domain_discrete = struct_pb2.ListValue(
-                    values=[
-                        struct_pb2.Value(bool_value=d)
-                        for d in hparam_domain_discrete[k]
-                    ]
+                    values=[struct_pb2.Value(bool_value=d) for d in hparam_domain_discrete[k]]
                 )
             else:
                 domain_discrete = None
@@ -313,19 +305,27 @@ def hparams(hparam_dict=None, metric_dict=None, hparam_domain_discrete=None):
         if isinstance(v, torch.Tensor):
             v = make_np(v)[0]
             ssi.hparams[k].number_value = v
-            hps.append(HParamInfo(name=k, type=DataType.Value("DATA_TYPE_FLOAT64")))
+            hps.append(
+                HParamInfo(
+                    name=k,
+                    type=DataType.Value("DATA_TYPE_FLOAT64")))
             continue
         raise ValueError(
-            "value should be one of int, float, str, bool, or torch.Tensor"
-        )
+            "value should be one of int, float, str, bool, or torch.Tensor")
 
-    content = HParamsPluginData(session_start_info=ssi, version=PLUGIN_DATA_VERSION)
+    content = HParamsPluginData(
+        session_start_info=ssi,
+        version=PLUGIN_DATA_VERSION)
     smd = SummaryMetadata(
         plugin_data=SummaryMetadata.PluginData(
             plugin_name=PLUGIN_NAME, content=content.SerializeToString()
         )
     )
-    ssi = Summary(value=[Summary.Value(tag=SESSION_START_INFO_TAG, metadata=smd)])
+    ssi = Summary(
+        value=[
+            Summary.Value(
+                tag=SESSION_START_INFO_TAG,
+                metadata=smd)])
 
     mts = [MetricInfo(name=MetricName(tag=k)) for k in metric_dict.keys()]
 
@@ -340,18 +340,29 @@ def hparams(hparam_dict=None, metric_dict=None, hparam_domain_discrete=None):
     exp = Summary(value=[Summary.Value(tag=EXPERIMENT_TAG, metadata=smd)])
 
     sei = SessionEndInfo(status=Status.Value("STATUS_SUCCESS"))
-    content = HParamsPluginData(session_end_info=sei, version=PLUGIN_DATA_VERSION)
+    content = HParamsPluginData(
+        session_end_info=sei,
+        version=PLUGIN_DATA_VERSION)
     smd = SummaryMetadata(
         plugin_data=SummaryMetadata.PluginData(
             plugin_name=PLUGIN_NAME, content=content.SerializeToString()
         )
     )
-    sei = Summary(value=[Summary.Value(tag=SESSION_END_INFO_TAG, metadata=smd)])
+    sei = Summary(
+        value=[
+            Summary.Value(
+                tag=SESSION_END_INFO_TAG,
+                metadata=smd)])
 
     return exp, ssi, sei
 
 
-def scalar(name, tensor, collections=None, new_style=False, double_precision=False):
+def scalar(
+        name,
+        tensor,
+        collections=None,
+        new_style=False,
+        double_precision=False):
     """Output a `Summary` protocol buffer containing a single scalar value.
 
     The generated Summary has a Tensor.proto containing the input Tensor.
@@ -370,8 +381,9 @@ def scalar(name, tensor, collections=None, new_style=False, double_precision=Fal
     """
     tensor = make_np(tensor).squeeze()
     assert (
-        tensor.ndim == 0
-    ), f"Tensor should contain one element (0 dimensions). Was given size: {tensor.size} and {tensor.ndim} dimensions."
+        tensor.ndim == 0), f"Tensor should contain one element (0 dimensions). Was given size: {
+        tensor.size} and {
+            tensor.ndim} dimensions."
     # python float is double precision in numpy
     scalar = float(tensor)
     if new_style:
@@ -409,8 +421,7 @@ def tensor_proto(tag, tensor):
     """
     if tensor.numel() * tensor.itemsize >= (1 << 31):
         raise ValueError(
-            "tensor is bigger than protocol buffer's hard limit of 2GB in size"
-        )
+            "tensor is bigger than protocol buffer's hard limit of 2GB in size")
 
     if tensor.dtype in _TENSOR_TYPE_MAP:
         dtype, field_name, conversion_fn = _TENSOR_TYPE_MAP[tensor.dtype]
@@ -428,10 +439,23 @@ def tensor_proto(tag, tensor):
 
     plugin_data = SummaryMetadata.PluginData(plugin_name="tensor")
     smd = SummaryMetadata(plugin_data=plugin_data)
-    return Summary(value=[Summary.Value(tag=tag, metadata=smd, tensor=tensor_proto)])
+    return Summary(
+        value=[
+            Summary.Value(
+                tag=tag,
+                metadata=smd,
+                tensor=tensor_proto)])
 
 
-def histogram_raw(name, min, max, num, sum, sum_squares, bucket_limits, bucket_counts):
+def histogram_raw(
+        name,
+        min,
+        max,
+        num,
+        sum,
+        sum_squares,
+        bucket_limits,
+        bucket_counts):
     # pylint: disable=line-too-long
     """Output a `Summary` protocol buffer with a histogram.
 
@@ -512,7 +536,8 @@ def make_histogram(values, bins, max_bins=None):
     # Find the first and the last bin defining the support of the histogram:
 
     cum_counts = np.cumsum(np.greater(counts, 0))
-    start, end = np.searchsorted(cum_counts, [0, cum_counts[-1] - 1], side="right")
+    start, end = np.searchsorted(
+        cum_counts, [0, cum_counts[-1] - 1], side="right")
     start = int(start)
     end = int(end) + 1
     del cum_counts
@@ -521,10 +546,9 @@ def make_histogram(values, bins, max_bins=None):
     # included, we include an empty bin left.
     # If start == 0, we need to add an empty one left, otherwise we can just include the bin left to the
     # first nonzero-count bin:
-    counts = (
-        counts[start - 1 : end] if start > 0 else np.concatenate([[0], counts[:end]])
-    )
-    limits = limits[start : end + 1]
+    counts = counts[start -
+                    1: end] if start > 0 else np.concatenate([[0], counts[:end]])
+    limits = limits[start: end + 1]
 
     if counts.size == 0 or limits.size == 0:
         raise ValueError("The histogram is empty, please file a bug report.")
@@ -570,7 +594,8 @@ def image(tag, tensor, rescale=1, dataformats="NCHW"):
     """
     tensor = make_np(tensor)
     tensor = convert_to_HWC(tensor, dataformats)
-    # Do not assume that user passes in values in [0, 255], use data type to detect
+    # Do not assume that user passes in values in [0, 255], use data type to
+    # detect
     scale_factor = _calc_scale_factor(tensor)
     tensor = tensor.astype(np.float32)
     tensor = (tensor * scale_factor).clip(0, 255).astype(np.uint8)
@@ -579,13 +604,18 @@ def image(tag, tensor, rescale=1, dataformats="NCHW"):
 
 
 def image_boxes(
-    tag, tensor_image, tensor_boxes, rescale=1, dataformats="CHW", labels=None
-):
+        tag,
+        tensor_image,
+        tensor_boxes,
+        rescale=1,
+        dataformats="CHW",
+        labels=None):
     """Output a `Summary` protocol buffer with images."""
     tensor_image = make_np(tensor_image)
     tensor_image = convert_to_HWC(tensor_image, dataformats)
     tensor_boxes = make_np(tensor_boxes)
-    tensor_image = tensor_image.astype(np.float32) * _calc_scale_factor(tensor_image)
+    tensor_image = tensor_image.astype(
+        np.float32) * _calc_scale_factor(tensor_image)
     image = make_image(
         tensor_image.clip(0, 255).astype(np.uint8),
         rescale=rescale,
@@ -687,9 +717,8 @@ def make_video(tensor, fps):
     except OSError:
         logger.warning("The temporary file used by moviepy cannot be deleted.")
 
-    return Summary.Image(
-        height=h, width=w, colorspace=c, encoded_image_string=tensor_string
-    )
+    return Summary.Image(height=h, width=w, colorspace=c,
+                         encoded_image_string=tensor_string)
 
 
 def audio(tag, tensor, sample_rate=44100):
@@ -754,15 +783,16 @@ def custom_scalars(layout):
     )
     return Summary(
         value=[
-            Summary.Value(tag="custom_scalars__config__", tensor=tensor, metadata=smd)
-        ]
-    )
+            Summary.Value(
+                tag="custom_scalars__config__",
+                tensor=tensor,
+                metadata=smd)])
 
 
 def text(tag, text):
     plugin_data = SummaryMetadata.PluginData(
-        plugin_name="text", content=TextPluginData(version=0).SerializeToString()
-    )
+        plugin_name="text", content=TextPluginData(
+            version=0).SerializeToString())
     smd = SummaryMetadata(plugin_data=plugin_data)
     tensor = TensorProto(
         dtype="DT_STRING",
@@ -770,13 +800,24 @@ def text(tag, text):
         tensor_shape=TensorShapeProto(dim=[TensorShapeProto.Dim(size=1)]),
     )
     return Summary(
-        value=[Summary.Value(tag=tag + "/text_summary", metadata=smd, tensor=tensor)]
-    )
+        value=[
+            Summary.Value(
+                tag=tag +
+                "/text_summary",
+                metadata=smd,
+                tensor=tensor)])
 
 
 def pr_curve_raw(
-    tag, tp, fp, tn, fn, precision, recall, num_thresholds=127, weights=None
-):
+        tag,
+        tp,
+        fp,
+        tn,
+        fn,
+        precision,
+        recall,
+        num_thresholds=127,
+        weights=None):
     if num_thresholds > 127:  # weird, value > 127 breaks protobuf
         num_thresholds = 127
     data = np.stack((tp, fp, tn, fn, precision, recall))
@@ -784,8 +825,7 @@ def pr_curve_raw(
         version=0, num_thresholds=num_thresholds
     ).SerializeToString()
     plugin_data = SummaryMetadata.PluginData(
-        plugin_name="pr_curves", content=pr_curve_plugin_data
-    )
+        plugin_name="pr_curves", content=pr_curve_plugin_data)
     smd = SummaryMetadata(plugin_data=plugin_data)
     tensor = TensorProto(
         dtype="DT_FLOAT",
@@ -804,14 +844,15 @@ def pr_curve(tag, labels, predictions, num_thresholds=127, weights=None):
     # weird, value > 127 breaks protobuf
     num_thresholds = min(num_thresholds, 127)
     data = compute_curve(
-        labels, predictions, num_thresholds=num_thresholds, weights=weights
-    )
+        labels,
+        predictions,
+        num_thresholds=num_thresholds,
+        weights=weights)
     pr_curve_plugin_data = PrCurvePluginData(
         version=0, num_thresholds=num_thresholds
     ).SerializeToString()
     plugin_data = SummaryMetadata.PluginData(
-        plugin_name="pr_curves", content=pr_curve_plugin_data
-    )
+        plugin_name="pr_curves", content=pr_curve_plugin_data)
     smd = SummaryMetadata(plugin_data=plugin_data)
     tensor = TensorProto(
         dtype="DT_FLOAT",
@@ -861,8 +902,13 @@ def compute_curve(labels, predictions, num_thresholds=None, weights=None):
 
 
 def _get_tensor_summary(
-    name, display_name, description, tensor, content_type, components, json_config
-):
+        name,
+        display_name,
+        description,
+        tensor,
+        content_type,
+        components,
+        json_config):
     """Create a tensor summary with summary metadata.
 
     Args:
@@ -929,8 +975,13 @@ def _get_json_config(config_dict):
 
 # https://github.com/tensorflow/tensorboard/blob/master/tensorboard/plugins/mesh/summary.py
 def mesh(
-    tag, vertices, colors, faces, config_dict, display_name=None, description=None
-):
+        tag,
+        vertices,
+        colors,
+        faces,
+        config_dict,
+        display_name=None,
+        description=None):
     """Output a merged `Summary` protocol buffer with a mesh/point cloud.
 
     Args:

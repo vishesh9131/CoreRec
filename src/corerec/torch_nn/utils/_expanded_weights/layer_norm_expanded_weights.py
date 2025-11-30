@@ -18,9 +18,7 @@ from .expanded_weights_utils import (
 class LayerNormPerSampleGrad(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwarg_names, _, *expanded_args_and_kwargs):
-        expanded_args, expanded_kwargs = standard_kwargs(
-            kwarg_names, expanded_args_and_kwargs
-        )
+        expanded_args, expanded_kwargs = standard_kwargs(kwarg_names, expanded_args_and_kwargs)
         input = expanded_args[0]
         normalized_shape = expanded_args[1]
         if len(input.shape) <= len(normalized_shape):
@@ -28,9 +26,7 @@ class LayerNormPerSampleGrad(torch.autograd.Function):
                 "Expanded Weights: Layer norm should not normalize over batch dimension for per sample gradient"
                 f"computations but got that normalized shape, {normalized_shape}, matched input shape."
             )
-        output, mean, rstd = forward_helper(
-            torch.native_layer_norm, expanded_args, expanded_kwargs
-        )
+        output, mean, rstd = forward_helper(torch.native_layer_norm, expanded_args, expanded_kwargs)
         ctx.args = expanded_args
 
         if input.requires_grad or isinstance(expanded_kwargs["weight"], ExpandedWeight):

@@ -30,9 +30,7 @@ class _InstanceNorm(_NormBase):
         dtype=None,
     ) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
-        super().__init__(
-            num_features, eps, momentum, affine, track_running_stats, **factory_kwargs
-        )
+        super().__init__(num_features, eps, momentum, affine, track_running_stats, **factory_kwargs)
 
     def _check_input_dim(self, input):
         raise NotImplementedError

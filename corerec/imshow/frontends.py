@@ -5,10 +5,11 @@ Frontend configurations and template management for IMShow.
 from typing import Dict, Any
 from pathlib import Path
 
+
 def available_frontends() -> Dict[str, Dict[str, Any]]:
     """
     Get available frontend configurations.
-    
+
     Returns:
         Dictionary of frontend configurations
     """
@@ -22,11 +23,11 @@ def available_frontends() -> Dict[str, Dict[str, Any]]:
             "required_fields": ["id", "title", "artist"],
             "color_scheme": {
                 "primary": "#1DB954",
-                "background": "#121212", 
+                "background": "#121212",
                 "text": "#FFFFFF",
-                "secondary": "#535353"
+                "secondary": "#535353",
             },
-            "template_path": "templates/spotify"
+            "template_path": "templates/spotify",
         },
         "youtube": {
             "name": "YouTube Videos",
@@ -39,9 +40,9 @@ def available_frontends() -> Dict[str, Dict[str, Any]]:
                 "primary": "#FF0000",
                 "background": "#FFFFFF",
                 "text": "#0F0F0F",
-                "secondary": "#606060"
+                "secondary": "#606060",
             },
-            "template_path": "templates/youtube"
+            "template_path": "templates/youtube",
         },
         "netflix": {
             "name": "Netflix Streaming",
@@ -54,40 +55,45 @@ def available_frontends() -> Dict[str, Dict[str, Any]]:
                 "primary": "#E50914",
                 "background": "#141414",
                 "text": "#FFFFFF",
-                "secondary": "#564D4D"
+                "secondary": "#564D4D",
             },
-            "template_path": "templates/netflix"
-        }
+            "template_path": "templates/netflix",
+        },
     }
+
 
 def get_frontend_info(frontend: str) -> Dict[str, Any]:
     """
     Get information about a specific frontend.
-    
+
     Args:
         frontend: Frontend name
-        
+
     Returns:
         Frontend configuration dictionary
     """
     frontends = available_frontends()
     if frontend not in frontends:
-        raise ValueError(f"Frontend '{frontend}' not available. Choose from: {list(frontends.keys())}")
-    
+        raise ValueError(
+            f"Frontend '{frontend}' not available. Choose from: {
+                list(
+                    frontends.keys())}")
+
     return frontends[frontend]
+
 
 def get_frontend_template(frontend: str) -> str:
     """
     Get the HTML template for a frontend.
-    
+
     Args:
         frontend: Frontend name
-        
+
     Returns:
         HTML template string
     """
     frontend_info = get_frontend_info(frontend)
-    
+
     # Generate template based on frontend type
     if frontend == "spotify":
         return _generate_spotify_template()
@@ -97,6 +103,7 @@ def get_frontend_template(frontend: str) -> str:
         return _generate_netflix_template()
     else:
         return _generate_generic_template(frontend_info)
+
 
 def _generate_spotify_template() -> str:
     """Generate Spotify-style template."""
@@ -232,31 +239,31 @@ def _generate_spotify_template() -> str:
             </div>
         </div>
     </div>
-    
+
     <script>
         const API_URL = 'http://localhost:{{api_port}}';
         let userId = 'demo_user_' + Math.random().toString(36).substr(2, 9);
-        
+
         async function loadRecommendations() {
             try {
                 const response = await fetch(`${API_URL}/recommendations/${userId}?num_items=12`);
                 const data = await response.json();
-                
+
                 displayRecommendations(data.recommendations || []);
-                
+
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('recommendations').style.display = 'grid';
             } catch (error) {
                 console.error('Error loading recommendations:', error);
-                document.getElementById('loading').innerHTML = 
+                document.getElementById('loading').innerHTML =
                     '<div style="color: #ff6b6b;">❌ Failed to load recommendations. Make sure the API server is running.</div>';
             }
         }
-        
+
         function displayRecommendations(recommendations) {
             const container = document.getElementById('recommendations');
             container.innerHTML = '';
-            
+
             recommendations.forEach(track => {
                 const card = document.createElement('div');
                 card.className = 'track-card';
@@ -269,7 +276,7 @@ def _generate_spotify_template() -> str:
                 container.appendChild(card);
             });
         }
-        
+
         async function playTrack(trackId) {
             console.log('Playing track:', trackId);
             // Record interaction
@@ -287,13 +294,14 @@ def _generate_spotify_template() -> str:
                 console.error('Error recording interaction:', error);
             }
         }
-        
+
         // Load recommendations on page load
         window.addEventListener('load', loadRecommendations);
     </script>
 </body>
 </html>
     """
+
 
 def _generate_youtube_template() -> str:
     """Generate YouTube-style template."""
@@ -434,7 +442,7 @@ def _generate_youtube_template() -> str:
             <strong>{{title}}</strong>
         </div>
     </div>
-    
+
     <div class="container">
         <div class="sidebar">
             <div class="sidebar-item">🏠 Home</div>
@@ -445,7 +453,7 @@ def _generate_youtube_template() -> str:
             <div class="sidebar-item">🕒 History</div>
             <div class="sidebar-item">👍 Liked videos</div>
         </div>
-        
+
         <div class="main-content">
             <div class="page-title">Recommended for you</div>
             <div id="loading" class="loading">
@@ -456,36 +464,36 @@ def _generate_youtube_template() -> str:
             </div>
         </div>
     </div>
-    
+
     <script>
         const API_URL = 'http://localhost:{{api_port}}';
         let userId = 'demo_user_' + Math.random().toString(36).substr(2, 9);
-        
+
         async function loadRecommendations() {
             try {
                 const response = await fetch(`${API_URL}/recommendations/${userId}?num_items=12`);
                 const data = await response.json();
-                
+
                 displayVideos(data.recommendations || []);
-                
+
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('videos').style.display = 'grid';
             } catch (error) {
                 console.error('Error loading recommendations:', error);
-                document.getElementById('loading').innerHTML = 
+                document.getElementById('loading').innerHTML =
                     '<div style="color: #ff0000;">❌ Failed to load recommendations. Make sure the API server is running.</div>';
             }
         }
-        
+
         function displayVideos(videos) {
             const container = document.getElementById('videos');
             container.innerHTML = '';
-            
+
             videos.forEach(video => {
                 const card = document.createElement('div');
                 card.className = 'video-card';
                 card.onclick = () => watchVideo(video.id);
-                
+
                 card.innerHTML = `
                     <div class="video-thumbnail">
                         📺
@@ -505,7 +513,7 @@ def _generate_youtube_template() -> str:
                 container.appendChild(card);
             });
         }
-        
+
         async function watchVideo(videoId) {
             console.log('Watching video:', videoId);
             // Record interaction
@@ -523,13 +531,14 @@ def _generate_youtube_template() -> str:
                 console.error('Error recording interaction:', error);
             }
         }
-        
+
         // Load recommendations on page load
         window.addEventListener('load', loadRecommendations);
     </script>
 </body>
 </html>
     """
+
 
 def _generate_netflix_template() -> str:
     """Generate Netflix-style template."""
@@ -683,17 +692,17 @@ def _generate_netflix_template() -> str:
             <div class="nav-item">My List</div>
         </div>
     </div>
-    
+
     <div class="main-content">
         <div class="hero-section">
             <div class="hero-title">{{title}}</div>
             <div class="hero-description">{{description}}</div>
         </div>
-        
+
         <div id="loading" class="loading">
             <div>🎬 Loading your personalized recommendations...</div>
         </div>
-        
+
         <div id="content-sections" style="display: none;">
             <div class="section-title">Recommended for You</div>
             <div id="recommendations" class="content-row">
@@ -701,36 +710,36 @@ def _generate_netflix_template() -> str:
             </div>
         </div>
     </div>
-    
+
     <script>
         const API_URL = 'http://localhost:{{api_port}}';
         let userId = 'demo_user_' + Math.random().toString(36).substr(2, 9);
-        
+
         async function loadRecommendations() {
             try {
                 const response = await fetch(`${API_URL}/recommendations/${userId}?num_items=12`);
                 const data = await response.json();
-                
+
                 displayContent(data.recommendations || []);
-                
+
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content-sections').style.display = 'block';
             } catch (error) {
                 console.error('Error loading recommendations:', error);
-                document.getElementById('loading').innerHTML = 
+                document.getElementById('loading').innerHTML =
                     '<div style="color: #e50914;">❌ Failed to load recommendations. Make sure the API server is running.</div>';
             }
         }
-        
+
         function displayContent(content) {
             const container = document.getElementById('recommendations');
             container.innerHTML = '';
-            
+
             content.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'content-card';
                 card.onclick = () => watchContent(item.id);
-                
+
                 card.innerHTML = `
                     <div class="content-image">🎬</div>
                     <div class="content-info">
@@ -744,7 +753,7 @@ def _generate_netflix_template() -> str:
                 container.appendChild(card);
             });
         }
-        
+
         async function watchContent(contentId) {
             console.log('Watching content:', contentId);
             // Record interaction
@@ -762,13 +771,14 @@ def _generate_netflix_template() -> str:
                 console.error('Error recording interaction:', error);
             }
         }
-        
+
         // Load recommendations on page load
         window.addEventListener('load', loadRecommendations);
     </script>
 </body>
 </html>
     """
+
 
 def _generate_generic_template(frontend_info: Dict[str, Any]) -> str:
     """Generate a generic template for unknown frontends."""
@@ -842,45 +852,45 @@ def _generate_generic_template(frontend_info: Dict[str, Any]) -> str:
             <div class="title">{{title}}</div>
             <div class="description">{{description}}</div>
         </div>
-        
+
         <div id="loading" class="loading">
             <div>📋 Loading recommendations...</div>
         </div>
-        
+
         <div id="recommendations" class="recommendations" style="display: none;">
             <!-- Recommendations will be populated by JavaScript -->
         </div>
     </div>
-    
+
     <script>
         const API_URL = 'http://localhost:{{api_port}}';
         let userId = 'demo_user_' + Math.random().toString(36).substr(2, 9);
-        
+
         async function loadRecommendations() {
             try {
                 const response = await fetch(`${API_URL}/recommendations/${userId}?num_items=12`);
                 const data = await response.json();
-                
+
                 displayRecommendations(data.recommendations || []);
-                
+
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('recommendations').style.display = 'grid';
             } catch (error) {
                 console.error('Error loading recommendations:', error);
-                document.getElementById('loading').innerHTML = 
+                document.getElementById('loading').innerHTML =
                     '<div style="color: #e74c3c;">❌ Failed to load recommendations. Make sure the API server is running.</div>';
             }
         }
-        
+
         function displayRecommendations(recommendations) {
             const container = document.getElementById('recommendations');
             container.innerHTML = '';
-            
+
             recommendations.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'item-card';
                 card.onclick = () => selectItem(item.id);
-                
+
                 card.innerHTML = `
                     <div class="item-title">${item.title || item.name || 'Unknown Item'}</div>
                     <div class="item-meta">
@@ -890,7 +900,7 @@ def _generate_generic_template(frontend_info: Dict[str, Any]) -> str:
                 container.appendChild(card);
             });
         }
-        
+
         async function selectItem(itemId) {
             console.log('Selected item:', itemId);
             // Record interaction
@@ -908,10 +918,10 @@ def _generate_generic_template(frontend_info: Dict[str, Any]) -> str:
                 console.error('Error recording interaction:', error);
             }
         }
-        
+
         // Load recommendations on page load
         window.addEventListener('load', loadRecommendations);
     </script>
 </body>
 </html>
-    """ 
+    """

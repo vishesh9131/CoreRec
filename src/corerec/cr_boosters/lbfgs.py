@@ -35,9 +35,7 @@ def _cubic_interpolate(x1, f1, g1, x2, f2, g2, bounds=None):
         return (xmin_bound + xmax_bound) / 2.0
 
 
-def _strong_wolfe(
-    obj_func, x, t, d, f, g, gtd, c1=1e-4, c2=0.9, tolerance_change=1e-9, max_ls=25
-):
+def _strong_wolfe(obj_func, x, t, d, f, g, gtd, c1=1e-4, c2=0.9, tolerance_change=1e-9, max_ls=25):
     # ported from https://github.com/torch/optim/blob/master/lswolfe.lua
     d_norm = d.abs().max()
     g = g.clone(memory_format=torch.contiguous_format)
@@ -236,9 +234,7 @@ class LBFGS(Optimizer):
         super().__init__(params, defaults)
 
         if len(self.param_groups) != 1:
-            raise ValueError(
-                "LBFGS doesn't support per-parameter options " "(parameter groups)"
-            )
+            raise ValueError("LBFGS doesn't support per-parameter options " "(parameter groups)")
 
         self._params = self.param_groups[0]["params"]
         self._numel_cache = None
@@ -246,8 +242,7 @@ class LBFGS(Optimizer):
     def _numel(self):
         if self._numel_cache is None:
             self._numel_cache = sum(
-                2 * p.numel() if torch.is_complex(p) else p.numel()
-                for p in self._params
+                2 * p.numel() if torch.is_complex(p) else p.numel() for p in self._params
             )
 
         return self._numel_cache

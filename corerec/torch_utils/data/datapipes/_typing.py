@@ -80,7 +80,7 @@ def issubtype(left, right, recursive=True):
         if getattr(right, "__origin__", None) is Generic:
             return True
 
-    if right == type(None):
+    if isinstance(None, right):
         return False
 
     # Right-side type
@@ -100,9 +100,10 @@ def issubtype(left, right, recursive=True):
         return False
 
     return all(
-        _issubtype_with_constraints(variant, constraints, recursive)
-        for variant in variants
-    )
+        _issubtype_with_constraints(
+            variant,
+            constraints,
+            recursive) for variant in variants)
 
 
 def _decompose_type(t, to_list=True):
@@ -118,7 +119,8 @@ def _decompose_type(t, to_list=True):
         if not to_list:
             return None
         ts = [t]
-    # Ignored: Generator has incompatible item type "object"; expected "Type[Any]"
+    # Ignored: Generator has incompatible item type "object"; expected
+    # "Type[Any]"
     ts = [TYPE2ABC.get(_t, _t) for _t in ts]  # type: ignore[misc]
     return ts
 
@@ -150,7 +152,11 @@ def _issubtype_with_constraints(variant, constraints, recursive=True):
 
     # Variant is TypeVar or Union
     if vs is not None:
-        return all(_issubtype_with_constraints(v, constraints, recursive) for v in vs)
+        return all(
+            _issubtype_with_constraints(
+                v,
+                constraints,
+                recursive) for v in vs)
 
     # Variant is not TypeVar or Union
     if hasattr(variant, "__origin__") and variant.__origin__ is not None:
@@ -172,23 +178,20 @@ def _issubtype_with_constraints(variant, constraints, recursive=True):
         # Constraint is not TypeVar or Union
         else:
             # __origin__ can be None for plain list, tuple, ... in Python 3.6
-            if hasattr(constraint, "__origin__") and constraint.__origin__ is not None:
+            if hasattr(
+                    constraint,
+                    "__origin__") and constraint.__origin__ is not None:
                 c_origin = constraint.__origin__
                 if v_origin == c_origin:
                     if not recursive:
                         return True
-                    # In Python-3.9 typing library untyped generics do not have args
+                    # In Python-3.9 typing library untyped generics do not have
+                    # args
                     c_args = getattr(constraint, "__args__", None)
                     if c_args is None or len(c_args) == 0:
                         return True
-                    if (
-                        v_args is not None
-                        and len(v_args) == len(c_args)
-                        and all(
-                            issubtype(v_arg, c_arg)
-                            for v_arg, c_arg in zip(v_args, c_args)
-                        )
-                    ):
+                    if (v_args is not None and len(v_args) == len(c_args) and all(
+                            issubtype(v_arg, c_arg) for v_arg, c_arg in zip(v_args, c_args))):
                         return True
             # Tuple[int] -> Tuple
             else:
@@ -202,7 +205,8 @@ def issubinstance(data, data_type):
     if not issubtype(type(data), data_type, recursive=False):
         return False
 
-    # In Python-3.9 typing library __args__ attribute is not defined for untyped generics
+    # In Python-3.9 typing library __args__ attribute is not defined for
+    # untyped generics
     dt_args = getattr(data_type, "__args__", None)
     if isinstance(data, tuple):
         if dt_args is None or len(dt_args) == 0:
@@ -219,9 +223,8 @@ def issubinstance(data, data_type):
         if dt_args is None or len(dt_args) == 0:
             return True
         kt, vt = dt_args
-        return all(
-            issubinstance(k, kt) and issubinstance(v, vt) for k, v in data.items()
-        )
+        return all(issubinstance(k, kt) and issubinstance(v, vt)
+                   for k, v in data.items())
 
     return True
 
@@ -259,7 +262,9 @@ class _DataPipeType:
             return issubtype(self.param, other.param)
         if isinstance(other, type):
             return issubtype(self.param, other)
-        raise TypeError(f"Expected '_DataPipeType' or 'type', but found {type(other)}")
+        raise TypeError(
+            f"Expected '_DataPipeType' or 'type', but found {
+                type(other)}")
 
     def issubtype_of_instance(self, other):
         return issubinstance(other, self.param)
@@ -282,26 +287,31 @@ class _DataPipeMeta(GenericMeta):
     type: _DataPipeType
 
     def __new__(cls, name, bases, namespace, **kwargs):
-        return super().__new__(cls, name, bases, namespace, **kwargs)  # type: ignore[call-overload]
+        return super().__new__(cls, name, bases, namespace,
+                               **kwargs)  # type: ignore[call-overload]
 
-        # TODO: the statements below are not reachable by design as there is a bug and typing is low priority for now.
+        # TODO: the statements below are not reachable by design as there is a
+        # bug and typing is low priority for now.
         cls.__origin__ = None
         if "type" in namespace:
-            return super().__new__(cls, name, bases, namespace, **kwargs)  # type: ignore[call-overload]
+            return super().__new__(cls, name, bases, namespace,
+                                   **kwargs)  # type: ignore[call-overload]
 
         namespace["__type_class__"] = False
         #  For plain derived class without annotation
         for base in bases:
             if isinstance(base, _DataPipeMeta):
-                return super().__new__(cls, name, bases, namespace, **kwargs)  # type: ignore[call-overload]
+                return super().__new__(cls, name, bases, namespace,
+                                       **kwargs)  # type: ignore[call-overload]
 
-        namespace.update(
-            {"type": _DEFAULT_TYPE, "__init_subclass__": _dp_init_subclass}
-        )
-        return super().__new__(cls, name, bases, namespace, **kwargs)  # type: ignore[call-overload]
+        namespace.update({"type": _DEFAULT_TYPE,
+                          "__init_subclass__": _dp_init_subclass})
+        return super().__new__(cls, name, bases, namespace,
+                               **kwargs)  # type: ignore[call-overload]
 
     def __init__(self, name, bases, namespace, **kwargs):
-        super().__init__(name, bases, namespace, **kwargs)  # type: ignore[call-overload]
+        # type: ignore[call-overload]
+        super().__init__(name, bases, namespace, **kwargs)
 
     # TODO: Fix isinstance bug
     @_tp_cache
@@ -337,15 +347,15 @@ class _DataPipeMeta(GenericMeta):
 
         if len(params) > 1:
             raise TypeError(
-                f"Too many parameters for {self} actual {len(params)}, expected 1"
-            )
+                f"Too many parameters for {self} actual {
+                    len(params)}, expected 1")
 
         t = _DataPipeType(params[0])
 
         if not t.issubtype(self.type):
             raise TypeError(
-                f"Can not subclass a DataPipe[{t}] from DataPipe[{self.type}]"
-            )
+                f"Can not subclass a DataPipe[{t}] from DataPipe[{
+                    self.type}]")
 
         # Types are equal, fast path for inheritance
         if self.type == t:
@@ -355,16 +365,15 @@ class _DataPipeMeta(GenericMeta):
         bases = (self,) + self.__bases__
 
         return self.__class__(
-            name,
-            bases,
-            {"__init_subclass__": _dp_init_subclass, "__type_class__": True, "type": t},
-        )
+            name, bases, {
+                "__init_subclass__": _dp_init_subclass, "__type_class__": True, "type": t}, )
 
     # TODO: Fix isinstance bug
     def _eq_(self, other):
         if not isinstance(other, _DataPipeMeta):
             return NotImplemented
-        if self.__origin__ is None or other.__origin__ is None:  # type: ignore[has-type]
+        # type: ignore[has-type]
+        if self.__origin__ is None or other.__origin__ is None:
             return self is other
         return (
             self.__origin__ == other.__origin__  # type: ignore[has-type]
@@ -410,7 +419,8 @@ class _IterDataPipeMeta(_DataPipeMeta):
 
         if "__iter__" in namespace:
             hook_iterator(namespace)
-        return super().__new__(cls, name, bases, namespace, **kwargs)  # type: ignore[call-overload]
+        return super().__new__(cls, name, bases, namespace,
+                               **kwargs)  # type: ignore[call-overload]
 
 
 def _dp_init_subclass(sub_cls, *args, **kwargs):
@@ -453,15 +463,15 @@ def _dp_init_subclass(sub_cls, *args, **kwargs):
                 raise TypeError(
                     "Expected 'Iterator' as the return annotation for `__iter__` of {}"
                     ", but found {}".format(
-                        sub_cls.__name__, _type_repr(hints["return"])
-                    )
-                )
+                        sub_cls.__name__, _type_repr(
+                            hints["return"])))
             data_type = return_hint.__args__[0]
             if not issubtype(data_type, sub_cls.type.param):
                 raise TypeError(
-                    f"Expected return type of '__iter__' as a subtype of {sub_cls.type},"
-                    f" but found {_type_repr(data_type)} for {sub_cls.__name__}"
-                )
+                    f"Expected return type of '__iter__' as a subtype of {
+                        sub_cls.type}," f" but found {
+                        _type_repr(data_type)} for {
+                        sub_cls.__name__}")
 
 
 def reinforce_type(self, expected_type):
@@ -477,8 +487,9 @@ def reinforce_type(self, expected_type):
 
     if not issubtype(expected_type, self.type.param):
         raise TypeError(
-            f"Expected 'expected_type' as subtype of {self.type}, but found {_type_repr(expected_type)}"
-        )
+            f"Expected 'expected_type' as subtype of {
+                self.type}, but found {
+                _type_repr(expected_type)}")
 
     self.type = _DataPipeType(expected_type)
     return self

@@ -64,10 +64,10 @@ except ImportError:
 # ============================================================================
 
 __all__ = [
-    'TFIDFTraditional',
-    'SVMRecommender',
-    'LightGBMRecommender',
-    'DecisionTreeRecommender',
-    'LogisticRegressionRecommender',
-    'VowpalWabbitRecommender',
+    "TFIDFTraditional",
+    "SVMRecommender",
+    "LightGBMRecommender",
+    "DecisionTreeRecommender",
+    "LogisticRegressionRecommender",
+    "VowpalWabbitRecommender",
 ]

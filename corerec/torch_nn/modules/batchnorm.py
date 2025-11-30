@@ -26,7 +26,12 @@ class _NormBase(Module):
     """Common base of _InstanceNorm and _BatchNorm."""
 
     _version = 2
-    __constants__ = ["track_running_stats", "momentum", "eps", "num_features", "affine"]
+    __constants__ = [
+        "track_running_stats",
+        "momentum",
+        "eps",
+        "num_features",
+        "affine"]
     num_features: int
     eps: float
     momentum: Optional[float]
@@ -53,18 +58,21 @@ class _NormBase(Module):
         self.affine = affine
         self.track_running_stats = track_running_stats
         if self.affine:
-            self.weight = Parameter(torch.empty(num_features, **factory_kwargs))
+            self.weight = Parameter(
+                torch.empty(
+                    num_features,
+                    **factory_kwargs))
             self.bias = Parameter(torch.empty(num_features, **factory_kwargs))
         else:
             self.register_parameter("weight", None)
             self.register_parameter("bias", None)
         if self.track_running_stats:
             self.register_buffer(
-                "running_mean", torch.zeros(num_features, **factory_kwargs)
-            )
+                "running_mean", torch.zeros(
+                    num_features, **factory_kwargs))
             self.register_buffer(
-                "running_var", torch.ones(num_features, **factory_kwargs)
-            )
+                "running_var", torch.ones(
+                    num_features, **factory_kwargs))
             self.running_mean: Optional[Tensor]
             self.running_var: Optional[Tensor]
             self.register_buffer(
@@ -88,7 +96,8 @@ class _NormBase(Module):
             # if self.track_running_stats is on
             self.running_mean.zero_()  # type: ignore[union-attr]
             self.running_var.fill_(1)  # type: ignore[union-attr]
-            self.num_batches_tracked.zero_()  # type: ignore[union-attr,operator]
+            # type: ignore[union-attr,operator]
+            self.num_batches_tracked.zero_()
 
     def reset_parameters(self) -> None:
         self.reset_running_stats()
@@ -153,8 +162,12 @@ class _BatchNorm(_NormBase):
     ) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__(
-            num_features, eps, momentum, affine, track_running_stats, **factory_kwargs
-        )
+            num_features,
+            eps,
+            momentum,
+            affine,
+            track_running_stats,
+            **factory_kwargs)
 
     def forward(self, input: Tensor) -> Tensor:
         self._check_input_dim(input)
@@ -168,11 +181,13 @@ class _BatchNorm(_NormBase):
             exponential_average_factor = self.momentum
 
         if self.training and self.track_running_stats:
-            # TODO: if statement only here to tell the jit to skip emitting this when it is None
+            # TODO: if statement only here to tell the jit to skip emitting
+            # this when it is None
             if self.num_batches_tracked is not None:  # type: ignore[has-type]
                 self.num_batches_tracked.add_(1)  # type: ignore[has-type]
                 if self.momentum is None:  # use cumulative moving average
-                    exponential_average_factor = 1.0 / float(self.num_batches_tracked)
+                    exponential_average_factor = 1.0 / \
+                        float(self.num_batches_tracked)
                 else:  # use exponential moving average
                     exponential_average_factor = self.momentum
 
@@ -183,7 +198,9 @@ class _BatchNorm(_NormBase):
         if self.training:
             bn_training = True
         else:
-            bn_training = (self.running_mean is None) and (self.running_var is None)
+            bn_training = (
+                self.running_mean is None) and (
+                self.running_var is None)
 
         r"""
         Buffers are only updated if they are to be tracked and we are in training mode. Thus they only need to be
@@ -192,10 +209,9 @@ class _BatchNorm(_NormBase):
         """
         return F.batch_norm(
             input,
-            # If buffers are not to be tracked, ensure that they won't be updated
-            self.running_mean
-            if not self.training or self.track_running_stats
-            else None,
+            # If buffers are not to be tracked, ensure that they won't be
+            # updated
+            self.running_mean if not self.training or self.track_running_stats else None,
             self.running_var if not self.training or self.track_running_stats else None,
             self.weight,
             self.bias,
@@ -338,7 +354,9 @@ class BatchNorm1d(_BatchNorm):
 
     def _check_input_dim(self, input):
         if input.dim() != 2 and input.dim() != 3:
-            raise ValueError(f"expected 2D or 3D input (got {input.dim()}D input)")
+            raise ValueError(
+                f"expected 2D or 3D input (got {
+                    input.dim()}D input)")
 
 
 class LazyBatchNorm1d(_LazyNormBase, _BatchNorm):
@@ -372,7 +390,9 @@ class LazyBatchNorm1d(_LazyNormBase, _BatchNorm):
 
     def _check_input_dim(self, input):
         if input.dim() != 2 and input.dim() != 3:
-            raise ValueError(f"expected 2D or 3D input (got {input.dim()}D input)")
+            raise ValueError(
+                f"expected 2D or 3D input (got {
+                    input.dim()}D input)")
 
 
 class BatchNorm2d(_BatchNorm):
@@ -713,19 +733,24 @@ class SyncBatchNorm(_BatchNorm):
     ) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__(
-            num_features, eps, momentum, affine, track_running_stats, **factory_kwargs
-        )
+            num_features,
+            eps,
+            momentum,
+            affine,
+            track_running_stats,
+            **factory_kwargs)
         self.process_group = process_group
 
     def _check_input_dim(self, input):
         if input.dim() < 2:
-            raise ValueError(f"expected at least 2D input (got {input.dim()}D input)")
+            raise ValueError(
+                f"expected at least 2D input (got {
+                    input.dim()}D input)")
 
     def _check_non_zero_input_channels(self, input):
         if input.size(1) == 0:
             raise ValueError(
-                "SyncBatchNorm number of input channels should be non-zero"
-            )
+                "SyncBatchNorm number of input channels should be non-zero")
 
     def forward(self, input: Tensor) -> Tensor:
         self._check_input_dim(input)
@@ -754,7 +779,9 @@ class SyncBatchNorm(_BatchNorm):
         if self.training:
             bn_training = True
         else:
-            bn_training = (self.running_mean is None) and (self.running_var is None)
+            bn_training = (
+                self.running_mean is None) and (
+                self.running_var is None)
 
         r"""
         Buffers are only updated if they are to be tracked and we are in training mode. Thus they only need to be
@@ -762,12 +789,8 @@ class SyncBatchNorm(_BatchNorm):
         used for normalization (i.e. in eval mode when buffers are not None).
         """
         # If buffers are not to be tracked, ensure that they won't be updated
-        running_mean = (
-            self.running_mean if not self.training or self.track_running_stats else None
-        )
-        running_var = (
-            self.running_var if not self.training or self.track_running_stats else None
-        )
+        running_mean = self.running_mean if not self.training or self.track_running_stats else None
+        running_var = self.running_var if not self.training or self.track_running_stats else None
 
         # Don't sync batchnorm stats in inference mode (model.eval()).
         need_sync = (
@@ -877,7 +900,7 @@ class SyncBatchNorm(_BatchNorm):
                 module_output.qconfig = module.qconfig
         for name, child in module.named_children():
             module_output.add_module(
-                name, cls.convert_sync_batchnorm(child, process_group)
-            )
+                name, cls.convert_sync_batchnorm(
+                    child, process_group))
         del module
         return module_output

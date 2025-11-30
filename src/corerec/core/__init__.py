@@ -10,8 +10,14 @@ from corerec.core.towers import UserTower, ItemTower, TowerFactory
 from corerec.core.losses import DotProductLoss, CosineLoss, InfoNCE
 
 __all__ = [
-    'BaseModel',
-    'AbstractEncoder', 'TextEncoder', 'VisionEncoder',
-    'UserTower', 'ItemTower', 'TowerFactory',
-    'DotProductLoss', 'CosineLoss', 'InfoNCE'
-] 
+    "BaseModel",
+    "AbstractEncoder",
+    "TextEncoder",
+    "VisionEncoder",
+    "UserTower",
+    "ItemTower",
+    "TowerFactory",
+    "DotProductLoss",
+    "CosineLoss",
+    "InfoNCE",
+]

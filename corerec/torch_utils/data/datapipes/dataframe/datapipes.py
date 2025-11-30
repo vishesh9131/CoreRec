@@ -34,9 +34,10 @@ class PerRowDataFramesPipe(DFIterDataPipe):
 
     def __iter__(self):
         for df in self.source_datapipe:
-            # TODO(VitalyFedyunin): Replacing with TorchArrow only API, as we are dropping pandas as followup
+            # TODO(VitalyFedyunin): Replacing with TorchArrow only API, as we
+            # are dropping pandas as followup
             for i in range(len(df)):
-                yield df[i : i + 1]
+                yield df[i: i + 1]
 
 
 @functional_datapipe("_dataframes_concat", enable_df_api_tracing=True)
@@ -94,7 +95,7 @@ class FilterDataFramesPipe(DFIterDataPipe):
             if size is None:
                 size = len(df.index)
             for i in range(len(df.index)):
-                all_buffer.append(df[i : i + 1])
+                all_buffer.append(df[i: i + 1])
                 filter_res.append(self.filter_fn(df.iloc[i]))
 
         buffer = []
@@ -118,9 +119,7 @@ class ExampleAggregateAsDataFrames(DFIterDataPipe):
     def _as_list(self, item):
         try:
             return list(item)
-        except (
-            Exception
-        ):  # TODO(VitalyFedyunin): Replace with better iterable exception
+        except Exception:  # TODO(VitalyFedyunin): Replace with better iterable exception
             return [item]
 
     def __iter__(self):

@@ -126,8 +126,7 @@ def traverse(datapipe: DataPipe, only_datapipe: Optional[bool] = None) -> DataPi
         and values are tuples of DataPipe instance and the sub-graph
     """
     msg = (
-        "`traverse` function and will be removed after 1.13. "
-        "Please use `traverse_dps` instead."
+        "`traverse` function and will be removed after 1.13. " "Please use `traverse_dps` instead."
     )
     if not only_datapipe:
         msg += " And, the behavior will be changed to the equivalent of `only_datapipe=True`."
@@ -139,9 +138,7 @@ def traverse(datapipe: DataPipe, only_datapipe: Optional[bool] = None) -> DataPi
 
 
 # Add cache here to prevent infinite recursion on DataPipe
-def _traverse_helper(
-    datapipe: DataPipe, only_datapipe: bool, cache: Set[int]
-) -> DataPipeGraph:
+def _traverse_helper(datapipe: DataPipe, only_datapipe: bool, cache: Set[int]) -> DataPipeGraph:
     if not isinstance(datapipe, (IterDataPipe, MapDataPipe)):
         raise RuntimeError(
             f"Expected `IterDataPipe` or `MapDataPipe`, but {type(datapipe)} is found"

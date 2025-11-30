@@ -20,6 +20,7 @@ Usage:
 from torch.utils.data import Dataset
 import torch
 
+
 class GraphDataset(Dataset):
     """
     A custom PyTorch Dataset class for handling graph data.
@@ -32,6 +33,7 @@ class GraphDataset(Dataset):
         __len__(): Returns the number of nodes in the graph.
         __getitem__(idx): Returns the node features and weights for a given index.
     """
+
     def __init__(self, adj_matrix, weight_matrix=None):
         """
         Initializes the GraphDataset with adjacency and optional weight matrices.

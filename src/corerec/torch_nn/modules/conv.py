@@ -114,9 +114,7 @@ class _ConvNd(Module):
                     f"Invalid padding string {padding!r}, should be one of {valid_padding_strings}"
                 )
             if padding == "same" and any(s != 1 for s in stride):
-                raise ValueError(
-                    "padding='same' is not supported for strided convolutions"
-                )
+                raise ValueError("padding='same' is not supported for strided convolutions")
 
         valid_padding_modes = {"zeros", "reflect", "replicate", "circular"}
         if padding_mode not in valid_padding_modes:
@@ -140,19 +138,13 @@ class _ConvNd(Module):
         if isinstance(self.padding, str):
             self._reversed_padding_repeated_twice = [0, 0] * len(kernel_size)
             if padding == "same":
-                for d, k, i in zip(
-                    dilation, kernel_size, range(len(kernel_size) - 1, -1, -1)
-                ):
+                for d, k, i in zip(dilation, kernel_size, range(len(kernel_size) - 1, -1, -1)):
                     total_padding = d * (k - 1)
                     left_pad = total_padding // 2
                     self._reversed_padding_repeated_twice[2 * i] = left_pad
-                    self._reversed_padding_repeated_twice[2 * i + 1] = (
-                        total_padding - left_pad
-                    )
+                    self._reversed_padding_repeated_twice[2 * i + 1] = total_padding - left_pad
         else:
-            self._reversed_padding_repeated_twice = _reverse_repeat_tuple(
-                self.padding, 2
-            )
+            self._reversed_padding_repeated_twice = _reverse_repeat_tuple(self.padding, 2)
 
         if transposed:
             self.weight = Parameter(
@@ -187,10 +179,7 @@ class _ConvNd(Module):
                 init.uniform_(self.bias, -bound, bound)
 
     def extra_repr(self):
-        s = (
-            "{in_channels}, {out_channels}, kernel_size={kernel_size}"
-            ", stride={stride}"
-        )
+        s = "{in_channels}, {out_channels}, kernel_size={kernel_size}" ", stride={stride}"
         if self.padding != (0,) * len(self.padding):
             s += ", padding={padding}"
         if self.dilation != (1,) * len(self.dilation):
@@ -355,9 +344,7 @@ class Conv1d(_ConvNd):
     def _conv_forward(self, input: Tensor, weight: Tensor, bias: Optional[Tensor]):
         if self.padding_mode != "zeros":
             return F.conv1d(
-                F.pad(
-                    input, self._reversed_padding_repeated_twice, mode=self.padding_mode
-                ),
+                F.pad(input, self._reversed_padding_repeated_twice, mode=self.padding_mode),
                 weight,
                 bias,
                 self.stride,
@@ -365,9 +352,7 @@ class Conv1d(_ConvNd):
                 self.dilation,
                 self.groups,
             )
-        return F.conv1d(
-            input, weight, bias, self.stride, self.padding, self.dilation, self.groups
-        )
+        return F.conv1d(input, weight, bias, self.stride, self.padding, self.dilation, self.groups)
 
     def forward(self, input: Tensor) -> Tensor:
         return self._conv_forward(input, self.weight, self.bias)
@@ -531,9 +516,7 @@ class Conv2d(_ConvNd):
     def _conv_forward(self, input: Tensor, weight: Tensor, bias: Optional[Tensor]):
         if self.padding_mode != "zeros":
             return F.conv2d(
-                F.pad(
-                    input, self._reversed_padding_repeated_twice, mode=self.padding_mode
-                ),
+                F.pad(input, self._reversed_padding_repeated_twice, mode=self.padding_mode),
                 weight,
                 bias,
                 self.stride,
@@ -541,9 +524,7 @@ class Conv2d(_ConvNd):
                 self.dilation,
                 self.groups,
             )
-        return F.conv2d(
-            input, weight, bias, self.stride, self.padding, self.dilation, self.groups
-        )
+        return F.conv2d(input, weight, bias, self.stride, self.padding, self.dilation, self.groups)
 
     def forward(self, input: Tensor) -> Tensor:
         return self._conv_forward(input, self.weight, self.bias)
@@ -699,9 +680,7 @@ class Conv3d(_ConvNd):
     def _conv_forward(self, input: Tensor, weight: Tensor, bias: Optional[Tensor]):
         if self.padding_mode != "zeros":
             return F.conv3d(
-                F.pad(
-                    input, self._reversed_padding_repeated_twice, mode=self.padding_mode
-                ),
+                F.pad(input, self._reversed_padding_repeated_twice, mode=self.padding_mode),
                 weight,
                 bias,
                 self.stride,
@@ -709,9 +688,7 @@ class Conv3d(_ConvNd):
                 self.dilation,
                 self.groups,
             )
-        return F.conv3d(
-            input, weight, bias, self.stride, self.padding, self.dilation, self.groups
-        )
+        return F.conv3d(input, weight, bias, self.stride, self.padding, self.dilation, self.groups)
 
     def forward(self, input: Tensor) -> Tensor:
         return self._conv_forward(input, self.weight, self.bias)
@@ -786,8 +763,7 @@ class _ConvTransposeNd(_ConvNd):
                 dim_size = (
                     (input.size(d + num_non_spatial_dims) - 1) * stride[d]
                     - 2 * padding[d]
-                    + (dilation[d] if dilation is not None else 1)
-                    * (kernel_size[d] - 1)
+                    + (dilation[d] if dilation is not None else 1) * (kernel_size[d] - 1)
                     + 1
                 )
                 min_sizes.append(dim_size)
@@ -944,9 +920,7 @@ class ConvTranspose1d(_ConvTransposeNd):
 
     def forward(self, input: Tensor, output_size: Optional[List[int]] = None) -> Tensor:
         if self.padding_mode != "zeros":
-            raise ValueError(
-                "Only `zeros` padding mode is supported for ConvTranspose1d"
-            )
+            raise ValueError("Only `zeros` padding mode is supported for ConvTranspose1d")
 
         assert isinstance(self.padding, tuple)
         # One cannot replace List by Tuple or Sequence in "_output_padding" because
@@ -1129,9 +1103,7 @@ class ConvTranspose2d(_ConvTransposeNd):
 
     def forward(self, input: Tensor, output_size: Optional[List[int]] = None) -> Tensor:
         if self.padding_mode != "zeros":
-            raise ValueError(
-                "Only `zeros` padding mode is supported for ConvTranspose2d"
-            )
+            raise ValueError("Only `zeros` padding mode is supported for ConvTranspose2d")
 
         assert isinstance(self.padding, tuple)
         # One cannot replace List by Tuple or Sequence in "_output_padding" because
@@ -1312,9 +1284,7 @@ class ConvTranspose3d(_ConvTransposeNd):
 
     def forward(self, input: Tensor, output_size: Optional[List[int]] = None) -> Tensor:
         if self.padding_mode != "zeros":
-            raise ValueError(
-                "Only `zeros` padding mode is supported for ConvTranspose3d"
-            )
+            raise ValueError("Only `zeros` padding mode is supported for ConvTranspose3d")
 
         assert isinstance(self.padding, tuple)
         # One cannot replace List by Tuple or Sequence in "_output_padding" because

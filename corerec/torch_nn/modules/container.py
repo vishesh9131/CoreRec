@@ -35,7 +35,8 @@ __all__ = [
 T = TypeVar("T", bound=Module)
 
 
-# Copied from torch.nn.modules.module, required for a custom __repr__ for ModuleList
+# Copied from torch.nn.modules.module, required for a custom __repr__ for
+# ModuleList
 def _addindent(s_, numSpaces):
     s = s_.split("\n")
     # don't do anything for single-line stuff
@@ -48,11 +49,10 @@ def _addindent(s_, numSpaces):
     return s
 
 
-@deprecated(
-    "`nn.Container` is deprecated. "
-    "All of it's functionality is now implemented in `nn.Module`. Subclass that instead.",
-    category=FutureWarning,
-)
+@deprecated("`nn.Container` is deprecated. "
+            "All of it's functionality is now implemented in `nn.Module`. Subclass that instead.",
+            category=FutureWarning,
+            )
 class Container(Module):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__()
@@ -125,7 +125,8 @@ class Sequential(Module):
             for idx, module in enumerate(args):
                 self.add_module(str(idx), module)
 
-    def _get_item_by_idx(self, iterator, idx) -> T:  # type: ignore[misc, type-var]
+    # type: ignore[misc, type-var]
+    def _get_item_by_idx(self, iterator, idx) -> T:
         """Get the idx-th item of the iterator."""
         size = len(self)
         idx = operator.index(idx)
@@ -137,7 +138,8 @@ class Sequential(Module):
     @_copy_to_script_wrapper
     def __getitem__(self, idx: Union[slice, int]) -> Union["Sequential", T]:
         if isinstance(idx, slice):
-            return self.__class__(OrderedDict(list(self._modules.items())[idx]))
+            return self.__class__(OrderedDict(
+                list(self._modules.items())[idx]))
         else:
             return self._get_item_by_idx(self._modules.values(), idx)
 
@@ -154,7 +156,8 @@ class Sequential(Module):
             delattr(self, key)
         # To preserve numbering
         str_indices = [str(i) for i in range(len(self._modules))]
-        self._modules = OrderedDict(list(zip(str_indices, self._modules.values())))
+        self._modules = OrderedDict(
+            list(zip(str_indices, self._modules.values())))
 
     @_copy_to_script_wrapper
     def __len__(self) -> int:
@@ -194,12 +197,10 @@ class Sequential(Module):
     def __mul__(self, other: int) -> "Sequential":
         if not isinstance(other, int):
             raise TypeError(
-                f"unsupported operand type(s) for *: {type(self)} and {type(other)}"
-            )
+                f"unsupported operand type(s) for *: {type(self)} and {type(other)}")
         elif other <= 0:
             raise ValueError(
-                f"Non-positive multiplication factor {other} for {type(self)}"
-            )
+                f"Non-positive multiplication factor {other} for {type(self)}")
         else:
             combined = Sequential()
             offset = 0
@@ -215,12 +216,10 @@ class Sequential(Module):
     def __imul__(self, other: int) -> Self:
         if not isinstance(other, int):
             raise TypeError(
-                f"unsupported operand type(s) for *: {type(self)} and {type(other)}"
-            )
+                f"unsupported operand type(s) for *: {type(self)} and {type(other)}")
         elif other <= 0:
             raise ValueError(
-                f"Non-positive multiplication factor {other} for {type(self)}"
-            )
+                f"Non-positive multiplication factor {other} for {type(self)}")
         else:
             len_original = len(self)
             offset = len(self)
@@ -318,7 +317,8 @@ class ModuleList(Module):
         return str(idx)
 
     @_copy_to_script_wrapper
-    def __getitem__(self, idx: Union[int, slice]) -> Union[Module, "ModuleList"]:
+    def __getitem__(self, idx: Union[int, slice]
+                    ) -> Union[Module, "ModuleList"]:
         if isinstance(idx, slice):
             return self.__class__(list(self._modules.values())[idx])
         else:
@@ -334,9 +334,11 @@ class ModuleList(Module):
                 delattr(self, str(k))
         else:
             delattr(self, self._get_abs_string_index(idx))
-        # To preserve numbering, self._modules is being reconstructed with modules after deletion
+        # To preserve numbering, self._modules is being reconstructed with
+        # modules after deletion
         str_indices = [str(i) for i in range(len(self._modules))]
-        self._modules = OrderedDict(list(zip(str_indices, self._modules.values())))
+        self._modules = OrderedDict(
+            list(zip(str_indices, self._modules.values())))
 
     @_copy_to_script_wrapper
     def __len__(self) -> int:
@@ -553,10 +555,14 @@ class ModuleDict(Module):
         if not isinstance(modules, container_abcs.Iterable):
             raise TypeError(
                 "ModuleDict.update should be called with an "
-                "iterable of key/value pairs, but got " + type(modules).__name__
-            )
+                "iterable of key/value pairs, but got " +
+                type(modules).__name__)
 
-        if isinstance(modules, (OrderedDict, ModuleDict, container_abcs.Mapping)):
+        if isinstance(
+            modules,
+            (OrderedDict,
+             ModuleDict,
+             container_abcs.Mapping)):
             for key, module in modules.items():
                 self[key] = module
         else:
@@ -565,15 +571,15 @@ class ModuleDict(Module):
                 if not isinstance(m, container_abcs.Iterable):
                     raise TypeError(
                         "ModuleDict update sequence element "
-                        "#" + str(j) + " should be Iterable; is" + type(m).__name__
-                    )
+                        "#" + str(j) + " should be Iterable; is" + type(m).__name__)
                 if not len(m) == 2:
                     raise ValueError(
                         "ModuleDict update sequence element "
                         "#" + str(j) + " has length " + str(len(m)) + "; 2 is required"
                     )
                 # modules can be Mapping (what it's typed at), or a list: [(name1, module1), (name2, module2)]
-                # that's too cumbersome to type correctly with overloads, so we add an ignore here
+                # that's too cumbersome to type correctly with overloads, so we
+                # add an ignore here
                 self[m[0]] = m[1]  # type: ignore[assignment]
 
     # remove forward alltogether to fallback on Module's _forward_unimplemented
@@ -648,7 +654,11 @@ class ParameterList(Module):
         # Objects added via setattr() are not in the list part and thus won't
         # call into this function.
         idx = self._get_abs_string_index(idx)
-        if isinstance(param, torch.Tensor) and not isinstance(param, Parameter):
+        if isinstance(
+                param,
+                torch.Tensor) and not isinstance(
+                param,
+                Parameter):
             param = Parameter(param)
         return setattr(self, str(idx), param)
 
@@ -684,9 +694,11 @@ class ParameterList(Module):
             values (iterable): iterable of values to append
         """
         # Tensor is an iterable but we never want to unpack it here
-        if not isinstance(values, container_abcs.Iterable) or isinstance(
-            values, torch.Tensor
-        ):
+        if not isinstance(
+                values,
+                container_abcs.Iterable) or isinstance(
+                values,
+                torch.Tensor):
             raise TypeError(
                 "ParameterList.extend should be called with an "
                 "iterable, but got " + type(values).__name__
@@ -700,7 +712,8 @@ class ParameterList(Module):
         for k, p in enumerate(self):
             if isinstance(p, torch.Tensor):
                 size_str = "x".join(str(size) for size in p.size())
-                if p.device.type in ["cuda", torch._C._get_privateuse1_backend_name()]:
+                if p.device.type in ["cuda",
+                                     torch._C._get_privateuse1_backend_name()]:
                     device_str = f" ({p.device})"
                 else:
                     device_str = ""
@@ -713,8 +726,7 @@ class ParameterList(Module):
                 child_lines.append("  (" + str(k) + "): " + parastr)
             else:
                 child_lines.append(
-                    "  (" + str(k) + "): Object of type: " + type(p).__name__
-                )
+                    "  (" + str(k) + "): Object of type: " + type(p).__name__)
 
         tmpstr = "\n".join(child_lines)
         return tmpstr
@@ -774,7 +786,8 @@ class ParameterDict(Module):
                 "github if you need non-string keys."
             )
         else:
-            # Use the key as-is so that `.named_parameters()` returns the right thing
+            # Use the key as-is so that `.named_parameters()` returns the right
+            # thing
             return key
 
     def __getitem__(self, key: str) -> Any:
@@ -789,7 +802,11 @@ class ParameterDict(Module):
         # call into this function.
         self._keys[key] = None
         attr = self._key_to_attr(key)
-        if isinstance(value, torch.Tensor) and not isinstance(value, Parameter):
+        if isinstance(
+                value,
+                torch.Tensor) and not isinstance(
+                value,
+                Parameter):
             value = Parameter(value)
         setattr(self, attr, value)
 
@@ -865,8 +882,9 @@ class ParameterDict(Module):
         return self[key] if key in self else default
 
     def fromkeys(
-        self, keys: Iterable[str], default: Optional[Any] = None
-    ) -> "ParameterDict":
+            self,
+            keys: Iterable[str],
+            default: Optional[Any] = None) -> "ParameterDict":
         r"""Return a new ParameterDict with the keys provided.
 
         Args:
@@ -887,7 +905,8 @@ class ParameterDict(Module):
         r"""Return an iterable of the ParameterDict values."""
         return (self[k] for k in self._keys)
 
-    def update(self, parameters: Union[Mapping[str, Any], "ParameterDict"]) -> None:
+    def update(
+            self, parameters: Union[Mapping[str, Any], "ParameterDict"]) -> None:
         r"""Update the :class:`~torch.nn.ParameterDict` with key-value pairs from ``parameters``, overwriting existing keys.
 
         .. note::
@@ -902,8 +921,8 @@ class ParameterDict(Module):
         if not isinstance(parameters, container_abcs.Iterable):
             raise TypeError(
                 "ParametersDict.update should be called with an "
-                "iterable of key/value pairs, but got " + type(parameters).__name__
-            )
+                "iterable of key/value pairs, but got " +
+                type(parameters).__name__)
 
         if isinstance(parameters, (OrderedDict, ParameterDict)):
             for key, parameter in parameters.items():
@@ -916,14 +935,14 @@ class ParameterDict(Module):
                 if not isinstance(p, container_abcs.Iterable):
                     raise TypeError(
                         "ParameterDict update sequence element "
-                        "#" + str(j) + " should be Iterable; is" + type(p).__name__
-                    )
+                        "#" + str(j) + " should be Iterable; is" + type(p).__name__)
                 if not len(p) == 2:
                     raise ValueError(
                         "ParameterDict update sequence element "
                         "#" + str(j) + " has length " + str(len(p)) + "; 2 is required"
                     )
-                # parameters as length-2 list too cumbersome to type, see ModuleDict.update comment
+                # parameters as length-2 list too cumbersome to type, see
+                # ModuleDict.update comment
                 self[p[0]] = p[1]  # type: ignore[assignment]
 
     def extra_repr(self) -> str:
@@ -931,7 +950,8 @@ class ParameterDict(Module):
         for k, p in self.items():
             if isinstance(p, torch.Tensor):
                 size_str = "x".join(str(size) for size in p.size())
-                if p.device.type in ["cuda", torch._C._get_privateuse1_backend_name()]:
+                if p.device.type in ["cuda",
+                                     torch._C._get_privateuse1_backend_name()]:
                     device_str = f" ({p.device})"
                 else:
                     device_str = ""
@@ -944,8 +964,7 @@ class ParameterDict(Module):
                 child_lines.append("  (" + str(k) + "): " + parastr)
             else:
                 child_lines.append(
-                    "  (" + str(k) + "): Object of type: " + type(p).__name__
-                )
+                    "  (" + str(k) + "): Object of type: " + type(p).__name__)
         tmpstr = "\n".join(child_lines)
         return tmpstr
 

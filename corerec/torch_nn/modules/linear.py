@@ -103,8 +103,8 @@ class Linear(Module):
         self.in_features = in_features
         self.out_features = out_features
         self.weight = Parameter(
-            torch.empty((out_features, in_features), **factory_kwargs)
-        )
+            torch.empty(
+                (out_features, in_features), **factory_kwargs))
         if bias:
             self.bias = Parameter(torch.empty(out_features, **factory_kwargs))
         else:
@@ -125,7 +125,10 @@ class Linear(Module):
         return F.linear(input, self.weight, self.bias)
 
     def extra_repr(self) -> str:
-        return f"in_features={self.in_features}, out_features={self.out_features}, bias={self.bias is not None}"
+        return f"in_features={
+            self.in_features}, out_features={
+            self.out_features}, bias={
+            self.bias is not None}"
 
 
 # This class exists solely to avoid triggering an obscure error when scripting
@@ -143,8 +146,11 @@ class NonDynamicallyQuantizableLinear(Linear):
         dtype=None,
     ) -> None:
         super().__init__(
-            in_features, out_features, bias=bias, device=device, dtype=dtype
-        )
+            in_features,
+            out_features,
+            bias=bias,
+            device=device,
+            dtype=dtype)
 
 
 class Bilinear(Module):
@@ -206,8 +212,11 @@ class Bilinear(Module):
         self.in2_features = in2_features
         self.out_features = out_features
         self.weight = Parameter(
-            torch.empty((out_features, in1_features, in2_features), **factory_kwargs)
-        )
+            torch.empty(
+                (out_features,
+                 in1_features,
+                 in2_features),
+                **factory_kwargs))
 
         if bias:
             self.bias = Parameter(torch.empty(out_features, **factory_kwargs))
@@ -226,9 +235,11 @@ class Bilinear(Module):
 
     def extra_repr(self) -> str:
         return (
-            f"in1_features={self.in1_features}, in2_features={self.in2_features}, "
-            f"out_features={self.out_features}, bias={self.bias is not None}"
-        )
+            f"in1_features={
+                self.in1_features}, in2_features={
+                self.in2_features}, " f"out_features={
+                self.out_features}, bias={
+                    self.bias is not None}")
 
 
 class LazyLinear(LazyModuleMixin, Linear):
@@ -265,8 +276,11 @@ class LazyLinear(LazyModuleMixin, Linear):
     bias: UninitializedParameter  # type: ignore[assignment]
 
     def __init__(
-        self, out_features: int, bias: bool = True, device=None, dtype=None
-    ) -> None:
+            self,
+            out_features: int,
+            bias: bool = True,
+            device=None,
+            dtype=None) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
         # bias is hardcoded to False to avoid creating tensor
         # that will soon be overwritten.

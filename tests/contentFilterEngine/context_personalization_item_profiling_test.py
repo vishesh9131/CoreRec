@@ -16,7 +16,9 @@ def load_module(rel_path: str):
 class TestItemProfiling(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load_module("corerec/engines/contentFilterEngine/context_personalization/item_profiling.py")
+        cls.mod = load_module(
+            "corerec/engines/contentFilterEngine/context_personalization/item_profiling.py"
+        )
         cls.ItemProfilingRecommender = cls.mod.ItemProfilingRecommender
 
     def test_fit_builds_profiles(self):
@@ -31,12 +33,26 @@ class TestItemProfiling(unittest.TestCase):
         self.assertIn(10, rec.item_profiles)
         self.assertIn(11, rec.item_profiles)
 
-    def test_recommend_not_implemented_dependencies(self):
+    def test_recommend_without_fitting(self):
         rec = self.ItemProfilingRecommender()
-        # The module references vectorizer/lsa_model that are not initialized.
-        with self.assertRaises(Exception):
-            rec.recommend("query")
+        # Should return empty list when no profiles exist
+        result = rec.recommend(item_id=1)
+        self.assertEqual(result, [])
+        
+    def test_recommend_with_profiles(self):
+        rec = self.ItemProfilingRecommender()
+        data = {1: [10, 11], 2: [10, 12]}
+        item_features = {
+            10: {"genre": "action"},
+            11: {"genre": "drama"},
+            12: {"genre": "action"},
+        }
+        rec.fit(data, item_features)
+        # Should return recommendations based on item similarity
+        result = rec.recommend(item_id=10, top_n=2)
+        self.assertIsInstance(result, list)
+        self.assertLessEqual(len(result), 2)
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

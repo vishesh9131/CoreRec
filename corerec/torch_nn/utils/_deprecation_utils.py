@@ -4,9 +4,7 @@ import warnings
 from typing import Callable, List
 
 
-_MESSAGE_TEMPLATE = (
-    r"Usage of '{old_location}' is deprecated; please use '{new_location}' instead."
-)
+_MESSAGE_TEMPLATE = r"Usage of '{old_location}' is deprecated; please use '{new_location}' instead."
 
 
 def lazy_deprecated_import(
@@ -39,8 +37,7 @@ def lazy_deprecated_import(
             new_module=_MIGRATED_TO)
     """
     warning_message = _MESSAGE_TEMPLATE.format(
-        old_location=old_module, new_location=new_module
-    )
+        old_location=old_module, new_location=new_module)
 
     def getattr_dunder(name):
         if name in all:
@@ -49,6 +46,9 @@ def lazy_deprecated_import(
             warnings.warn(warning_message, RuntimeWarning)
             package = importlib.import_module(new_module)
             return getattr(package, name)
-        raise AttributeError(f"Module {new_module!r} has no attribute {name!r}.")
+        raise AttributeError(
+            f"Module {
+                new_module!r} has no attribute {
+                name!r}.")
 
     return getattr_dunder

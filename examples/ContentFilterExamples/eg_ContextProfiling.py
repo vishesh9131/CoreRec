@@ -1,22 +1,21 @@
-from corerec import cf_engine as cf
+import corerec as cr
 from cr_learn_setup.cr_learn import ml_1m as ml
 
 data = ml.load()
-cfg = 'examples/ContentFilterExamples/context_config.json'  
+cfg = "examples/ContentFilterExamples/context_config.json"
 
-users_df = data['users']
-ratings_df = data['ratings']
-movies_df = data['movies']
-user_interactions = data['user_interactions']
-item_features = data['item_features']
+users_df = data["users"]
+ratings_df = data["ratings"]
+movies_df = data["movies"]
+user_interactions = data["user_interactions"]
+item_features = data["item_features"]
 
 print("Initializing recommenders...")
-user_recommender = cf.user_profiling.UserProfilingRecommender(user_attributes=users_df)
-context_recommender = cf.context_aware.ContextAwareRecommender(
-    context_config_path=cfg,
-    item_features=item_features
+user_recommender = cr.UserProfiling(user_attributes=users_df)
+context_recommender = cr.ContextAware(
+    context_config_path=cfg, item_features=item_features
 )
-item_recommender = cf.item_profiling.ItemProfilingRecommender()
+item_recommender = cr.ItemProfiling()
 
 print("Fitting User Profiling Recommender...")
 user_recommender.fit(user_interactions)
@@ -28,20 +27,12 @@ print("Fitting Item Profiling Recommender...")
 item_recommender.fit(user_interactions, item_features)
 
 # inf
-user_id = 5  
-current_context = {
-    "time_of_day": "night",
-    "location": "home"
-}
+user_id = 5
+current_context = {"time_of_day": "night", "location": "home"}
 
 print(f"Generating recommendations for User {user_id} with context {current_context}...")
-recommendations = context_recommender.recommend(
-    user_id=user_id,
-    context=current_context,
-    top_n=10
-)
-recommended_movies = movies_df[movies_df['movie_id'].isin(recommendations)]
+recommendations = context_recommender.recommend(user_id=user_id, context=current_context, top_n=10)
+recommended_movies = movies_df[movies_df["movie_id"].isin(recommendations)]
 print(f"Top 10 recommendations for User {user_id} in context {current_context}:")
 for _, row in recommended_movies.iterrows():
     print(f"- {row['title']}")
-    

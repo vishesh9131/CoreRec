@@ -3,6 +3,7 @@ from scipy.sparse import csr_matrix
 from typing import List
 from corerec.engines.cr_contentFilterEngine.base_recommender import BaseRecommender
 
+
 class PairwiseRankingRecommender(BaseRecommender):
     def __init__(self, learning_rate: float = 0.01, regularization: float = 0.02, epochs: int = 20):
         self.learning_rate = learning_rate
@@ -13,8 +14,12 @@ class PairwiseRankingRecommender(BaseRecommender):
 
     def fit(self, interaction_matrix: csr_matrix, user_ids: List[int], item_ids: List[int]):
         num_users, num_items = interaction_matrix.shape
-        self.user_factors = np.random.normal(scale=1./self.num_factors, size=(num_users, self.num_factors))
-        self.item_factors = np.random.normal(scale=1./self.num_factors, size=(num_items, self.num_factors))
+        self.user_factors = np.random.normal(
+            scale=1.0 / self.num_factors, size=(num_users, self.num_factors)
+        )
+        self.item_factors = np.random.normal(
+            scale=1.0 / self.num_factors, size=(num_items, self.num_factors)
+        )
 
         for epoch in range(self.epochs):
             for u in range(num_users):
@@ -29,9 +34,18 @@ class PairwiseRankingRecommender(BaseRecommender):
 
                             # Update factors
                             gradient = 1 / (1 + np.exp(x_uij))
-                            self.user_factors[u] += self.learning_rate * (gradient * (self.item_factors[i] - self.item_factors[j]) - self.regularization * self.user_factors[u])
-                            self.item_factors[i] += self.learning_rate * (gradient * self.user_factors[u] - self.regularization * self.item_factors[i])
-                            self.item_factors[j] -= self.learning_rate * (gradient * self.user_factors[u] + self.regularization * self.item_factors[j])
+                            self.user_factors[u] += self.learning_rate * (
+                                gradient * (self.item_factors[i] - self.item_factors[j])
+                                - self.regularization * self.user_factors[u]
+                            )
+                            self.item_factors[i] += self.learning_rate * (
+                                gradient * self.user_factors[u]
+                                - self.regularization * self.item_factors[i]
+                            )
+                            self.item_factors[j] -= self.learning_rate * (
+                                gradient * self.user_factors[u]
+                                + self.regularization * self.item_factors[j]
+                            )
 
     def recommend(self, user_id: int, top_n: int = 10) -> List[int]:
         user_vector = self.user_factors[user_id]

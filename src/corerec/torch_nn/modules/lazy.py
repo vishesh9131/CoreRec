@@ -224,9 +224,7 @@ class LazyModuleMixin:
         See comment in ``torch.nn.Module._register_load_state_dict_pre_hook``
         for the details of the hook specification.
         """
-        for name, param in itertools.chain(
-            self._parameters.items(), self._buffers.items()
-        ):
+        for name, param in itertools.chain(self._parameters.items(), self._buffers.items()):
             key = prefix + name
             if key in state_dict and param is not None:
                 input_param = state_dict[key]

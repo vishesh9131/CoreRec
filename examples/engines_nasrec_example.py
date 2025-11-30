@@ -17,7 +17,9 @@ if __name__ == "__main__":
     users, items, ratings = data["users"], data["items"], data["ratings"]
 
     # New API: Direct access to NASRec from engines
-    model = engines.NASRec(embedding_dim=32, hidden_dims=[64, 32], epochs=1, batch_size=256, device="cpu")
+    model = engines.NASRec(
+        embedding_dim=32, hidden_dims=[64, 32], epochs=1, batch_size=256, device="cpu"
+    )
     model.fit(users, items, ratings)
-    recs = model.recommend(users[0], top_n=10, exclude_seen=False)
+    recs = model.recommend(users[0], top_k=10, exclude_seen=False)
     print("NASRec recommendations for", users[0], ":", recs)

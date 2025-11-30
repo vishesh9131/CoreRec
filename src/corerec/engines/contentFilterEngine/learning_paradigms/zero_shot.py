@@ -1,6 +1,8 @@
 # zero_shot implementation
 import torch
 from corerec.predict import predict
+
+
 class ZeroShotLearner:
     def __init__(self, model):
         """

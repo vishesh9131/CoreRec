@@ -71,20 +71,15 @@ def _check_param_device(param: torch.Tensor, old_param_device: Optional[int]) ->
     # Meet the first parameter
     support_device_types = ["cuda", torch._C._get_privateuse1_backend_name()]
     if old_param_device is None:
-        old_param_device = (
-            param.get_device() if param.device.type in support_device_types else -1
-        )
+        old_param_device = param.get_device() if param.device.type in support_device_types else -1
     else:
         warn = False
-        if (
-            param.device.type in support_device_types
-        ):  # Check if in same GPU/PrivateUse1
+        if param.device.type in support_device_types:  # Check if in same GPU/PrivateUse1
             warn = param.get_device() != old_param_device
         else:  # Check if in CPU
             warn = old_param_device != -1
         if warn:
             raise TypeError(
-                "Found two parameters on different devices, "
-                "this is currently not supported."
+                "Found two parameters on different devices, " "this is currently not supported."
             )
     return old_param_device

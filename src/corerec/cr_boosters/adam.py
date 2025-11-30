@@ -3,6 +3,8 @@ from typing import List, Optional, Tuple, Union
 
 import torch
 from torch import Tensor
+
+
 # from torch.utils._foreach_utils import _get_fused_kernels_supported_devices
 def _get_fused_kernels_supported_devices():
     try:
@@ -167,13 +169,9 @@ class Adam(Optimizer):
                         else torch.tensor(0.0, dtype=_get_scalar_dtype())
                     )
                     # Exponential moving average of gradient values
-                    state["exp_avg"] = torch.zeros_like(
-                        p, memory_format=torch.preserve_format
-                    )
+                    state["exp_avg"] = torch.zeros_like(p, memory_format=torch.preserve_format)
                     # Exponential moving average of squared gradient values
-                    state["exp_avg_sq"] = torch.zeros_like(
-                        p, memory_format=torch.preserve_format
-                    )
+                    state["exp_avg_sq"] = torch.zeros_like(p, memory_format=torch.preserve_format)
                     if group["amsgrad"]:
                         # Maintains max of all exp. moving avg. of sq. grad. values
                         state["max_exp_avg_sq"] = torch.zeros_like(
@@ -191,11 +189,7 @@ class Adam(Optimizer):
                     )
 
                 # Foreach without capturable does not support a tensor lr
-                if (
-                    group["foreach"]
-                    and torch.is_tensor(group["lr"])
-                    and not group["capturable"]
-                ):
+                if group["foreach"] and torch.is_tensor(group["lr"]) and not group["capturable"]:
                     raise RuntimeError(
                         "lr as a Tensor is not supported for capturable=False and foreach=True"
                     )
@@ -418,13 +412,13 @@ def _single_tensor_adam(
                 # Uses the max. for normalizing running avg. of gradient
                 # Folds in (admittedly ugly) 1-elem step_size math here to avoid extra param-set-sized read+write
                 # (can't fold it into addcdiv_ below because addcdiv_ requires value is a Number, not a Tensor)
-                denom = (
-                    max_exp_avg_sqs[i].sqrt() / (bias_correction2_sqrt * step_size_neg)
-                ).add_(eps / step_size_neg)
+                denom = (max_exp_avg_sqs[i].sqrt() / (bias_correction2_sqrt * step_size_neg)).add_(
+                    eps / step_size_neg
+                )
             else:
-                denom = (
-                    exp_avg_sq.sqrt() / (bias_correction2_sqrt * step_size_neg)
-                ).add_(eps / step_size_neg)
+                denom = (exp_avg_sq.sqrt() / (bias_correction2_sqrt * step_size_neg)).add_(
+                    eps / step_size_neg
+                )
 
             param.addcdiv_(exp_avg, denom)
         else:
@@ -479,18 +473,13 @@ def _multi_tensor_adam(
         return
 
     if isinstance(lr, Tensor) and not capturable:
-        raise RuntimeError(
-            "lr as a Tensor is not supported for capturable=False and foreach=True"
-        )
+        raise RuntimeError("lr as a Tensor is not supported for capturable=False and foreach=True")
 
     # If compiling, the compiler will handle cudagraph checks, see note [torch.compile x capturable]
     if not torch._utils.is_compiling() and capturable:
-        capturable_supported_devices = _get_capturable_supported_devices(
-            supports_xla=False
-        )
+        capturable_supported_devices = _get_capturable_supported_devices(supports_xla=False)
         assert all(
-            p.device.type == step.device.type
-            and p.device.type in capturable_supported_devices
+            p.device.type == step.device.type and p.device.type in capturable_supported_devices
             for p, step in zip(params, state_steps)
         ), f"If capturable=True, params and state_steps must be on supported devices: {capturable_supported_devices}."
 
@@ -520,9 +509,7 @@ def _multi_tensor_adam(
                     device_max_exp_avg_sqs,
                 )
             else:
-                _view_as_real(
-                    device_params, device_grads, device_exp_avgs, device_exp_avg_sqs
-                )
+                _view_as_real(device_params, device_grads, device_exp_avgs, device_exp_avg_sqs)
 
         if maximize:
             device_grads = torch._foreach_neg(device_grads)  # type: ignore[assignment]
@@ -532,9 +519,7 @@ def _multi_tensor_adam(
         # and over. 1 will then be wrapped into a Tensor over and over again, which is slower than if we just
         # wrapped it once now. The alpha is required to assure we go to the right overload.
         if device_state_steps[0].is_cpu:
-            torch._foreach_add_(
-                device_state_steps, torch.tensor(1.0, device="cpu"), alpha=1.0
-            )
+            torch._foreach_add_(device_state_steps, torch.tensor(1.0, device="cpu"), alpha=1.0)
         else:
             torch._foreach_add_(device_state_steps, 1)
 
@@ -551,9 +536,7 @@ def _multi_tensor_adam(
         torch._foreach_lerp_(device_exp_avgs, device_grads, 1 - beta1)
 
         torch._foreach_mul_(device_exp_avg_sqs, beta2)
-        torch._foreach_addcmul_(
-            device_exp_avg_sqs, device_grads, device_grads, 1 - beta2
-        )
+        torch._foreach_addcmul_(device_exp_avg_sqs, device_grads, device_grads, 1 - beta2)
 
         # Delete the local intermediate since it won't be used anymore to save on peak memory
         del device_grads
@@ -598,12 +581,8 @@ def _multi_tensor_adam(
             # at this point, exp_avg_sq_sqrt = - (1 - beta^t) * [sqrt(exp_avg_sq / (1 - beta2^t)) + eps] / lr
             torch._foreach_addcdiv_(device_params, device_exp_avgs, exp_avg_sq_sqrt)
         else:
-            bias_correction1 = [
-                1 - beta1 ** _get_value(step) for step in device_state_steps
-            ]
-            bias_correction2 = [
-                1 - beta2 ** _get_value(step) for step in device_state_steps
-            ]
+            bias_correction1 = [1 - beta1 ** _get_value(step) for step in device_state_steps]
+            bias_correction2 = [1 - beta2 ** _get_value(step) for step in device_state_steps]
 
             step_size = _stack_if_compiling([(lr / bc) * -1 for bc in bias_correction1])
 
@@ -651,12 +630,8 @@ def _fused_adam(
     if differentiable:
         raise RuntimeError("Adam with fused=True does not support differentiable=True")
 
-    grad_scale_dict: DeviceDict = (
-        {grad_scale.device: grad_scale} if grad_scale is not None else {}
-    )
-    found_inf_dict: DeviceDict = (
-        {found_inf.device: found_inf} if found_inf is not None else {}
-    )
+    grad_scale_dict: DeviceDict = {grad_scale.device: grad_scale} if grad_scale is not None else {}
+    found_inf_dict: DeviceDict = {found_inf.device: found_inf} if found_inf is not None else {}
 
     # We only shuffle around the lr when it is a Tensor and on CUDA, otherwise, we prefer
     # treating it as a scalar.
@@ -711,9 +686,7 @@ def _fused_adam(
             found_inf=device_found_inf,
         )
         if device_found_inf is not None:
-            torch._foreach_sub_(
-                device_state_steps, [device_found_inf] * len(device_state_steps)
-            )
+            torch._foreach_sub_(device_state_steps, [device_found_inf] * len(device_state_steps))
 
 
 @_disable_dynamo_if_unsupported(single_tensor_fn=_single_tensor_adam)
@@ -751,9 +724,7 @@ def adam(
     # and pass False to use_fused. This is not a mistake--we want to give the fused impl
     # bake-in time before making it the default, even if it is typically faster.
     if fused is None and foreach is None:
-        _, foreach = _default_to_fused_or_foreach(
-            params, differentiable, use_fused=False
-        )
+        _, foreach = _default_to_fused_or_foreach(params, differentiable, use_fused=False)
         # Do not flip on foreach for the unsupported case where lr is a Tensor and capturable=False.
         if foreach and isinstance(lr, Tensor) and not capturable:
             foreach = False
@@ -803,8 +774,3 @@ def adam(
         grad_scale=grad_scale,
         found_inf=found_inf,
     )
-
-
-
-
-

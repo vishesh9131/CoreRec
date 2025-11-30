@@ -39,9 +39,7 @@ def _list_with_default(out_size: List[int], defaults: List[int]) -> List[int]:
         return out_size
     if len(defaults) <= len(out_size):
         raise ValueError(f"Input dimension should be at least {len(out_size) + 1}")
-    return [
-        v if v is not None else d for v, d in zip(out_size, defaults[-len(out_size) :])
-    ]
+    return [v if v is not None else d for v, d in zip(out_size, defaults[-len(out_size) :])]
 
 
 def consume_prefix_in_state_dict_if_present(

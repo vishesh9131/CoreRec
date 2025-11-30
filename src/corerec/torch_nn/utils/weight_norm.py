@@ -55,9 +55,7 @@ class WeightNorm:
         del module._parameters[name]
 
         # add g and v as new parameters and express w as g/||v|| * v
-        module.register_parameter(
-            name + "_g", Parameter(norm_except_dim(weight, 2, dim).data)
-        )
+        module.register_parameter(name + "_g", Parameter(norm_except_dim(weight, 2, dim).data))
         module.register_parameter(name + "_v", Parameter(weight.data))
         setattr(module, name, fn.compute_weight(module))
 

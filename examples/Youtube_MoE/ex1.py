@@ -2,8 +2,12 @@ import logging
 from typing import List, Optional
 
 from scipy.sparse import csr_matrix
-from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_base import MatrixFactorizationBase
-from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_recommender import MatrixFactorizationRecommender
+from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_base import (
+    MatrixFactorizationBase,
+)
+from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_recommender import (
+    MatrixFactorizationRecommender,
+)
 from corerec.engines.contentFilterEngine.tfidf_recommender import TFIDFRecommender
 from corerec.engines.hybrid import HybridEngine
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -50,7 +54,7 @@ collaborative_recommender = MatrixFactorizationRecommender(
     reg_item=0.02,
     epochs=20,
     early_stopping_rounds=5,
-    n_threads=4
+    n_threads=4,
 )
 
 # Step 3: Fit the Models
@@ -59,13 +63,14 @@ tfidf_recommender.fit(data=None)  # Adjust based on actual implementation
 
 # Step 4: Create a Hybrid Engine
 hybrid_engine = HybridEngine(
-    collaborative_engine=collaborative_recommender,
-    content_engine=tfidf_recommender,
-    alpha=0.5
+    collaborative_engine=collaborative_recommender, content_engine=tfidf_recommender, alpha=0.5
 )
 
+
 # Step 5: Generate Recommendations
-def get_recommendations(user_id: int, exclude_items: Optional[List[int]] = None, top_n: int = 10) -> List[int]:
+def get_recommendations(
+    user_id: int, exclude_items: Optional[List[int]] = None, top_n: int = 10
+) -> List[int]:
     """
     Generate top-N recommendations for a given user.
 
@@ -79,6 +84,7 @@ def get_recommendations(user_id: int, exclude_items: Optional[List[int]] = None,
     """
     recommendations = hybrid_engine.recommend(user_id, top_n=top_n, exclude_items=exclude_items)
     return recommendations
+
 
 # Example usage
 user_id = 0  # Assuming user IDs start from 0
