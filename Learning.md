@@ -1,19 +1,4 @@
-Reviewing the markdown rules and fixing the formatting issues:
-
-
-[1 tool called]
-
-
-Fixing markdown formatting. Creating 5 separate tutorial files with correct formatting:
-
-
-[2 tools called]
-
-
-Creating 5 separate tutorial files with correct markdown formatting. The issue was presenting them as nested blocks. Here are the corrected versions:
-
-## Tutorial 1: `tutorial_01_basic_collaborative_filtering.md`
-
+Tutorial 1: `tutorial_01_basic_collaborative_filtering.md`
 
 # Building Your First Recommendation System with CoreRec
 
@@ -115,13 +100,12 @@ print(f"Test RMSE: {rmse:.4f}")
 ## What's Next?
 
 You've built your first recommender! Try:
+
 - Experiment with different `factors` values (16, 64, 128)
 - Try other models like `FASTRecommender` or `SAR`
 - Add more epochs to see if accuracy improves
 
-
 ## Tutorial 2: `tutorial_02_deep_learning_recommendations.md`
-
 
 # Deep Learning for Recommendations: DeepFM Tutorial
 
@@ -233,9 +217,7 @@ print(f"Test AUC: {auc:.4f}")
 - Train for more epochs if validation metrics are improving
 - Try different learning rates (0.0001 to 0.01)
 
-
 ## Tutorial 3: `tutorial_03_sequential_recommendations.md`
-
 
 # Sequential Recommendations with SASRec
 
@@ -365,15 +347,14 @@ for rank, item_id in enumerate(recommended_items, 1):
 ## Understanding the Results
 
 SASRec considers:
+
 - Recent interactions (last few items)
 - Long-term patterns (attention mechanism)
 - Item co-occurrence in sequences
 
 This makes recommendations more contextually relevant than non-sequential models.
 
-
 ## Tutorial 4: `tutorial_04_production_system.md`
-
 
 # Building a Production Recommendation System
 
@@ -384,6 +365,7 @@ This tutorial covers building a complete, production-ready recommendation system
 ## Architecture
 
 We'll build:
+
 1. Data preprocessing pipeline
 2. Model training with validation
 3. Comprehensive evaluation
@@ -464,11 +446,11 @@ def evaluate_model(model, users, items, ratings, name="Test"):
     """Evaluate model with multiple metrics"""
     predictions = []
     actuals = []
-    
+  
     # sample for faster evaluation
     sample_size = min(10000, len(users))
     indices = np.random.choice(len(users), sample_size, replace=False)
-    
+  
     for idx in indices:
         u, i, r = users[idx], items[idx], ratings[idx]
         try:
@@ -477,10 +459,10 @@ def evaluate_model(model, users, items, ratings, name="Test"):
             actuals.append(r)
         except:
             continue
-    
+  
     if len(predictions) == 0:
         return {}
-    
+  
     auc = roc_auc_score(actuals, predictions)
     precision, recall, f1, _ = precision_recall_fscore_support(
         actuals, 
@@ -488,13 +470,13 @@ def evaluate_model(model, users, items, ratings, name="Test"):
         average='binary',
         zero_division=0
     )
-    
+  
     print(f"\n{name} Metrics:")
     print(f"  AUC: {auc:.4f}")
     print(f"  Precision: {precision:.4f}")
     print(f"  Recall: {recall:.4f}")
     print(f"  F1: {f1:.4f}")
-    
+  
     return {'auc': auc, 'precision': precision, 'recall': recall, 'f1': f1}
 
 # evaluate on test set
@@ -534,14 +516,14 @@ print("Model loaded successfully")
 def batch_recommend(model, user_ids, top_k=10):
     """Generate recommendations for multiple users efficiently"""
     all_recommendations = {}
-    
+  
     for user_id in user_ids:
         try:
             recs = model.recommend(user_id, top_n=top_k, exclude_seen=True)
             all_recommendations[user_id] = recs
         except:
             all_recommendations[user_id] = []
-    
+  
     return all_recommendations
 
 # example: recommend for 100 users
@@ -554,17 +536,15 @@ print(f"Average recommendations per user: {np.mean([len(r) for r in batch_recs.v
 
 ## Production Checklist
 
-- [x] Train/validation/test splits
-- [x] Model evaluation with multiple metrics
-- [x] Model persistence
-- [x] Batch inference capability
+- [X] Train/validation/test splits
+- [X] Model evaluation with multiple metrics
+- [X] Model persistence
+- [X] Batch inference capability
 - [ ] Logging and monitoring (add in production)
 - [ ] A/B testing framework (add in production)
 - [ ] Model versioning (add in production)
 
-
 ## Tutorial 5: `tutorial_05_industry_standard.md`
-
 
 # Industry-Standard Recommendation System: Complete Pipeline
 
@@ -641,7 +621,7 @@ def ensemble_predict(models, user_id, item_id, weights=None):
     """Weighted ensemble of model predictions"""
     if weights is None:
         weights = {name: 1.0 / len(models) for name in models.keys()}
-    
+  
     predictions = []
     for name, model in models.items():
         try:
@@ -649,20 +629,20 @@ def ensemble_predict(models, user_id, item_id, weights=None):
             predictions.append(pred * weights.get(name, 0.0))
         except:
             continue
-    
+  
     return sum(predictions) if predictions else 0.0
 
 def ensemble_recommend(models, user_id, top_k=10, weights=None):
     """Get ensemble recommendations"""
     # get all candidate items
     all_items = np.unique(train_items)
-    
+  
     # score all items
     item_scores = []
     for item_id in all_items:
         score = ensemble_predict(models, user_id, item_id, weights)
         item_scores.append((item_id, score))
-    
+  
     # sort and return top-k
     item_scores.sort(key=lambda x: x[1], reverse=True)
     return [item for item, _ in item_scores[:top_k]]
@@ -719,33 +699,33 @@ if 'movies' in data:
         # combine title and genres as content
         content = f"{row.get('title', '')} {row.get('genres', '')}"
         item_content[row['movie_id']] = content
-    
+  
     # train TF-IDF model
     content_model = TFIDFRecommender()
     item_ids = list(item_content.keys())
     contents = [item_content[iid] for iid in item_ids]
     content_model.fit(item_ids, item_content)
-    
+  
     print("Content-based model trained")
-    
+  
     # hybrid recommendation: combine collaborative + content
     def hybrid_recommend(collab_models, content_model, user_id, item_content, top_k=10):
         # get collaborative recommendations
         collab_recs = ensemble_recommend(collab_models, user_id, top_k=top_k*2)
-        
+      
         # get content similarity for user's liked items
         user_items = train_items[train_users == user_id][:5]  # recent items
         if len(user_items) > 0:
             # find items similar to user's preferences
             user_pref_text = " ".join([item_content.get(i, "") for i in user_items])
             content_recs = content_model.recommend_by_text(user_pref_text, top_n=top_k)
-            
+          
             # combine and deduplicate
             all_recs = list(set(collab_recs + content_recs))
             return all_recs[:top_k]
         else:
             return collab_recs[:top_k]
-    
+  
     hybrid_recs = hybrid_recommend(models, content_model, test_user, item_content)
     print(f"Hybrid recommendations: {hybrid_recs[:10]}")
 ```
@@ -760,13 +740,13 @@ from pathlib import Path
 
 class RecommendationService:
     """Production recommendation service"""
-    
+  
     def __init__(self, models, content_model=None):
         self.models = models
         self.content_model = content_model
         self.user_map = {u: i for i, u in enumerate(unique_users)}
         self.item_map = {i: idx for idx, i in enumerate(unique_items)}
-    
+  
     def recommend(self, user_id, top_k=10, strategy='ensemble'):
         """Get recommendations for a user"""
         if strategy == 'ensemble':
@@ -777,11 +757,11 @@ class RecommendationService:
             return self.models['dcn'].recommend(user_id, top_n=top_k)
         else:
             return []
-    
+  
     def predict_score(self, user_id, item_id):
         """Predict interaction score"""
         return ensemble_predict(self.models, user_id, item_id)
-    
+  
     def batch_recommend(self, user_ids, top_k=10):
         """Batch recommendations"""
         results = {}
@@ -811,30 +791,30 @@ import time
 def evaluate_service(service, test_users, test_items, test_ratings, sample_size=5000):
     """Comprehensive evaluation"""
     indices = np.random.choice(len(test_users), min(sample_size, len(test_users)), replace=False)
-    
+  
     predictions = []
     actuals = []
     latencies = []
-    
+  
     for idx in indices:
         u, i, r = test_users[idx], test_items[idx], test_ratings[idx]
-        
+      
         start = time.time()
         pred = service.predict_score(u, i)
         latencies.append(time.time() - start)
-        
+      
         predictions.append(pred)
         actuals.append(r)
-    
+  
     auc = roc_auc_score(actuals, predictions)
     avg_latency = np.mean(latencies)
     p95_latency = np.percentile(latencies, 95)
-    
+  
     print(f"\nService Performance:")
     print(f"  AUC: {auc:.4f}")
     print(f"  Avg Latency: {avg_latency*1000:.2f}ms")
     print(f"  P95 Latency: {p95_latency*1000:.2f}ms")
-    
+  
     return {'auc': auc, 'avg_latency': avg_latency, 'p95_latency': p95_latency}
 
 # evaluate
@@ -860,6 +840,7 @@ metrics = evaluate_service(service, test_users, test_items, test_ratings)
 - Deploy as REST API
 - Set up monitoring dashboard
 - Implement A/B testing framework
+
 ```
 
 ---
@@ -872,3 +853,4 @@ These 5 tutorials are formatted as separate markdown files. Each:
 - Can be saved as separate `.md` files
 
 Save them in your `docs/source/tutorials/` directory or wherever you keep tutorials.
+```
