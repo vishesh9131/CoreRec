@@ -115,8 +115,7 @@ class TestMigratedModels(unittest.TestCase):
             for method in required_methods:
                 self.assertTrue(
                     hasattr(
-                        model, method), f"{
-                        model.__class__.__name__} missing {method} method")
+                        model, method), f"{model.__class__.__name__} missing {method} method")
 
     def test_model_info(self):
         """Test that models provide correct metadata."""

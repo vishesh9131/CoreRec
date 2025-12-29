@@ -2,6 +2,12 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from typing import List, Optional, Dict, Any, Tuple
 from .base_recommender import BaseRecommender
+from corerec.utils.validation import (
+    validate_fit_inputs,
+    validate_user_id,
+    validate_top_k,
+    validate_model_fitted
+)
 
 
 class CornacBPR(BaseRecommender):
@@ -38,7 +44,9 @@ class CornacBPR(BaseRecommender):
         batch_size: int = 1000,
         num_neg_samples: int = 1,
         seed: Optional[int] = None,
+        verbose: bool = False,
     ):
+        super().__init__()
         self.factors = factors
         self.learning_rate = learning_rate
         self.regularization = regularization
@@ -46,6 +54,9 @@ class CornacBPR(BaseRecommender):
         self.batch_size = batch_size
         self.num_neg_samples = num_neg_samples
         self.seed = seed
+        self.verbose = verbose
+        self.is_fitted = False
+        self.name = "CornacBPR"
 
         self.user_map = {}
         self.item_map = {}
@@ -185,6 +196,8 @@ class CornacBPR(BaseRecommender):
 
                         # Update factors
                         self._update_factors(user_idx, pos_item_idx, neg_item_idx)
+        
+        self.is_fitted = True
 
     def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
         """
@@ -206,7 +219,7 @@ class CornacBPR(BaseRecommender):
         # Validate inputs
         validate_model_fitted(self.is_fitted, self.name)
         validate_user_id(user_id, self.user_map if hasattr(self, "user_map") else {})
-        validate_top_k(top_k if "top_k" in locals() else 10)
+        validate_top_k(top_n)
 
         if self.user_factors is None or self.item_factors is None:
             raise ValueError("Model has not been trained. Call fit() first.")

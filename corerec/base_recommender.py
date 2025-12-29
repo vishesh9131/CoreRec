@@ -282,9 +282,8 @@ class BaseCorerec(ABC):
             print(
                 f"- best epoch = {self.best_epoch}, stopped epoch = {self.stopped_epoch}")
             print(
-                f"- best monitored value = {
-                    self.best_value:.6f} (delta = {
-                    current_value -
-                    self.best_value:.6f})")
+                f"- best monitored value = {self.best_value:.6f}" 
+                f"(delta = {current_value - self.best_value:.6f})"
+                )
             return True
         return False

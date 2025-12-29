@@ -756,9 +756,20 @@ class ENSFM_base(BaseRecommender):
         if item_pool is None:
             item_pool = list(self.item_map.keys())
 
+        # Extract item_id from dicts if needed
+        item_ids = []
+        for item in item_pool:
+            if isinstance(item, dict):
+                if "item_id" in item:
+                    item_ids.append(item["item_id"])
+                else:
+                    raise ValueError("item_pool dicts must contain 'item_id' key")
+            else:
+                item_ids.append(item)
+
         # Score each item in the pool
         scored_items = []
-        for item_id in item_pool:
+        for item_id in item_ids:
             score = self.predict(user_id, item_id)
             scored_items.append((item_id, score))
 

@@ -314,8 +314,6 @@ __all__ = [
     "FairnessAware",
     "PrivacyPreserving",
     # UPPERCASE aliases (for backward compatibility)
-    "LEA_TRANSFER_LEARNING",
-    "LEA_ZERO_SHOT",
     "LEA_META_LEARNING",
     "MUL_MULTI_MODAL",
     "MUL_CROSS_DOMAIN",

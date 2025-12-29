@@ -33,9 +33,6 @@ class BaseRecommender(ABC):
         - user_ids (List[int]): List of user IDs.
         - item_ids (List[int]): List of item IDs.
         """
-        # Validate inputs
-        validate_fit_inputs(user_ids, item_ids, ratings)
-
         pass
 
     @abstractmethod
@@ -50,9 +47,4 @@ class BaseRecommender(ABC):
         Returns:
         - List[int]: List of recommended item IDs.
         """
-        # Validate inputs
-        validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, "user_map") else {})
-        validate_top_k(top_k if "top_k" in locals() else 10)
-
         pass

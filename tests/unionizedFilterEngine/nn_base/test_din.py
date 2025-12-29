@@ -3,7 +3,7 @@
 DIN (Deep Interest Network) Test Script
 """
 
-from corerec.engines.unionizedFilterEngine.nn_base.din_base import DIN_base
+from corerec.engines.unionizedFilterEngine.nn_base.DIN_base import DIN_base
 import os
 import sys
 import numpy as np
@@ -44,11 +44,7 @@ def test_din():
 
         interactions.append((user_id, item_id, features))
 
-    print(f"Dataset: {len(interactions)} interactions, {len(set(u for u,
-                                                                i,
-                                                                f in interactions))} users, {len(set(i for u,
-                                                                                                     i,
-                                                                                                     f in interactions))} items")
+    print(f"Dataset: {len(interactions)} interactions, {len(set(u for u,i, f in interactions))} users, {len(set(i for u,i,f in interactions))} items")
 
     try:
         # Train DIN model

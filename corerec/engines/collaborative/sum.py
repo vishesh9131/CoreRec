@@ -11,6 +11,12 @@ import math
 
 from .base_recommender import BaseRecommender
 from .device_manager import DeviceManager
+from corerec.utils.validation import (
+    validate_fit_inputs,
+    validate_user_id,
+    validate_top_k,
+    validate_model_fitted
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -74,6 +80,9 @@ class SUMModel(BaseRecommender):
         self.batch_size = batch_size
         self.epochs = epochs
         self.sequence_length = sequence_length
+        self.verbose = False  # Default verbose flag
+        self.is_fitted = False
+        self.name = "SUMModel"
         
         # Initialize device manager with MPS fallback
         self.device_manager = DeviceManager(preferred_device=device)
@@ -375,7 +384,10 @@ class SUMModel(BaseRecommender):
             List of timestamps
         """
         # Validate inputs
-        validate_fit_inputs(user_ids, item_ids, ratings)
+        if not user_ids or not item_ids or not timestamps:
+            raise ValueError("user_ids, item_ids, and timestamps must be non-empty lists")
+        if len(user_ids) != len(item_ids) or len(user_ids) != len(timestamps):
+            raise ValueError("user_ids, item_ids, and timestamps must have the same length")
         
         if self.verbose:
             logger.info(f"Training SUM model on device: {self.device}")
@@ -470,6 +482,7 @@ class SUMModel(BaseRecommender):
             
             # Store user sequences for recommendation
             self.user_sequences = user_sequences
+            self.is_fitted = True
             
         except RuntimeError as e:
             if "MPS" in str(e):
@@ -504,7 +517,7 @@ class SUMModel(BaseRecommender):
         # Validate inputs
         validate_model_fitted(self.is_fitted, self.name)
         validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
-        validate_top_k(top_k if 'top_k' in locals() else 10)
+        validate_top_k(top_n)
         
         if user_id not in self.user_id_map:
             return []  # User not in training data

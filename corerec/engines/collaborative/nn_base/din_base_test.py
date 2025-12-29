@@ -5,7 +5,7 @@ from typing import List, Tuple, Dict, Any
 import os
 import tempfile
 import logging
-from corerec.engines.unionizedFilterEngine.nn_base.din_base import DIN_base, AttentionLayer
+from corerec.engines.unionizedFilterEngine.nn_base.DIN_base import DIN_base, AttentionLayer
 from corerec.base_recommender import BaseCorerec
 
 
