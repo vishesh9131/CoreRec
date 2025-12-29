@@ -67,7 +67,9 @@ class DeepFM(BaseRecommender):
             def __init__(self, field_dims, embedding_dim):
                 super().__init__()
                 self.field_dims = field_dims
-                self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.int64)
+                # self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.int64)
+                offsets_np = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.int64)
+                self.register_buffer('offsets', torch.from_numpy(offsets_np).long())
                 self.embedding = nn.Embedding(sum(field_dims), 1)
                 self.feature_embedding = nn.Embedding(sum(field_dims), embedding_dim)
                 nn.init.xavier_uniform_(self.embedding.weight)

@@ -178,6 +178,8 @@ def create_model_specific_tutorial(
     """Create tutorial with actual model-specific content."""
 
     model_lower = model_name.lower().replace("-", "_")
+    default_advanced = '### Feature Engineering\n\nAdd model-specific advanced usage here.'
+    default_best_practices = '1. Start with default parameters\n2. Tune based on validation set\n3. Use early stopping'
 
     content = f"""# {model_name} Tutorial: {details.get('title', model_name)}
 
@@ -297,7 +299,7 @@ print(f"Loaded model prediction: {{test_score:.3f}}")
 
 ## Advanced Usage
 
-{details.get('advanced', '### Feature Engineering\n\nAdd model-specific advanced usage here.')}
+{details.get('advanced', default_advanced)}
 
 ## Key Takeaways
 
@@ -307,7 +309,7 @@ print(f"Loaded model prediction: {{test_score:.3f}}")
 
 ### Best Practices
 
-{details.get('best_practices', '1. Start with default parameters\n2. Tune based on validation set\n3. Use early stopping')}
+{details.get('best_practices', default_best_practices)}
 
 ### Performance Comparison
 
@@ -344,3 +346,4 @@ if __name__ == "__main__":
             print(f"✓ Created detailed {model_name} tutorial")
         except Exception as e:
             print(f"✗ Failed {model_name}: {e}")
+            

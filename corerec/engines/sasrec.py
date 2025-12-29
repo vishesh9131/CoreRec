@@ -413,9 +413,9 @@ class SASRec(BaseRecommender):
 
     def fit(
         self,
-        user_ids: List[Any],
-        item_ids: List[Any],
-        interaction_matrix: np.ndarray,
+        arg1: Union[List[Any], np.ndarray, Any],
+        arg2: Optional[Union[List[Any], np.ndarray]] = None,
+        arg3: Optional[Union[List[Any], np.ndarray]] = None,
         validation_data: Optional[Dict[Any, Tuple[List[int], List[int]]]] = None,
         item_embedding_init: Optional[np.ndarray] = None,
         user_item_timestamps: Optional[Dict[Any, List[Tuple[Any, Any]]]] = None,
@@ -424,11 +424,37 @@ class SASRec(BaseRecommender):
         """
         Fit SASRec model.
 
+        Supports two calling conventions:
+        1. fit(interaction_matrix, user_ids, item_ids, ...)  # Legacy
+        2. fit(user_ids, item_ids, interaction_matrix, ...)  # Standard
+
         user_ids: list of user identifiers (len = n_users)
         item_ids: list of item identifiers (len = n_items)
         interaction_matrix: 2D binary or counts matrix shape [n_users, n_items]
         validation_data: optional dict {user_id: (input_seq, ground_truth_list)}
         """
+        # Handle both calling conventions by checking first argument type
+        import scipy.sparse as sp
+        
+        # Check if first arg is a matrix (numpy array or sparse matrix)
+        is_matrix = (isinstance(arg1, (np.ndarray, sp.spmatrix)) or 
+                    (hasattr(arg1, 'toarray') and hasattr(arg1, 'shape')))
+        
+        if is_matrix and arg2 is not None and isinstance(arg2, list) and arg3 is not None and isinstance(arg3, list):
+            # Legacy: fit(interaction_matrix, user_ids, item_ids)
+            interaction_matrix = arg1
+            user_ids = arg2
+            item_ids = arg3
+        elif isinstance(arg1, list) and arg2 is not None and isinstance(arg2, list):
+            # Standard: fit(user_ids, item_ids, interaction_matrix)
+            user_ids = arg1
+            item_ids = arg2
+            interaction_matrix = arg3
+            if interaction_matrix is None:
+                raise ValueError("interaction_matrix must be provided as third argument")
+        else:
+            raise ValueError("Invalid arguments. Use either fit(interaction_matrix, user_ids, item_ids) or fit(user_ids, item_ids, interaction_matrix)")
+        
         # Custom validation for matrix format
         if not isinstance(user_ids, list) or len(user_ids) == 0:
             raise ValueError("user_ids must be a non-empty list")

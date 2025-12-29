@@ -20,8 +20,8 @@ from corerec.api.base_recommender import BaseRecommender
 class MockRecommender(BaseRecommender):
     """Mock recommender for testing BaseRecommender functionality."""
 
-    def __init__(self, name=None, **kwargs):
-        super().__init__(name=name, **kwargs)
+    def __init__(self, name=None, trainable=True, verbose=False):
+        super().__init__(name=name, trainable=trainable, verbose=verbose)
         self.fit_called = False
 
     def fit(self, *args, **kwargs):

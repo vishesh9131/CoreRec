@@ -107,6 +107,7 @@ class FeatureConvolution(nn.Module):
             kernel_sizes: List of kernel sizes for convolution
         """
         super().__init__()
+        self.kernel_sizes = kernel_sizes
         self.convs = nn.ModuleList(
             [
                 nn.Conv1d(
@@ -135,12 +136,48 @@ class FeatureConvolution(nn.Module):
 
         # Apply convolutions
         conv_outputs = []
-        for conv in self.convs:
-            # Apply 1D convolution and ReLU activation
-            conv_out = F.relu(conv(x))
-
-            # Apply max pooling over time dimension
-            pooled = F.max_pool1d(conv_out, conv_out.size(2))
+        for i, conv in enumerate(self.convs):
+            kernel_size = conv.kernel_size[0]
+            input_size = x.size(2)
+            
+            # Handle case where kernel is larger than input
+            if input_size < kernel_size:
+                # For input size 1, use adaptive approach: just use the input with projection
+                # This happens when num_fields=1 and we're doing per-field convolution
+                conv_out = x.squeeze(2)  # (batch*fields, embed_dim)
+                # Create projection layer on-the-fly if needed
+                proj_key = f'_proj_{i}'
+                if not hasattr(self, proj_key):
+                    proj = nn.Linear(embed_dim, conv.out_channels).to(x.device)
+                    setattr(self, proj_key, proj)
+                else:
+                    proj = getattr(self, proj_key)
+                conv_out = F.relu(proj(conv_out))
+                pooled = conv_out.unsqueeze(2)  # (batch*fields, num_filters, 1)
+            else:
+                # Apply 1D convolution and ReLU activation
+                try:
+                    conv_out = F.relu(conv(x))
+                    # Apply max pooling over time dimension
+                    pool_size = conv_out.size(2)
+                    if pool_size > 0:
+                        pooled = F.max_pool1d(conv_out, pool_size)
+                    else:
+                        pooled = conv_out
+                except RuntimeError as e:
+                    if "kernel size" in str(e).lower() and "input" in str(e).lower():
+                        # Fallback: use projection
+                        conv_out = x.squeeze(2)
+                        proj_key = f'_proj_{i}'
+                        if not hasattr(self, proj_key):
+                            proj = nn.Linear(embed_dim, conv.out_channels).to(x.device)
+                            setattr(self, proj_key, proj)
+                        else:
+                            proj = getattr(self, proj_key)
+                        conv_out = F.relu(proj(conv_out))
+                        pooled = conv_out.unsqueeze(2)
+                    else:
+                        raise
 
             # Flatten pooled output
             pooled = pooled.squeeze(2)

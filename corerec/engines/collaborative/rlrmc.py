@@ -102,7 +102,23 @@ class RLRMC(BaseRecommender):
     # Riemannian gradients
     # ----------------------------------------------------------------------
     def _riemannian_gradient(self, user_indices: torch.Tensor, item_indices: torch.Tensor, values: torch.Tensor):
-        return self.U.t() @ values @ self.V
+        """Compute Riemannian gradients."""
+        predictions = (self.U[user_indices] * self.V[item_indices]).sum(dim=1)
+        errors = values - predictions
+        
+        # Compute gradients
+        grad_U = torch.zeros_like(self.U)
+        grad_V = torch.zeros_like(self.V)
+        
+        for i, (u_idx, v_idx, err) in enumerate(zip(user_indices, item_indices, errors)):
+            grad_U[u_idx] += err * self.V[v_idx]
+            grad_V[v_idx] += err * self.U[u_idx]
+        
+        # Add regularization
+        grad_U += self.reg_param * self.U
+        grad_V += self.reg_param * self.V
+        
+        return grad_U, grad_V
     
     # ----------------------------------------------------------------------
     # retraction
@@ -111,13 +127,39 @@ class RLRMC(BaseRecommender):
         return X + step_size * grad
     
     # ----------------------------------------------------------------------
+    # Helper methods
+    # ----------------------------------------------------------------------
+    def _init_model_parameters(self):
+        """Initialize model parameters."""
+        self.U = torch.randn(self.n_users, self.rank, device=self.device, requires_grad=False) * 0.1
+        self.V = torch.randn(self.n_items, self.rank, device=self.device, requires_grad=False) * 0.1
+        self.U_momentum = torch.zeros_like(self.U)
+        self.V_momentum = torch.zeros_like(self.V)
+    
+    def _prepare_data(self, interaction_matrix: csr_matrix):
+        """Prepare data from interaction matrix."""
+        coo = interaction_matrix.tocoo()
+        user_indices = torch.tensor(coo.row, dtype=torch.long, device=self.device)
+        item_indices = torch.tensor(coo.col, dtype=torch.long, device=self.device)
+        values = torch.tensor(coo.data, dtype=torch.float32, device=self.device)
+        return user_indices, item_indices, values
+    
+    def _compute_loss(self, user_indices: torch.Tensor, item_indices: torch.Tensor, values: torch.Tensor):
+        """Compute reconstruction loss."""
+        predictions = (self.U[user_indices] * self.V[item_indices]).sum(dim=1)
+        mse_loss = torch.mean((predictions - values) ** 2)
+        reg_loss = self.reg_param * (torch.norm(self.U) ** 2 + torch.norm(self.V) ** 2)
+        return mse_loss.item() + reg_loss.item()
+    
+    # ----------------------------------------------------------------------
     # Train the RLRMC model.
-        
-    def fit(self, user_ids: List[int], item_ids: List[int], ratings: List[float]):
+    # ----------------------------------------------------------------------
+    def fit(self, interaction_matrix: csr_matrix, user_ids: List[int], item_ids: List[int]):
+        """Fit the model on interaction matrix."""
         self._create_mappings(user_ids, item_ids)
         self._init_model_parameters()
         
-        user_indices, item_indices, values = self._prepare_data(ratings)
+        user_indices, item_indices, values = self._prepare_data(interaction_matrix)
         
         prev_loss = float("inf")
         
@@ -147,14 +189,44 @@ class RLRMC(BaseRecommender):
             
             if self.verbose and (iteration + 1) % 10 == 0:
                 print(f"Iteration {iteration + 1}/{self.max_iter}, Loss: {loss:.6f}")
+        
+        self.is_fitted = True
 
     # ----------------------------------------------------------------------
     # predict
     # ----------------------------------------------------------------------
     def predict(self, user_ids: List[int], item_ids: List[int]):
+        """Predict ratings for user-item pairs."""
+        if not self.is_fitted:
+            raise ValueError("Model must be fitted before prediction")
         user_indices = torch.tensor([self.user_to_index[user] for user in user_ids], device=self.device)
         item_indices = torch.tensor([self.item_to_index[item] for item in item_ids], device=self.device)
-        return self.U[user_indices] @ self.V[item_indices]
+        return (self.U[user_indices] @ self.V[item_indices].t()).diag().cpu().numpy()
+    
+    # ----------------------------------------------------------------------
+    # recommend
+    # ----------------------------------------------------------------------
+    def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
+        """Generate recommendations for a user."""
+        if not self.is_fitted:
+            raise ValueError("Model must be fitted before recommendation")
+        if user_id not in self.user_to_index:
+            return []
+        
+        user_idx = self.user_to_index[user_id]
+        user_vector = self.U[user_idx].cpu().numpy()
+        
+        # Compute scores for all items
+        item_vectors = self.V.cpu().numpy()
+        scores = np.dot(item_vectors, user_vector)
+        
+        # Get top-n items
+        top_indices = np.argsort(-scores)[:top_n]
+        
+        # Map indices back to original item IDs
+        recommendations = [self.index_to_item[idx] for idx in top_indices]
+        
+        return recommendations
 
     # ----------------------------------------------------------------------
     # save model

@@ -226,6 +226,8 @@ class GAN_ufilter_base(BaseRecommender):
         self.num_items = 0
         self.user_embedding_dim = 0
         self.item_embedding_dim = 0
+        self.disc_losses = []
+        self.gen_losses = []
 
         if self.verbose:
             self.logger.info(f"Initialized {self.name} model")
@@ -713,6 +715,10 @@ class GAN_ufilter_base(BaseRecommender):
                 for k, v in batch_metrics.items():
                     epoch_metrics[k] += v / num_batches
 
+            # Track losses
+            self.disc_losses.append(epoch_metrics['d_loss'])
+            self.gen_losses.append(epoch_metrics['g_loss'])
+            
             if self.verbose and (epoch + 1) % 10 == 0:
                 self.logger.info(
                     f"Epoch {epoch+1}/{self.num_epochs} - "

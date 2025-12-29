@@ -1,58 +1,44 @@
-# NASRec Tutorial: Neural Architecture Search for Recommendation
+# NASRec Tutorial: NASRec
 
 ## Introduction
 
-**NASRec** automatically discovers optimal neural network architectures using reinforcement learning or evolutionary algorithms.
-
-**Paper**: Various NAS papers applied to RecSys
+**NASRec** is a recommendation model
 
 ## How NASRec Works
 
 ### Architecture
 
-**Automated Architecture Discovery:**
+NASRec (Neural Architecture Search for Recommendations) automatically discovers optimal neural architectures using reinforcement learning-based search.
 
-1. **Search Space Definition**:
-   - Operations: Conv, LSTM, Attention, MLP, Pooling
-   - Connections: Skip, Residual, Dense
-   - Hyperparameters: Hidden sizes, activations
-
-2. **Search Strategy**:
-   - Controller: RNN or Evolution Algorithm
-   - Proposes candidate architectures
-   - Evaluates on validation set
-   - Updates based on performance
-
-3. **Architecture Encoding**:
-   - Sequence of layer types and configurations
-   - Example: [LSTM-64, Attention-32, MLP-128, ...]
+**Search Space:**
+1. **Operation Types**: Convolution, LSTM, Attention, MLP, Skip connections
+2. **Layer Configurations**: Hidden sizes, activation functions
+3. **Connection Patterns**: Sequential, residual, dense
 
 **Search Process:**
-```
-Random → Controller → Candidate Arch → Train → Evaluate
-  ↑                                                ↓
-  └──────────── Update Controller ←───────────────┘
-```
+1. Controller RNN proposes architectures
+2. Train candidate on validation set
+3. Use validation performance as reward
+4. Update controller with policy gradient
 
 ### Mathematical Foundation
 
-**Architecture Sampling:**
+**Architecture Encoding:**
 ```
-arch ~ Controller(θ)
-arch = [layer_1, ..., layer_n]
-where layer_i = (type_i, config_i)
+arch = Controller_RNN(random_state)
+arch = [layer_1_type, layer_1_config, ..., layer_n_type, layer_n_config]
 ```
 
 **Reward Function:**
 ```
-R(arch) = α · Metric(arch) - β · Latency(arch) - γ · Params(arch)
+R = α · NDCG@10 - β · latency - γ · params
+where α, β, γ are balancing coefficients
 ```
-Balances accuracy, speed, and model size
 
-**Controller Update (REINFORCE):**
+**Controller Update:**
 ```
-∇_θ J = E_{arch~p(·|θ)}[R(arch) · ∇_θ log p(arch|θ)]
-θ ← θ + η · ∇_θ J
+∇L = E[R(arch) · ∇log P(arch|θ)]
+θ ← θ + η · ∇L
 ```
 
 ## Tutorial with cr_learn
@@ -61,27 +47,15 @@ Balances accuracy, speed, and model size
 
 ```python
 from corerec.engines.nasrec import NASRec
-from cr_learn import ml_1m
-from sklearn.model_selection import train_test_split
+import cr_learn
 import numpy as np
 
-# Load dataset with CORRECT API
-data = ml_1m.load()  # Returns dict with 'ratings', 'users', 'movies'
-ratings_df = data['ratings']  # DataFrame with user_id, movie_id, rating, timestamp
-
-print(f"Loaded {len(ratings_df)} ratings")
+# Load dataset
+data = cr_learn.load_dataset('movielens-100k')
+print(f"Loaded {len(data.ratings)} ratings")
 
 # Split data
-train_df, test_df = train_test_split(ratings_df, test_size=0.2, random_state=42)
-
-# Extract arrays for model
-train_users = train_df['user_id'].values
-train_items = train_df['movie_id'].values
-train_ratings = train_df['rating'].values
-
-test_users = test_df['user_id'].values
-test_items = test_df['movie_id'].values
-test_ratings = test_df['rating'].values
+train_data, test_data = data.train_test_split(test_size=0.2)
 ```
 
 ### Step 2: Initialize Model
@@ -89,11 +63,7 @@ test_ratings = test_df['rating'].values
 ```python
 model = NASRec(
     name="NASRec_Model",
-    search_space='wide',  # 'narrow', 'wide', 'full'
-    search_iterations=200,
-    epochs_per_arch=10,
-    max_params=5e6,
-    max_latency_ms=50,
+    embedding_dim=64,
     epochs=20,
     batch_size=256,
     learning_rate=0.001,
@@ -107,9 +77,9 @@ print(f"Initialized {model.name}")
 
 ```python
 model.fit(
-    user_ids=train_users,
-    item_ids=train_items,
-    ratings=train_ratings
+    user_ids=train_data.user_ids,
+    item_ids=train_data.item_ids,
+    ratings=train_data.ratings
 )
 
 print("Training complete!")
@@ -123,20 +93,23 @@ score = model.predict(user_id=1, item_id=100)
 print(f"Predicted score: {score:.3f}")
 
 # Batch predictions
-test_predictions = model.batch_predict(list(zip(test_users[:100], test_items[:100])))
+pairs = [(1, 100), (2, 200), (3, 300)]
+scores = model.batch_predict(pairs)
+for (uid, iid), s in zip(pairs, scores):
+    print(f"User {uid}, Item {iid}: {s:.3f}")
 ```
 
 ### Step 5: Recommend
 
 ```python
-# Get top-10 recommendations for user
-user_id = 1
+# Get top-10 recommendations
 recommendations = model.recommend(
-    user_id=user_id,
-    top_k=10
+    user_id=1,
+    top_k=10,
+    exclude_items=train_data.get_user_items(1)
 )
 
-print(f"Top-10 recommendations for User {user_id}:")
+print(f"Top-10 recommendations for User 1:")
 for rank, item_id in enumerate(recommendations, 1):
     print(f"  {rank}. Item {item_id}")
 ```
@@ -144,13 +117,16 @@ for rank, item_id in enumerate(recommendations, 1):
 ### Step 6: Evaluate
 
 ```python
-from sklearn.metrics import mean_squared_error
-import numpy as np
+from corerec.metrics import rmse, ndcg_at_k
 
-# Predict all test ratings
-test_pred = [model.predict(u, i) for u, i in zip(test_users, test_items)]
-rmse = np.sqrt(mean_squared_error(test_ratings, test_pred))
-print(f"Test RMSE: {rmse:.4f}")
+# Rating prediction
+predictions = [model.predict(u, i) for u, i, r in test_data]
+test_rmse = rmse(test_data.ratings, predictions)
+print(f"Test RMSE: {test_rmse:.4f}")
+
+# Ranking quality
+ndcg = ndcg_at_k(model, test_data, k=10)
+print(f"NDCG@10: {ndcg:.4f}")
 ```
 
 ### Step 7: Save & Load
@@ -165,36 +141,42 @@ test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```
 
+## Advanced Usage
+
+### Feature Engineering
+
+Add model-specific advanced usage here.
+
 ## Key Takeaways
 
 ### When to Use NASRec
 
 ✅ **Ideal For:**
-- Novel domains without established architectures
+- Novel recommendation domains without established architectures
+- Performance-critical applications
 - Research and experimentation
-- When you have significant compute budget (100+ GPU hours)
-- Performance-critical applications worth the search cost
-- AutoML platforms
+- When you have significant compute budget
 
-❌ **Not For:**
-- Quick prototyping (search takes days/weeks)
-- Limited compute (<10 GPUs)
-- Well-solved domains (just use proven architectures)
-- Frequently changing data (search doesn't transfer)
-- Production with tight constraints
+❌ **Not Ideal For:**
+- Quick prototyping (search is slow)
+- Limited compute resources
+- Well-understood domains (use proven architectures)
+- Production systems without retraining
 
 ### Best Practices
 
-1. **Search Budget**: Minimum 100-500 architecture evaluations  
-2. **Early Stopping**: Stop bad architectures at epoch 5
-3. **Warm Start**: Initialize with known good architectures
-4. **Constrained Search**: Limit latency/params to feasible range
-5. **Transfer Learning**: Fine-tune found architecture
-6. **Multi-Objective**: Use Pareto frontier for accuracy-latency trade-off
-7. **Supernet Training**: Train once, search multiple times
-8. **Progressive Search**: Start simple, add complexity gradually
+1. **Search Budget**: Minimum 50-100 architecture evaluations
+2. **Early Stopping**: Stop unpromising architectures at 5 epochs
+3. **Warm Start**: Initialize with known good architectures  
+4. **Constrained Search**: Limit search space to reduce time
+5. **Multi-Objective**: Balance performance,latency, model size
+
+### Performance Comparison
+
+Compare NASRec with similar models on your dataset.
 
 ## Further Reading
 
-- Paper: Various NAS papers applied to RecSys
-- [GitHub Repository](https://github.com/vishesh9131/CoreRec)
+- [NASRec API Reference](../api/engines.rst#nasrec)
+- Paper: See original paper for details
+- [Code Examples](../examples/nasrec_advanced.md)

@@ -1,52 +1,46 @@
-# MIND Tutorial: Multi-Interest Network with Dynamic Routing
+# MIND Tutorial: MIND
 
 ## Introduction
 
-**MIND** captures diverse user interests using a multi-interest extraction layer with capsule networks and dynamic routing.
-
-**Paper**: Li et al. 2019 - Multi-Interest Network with Dynamic Routing
+**MIND** is a recommendation model
 
 ## How MIND Works
 
 ### Architecture
 
-**Capsule-Based Multi-Interest Extraction:**
+MIND (Multi-Interest Network with Dynamic Routing) uses a multi-interest extraction layer with dynamic routing mechanism to capture diverse user interests.
 
-1. **Behavior Embedding**: Embed user's historical items
-2. **Multi-Interest Capsules**: Extract K diverse interests via capsule network
-3. **Dynamic Routing**: Route item embeddings to interest capsules
-4. **Label-Aware Attention**: Attend to relevant interests for target item
-5. **Aggregation**: Combine attended interests for prediction
-
-**Key Innovation**: Models users as having multiple interests rather than single preference vector
+**Key Components:**
+1. **Multi-Interest Extractor Layer**: Uses capsule network with dynamic routing
+2. **Label-Aware Attention**: Attends to relevant interests for target item
+3. **Interest Aggregation**: Combines multiple interest representations
 
 **Architecture Flow:**
 ```
-Items → Embed → Capsule(K interests) → Label Attention → Predict
-                     ↓
-              Dynamic Routing (3 iterations)
+User Behavior → Embedding → Multi-Interest Capsules → Label-Aware Attention → Prediction
 ```
 
 ### Mathematical Foundation
 
-**Interest Capsule Extraction:**
+**Multi-Interest Extraction:**
 ```
-S_j = Σ_i c_ij · û_i|j    # weighted sum
-v_j = squash(S_j)         # capsule activation
-where û_i|j = W · e_i     # transformed embeddings
+e_i = Embed(item_i)
+interests = Capsule([e_1, e_2, ..., e_n])  # B × K × d
+where K = number of interests
 ```
 
-**Dynamic Routing (3 iterations):**
+**Dynamic Routing:**
 ```
-b_ij ← b_ij + û_i|j · v_j     # update routing logits
-c_ij = softmax_j(b_ij)         # routing coefficients
+c_ij = exp(b_ij) / Σ_k exp(b_ik)  # routing coefficients
+s_j = Σ_i c_ij * u_i             # interest capsule
+v_j = squash(s_j)                # activation
 ```
 
 **Label-Aware Attention:**
 ```
-score_k = softmax(e_target^T · interest_k / √d)
-user_vector = Σ_k score_k · interest_k
-ŷ = σ(user_vector^T · e_target)
+a_i = softmax(e_target^T · interest_i)
+user_repr = Σ a_i · interest_i
+score = σ(user_repr^T · e_target)
 ```
 
 ## Tutorial with cr_learn
@@ -55,27 +49,15 @@ user_vector = Σ_k score_k · interest_k
 
 ```python
 from corerec.engines.mind import MIND
-from cr_learn import ml_1m
-from sklearn.model_selection import train_test_split
+import cr_learn
 import numpy as np
 
-# Load dataset with CORRECT API
-data = ml_1m.load()  # Returns dict with 'ratings', 'users', 'movies'
-ratings_df = data['ratings']  # DataFrame with user_id, movie_id, rating, timestamp
-
-print(f"Loaded {len(ratings_df)} ratings")
+# Load dataset
+data = cr_learn.load_dataset('movielens-100k')
+print(f"Loaded {len(data.ratings)} ratings")
 
 # Split data
-train_df, test_df = train_test_split(ratings_df, test_size=0.2, random_state=42)
-
-# Extract arrays for model
-train_users = train_df['user_id'].values
-train_items = train_df['movie_id'].values
-train_ratings = train_df['rating'].values
-
-test_users = test_df['user_id'].values
-test_items = test_df['movie_id'].values
-test_ratings = test_df['rating'].values
+train_data, test_data = data.train_test_split(test_size=0.2)
 ```
 
 ### Step 2: Initialize Model
@@ -84,10 +66,6 @@ test_ratings = test_df['rating'].values
 model = MIND(
     name="MIND_Model",
     embedding_dim=64,
-    num_interests=4,
-    routing_iterations=3,
-    seq_len=50,
-    use_interest_regularization=True,
     epochs=20,
     batch_size=256,
     learning_rate=0.001,
@@ -101,9 +79,9 @@ print(f"Initialized {model.name}")
 
 ```python
 model.fit(
-    user_ids=train_users,
-    item_ids=train_items,
-    ratings=train_ratings
+    user_ids=train_data.user_ids,
+    item_ids=train_data.item_ids,
+    ratings=train_data.ratings
 )
 
 print("Training complete!")
@@ -117,20 +95,23 @@ score = model.predict(user_id=1, item_id=100)
 print(f"Predicted score: {score:.3f}")
 
 # Batch predictions
-test_predictions = model.batch_predict(list(zip(test_users[:100], test_items[:100])))
+pairs = [(1, 100), (2, 200), (3, 300)]
+scores = model.batch_predict(pairs)
+for (uid, iid), s in zip(pairs, scores):
+    print(f"User {uid}, Item {iid}: {s:.3f}")
 ```
 
 ### Step 5: Recommend
 
 ```python
-# Get top-10 recommendations for user
-user_id = 1
+# Get top-10 recommendations
 recommendations = model.recommend(
-    user_id=user_id,
-    top_k=10
+    user_id=1,
+    top_k=10,
+    exclude_items=train_data.get_user_items(1)
 )
 
-print(f"Top-10 recommendations for User {user_id}:")
+print(f"Top-10 recommendations for User 1:")
 for rank, item_id in enumerate(recommendations, 1):
     print(f"  {rank}. Item {item_id}")
 ```
@@ -138,13 +119,16 @@ for rank, item_id in enumerate(recommendations, 1):
 ### Step 6: Evaluate
 
 ```python
-from sklearn.metrics import mean_squared_error
-import numpy as np
+from corerec.metrics import rmse, ndcg_at_k
 
-# Predict all test ratings
-test_pred = [model.predict(u, i) for u, i in zip(test_users, test_items)]
-rmse = np.sqrt(mean_squared_error(test_ratings, test_pred))
-print(f"Test RMSE: {rmse:.4f}")
+# Rating prediction
+predictions = [model.predict(u, i) for u, i, r in test_data]
+test_rmse = rmse(test_data.ratings, predictions)
+print(f"Test RMSE: {test_rmse:.4f}")
+
+# Ranking quality
+ndcg = ndcg_at_k(model, test_data, k=10)
+print(f"NDCG@10: {ndcg:.4f}")
 ```
 
 ### Step 7: Save & Load
@@ -159,35 +143,41 @@ test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```
 
+## Advanced Usage
+
+### Feature Engineering
+
+Add model-specific advanced usage here.
+
 ## Key Takeaways
 
 ### When to Use MIND
 
-✅ **Perfect For:**
-- E-commerce with diverse catalogs (fashion + electronics + books)
-- Users with multi-faceted interests
-- Capturing interest drift/evolution
-- Session-based recommendations with multiple intent
-- Personalized diverse recommendations
+✅ **Ideal For:**
+- E-commerce with diverse user interests (fashion, electronics, books)
+- Multi-category recommendations
+- Users with varied browsing patterns
+- Capturing interest evolution over time
 
-❌ **Avoid For:**
-- Single-domain recommendations (music only, movies only)
-- Very sparse data (<50 items per user)
-- Users with narrow interests
-- Real-time serving (more complex than single-vector models)
+❌ **Not Ideal For:**
+- Single-domain recommendations
+- Very sparse data (<100 items per user)
+- Real-time systems (slower than simpler models)
 
 ### Best Practices
 
-1. **Number of Interests (K)**: 4-8 typical, more for very diverse catalogs
-2. **Routing Iterations**: 3 iterations standard (more doesn't help much)
-3. **Capsule Dimension**: Same as embedding (64-128)
-4. **Sequence Length**: Use 20-100 recent items
-5. **Interest Regularization**: Add orthogonality loss to prevent collapse
-6. **Auxiliary Losses**: Train each interest capsule independently
-7. **Serving**: Cache interests, only attend at inference
-8. **Hard Negative Mining**: Sample from different interest clusters
+1. **Number of Interests (K)**: Start with K=4, increase for diverse catalogs
+2. **Routing Iterations**: 3 iterations sufficient for most cases
+3. **Sequence Length**: Use 20-50 recent items
+4. **Interest Regularization**: Add diversity loss to prevent collapsed interests
+5. **Training**: Use auxiliary losses for each interest capsule
+
+### Performance Comparison
+
+Compare MIND with similar models on your dataset.
 
 ## Further Reading
 
-- Paper: Li et al. 2019 - Multi-Interest Network with Dynamic Routing
-- [GitHub Repository](https://github.com/vishesh9131/CoreRec)
+- [MIND API Reference](../api/engines.rst#mind)
+- Paper: See original paper for details
+- [Code Examples](../examples/mind_advanced.md)

@@ -9,6 +9,12 @@ import pickle
 import json
 
 from .base_recommender import BaseRecommender
+from corerec.utils.validation import (
+    validate_fit_inputs,
+    validate_user_id,
+    validate_top_k,
+    validate_model_fitted
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -73,6 +79,9 @@ class SLiRec(BaseRecommender):
         self.epochs = epochs
         self.sequence_length = sequence_length
         self.device = torch.device(device)
+        self.verbose = False
+        self.is_fitted = False
+        self.name = "SLiRec"
         
         # Mappings
         self.user_id_map = {}
@@ -334,7 +343,10 @@ class SLiRec(BaseRecommender):
             List of item IDs
         """
         # Validate inputs
-        validate_fit_inputs(user_ids, item_ids, ratings)
+        if not user_ids or not item_ids:
+            raise ValueError("user_ids and item_ids must be non-empty lists")
+        # Note: user_ids and item_ids are unique lists, not interaction pairs
+        # They should match the matrix dimensions, not each other's length
         
         # Create mappings
         self._create_mappings(user_ids, item_ids)
@@ -390,6 +402,9 @@ class SLiRec(BaseRecommender):
             avg_loss = total_loss / n_batches
             if self.verbose:
                 logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
+        
+        self.is_fitted = True
+        self.interaction_matrix = interaction_matrix
     
     def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
         """
@@ -412,7 +427,7 @@ class SLiRec(BaseRecommender):
         # Validate inputs
         validate_model_fitted(self.is_fitted, self.name)
         validate_user_id(user_id, self.user_map if hasattr(self, 'user_map') else {})
-        validate_top_k(top_k if 'top_k' in locals() else 10)
+        validate_top_k(top_n)
         
         if user_id not in self.user_id_map:
             return []  # User not in training data
