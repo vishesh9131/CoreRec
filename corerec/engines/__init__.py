@@ -10,94 +10,89 @@ Three main recommendation engines with organized access:
 
 Usage:
 ------
+    from corerec.engines.collaborative import SAR
+    model = SAR(similarity_type='jaccard')
+    
+    # or for deep learning
     from corerec import engines
-    
-    # Deep Learning Models - Direct access
     model = engines.DCN(embedding_dim=64)
-    model = engines.DeepFM(embedding_dim=64)
-    model = engines.SASRec(hidden_units=64)
-    
-    # Unionized Filter - Organized namespace
-    model = engines.unionized.FastRecommender()
-    model = engines.unionized.SAR()
-    model = engines.unionized.LightGCN(embedding_dim=64)
-    
-    # Content Filter - Organized namespace
-    model = engines.content.TFIDFRecommender()
-    model = engines.content.AttentionMechanisms()
-    model = engines.content.EnsembleRecommender()
 
 Author: Vishesh Yadav (sciencely98@gmail.com)
 """
 
 # ============================================================================
-# Deep Learning Models - Direct access at engines level
+# LAZY IMPORTS - heavy modules only loaded when accessed
 # ============================================================================
 
-try:
-    from .dcn import DCN
-except ImportError:
-    DCN = None
+_deep_learning_models = {
+    "DCN": ".dcn",
+    "DeepFM": ".deepfm", 
+    "GNNRec": ".gnnrec",
+    "MIND": ".mind",
+    "NASRec": ".nasrec",
+    "SASRec": ".sasrec",
+    "TwoTower": ".two_tower",
+    "BERT4Rec": ".bert4rec",
+}
 
-try:
-    from .deepfm import DeepFM
-except ImportError:
-    DeepFM = None
+_submodules = {
+    "collaborative",
+    "content_based",
+    "unionized",  # alias for collaborative
+    "content",    # alias for content_based
+}
 
-try:
-    from .gnnrec import GNNRec
-except ImportError:
-    GNNRec = None
 
-try:
-    from .mind import MIND
-except ImportError:
-    MIND = None
+def __getattr__(name):
+    """Lazy import handler."""
+    import importlib
+    
+    # deep learning models
+    if name in _deep_learning_models:
+        mod_name = _deep_learning_models[name]
+        try:
+            mod = importlib.import_module(mod_name, __name__)
+            cls = getattr(mod, name)
+            globals()[name] = cls
+            return cls
+        except (ImportError, AttributeError):
+            globals()[name] = None
+            return None
+    
+    # submodules
+    if name == "unionized" or name == "collaborative":
+        mod = importlib.import_module(".collaborative", __name__)
+        globals()["collaborative"] = mod
+        globals()["unionized"] = mod
+        globals()["UF_Engine"] = mod  # legacy alias
+        return mod
+    
+    if name == "content" or name == "content_based":
+        mod = importlib.import_module(".content_based", __name__)
+        globals()["content_based"] = mod
+        globals()["content"] = mod
+        globals()["CF_Engine"] = mod  # legacy alias
+        return mod
+    
+    # legacy aliases
+    if name == "UF_Engine":
+        return __getattr__("unionized")
+    if name == "CF_Engine":
+        return __getattr__("content")
+    
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-try:
-    from .nasrec import NASRec
-except ImportError:
-    NASRec = None
 
-try:
-    from .sasrec import SASRec
-except ImportError:
-    SASRec = None
+def __dir__():
+    return list(__all__)
 
-try:
-    from .two_tower import TwoTower
-except ImportError:
-    TwoTower = None
-
-try:
-    from .bert4rec import BERT4Rec
-except ImportError:
-    BERT4Rec = None
-
-# ============================================================================
-# Engine Namespaces - Organized access to algorithm families
-# ============================================================================
-
-# Unionized Filter Engine (Collaborative Filtering)
-from . import collaborative as unionized
-
-# Content Filter Engine (Content-Based Filtering)
-from . import content_based as content
-
-# ============================================================================
-# Backward Compatibility Aliases
-# ============================================================================
-
-# Legacy names that existing code might use
-UF_Engine = unionized
-CF_Engine = content
 
 # ============================================================================
 # __all__ - Export list
 # ============================================================================
 
 __all__ = [
-    # Deep Learning Models (direct access)
+    # Deep Learning Models
     "DCN",
     "DeepFM",
     "GNNRec",
@@ -106,45 +101,37 @@ __all__ = [
     "SASRec",
     "TwoTower",
     "BERT4Rec",
-    # Engine Namespaces (organized access)
-    "unionized",  # Collaborative filtering algorithms
-    "content",  # Content-based filtering algorithms
-    # Legacy aliases (backward compatibility)
+    # Engine Namespaces
+    "unionized",
+    "content",
+    "collaborative",
+    "content_based",
+    # Legacy aliases
     "UF_Engine",
     "CF_Engine",
 ]
+
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
 
-
 def list_deep_learning_models():
     """List all available deep learning models."""
-    models = []
-    if DCN is not None:
-        models.append("DCN")
-    if DeepFM is not None:
-        models.append("DeepFM")
-    if GNNRec is not None:
-        models.append("GNNRec")
-    if MIND is not None:
-        models.append("MIND")
-    if NASRec is not None:
-        models.append("NASRec")
-    if SASRec is not None:
-        models.append("SASRec")
-    if TwoTower is not None:
-        models.append("TwoTower")
-    if BERT4Rec is not None:
-        models.append("BERT4Rec")
-    return models
+    available = []
+    for name in _deep_learning_models:
+        try:
+            if __getattr__(name) is not None:
+                available.append(name)
+        except (ImportError, AttributeError):
+            pass
+    return available
 
 
 def get_engine_info():
     """Get information about available engines."""
     return {
-        "deep_learning": list_deep_learning_models(),
-        "unionized_filter": "engines.unionized",
-        "content_filter": "engines.content",
+        "deep_learning": list(_deep_learning_models.keys()),
+        "unionized_filter": "engines.unionized or engines.collaborative",
+        "content_filter": "engines.content or engines.content_based",
     }
