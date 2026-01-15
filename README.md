@@ -20,8 +20,11 @@ Discover the power of graph analysis and recommendation with CoreRec & VishGraph
     Introduction
 </h2>
 
-CoreRec is your all-in-one recommendation engine for graph-based algorithms. Seamlessly integrating advanced neural network architectures, CoreRec excels in node recommendations, model training, and graph visualizations, making it the ultimate tool for data scientists and researchers.
+CoreRec is a modern recommendation engine built for the deep learning era. It implements industry-standard architectures (Two-Tower, Transformers, GNNs) with a multi-stage pipeline approach used by Netflix, YouTube, and other major platforms. CoreRec seamlessly integrates collaborative filtering, content-based methods, and sequential models into a unified framework.
+
 VishGraphs is your ultimate Python library for graph visualization and analysis. Whether you're a data scientist, researcher, or hobbyist, VishGraphs offers intuitive tools to generate, visualize, and analyze graphs effortlessly.
+
+> **NEW**: CoreRec now supports modern embedding-based architectures! See [MODERN_RECSYS_GUIDE.md](MODERN_RECSYS_GUIDE.md) for the complete guide on Two-Tower models, vector databases, and multi-modal fusion.
 
 ### Our Downloads per month
 <img src="docs/images/g1.png" style="vertical-align: middle; margin-right: 0px; margin-bottom: 20px;" width="400" height="400">
@@ -77,29 +80,71 @@ pip install --upgrade corerec
 
 ### Quick Start Examples
 
+#### Modern Deep Learning (Industry Standard)
+
 ```python
-# Modern API (Recommended)
-from corerec import engines
+from corerec.engines import TwoTower
+from corerec.retrieval.vector_store import create_index
 
-# Example 1: Deep Learning Models
-model = engines.DCN(embedding_dim=64)
-model.fit(user_ids, item_ids, ratings)
-recommendations = model.recommend(user_id=123, top_k=10)
+# Two-Tower for fast retrieval (like YouTube, Netflix)
+model = TwoTower(
+    user_input_dim=64,
+    item_input_dim=128,
+    embedding_dim=256
+)
+model.fit(user_ids, item_ids, interactions)
 
-# Example 2: Collaborative Filtering
+# Build vector index for fast search
+item_embs = model.get_item_embeddings()
+index = create_index("faiss", dim=256)
+index.add(item_embs, item_ids)
+
+# Retrieve top candidates
+candidates = model.recommend(user_id, top_k=10)
+```
+
+#### Sequential Models (Time-Aware)
+
+```python
+from corerec.engines import BERT4Rec
+
+# Bidirectional transformer for sequences
+model = BERT4Rec(hidden_dim=256, num_layers=4)
+model.fit(user_ids, item_ids, interactions)
+next_items = model.recommend(user_id, top_k=10)
+```
+
+#### Multi-Modal Fusion
+
+```python
+from corerec.multimodal.fusion_strategies import MultiModalFusion
+
+# Combine text, images, and metadata
+fusion = MultiModalFusion(
+    modality_dims={'text': 768, 'image': 2048, 'meta': 32},
+    output_dim=256,
+    strategy='attention'
+)
+item_embedding = fusion({'text': text_emb, 'image': img_emb, 'meta': meta})
+```
+
+#### Traditional Methods (Still Supported)
+
+```python
+# Collaborative Filtering
 from corerec.engines import unionized
 collab_model = unionized.FastRecommender()
 collab_model.fit(user_ids, item_ids, ratings)
 
-# Example 3: Content-Based Filtering
+# Content-Based Filtering
 from corerec.engines import content
 content_model = content.TFIDFRecommender()
 content_model.fit(item_features)
 
-# Example 4: Graph-Based Recommendations
-from corerec import core_rec
-# For graph neural network models
-from corerec.core_rec import GraphTransformerV2, train_model, predict
+# Graph-Based Recommendations
+from corerec.engines import GNNRec
+gnn_model = GNNRec(num_layers=3, embedding_dim=128)
+gnn_model.fit(user_ids, item_ids, graph_structure)
 ```
 
 ### Using Optimizers / Boosters
@@ -176,8 +221,8 @@ Core recommendation engine components and utilities
 CoreRec/
 ├── corerec/              
 │   ├── engines/         
-│   │   ├── contentFilterEngine/
-│   │   ├── unionizedFilterEngine/
+│   │   ├── content_based/
+│   │   ├── collaborative/
 │   │   └── test_struct_UF/
 │   ├── preprocessing/   
 │   ├── torch_nn/       
@@ -213,7 +258,7 @@ engines/
 ├── content_based.py
 ├── hybrid.py
 │
-├── contentFilterEngine/
+├── content_based/
 │   ├── __init__.py
 │   ├── base_recommender.py
 │   ├── cr_contentFilterFactory.py
@@ -258,7 +303,7 @@ engines/
 │   │
 │   └── [Other specialized modules...]
 │
-├── unionizedFilterEngine/
+├── collaborative/
 │   ├── __init__.py
 │   ├── als_recommender.py
 │   ├── base_recommender.py

@@ -4,7 +4,7 @@ from importlib.util import spec_from_file_location, module_from_spec
 
 SUBDIR = "traditional_ml_algorithms"
 ROOT = Path(__file__).resolve(
-).parents[2] / "corerec" / "engines" / "contentFilterEngine" / SUBDIR
+).parents[2] / "corerec" / "engines" / "content_based" / SUBDIR
 
 EXCLUDE_DIRS = {"__pycache__"}
 EXCLUDE_FILES = {"__init__.py"}

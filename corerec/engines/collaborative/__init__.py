@@ -1,191 +1,235 @@
 """
-Unionized Filter Engine
-=======================
+Collaborative Filtering Engine (Refactored)
+============================================
 
-Collaborative filtering and hybrid recommendation algorithms.
+This engine provides the TOP 5 most useful collaborative filtering methods.
+All other methods are available in the sandbox for development.
 
-This engine provides 50+ collaborative filtering algorithms organized by category:
-- Matrix Factorization (SVD, ALS, NMF, PMF, etc.)
-- Neural Network Based (NCF, DeepFM, AutoInt, DCN, etc.)
-- Graph-Based (LightGCN, DeepWalk, GNN, etc.)
-- Attention Mechanisms (SASRec, Transformers, etc.)
-- Bayesian Methods (BPR, Bayesian MF, etc.)
-- Sequential Models (LSTM, GRU, Caser, etc.)
-- Variational Encoders (VAE, CVAE, etc.)
+Top 5 Production-Ready Methods:
+--------------------------------
+1. TwoTower - Modern retrieval (new standard)
+2. SAR - Simple Algorithm for Recommendation
+3. LightGCN - Graph-based collaborative filtering  
+4. NCF - Neural Collaborative Filtering
+5. FastRecommender - FastAI-style quick prototyping
+
+Other 45+ algorithms moved to sandbox for refinement.
 
 Usage:
 ------
     from corerec.engines import unionized
     
-    # Popular algorithms - direct access
-    model = unionized.FastRecommender()
+    # Modern retrieval
+    model = unionized.TwoTower(embedding_dim=256)
+    
+    # Fast and simple
     model = unionized.SAR()
-    model = unionized.RBM()
     
-    # Matrix Factorization
-    model = unionized.mf.SVD(n_factors=50)
-    model = unionized.mf.ALS()
+    # Graph-based
+    model = unionized.LightGCN(embedding_dim=128)
     
-    # Neural Networks
-    model = unionized.nn.NCF(embedding_dim=64)
-    model = unionized.nn.DeepFM()
+    # Neural collaborative
+    model = unionized.NCF(embedding_dim=64)
     
-    # Graph-Based
-    model = unionized.graph.LightGCN(embedding_dim=64)
+    # Quick prototyping
+    model = unionized.FastRecommender()
 
-Author: Vishesh Yadav (sciencely98@gmail.com)
+Sandbox Access:
+---------------
+    # For experimental methods, import from sandbox
+    from corerec.sandbox.collaborative import DeepFM, DCN, etc.
+
+Author: Vishesh Yadav
 """
 
 # ============================================================================
-# Most Popular Algorithms - Direct access
+# TOP 5 PRODUCTION-READY METHODS
 # ============================================================================
 
+# 1. TwoTower (Modern Standard - NEW)
 try:
-    from .fast import FastRecommender
+    from corerec.engines.two_tower import TwoTower
 except ImportError:
-    FastRecommender = None
+    TwoTower = None
 
+# 2. SAR (Simple, Fast, Proven)
 try:
     from .sar import SAR
 except ImportError:
     SAR = None
 
+# 3. LightGCN (Graph-based, Modern)
+try:
+    from .graph_based_base.lightgcn_base import LightGCN
+except ImportError:
+    LightGCN = None
+
+# 4. NCF (Neural Collaborative Filtering - Foundation)
+try:
+    from .nn_base.ncf import NCF
+except ImportError:
+    try:
+        from .nn_base.ncf_base import NCF
+    except ImportError:
+        NCF = None
+
+# 5. FastRecommender (Quick Prototyping)
+try:
+    from .fast_recommender import FastRecommender
+except ImportError:
+    try:
+        from .fast import FastRecommender
+    except ImportError:
+        FastRecommender = None
+
+# ============================================================================
+# Backward Compatibility - Deprecated but Available
+# ============================================================================
+
+# Keep these for backward compat, but discourage new usage
 try:
     from .rbm import RBM
 except ImportError:
     RBM = None
 
 try:
-    from .rlrmc import RLRMC
-except ImportError:
-    RLRMC = None
-
-try:
     from .geomlc import GeoMLC
 except ImportError:
     GeoMLC = None
 
-try:
-    from .fast_recommender import FastRecommender as FastRec
-except ImportError:
-    FastRec = None
-
-try:
-    from .sli import SLI
-except ImportError:
-    SLI = None
-
-try:
-    from .sum import SUM
-except ImportError:
-    SUM = None
 
 # ============================================================================
-# Organized Sub-modules by Algorithm Category
+# Sandbox Access (Development/Experimental)
 # ============================================================================
 
-# Matrix Factorization algorithms
-from . import mf_base as mf
+class SandboxAccess:
+    """
+    Gateway to experimental methods under development.
+    
+    These methods are functional but not yet production-ready.
+    Use at your own risk for research/experimentation.
+    """
+    
+    @staticmethod
+    def list_available():
+        """List all sandbox methods."""
+        return [
+            "Matrix Factorization: SVD, ALS, NMF, PMF, BPR",
+            "Neural Networks: DeepFM, DCN, AutoInt, PNN, xDeepFM",
+            "Sequential: GRU, LSTM, Caser, SASRec, NextItNet",
+            "Attention: Transformer-based, DIEN, DIN, BST",
+            "Graph: DeepWalk, GNN variants",
+            "Variational: VAE, BiVAE, CVAE",
+            "Bayesian: Bayesian MF, MCMC methods",
+            "Others: RLRMC, SLI, SUM, etc.",
+            "",
+            "Total: 45+ methods in sandbox",
+            "Import from: corerec.sandbox.collaborative"
+        ]
+    
+    @staticmethod
+    def get_info(method_name):
+        """Get info about a sandbox method."""
+        info_map = {
+            "DeepFM": "Deep Factorization Machine - combines FM with deep learning",
+            "DCN": "Deep & Cross Network - explicit feature crossing",
+            "SASRec": "Self-Attentive Sequential Rec - transformer for sequences",
+            "GRU": "GRU-based sequential recommendation",
+            "DeepWalk": "Random walk based graph embeddings",
+        }
+        return info_map.get(method_name, "No info available. Check sandbox docs.")
 
-# Neural Network based algorithms
-from . import nn_base as nn
 
-# Graph-based algorithms
-from . import graph_based_base as graph
+sandbox = SandboxAccess()
 
-# Attention mechanism based algorithms
-from . import attention_mechanism_base as attention
-
-# Bayesian methods
-from . import bayesian_method_base as bayesian
-
-# Sequential models
-from . import sequential_model_base as sequential
-
-# Variational encoders
-from . import variational_encoder_base as vae
-
-# Regularization based methods
-try:
-    from . import regularization_based_base as regularization
-except ImportError:
-    regularization = None
 
 # ============================================================================
-# Legacy/Compatibility
-# ============================================================================
-
-try:
-    from .base_recommender import BaseRecommender as UnionizedBaseRecommender
-except ImportError:
-    UnionizedBaseRecommender = None
-
-try:
-    from .cornac_bpr import BPR as CornacBPR
-except ImportError:
-    CornacBPR = None
-
-# ============================================================================
-# __all__ - Export list
+# __all__ - Export List (ONLY Top 5)
 # ============================================================================
 
 __all__ = [
-    # Popular algorithms (direct access)
-    "FastRecommender",
-    "FastRec",
-    "SAR",
+    # Top 5 Production Methods
+    "TwoTower",      # Modern standard
+    "SAR",           # Simple & fast
+    "LightGCN",      # Graph-based
+    "NCF",           # Neural collab
+    "FastRecommender",  # Quick proto
+    
+    # Backward compat (deprecated)
     "RBM",
-    "RLRMC",
     "GeoMLC",
-    "SLI",
-    "SUM",
-    # Organized sub-modules
-    "mf",  # Matrix Factorization (SVD, ALS, NMF, etc.)
-    "nn",  # Neural Networks (NCF, DeepFM, etc.)
-    "graph",  # Graph-based (LightGCN, GNN, etc.)
-    "attention",  # Attention mechanisms (SASRec, etc.)
-    "bayesian",  # Bayesian methods (BPR, etc.)
-    "sequential",  # Sequential models (LSTM, GRU, etc.)
-    "vae",  # Variational encoders
-    "regularization",  # Regularization methods
-    # Base classes
-    "UnionizedBaseRecommender",
-    "CornacBPR",
+    
+    # Sandbox gateway
+    "sandbox",
 ]
+
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
 
-
-def list_algorithms():
-    """List all available algorithms in this engine."""
-    algorithms = []
-
-    # Direct access algorithms
-    if FastRecommender is not None:
-        algorithms.append("FastRecommender")
+def list_methods():
+    """List the top 5 production-ready methods."""
+    methods = []
+    
+    if TwoTower is not None:
+        methods.append("TwoTower - Modern retrieval standard")
     if SAR is not None:
-        algorithms.append("SAR")
-    if RBM is not None:
-        algorithms.append("RBM")
-    if RLRMC is not None:
-        algorithms.append("RLRMC")
-    if GeoMLC is not None:
-        algorithms.append("GeoMLC")
+        methods.append("SAR - Simple Algorithm for Recommendation")
+    if LightGCN is not None:
+        methods.append("LightGCN - Graph-based collaborative filtering")
+    if NCF is not None:
+        methods.append("NCF - Neural Collaborative Filtering")
+    if FastRecommender is not None:
+        methods.append("FastRecommender - Fast prototyping")
+    
+    return methods
 
-    return algorithms
+
+def get_recommendation():
+    """Get recommendation on which method to use."""
+    return """
+    Recommendation Guide:
+    
+    Use TwoTower if:
+    - Large item catalog (>100K items)
+    - Need real-time serving
+    - First stage of pipeline
+    
+    Use SAR if:
+    - Quick baseline needed
+    - Simple item-to-item similarity
+    - No deep learning infrastructure
+    
+    Use LightGCN if:
+    - Have user-item graph structure
+    - Want to leverage network effects
+    - Social recommendation scenario
+    
+    Use NCF if:
+    - Learning collaborative patterns
+    - Mid-size dataset
+    - Need interpretable embeddings
+    
+    Use FastRecommender if:
+    - Rapid prototyping
+    - Simple embedding-based model
+    - Educational/demo purposes
+    
+    For other methods, check sandbox.list_available()
+    """
 
 
-def list_categories():
-    """List all algorithm categories."""
-    return [
-        "mf (Matrix Factorization)",
-        "nn (Neural Networks)",
-        "graph (Graph-Based)",
-        "attention (Attention Mechanisms)",
-        "bayesian (Bayesian Methods)",
-        "sequential (Sequential Models)",
-        "vae (Variational Encoders)",
-        "regularization (Regularization Methods)",
-    ]
+def migrate_to_sandbox_notice():
+    """Information about the refactoring."""
+    return """
+    ⚠️  REFACTORING NOTICE
+    
+    45+ methods have been moved to sandbox for quality refinement:
+    - All methods are still accessible
+    - Import from: corerec.sandbox.collaborative
+    - Top 5 methods remain in main engine
+    - Sandbox methods will graduate when production-ready
+    
+    This ensures main engine stays lean and battle-tested.
+    """

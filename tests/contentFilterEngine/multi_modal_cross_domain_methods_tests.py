@@ -9,7 +9,7 @@ BASE = (
     Path(__file__).resolve().parents[2]
     / "corerec"
     / "engines"
-    / "contentFilterEngine"
+    / "content_based"
     / "multi_modal_cross_domain_methods"
 )
 

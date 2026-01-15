@@ -11,7 +11,7 @@ Usage:
     model = dkn.DKN(vocab_size=1000, embedding_dim=128, ...)
 """
 
-from corerec.engines.contentFilterEngine.nn_based_algorithms.dkn import DKN
+from corerec.engines.content_based.nn_based_algorithms.dkn import DKN
 
 __all__ = ["DKN"]
 

@@ -1,6 +1,6 @@
-# corerec/engines/unionizedFilterEngine/als_recommender.py
+# corerec/engines/collaborative/als_recommender.py
 
-from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_base import (
+from corerec.engines.collaborative.mf_base.matrix_factorization_base import (
     MatrixFactorizationBase,
 )
 from scipy.sparse import csr_matrix

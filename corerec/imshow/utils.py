@@ -198,14 +198,11 @@ def create_sample_data(
 
             sample_data.append(
                 {
-                    "id": f"video_{
-                        i + 1}",
-                    "title": f"Amazing Video {
-                        i + 1} - You Won't Believe This!",
+                    "id": f"video_{i + 1}",
+                    "title": f"Amazing Video {i + 1} - You Won't Believe This!",
                     "channel": random.choice(channels),
                     "category": random.choice(categories),
-                    "views": f"{
-                        views:,                }",
+                    "views": f"{views:,}",
                     "duration": f"{minutes}:{
                         seconds:02d}",
                     "uploaded": f"{

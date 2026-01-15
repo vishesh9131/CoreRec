@@ -65,7 +65,7 @@ class ModelServer:
 
     Example:
         from corerec.serving import ModelServer
-        from corerec.engines.unionizedFilterEngine.nn_base.ncf import NCF
+        from corerec.engines.collaborative.nn_base.ncf import NCF
 
         model = NCF.load('models/ncf_model.pkl')
         server = ModelServer(model, host="0.0.0.0", port=8000)

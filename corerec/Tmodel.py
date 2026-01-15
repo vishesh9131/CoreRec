@@ -118,10 +118,7 @@ class GraphTransformerV2(nn.Module):
         except RuntimeError as e:
             print(f"RuntimeError during forward pass: {e}")
             print(
-                f"x shape: {
-                    x.shape}, adjacency_matrix shape: {
-                    adjacency_matrix.shape}, graph_metrics shape: {
-                    graph_metrics.shape}")
+                f"x shape: {x.shape}, adjacency_matrix shape: {adjacency_matrix.shape}, graph_metrics shape: {graph_metrics.shape}")
             raise
 
     def project_graph_metrics(self, graph_metrics, target_dim):

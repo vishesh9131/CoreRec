@@ -3,7 +3,7 @@
 AutoInt (Automatic Feature Interaction) Test Script
 """
 
-from corerec.engines.unionizedFilterEngine.nn_base.AutoInt_base import AutoIntModel
+from corerec.engines.collaborative.nn_base.AutoInt_base import AutoIntModel
 import os
 import sys
 import numpy as np

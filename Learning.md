@@ -47,7 +47,7 @@ test_ratings = test_df['rating'].values
 For beginners, we'll use the FAST recommender - it's fast (obviously) and easy to understand. It learns user and item embeddings.
 
 ```python
-from corerec.engines.unionizedFilterEngine.fast import FAST
+from corerec.engines.collaborative.fast import FAST
 
 # initialize the model with small embedding size for speed
 model = FAST(
@@ -688,7 +688,7 @@ print(f"Graph created: {n_nodes} nodes, {np.sum(adj_matrix > 0) / 2} edges")
 Combine content-based and collaborative filtering:
 
 ```python
-from corerec.engines.contentFilterEngine.tfidf_recommender import TFIDFRecommender
+from corerec.engines.content_based.tfidf_recommender import TFIDFRecommender
 
 # content-based model using movie titles/descriptions
 if 'movies' in data:
