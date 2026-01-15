@@ -6,15 +6,15 @@ CoreRec provides state-of-the-art recommendation algorithms with a unified API.
 
 Quick Start:
 -----------
-    from corerec.engines.collaborative import SAR
+    import corerec.collaborative as clb
     
-    model = SAR(similarity_type='jaccard')
+    model = clb.SAR(similarity_type='jaccard')
     model.fit(train_df)
     recs = model.recommend_k_items(test_df, top_k=10)
 
-For deep learning models:
-    from corerec import engines
-    model = engines.DCN(embedding_dim=64)
+Alternative imports:
+    from corerec.collaborative import SAR
+    from corerec.content_based import TFIDFRecommender
 
 Author: Vishesh Yadav (sciencely98@gmail.com)
 License: Research purposes only
@@ -32,6 +32,18 @@ __email__ = "sciencely98@gmail.com"
 
 def __getattr__(name):
     """Lazy import handler - loads modules on first access."""
+    import importlib
+    
+    # shortcut aliases - corerec.collaborative -> corerec.engines.collaborative
+    _shortcuts = {
+        "collaborative": ".engines.collaborative",
+        "content_based": ".engines.content_based",
+    }
+    
+    if name in _shortcuts:
+        mod = importlib.import_module(_shortcuts[name], __name__)
+        globals()[name] = mod
+        return mod
     
     # submodules that should be importable
     _submodules = {
@@ -54,7 +66,6 @@ def __getattr__(name):
     }
     
     if name in _submodules:
-        import importlib
         try:
             module = importlib.import_module(f".{name}", __name__)
             globals()[name] = module
@@ -188,6 +199,9 @@ __all__ = [
     "__version__",
     "__author__",
     "__email__",
+    # Shortcut aliases (recommended)
+    "collaborative",    # -> corerec.engines.collaborative
+    "content_based",    # -> corerec.engines.content_based
     # Main modules (lazy loaded)
     "engines",
     "core",
