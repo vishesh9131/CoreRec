@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
-from corerec.engines.contentFilterEngine.miscellaneous_techniques import (
+from corerec.engines.content_based.miscellaneous_techniques import (
     MIS_FEATURE_SELECTION,
     MIS_NOISE_HANDLING,
     MIS_COLD_START

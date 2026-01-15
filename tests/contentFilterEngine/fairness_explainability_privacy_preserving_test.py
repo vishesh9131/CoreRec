@@ -18,7 +18,7 @@ class TestPrivacyPreserving(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mod = load_module(
-            "corerec/engines/contentFilterEngine/fairness_explainability/privacy_preserving.py"
+            "corerec/engines/content_based/fairness_explainability/privacy_preserving.py"
         )
         cls.PRIVACY_PRESERVING = cls.mod.PRIVACY_PRESERVING
 

@@ -228,9 +228,7 @@ class ModelCheckpoint:
         metric_value = metrics.get(self.monitor)
 
         if metric_value is None:
-            logger.warning(
-                f"Metric '{
-                    self.monitor}' not found in metrics dict")
+            logger.warning(f"Metric '{self.monitor}' not found in metrics dict")
             return
 
         # Create directory if it doesn't exist
@@ -390,9 +388,6 @@ def get_optimizer(model_parameters, optimizer_name: str = "adam", **kwargs):
     }
 
     if optimizer_name not in optimizers:
-        raise ValueError(
-            f"Unknown optimizer: {optimizer_name}. " f"Available: {
-                list(
-                    optimizers.keys())}")
+        raise ValueError(f"Unknown optimizer: {optimizer_name}. " f"Available: {list(optimizers.keys())}")
 
     return optimizers[optimizer_name](model_parameters, **kwargs)

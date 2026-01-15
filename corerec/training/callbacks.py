@@ -176,8 +176,7 @@ class ModelCheckpoint(Callback):
             if improved:
                 self.best_value = current_value
                 print(
-                    f"Metric improved to {
-                        current_value:.6f}, saving model...")
+                    f"Metric improved to {current_value:.6f}, saving model...")
             else:
                 should_save = False
 
@@ -269,3 +268,4 @@ class TensorBoardLogger(Callback):
         """Close TensorBoard writer."""
         if self.writer:
             self.writer.close()
+            

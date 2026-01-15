@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader, random_split
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
-from corerec.engines.contentFilterEngine.learning_paradigms import LEA_TRANSFER_LEARNING
+from corerec.engines.content_based.learning_paradigms import LEA_TRANSFER_LEARNING
 from torch.utils.data import Dataset
 
 

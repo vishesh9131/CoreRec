@@ -296,10 +296,7 @@ def example_5_background_demo_with_interactions():
 
     for interaction in interactions[-5:]:  # Show last 5 interactions
         print(
-            f"   {
-                interaction['user_id']} {
-                interaction['action']} {
-                interaction['item_id']}")
+            f"   {interaction['user_id']} {interaction['action']} {interaction['item_id']}")
 
     # Export interactions
     filename = demo.export_interactions()

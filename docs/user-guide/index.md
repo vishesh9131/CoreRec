@@ -1,22 +1,23 @@
 # User Guide
 
-Comprehensive guide to using CoreRec for building recommendation systems.
+Welcome to the CoreRec User Guide. These guides are task-based, meaning they focus on helping you achieve a specific goal rather than just listing available classes.
 
-## Contents
+## Getting Started Paths
 
-- [Basic Concepts](basic-concepts.md) - Fundamental concepts in recommendation systems
-- [Data Preparation](data-preparation.md) - Preparing data for training
-- [Model Training](model-training.md) - Training recommendation models
-- [Making Predictions](making-predictions.md) - Generating recommendations
-- [Model Persistence](model-persistence.md) - Saving and loading models
-- [Best Practices](best-practices.md) - Tips and best practices
+*   **I have a CSV file**: Start with [**Data Preparation**](data-preparation.md).
+*   **I have no user history**: Check out the [**Cold Start Guide**](../advanced/cold-start.md).
+*   **I want to see the graph**: Jump to [**Visualization**](../utilities/visualization.md).
 
-## Quick Links
+## Core Workflows
 
-- [Getting Started](../getting-started/quickstart.md)
-- [API Reference](../api/index.md)
-- [Examples](../examples/index.md)
+### 1. Data Preparation
+CoreRec works best with specific data formats. Learn how to transform your raw logs into interaction matrices.
+[Read Guide ➔](data-preparation.md)
 
-## Overview
+### 2. Model Training Pipeline
+Learn how to mix and match **Encoders**, **Towers**, and **Loss Functions** to build a custom model.
+[Read Guide ➔](model-training.md)
 
-This user guide provides in-depth information about using CoreRec effectively. Whether you're building your first recommender or optimizing an existing system, you'll find practical guidance here.
+### 3. Serving & Deployment
+Once you have a model, you need to serve it. Learn about our built-in model server and export options.
+[Read Guide ➔](../advanced/model-serving.md)

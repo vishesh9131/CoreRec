@@ -4,8 +4,8 @@ import random
 from sklearn.model_selection import train_test_split
 from scipy.sparse import csr_matrix
 import matplotlib.pyplot as plt
-from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization import MatrixFactorization
-from corerec.engines.contentFilterEngine.tfidf_recommender import TFIDFRecommender
+from corerec.engines.collaborative.mf_base.matrix_factorization import MatrixFactorization
+from corerec.engines.content_based.tfidf_recommender import TFIDFRecommender
 from corerec.engines.hybrid import HybridEngine
 from sklearn.feature_extraction.text import TfidfVectorizer
 

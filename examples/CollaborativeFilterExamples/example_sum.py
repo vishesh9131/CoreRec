@@ -10,7 +10,7 @@ import os
 
 
 # Import our SUMModel implementation
-# from corerec.engines.unionizedFilterEngine.sum import SUMModel
+# from corerec.engines.collaborative.sum import SUMModel
 import corerec.uf_engine as uf
 
 # Set random seeds for reproducibility

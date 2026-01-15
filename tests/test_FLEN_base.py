@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from pathlib import Path
 
-from corerec.engines.unionizedFilterEngine.nn_base.FLEN_base import FLEN_base
+from corerec.engines.collaborative.nn_base.FLEN_base import FLEN_base
 
 
 class TestFLEN:

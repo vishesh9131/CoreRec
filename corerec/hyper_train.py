@@ -83,11 +83,7 @@ def train_model(
                     # Check output dimensions
                     if outputs.shape != targets.shape:
                         print(
-                            f"Warning: Shape mismatch at Epoch {
-                                epoch +
-                                1}, Batch {batch_idx}: " f"outputs shape {
-                                outputs.shape} vs targets shape {
-                                targets.shape}")
+                            f"Warning: Shape mismatch at Epoch {epoch + 1}, Batch {batch_idx}: outputs shape {outputs.shape} vs targets shape {targets.shape}")
 
                     # Compute loss
                     loss = criterion(outputs, targets)

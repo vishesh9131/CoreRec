@@ -984,11 +984,7 @@ def _unpool_output_size(
             output_size = output_size[2:]
         if len(output_size) != len(kernel_size):
             raise ValueError(
-                "output_size should be a sequence containing " f"{
-                    len(kernel_size)} or {
-                    len(kernel_size) +
-                    2} elements, but it has a length of '{
-                    len(output_size)}'")
+                f"output_size should be a sequence containing {len(kernel_size)} or {len(kernel_size) + 2} elements, but it has a length of '{len(output_size)}'")
         for d in range(len(kernel_size)):
             min_size = default_size[d] - stride[d]
             max_size = default_size[d] + stride[d]
@@ -3654,9 +3650,7 @@ def binary_cross_entropy(
         reduction_enum = _Reduction.get_enum(reduction)
     if target.size() != input.size():
         raise ValueError(
-            f"Using a target size ({
-                target.size()}) that is different to the input size ({
-                input.size()}) is deprecated. " "Please ensure they have the same size.")
+            f"Using a target size ({target.size()}) that is different to the input size ({input.size()}) is deprecated. Please ensure they have the same size.")
 
     if weight is not None:
         new_size = _infer_size(target.size(), weight.size())
@@ -3734,9 +3728,7 @@ def binary_cross_entropy_with_logits(
 
     if not (target.size() == input.size()):
         raise ValueError(
-            f"Target size ({
-                target.size()}) must be the same as input size ({
-                input.size()})")
+            f"Target size ({target.size()}) must be the same as input size ({input.size()})")
 
     return torch.binary_cross_entropy_with_logits(
         input, target, weight, pos_weight, reduction_enum)

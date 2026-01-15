@@ -6,7 +6,7 @@ from importlib.util import spec_from_file_location, module_from_spec
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BASE_DIR = REPO_ROOT / "corerec" / "engines" / \
-    "contentFilterEngine" / "graph_based_algorithms"
+    "content_based" / "graph_based_algorithms"
 
 
 def ensure_fake_module(name: str):

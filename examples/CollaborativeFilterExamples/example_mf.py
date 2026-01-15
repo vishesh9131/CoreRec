@@ -17,8 +17,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import random
 
-# Import the MatrixFactorization class from unionizedFilterEngine
-from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization import MatrixFactorization
+# Import the MatrixFactorization class from collaborative
+from corerec.engines.collaborative.mf_base.matrix_factorization import MatrixFactorization
 import cr_learn.ml_1m as ml
 
 from corerec.judge import judge

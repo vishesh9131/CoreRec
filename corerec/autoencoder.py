@@ -11,7 +11,7 @@ Usage:
     model = autoencoder.Autoencoder(input_dim=18, hidden_dim=12, latent_dim=6)
 """
 
-from corerec.engines.contentFilterEngine.nn_based_algorithms.autoencoder import Autoencoder
+from corerec.engines.content_based.nn_based_algorithms.autoencoder import Autoencoder
 
 __all__ = ["Autoencoder"]
 

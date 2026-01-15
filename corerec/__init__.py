@@ -62,6 +62,23 @@ from . import core
 # Import utilities
 from . import utils
 from . import metrics
+
+# Import constants for convenient access
+from .constants import (
+    DEFAULT_USER_COL,
+    DEFAULT_ITEM_COL,
+    DEFAULT_RATING_COL,
+    DEFAULT_TIMESTAMP_COL,
+    DEFAULT_PREDICTION_COL,
+    SIM_COOCCURRENCE,
+    SIM_COSINE,
+    SIM_JACCARD,
+    SIM_LIFT,
+    SIM_INCLUSION_INDEX,
+    SIM_MUTUAL_INFORMATION,
+    SIM_LEXICOGRAPHERS_MI,
+    SUPPORTED_SIMILARITY_TYPES,
+)
 from . import evaluation
 from . import vish_graphs
 from . import visualization
@@ -70,6 +87,14 @@ from . import visualization
 from . import data
 from . import training
 from . import trainer
+
+# Import modern components
+from . import pipelines
+from . import retrieval
+from . import multimodal
+
+# Import sandbox (experimental methods)
+from . import sandbox
 
 # Import API base classes
 from .api.base_recommender import BaseRecommender
@@ -94,7 +119,7 @@ except ImportError:
 
 # Learning Paradigms
 try:
-    from .engines.contentFilterEngine.learning_paradigms import LEA_TRANSFER_LEARNING, LEA_ZERO_SHOT, LEA_META_LEARNING
+    from .engines.content_based.learning_paradigms import LEA_TRANSFER_LEARNING, LEA_ZERO_SHOT, LEA_META_LEARNING
     # Short aliases
     TransferLearning = LEA_TRANSFER_LEARNING
     ZeroShot = LEA_ZERO_SHOT
@@ -109,7 +134,7 @@ except ImportError:
 
 # Multi-modal and Cross-domain
 try:
-    from .engines.contentFilterEngine.multi_modal_cross_domain_methods import (
+    from .engines.content_based.multi_modal_cross_domain_methods import (
         MUL_MULTI_MODAL,
         MUL_CROSS_DOMAIN,
         MUL_CROSS_LINGUAL,
@@ -128,7 +153,7 @@ except ImportError:
 
 # Other Approaches
 try:
-    from .engines.contentFilterEngine.other_approaches import (
+    from .engines.content_based.other_approaches import (
         OTH_RULE_BASED,
         OTH_SENTIMENT_ANALYSIS,
         OTH_ONTOLOGY_BASED,
@@ -147,7 +172,7 @@ except ImportError:
 
 # Miscellaneous Techniques
 try:
-    from .engines.contentFilterEngine.miscellaneous_techniques import (
+    from .engines.content_based.miscellaneous_techniques import (
         MIS_FEATURE_SELECTION,
         MIS_NOISE_HANDLING,
         MIS_COLD_START,
@@ -169,13 +194,13 @@ try:
     from .cnn import CNN
 except ImportError:
     try:
-        from .engines.contentFilterEngine.nn_based_algorithms.cnn import CNN
+        from .engines.content_based.nn_based_algorithms.cnn import CNN
     except ImportError:
         CNN = None
 
 # Performance Scalability
 try:
-    from .engines.contentFilterEngine.performance_scalability import (
+    from .engines.content_based.performance_scalability import (
         PER_SCALABLE_ALGORITHMS,
         PER_FEATURE_EXTRACTION,
         PER_LOAD_BALANCING,
@@ -194,7 +219,7 @@ except ImportError:
 
 # Context Personalization
 try:
-    from .engines.contentFilterEngine.context_personalization import (
+    from .engines.content_based.context_personalization import (
         CON_CONTEXT_AWARE,
         CON_USER_PROFILING,
         CON_ITEM_PROFILING,
@@ -213,7 +238,7 @@ except ImportError:
 
 # Probabilistic Statistical Methods
 try:
-    from .engines.contentFilterEngine.probabilistic_statistical_methods import PRO_LSA
+    from .engines.content_based.probabilistic_statistical_methods import PRO_LSA
     # Short alias
     LSA = PRO_LSA
 except ImportError:
@@ -222,7 +247,7 @@ except ImportError:
 
 # Special Techniques
 try:
-    from .engines.contentFilterEngine.special_techniques import (
+    from .engines.content_based.special_techniques import (
         SPE_INTERACTIVE_FILTERING,
         SPE_DYNAMIC_FILTERING,
     )
@@ -237,7 +262,7 @@ except ImportError:
 
 # Fairness and Explainability
 try:
-    from .engines.contentFilterEngine.fairness_explainability import (
+    from .engines.content_based.fairness_explainability import (
         FAI_EXPLAINABLE,
         FAI_FAIRNESS_AWARE,
         FAI_PRIVACY_PRESERVING,
@@ -275,6 +300,11 @@ __all__ = [
     "evaluation",  # Evaluation tools
     "vish_graphs",  # Graph visualization
     "visualization",  # Visualization utilities
+    # Modern RecSys components
+    "pipelines",  # Multi-stage recommendation pipelines
+    "retrieval",  # Vector stores and retrieval models
+    "multimodal",  # Multi-modal fusion strategies
+    "sandbox",  # Experimental methods under development
     # Base classes
     "BaseRecommender",
     "BaseCorerec",  # Deprecated, use BaseRecommender
@@ -324,4 +354,18 @@ __all__ = [
     "MIS_FEATURE_SELECTION",
     "MIS_NOISE_HANDLING",
     "MIS_COLD_START",
+    # Constants
+    "DEFAULT_USER_COL",
+    "DEFAULT_ITEM_COL",
+    "DEFAULT_RATING_COL",
+    "DEFAULT_TIMESTAMP_COL",
+    "DEFAULT_PREDICTION_COL",
+    "SIM_COOCCURRENCE",
+    "SIM_COSINE",
+    "SIM_JACCARD",
+    "SIM_LIFT",
+    "SIM_INCLUSION_INDEX",
+    "SIM_MUTUAL_INFORMATION",
+    "SIM_LEXICOGRAPHERS_MI",
+    "SUPPORTED_SIMILARITY_TYPES",
 ]

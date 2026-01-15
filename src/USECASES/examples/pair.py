@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 from typing import List
-from corerec.engines.cr_contentFilterEngine.base_recommender import BaseRecommender
+from corerec.engines.cr_content_based.base_recommender import BaseRecommender
 
 
 class PairwiseRankingRecommender(BaseRecommender):

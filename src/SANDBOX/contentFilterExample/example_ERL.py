@@ -1,10 +1,10 @@
 import pandas as pd
-from corerec.engines.contentFilterEngine.context_personalization import (
+from corerec.engines.content_based.context_personalization import (
     CON_CONTEXT_AWARE,
     CON_USER_PROFILING,
     CON_ITEM_PROFILING
 )
-from corerec.engines.contentFilterEngine.embedding_representation_learning import (
+from corerec.engines.content_based.embedding_representation_learning import (
     EMB_WORD2VEC,
     EMB_DOC2VEC,
     EMB_PERSONALIZED_EMBEDDINGS

@@ -69,7 +69,7 @@ class DeepFM(BaseRecommender):
                 self.field_dims = field_dims
                 # self.offsets = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.int64)
                 offsets_np = np.array((0, *np.cumsum(field_dims)[:-1]), dtype=np.int64)
-                self.register_buffer('offsets', torch.from_numpy(offsets_np).long())
+                self.register_buffer('offsets', torch.tensor(offsets_np).long())
                 self.embedding = nn.Embedding(sum(field_dims), 1)
                 self.feature_embedding = nn.Embedding(sum(field_dims), embedding_dim)
                 nn.init.xavier_uniform_(self.embedding.weight)
@@ -133,10 +133,25 @@ class DeepFM(BaseRecommender):
         ratings: List[float],
         user_features: Optional[Dict[int, Dict[str, Any]]] = None,
         item_features: Optional[Dict[int, Dict[str, Any]]] = None,
+        batch_size: Optional[int] = None,
         **kwargs,
     ) -> "DeepFM":
+        """
+        Train the DeepFM model.
+
+        Parameters:
+            user_ids: List of user IDs
+            item_ids: List of item IDs
+            ratings: List of ratings
+            user_features: Dictionary of user features
+            item_features: Dictionary of item features
+            batch_size: Batch size for training (overrides init param if provided)
+        """
         # Validate inputs
         validate_fit_inputs(user_ids, item_ids, ratings)
+        
+        if batch_size is not None:
+            self.batch_size = batch_size
 
         # Create feature mapping
         # First field: user IDs
@@ -165,6 +180,8 @@ class DeepFM(BaseRecommender):
                     val: idx for idx, val in enumerate(sorted(feature_values))
                 }
                 self.field_dims.append(len(feature_values))
+            
+            self.user_feature_types = sorted(user_feature_types)
 
         # Additional fields for item features
         if item_features:
@@ -182,65 +199,88 @@ class DeepFM(BaseRecommender):
                     val: idx for idx, val in enumerate(sorted(feature_values))
                 }
                 self.field_dims.append(len(feature_values))
+            
+            self.item_feature_types = sorted(item_feature_types)
 
         # Build model
         self.model = self._build_model(self.field_dims)
-
-        # Create training data
-        X = []
-        y = []
-
-        for user, item, rating in zip(user_ids, item_ids, ratings):
-            # Create feature vector
-            x = [self.feature_map["user"][user], self.feature_map["item"][item]]
-
-            # Add user features
-            if user_features and user in user_features:
-                for feature_type in sorted(user_feature_types):
-                    if feature_type in user_features[user]:
-                        value = user_features[user][feature_type]
-                        x.append(self.feature_map[f"user_{feature_type}"][value])
-                    else:
-                        x.append(0)  # Default value for missing features
-
-            # Add item features
-            if item_features and item in item_features:
-                for feature_type in sorted(item_feature_types):
-                    if feature_type in item_features[item]:
-                        value = item_features[item][feature_type]
-                        x.append(self.feature_map[f"item_{feature_type}"][value])
-                    else:
-                        x.append(0)  # Default value for missing features
-
-            X.append(x)
-            y.append(1.0 if rating > 0 else 0.0)  # Convert to binary for implicit feedback
-
-        # Convert to tensors
-        X = torch.LongTensor(X).to(self.device)
-        y = torch.FloatTensor(y).to(self.device)
-
+        
         # Define optimizer and loss
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         criterion = nn.BCELoss()
 
+        # Create Dataset and DataLoader
+        from torch.utils.data import Dataset, DataLoader
+
+        class DeepFMDataset(Dataset):
+            def __init__(self, user_ids, item_ids, ratings, feature_map, user_features, item_features, user_feature_types, item_feature_types):
+                self.user_ids = user_ids
+                self.item_ids = item_ids
+                self.ratings = ratings
+                self.feature_map = feature_map
+                self.user_features = user_features or {}
+                self.item_features = item_features or {}
+                self.user_feature_types = user_feature_types or []
+                self.item_feature_types = item_feature_types or []
+
+            def __len__(self):
+                return len(self.user_ids)
+
+            def __getitem__(self, idx):
+                user = self.user_ids[idx]
+                item = self.item_ids[idx]
+                rating = self.ratings[idx]
+                
+                # Create feature vector
+                # Map user/item indices
+                # Note: If user/item not in map (shouldn't happen with fit data), handle carefully? 
+                # Assuming fit data is consistent with unique sets derived above.
+                x = [self.feature_map["user"][user], self.feature_map["item"][item]]
+
+                # Add user features
+                if self.user_features and user in self.user_features:
+                    for feature_type in self.user_feature_types:
+                        if feature_type in self.user_features[user]:
+                            value = self.user_features[user][feature_type]
+                            x.append(self.feature_map[f"user_{feature_type}"][value])
+                        else:
+                            x.append(0) 
+
+                # Add item features
+                if self.item_features and item in self.item_features:
+                    for feature_type in self.item_feature_types:
+                        if feature_type in self.item_features[item]:
+                            value = self.item_features[item][feature_type]
+                            x.append(self.feature_map[f"item_{feature_type}"][value])
+                        else:
+                            x.append(0)
+                
+                return torch.LongTensor(x), torch.as_tensor(1.0 if rating > 0 else 0.0, dtype=torch.float32)
+
+        dataset = DeepFMDataset(
+            user_ids, item_ids, ratings, 
+            self.feature_map, 
+            user_features, item_features,
+            self.user_feature_types, self.item_feature_types
+        )
+        
+        dataloader = DataLoader(
+            dataset, 
+            batch_size=self.batch_size, 
+            shuffle=True,
+            num_workers=0 # Avoid multiprocessing issues in some envs unless requested
+        )
+
         # Train the model
         self.model.train()
-        n_batches = len(X) // self.batch_size + (1 if len(X) % self.batch_size != 0 else 0)
-
+        
         for epoch in range(self.epochs):
             total_loss = 0
-
-            # Shuffle data
-            indices = torch.randperm(len(X))
-            X_shuffled = X[indices]
-            y_shuffled = y[indices]
-
-            for i in range(n_batches):
-                start_idx = i * self.batch_size
-                end_idx = min((i + 1) * self.batch_size, len(X))
-
-                batch_X = X_shuffled[start_idx:end_idx]
-                batch_y = y_shuffled[start_idx:end_idx]
+            n_batches = 0
+            
+            for batch_X, batch_y in dataloader:
+                batch_X = batch_X.to(self.device)
+                batch_y = batch_y.to(self.device)
 
                 # Forward pass
                 outputs = self.model(batch_X)
@@ -254,6 +294,7 @@ class DeepFM(BaseRecommender):
                 optimizer.step()
 
                 total_loss += loss.item()
+                n_batches += 1
 
             if self.verbose:
                 logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {total_loss/n_batches:.4f}")
@@ -261,11 +302,7 @@ class DeepFM(BaseRecommender):
         self.is_fitted = True
         self.user_features = user_features
         self.item_features = item_features
-        if user_features:
-            self.user_feature_types = sorted(set().union(*[f.keys() for f in user_features.values()]))
-        if item_features:
-            self.item_feature_types = sorted(set().union(*[f.keys() for f in item_features.values()]))
-
+        
         return self
 
     def predict(self, user_id: Any, item_id: Any, **kwargs) -> float:

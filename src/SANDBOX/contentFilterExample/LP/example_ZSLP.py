@@ -4,7 +4,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MultiLabelBinarizer
-from corerec.engines.contentFilterEngine.learning_paradigms import LEA_ZERO_SHOT
+from corerec.engines.content_based.learning_paradigms import LEA_ZERO_SHOT
 
 # Define the neural network model
 class MovieGenreClassifier(nn.Module):

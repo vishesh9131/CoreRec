@@ -6,7 +6,7 @@ CONTENT_ENGINE_ROOT = (
     Path(__file__).resolve().parents[2] /
     "corerec" /
     "engines" /
-    "contentFilterEngine")
+    "content_based")
 
 # Files likely safe to import are included; others may have optional heavy
 # deps.

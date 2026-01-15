@@ -1,15 +1,15 @@
 import logging
-from corerec.engines.contentFilterEngine.other_approaches import (
+from corerec.engines.content_based.other_approaches import (
     OTH_RULE_BASED,
     OTH_SENTIMENT_ANALYSIS,
     OTH_ONTOLOGY_BASED
 )
-from corerec.engines.contentFilterEngine.performance_scalability import (
+from corerec.engines.content_based.performance_scalability import (
     PER_SCALABLE_ALGORITHMS,
     PER_FEATURE_EXTRACTION,
     PER_LOAD_BALANCING
 )
-from corerec.engines.contentFilterEngine.context_personalization import (
+from corerec.engines.content_based.context_personalization import (
     CON_CONTEXT_AWARE,
     CON_USER_PROFILING,
     CON_ITEM_PROFILING

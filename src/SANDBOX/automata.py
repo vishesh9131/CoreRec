@@ -1,5 +1,5 @@
 # import os
-# # This script is used to generate the directory structure and files for the contentFilterEngine
+# # This script is used to generate the directory structure and files for the content_based
 # # Define the directory structure and naming conventions
 # directory_structure = {
 #     "nn_based_algorithms": [
@@ -86,7 +86,7 @@
 # }
 
 # # Base directory for your project
-# base_dir = "corerec/engines/contentFilterEngine"
+# base_dir = "corerec/engines/content_based"
 
 # # Create the directory structure
 # for category, files in directory_structure.items():
@@ -114,11 +114,11 @@
 
 
 
-# This script is used to generate the directory structure and files for the unionizedFilterEngine
+# This script is used to generate the directory structure and files for the collaborative
 
 import os
 
-# Define the directory structure and naming conventions for unionizedFilterEngine
+# Define the directory structure and naming conventions for collaborative
 directory_structure = {
     "graph_based_algorithms": [
         "graph_based_cf_base.py",

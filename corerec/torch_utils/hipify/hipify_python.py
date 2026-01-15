@@ -52,10 +52,7 @@ class HipifyResult:
         self.status = ""
 
     def __str__(self):
-        return f"HipifyResult:: current_state: {
-            self.current_state}, hipified_path : {
-            self.hipified_path}, status: {
-            self.status}"
+        return f"HipifyResult:: current_state: {self.current_state}, hipified_path : {self.hipified_path}, status: {self.status}"
 
 
 HipifyFinalResult = Dict[str, HipifyResult]
@@ -267,8 +264,7 @@ def compute_stats(stats):
 
     # Print the number of unsupported calls
     print(
-        f"Total number of unsupported CUDA function calls: {
-            len(unsupported_calls):d}")
+f"Total number of unsupported CUDA function calls: {len(unsupported_calls):d}"
 
     # Print the list of unsupported calls
     print(", ".join(unsupported_calls))
@@ -328,9 +324,7 @@ def processKernelLaunches(string, stats):
     # Concat the namespace with the kernel names. (Find cleaner way of doing
     # this later).
     string = RE_KERNEL_LAUNCH.sub(
-        lambda inp: f"{
-            inp.group(1)}{
-            inp.group(2)}::",
+        lambda inp:f"{inp.group(1)}{inp.group(2)}::"
         string)
 
     def grab_method_and_template(in_kernel):
@@ -619,10 +613,7 @@ def replace_extern_shared(input_string):
     """
     output_string = input_string
     output_string = RE_EXTERN_SHARED.sub(
-        lambda inp: f"HIP_DYNAMIC_SHARED({
-            inp.group(1) or ''} {
-            inp.group(2)}, {
-                inp.group(3)})", output_string, )
+        lambda inp:f"HIP_DYNAMIC_SHARED({inp.group(1) or ''} {inp.group(2)}, {inp.group(3)})"
 
     return output_string
 
@@ -1130,10 +1121,7 @@ def preprocessor(
             return hipify_result
         except PermissionError as e:
             print(
-                f'{
-                    bcolors.WARNING}Failed to save {fout_path} with "{
-                    e.strerror}", leaving {fin_path} unchanged.{
-                    bcolors.ENDC}',
+f'{bcolors.WARNING}Failed to save {fout_path} with "{e.strerror}", leaving {fin_path} unchanged.{bcolors.ENDC}'
                 file=sys.stderr,
             )
             hipify_result.hipified_path = fin_path
@@ -1156,8 +1144,7 @@ def file_specific_replacement(
         contents = f.read()
         if strict:
             contents = re.sub(
-                rf"\b({
-                    re.escape(search_string)})\b",
+                rf"\b({re.escape(search_string)})\b"
                 lambda x: replace_string,
                 contents)
         else:

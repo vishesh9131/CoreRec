@@ -1,6 +1,6 @@
 import pandas as pd
 import networkx as nx
-from corerec.engines.contentFilterEngine.graph_based_algorithms import (
+from corerec.engines.content_based.graph_based_algorithms import (
     GRA_GRAPH_FILTERING,
     GRA_GNN,
     GRA_SEMANTIC_MODELS

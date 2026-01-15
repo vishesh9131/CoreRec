@@ -3,7 +3,7 @@
 DCN (Deep & Cross Network) Test Script
 """
 
-from corerec.engines.unionizedFilterEngine.nn_base.DCN import DCN
+from corerec.engines.collaborative.nn_base.DCN import DCN
 import os
 import sys
 import numpy as np

@@ -17,7 +17,7 @@ class TestSimpleDoc2Vec(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mod = load_module(
-            "corerec/engines/contentFilterEngine/embedding_representation_learning/doc2vec.py"
+            "corerec/engines/content_based/embedding_representation_learning/doc2vec.py"
         )
         cls.SimpleDoc2Vec = cls.mod.SimpleDoc2Vec
 

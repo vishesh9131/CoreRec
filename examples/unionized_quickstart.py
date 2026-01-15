@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# quickstart for unionizedFilterEngine algorithms
+# quickstart for collaborative algorithms
 
 import os
 import sys
@@ -23,7 +23,7 @@ def build_csr(users, items, ratings):
 
 def run_fast():
     try:
-        from corerec.engines.unionizedFilterEngine.fast import FAST
+        from corerec.engines.collaborative.fast import FAST
     except Exception as e:
         print("FAST not available:", e)
         return
@@ -37,7 +37,7 @@ def run_fast():
 
 def run_fast_recommender():
     try:
-        from corerec.engines.unionizedFilterEngine.fast_recommender import FASTRecommender
+        from corerec.engines.collaborative.fast_recommender import FASTRecommender
     except Exception as e:
         print("FASTRecommender not available:", e)
         return
@@ -51,7 +51,7 @@ def run_fast_recommender():
 
 def run_sar():
     try:
-        from corerec.engines.unionizedFilterEngine.sar import SAR
+        from corerec.engines.collaborative.sar import SAR
     except Exception as e:
         print("SAR not available:", e)
         return
@@ -65,7 +65,7 @@ def run_sar():
 
 def run_rlrmc():
     try:
-        from corerec.engines.unionizedFilterEngine.rlrmc import RLRMC
+        from corerec.engines.collaborative.rlrmc import RLRMC
     except Exception as e:
         print("RLRMC not available:", e)
         return
@@ -81,7 +81,7 @@ def run_rlrmc():
 
 def run_rbm():
     try:
-        from corerec.engines.unionizedFilterEngine.rbm import RBM
+        from corerec.engines.collaborative.rbm import RBM
     except Exception as e:
         print("RBM not available:", e)
         return
@@ -99,7 +99,7 @@ def run_rbm():
 
 def run_geomlc():
     try:
-        from corerec.engines.unionizedFilterEngine.geomlc import GeoMLC
+        from corerec.engines.collaborative.geomlc import GeoMLC
     except Exception as e:
         print("GeoMLC not available:", e)
         return

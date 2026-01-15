@@ -64,15 +64,25 @@ try:
 except ImportError:
     SASRec = None
 
+try:
+    from .two_tower import TwoTower
+except ImportError:
+    TwoTower = None
+
+try:
+    from .bert4rec import BERT4Rec
+except ImportError:
+    BERT4Rec = None
+
 # ============================================================================
 # Engine Namespaces - Organized access to algorithm families
 # ============================================================================
 
 # Unionized Filter Engine (Collaborative Filtering)
-from . import unionizedFilterEngine as unionized
+from . import collaborative as unionized
 
 # Content Filter Engine (Content-Based Filtering)
-from . import contentFilterEngine as content
+from . import content_based as content
 
 # ============================================================================
 # Backward Compatibility Aliases
@@ -94,6 +104,8 @@ __all__ = [
     "MIND",
     "NASRec",
     "SASRec",
+    "TwoTower",
+    "BERT4Rec",
     # Engine Namespaces (organized access)
     "unionized",  # Collaborative filtering algorithms
     "content",  # Content-based filtering algorithms
@@ -122,6 +134,10 @@ def list_deep_learning_models():
         models.append("NASRec")
     if SASRec is not None:
         models.append("SASRec")
+    if TwoTower is not None:
+        models.append("TwoTower")
+    if BERT4Rec is not None:
+        models.append("BERT4Rec")
     return models
 
 

@@ -161,3 +161,12 @@ module = [
 ]
 ignore_errors = true
 
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+select = ["E", "W", "F", "I", "C", "B"]
+ignore = ["E501", "B008", "C901"]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]

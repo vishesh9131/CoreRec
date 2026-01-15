@@ -3,7 +3,7 @@
 AFM (Attentional Factorization Machine) Test Script
 """
 
-from corerec.engines.unionizedFilterEngine.nn_base.AFM_base import AFMModel
+from corerec.engines.collaborative.nn_base.AFM_base import AFMModel
 import os
 import sys
 import numpy as np

@@ -214,9 +214,9 @@ class BaseCorerec(ABC):
     @abstractmethod
     def fit(
             self,
-            interaction_matrix,
+            interaction_matrix: "scipy.sparse.csr_matrix",
             user_ids: List[int],
-            item_ids: List[int]):
+            item_ids: List[int]) -> None:
         """
         Train the recommender system using the provided interaction matrix.
 

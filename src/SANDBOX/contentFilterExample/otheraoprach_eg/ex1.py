@@ -1,4 +1,4 @@
-from corerec.engines.contentFilterEngine.other_approaches import (
+from corerec.engines.content_based.other_approaches import (
     OTH_RULE_BASED,
     OTH_SENTIMENT_ANALYSIS,
     OTH_ONTOLOGY_BASED

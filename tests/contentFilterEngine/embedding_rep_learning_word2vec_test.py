@@ -19,7 +19,7 @@ class TestWord2VecMinimal(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mod = load_module(
-            "corerec/engines/contentFilterEngine/embedding_representation_learning/word2vec.py"
+            "corerec/engines/content_based/embedding_representation_learning/word2vec.py"
         )
         cls.Word2Vec = cls.mod.Word2Vec
 

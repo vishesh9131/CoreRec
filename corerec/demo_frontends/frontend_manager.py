@@ -76,9 +76,7 @@ class FrontendManager:
         """
         if platform_key not in self.platforms:
             raise ValueError(
-                f"Platform '{platform_key}' not found. Available platforms: {
-                    list(
-                        self.platforms.keys())}")
+                f"Platform '{platform_key}' not found. Available platforms: {list(self.platforms.keys())}")
 
         platform_config = self.platforms[platform_key]
 
@@ -101,15 +99,11 @@ class FrontendManager:
 
         except ImportError as e:
             st.error(
-                f"Failed to import {
-                    platform_config['class_name']}: {
-                    str(e)}")
+                f"Failed to import {platform_config['class_name']}: {str(e)}")
             raise
         except AttributeError as e:
             st.error(
-                f"Class {
-                    platform_config['class_name']} not found in module: {
-                    str(e)}")
+                f"Class {platform_config['class_name']} not found in module: {str(e)}")
             raise
         except Exception as e:
             st.error(f"Error initializing {platform_config['name']}: {str(e)}")
@@ -162,8 +156,7 @@ class FrontendManager:
                 st.markdown(card_html, unsafe_allow_html=True)
 
                 if st.button(
-                        f"Launch {
-                            platform_info['name']}",
+                        f"Launch {platform_info['name']}",
                         key=f"launch_{platform_key}"):
                     selected_platform = platform_key
 
@@ -274,8 +267,7 @@ class FrontendManager:
                 return True
         except Exception as e:
             st.warning(
-                f"Could not generate sample data for {platform_key}: {
-                    str(e)}")
+                f"Could not generate sample data for {platform_key}: {str(e)}")
 
         return False
 

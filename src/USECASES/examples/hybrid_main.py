@@ -6,7 +6,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from corerec.engines.hybrid import HybridEngine
 from corerec.engines.content_based import ContentBasedFilteringEngine
-from corerec.engines.unionizedFilterEngine.cr_unionizedFactory import UnionizedRecommenderFactory
+from corerec.engines.collaborative.cr_unionizedFactory import UnionizedRecommenderFactory
 from corerec.output.formatted_output import OutputFormatter
 
 

@@ -6,7 +6,7 @@ BASE = (
     Path(__file__).resolve().parents[2]
     / "corerec"
     / "engines"
-    / "unionizedFilterEngine"
+    / "collaborative"
     / "sequential_model_base"
 )
 

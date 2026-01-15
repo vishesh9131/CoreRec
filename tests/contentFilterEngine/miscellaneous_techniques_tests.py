@@ -7,7 +7,7 @@ BASE = (
     Path(__file__).resolve().parents[2]
     / "corerec"
     / "engines"
-    / "contentFilterEngine"
+    / "content_based"
     / "miscellaneous_techniques"
 )
 
