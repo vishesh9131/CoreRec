@@ -1,114 +1,94 @@
 """
-Collaborative Filtering Engine (Refactored)
-============================================
+Collaborative Filtering Engine
+==============================
 
-This engine provides the TOP 5 most useful collaborative filtering methods.
-All other methods are available in the sandbox for development.
+Production-ready collaborative filtering methods:
 
-Top 5 Production-Ready Methods:
---------------------------------
-1. TwoTower - Modern retrieval (new standard)
-2. SAR - Simple Algorithm for Recommendation
-3. LightGCN - Graph-based collaborative filtering  
+1. SAR - Simple Algorithm for Recommendation (fast, no DL needed)
+2. TwoTower - Modern retrieval architecture  
+3. LightGCN - Graph-based collaborative filtering
 4. NCF - Neural Collaborative Filtering
-5. FastRecommender - FastAI-style quick prototyping
-
-Other 45+ algorithms moved to sandbox for refinement.
+5. FastRecommender - Quick prototyping
 
 Usage:
 ------
-    from corerec.engines import unionized
+    from corerec.engines.collaborative import SAR
     
-    # Modern retrieval
-    model = unionized.TwoTower(embedding_dim=256)
-    
-    # Fast and simple
-    model = unionized.SAR()
-    
-    # Graph-based
-    model = unionized.LightGCN(embedding_dim=128)
-    
-    # Neural collaborative
-    model = unionized.NCF(embedding_dim=64)
-    
-    # Quick prototyping
-    model = unionized.FastRecommender()
-
-Sandbox Access:
----------------
-    # For experimental methods, import from sandbox
-    from corerec.sandbox.collaborative import DeepFM, DCN, etc.
+    model = SAR(similarity_type='jaccard')
+    model.fit(train_df)
+    recs = model.recommend_k_items(test_df, top_k=10)
 
 Author: Vishesh Yadav
 """
 
 # ============================================================================
-# TOP 5 PRODUCTION-READY METHODS
+# LAZY IMPORTS - only load what's requested
 # ============================================================================
 
-# 1. TwoTower (Modern Standard - NEW)
-try:
-    from corerec.engines.two_tower import TwoTower
-except ImportError:
-    TwoTower = None
+_model_imports = {
+    "SAR": (".sar", "SAR"),
+    "TwoTower": ("corerec.engines.two_tower", "TwoTower"),
+    "LightGCN": (".graph_based_base.lightgcn_base", "LightGCN"),
+    "NCF": (".nn_base.ncf", "NCF"),
+    "FastRecommender": (".fast_recommender", "FastRecommender"),
+    # legacy/deprecated
+    "RBM": (".rbm", "RBM"),
+    "GeoMLC": (".geomlc", "GeoMLC"),
+}
 
-# 2. SAR (Simple, Fast, Proven)
-try:
-    from .sar import SAR
-except ImportError:
-    SAR = None
+# alternate import paths for some models
+_fallback_imports = {
+    "NCF": (".nn_base.ncf_base", "NCF"),
+    "FastRecommender": (".fast", "FastRecommender"),
+}
 
-# 3. LightGCN (Graph-based, Modern)
-try:
-    from .graph_based_base.lightgcn_base import LightGCN
-except ImportError:
-    LightGCN = None
 
-# 4. NCF (Neural Collaborative Filtering - Foundation)
-try:
-    from .nn_base.ncf import NCF
-except ImportError:
-    try:
-        from .nn_base.ncf_base import NCF
-    except ImportError:
-        NCF = None
+def __getattr__(name):
+    """Lazy import handler."""
+    import importlib
+    
+    if name in _model_imports:
+        mod_path, cls_name = _model_imports[name]
+        try:
+            # handle absolute vs relative imports
+            if mod_path.startswith("corerec"):
+                mod = importlib.import_module(mod_path)
+            else:
+                mod = importlib.import_module(mod_path, __name__)
+            cls = getattr(mod, cls_name)
+            globals()[name] = cls
+            return cls
+        except (ImportError, AttributeError):
+            # try fallback
+            if name in _fallback_imports:
+                fb_path, fb_cls = _fallback_imports[name]
+                try:
+                    mod = importlib.import_module(fb_path, __name__)
+                    cls = getattr(mod, fb_cls)
+                    globals()[name] = cls
+                    return cls
+                except (ImportError, AttributeError):
+                    pass
+            globals()[name] = None
+            return None
+    
+    if name == "sandbox":
+        globals()["sandbox"] = SandboxAccess()
+        return globals()["sandbox"]
+    
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-# 5. FastRecommender (Quick Prototyping)
-try:
-    from .fast_recommender import FastRecommender
-except ImportError:
-    try:
-        from .fast import FastRecommender
-    except ImportError:
-        FastRecommender = None
+
+def __dir__():
+    return list(__all__)
+
 
 # ============================================================================
-# Backward Compatibility - Deprecated but Available
-# ============================================================================
-
-# Keep these for backward compat, but discourage new usage
-try:
-    from .rbm import RBM
-except ImportError:
-    RBM = None
-
-try:
-    from .geomlc import GeoMLC
-except ImportError:
-    GeoMLC = None
-
-
-# ============================================================================
-# Sandbox Access (Development/Experimental)
+# Sandbox Access
 # ============================================================================
 
 class SandboxAccess:
-    """
-    Gateway to experimental methods under development.
-    
-    These methods are functional but not yet production-ready.
-    Use at your own risk for research/experimentation.
-    """
+    """Gateway to experimental methods under development."""
     
     @staticmethod
     def list_available():
@@ -140,26 +120,21 @@ class SandboxAccess:
         return info_map.get(method_name, "No info available. Check sandbox docs.")
 
 
-sandbox = SandboxAccess()
-
-
 # ============================================================================
-# __all__ - Export List (ONLY Top 5)
+# __all__ - Export List
 # ============================================================================
 
 __all__ = [
-    # Top 5 Production Methods
-    "TwoTower",      # Modern standard
-    "SAR",           # Simple & fast
-    "LightGCN",      # Graph-based
-    "NCF",           # Neural collab
-    "FastRecommender",  # Quick proto
-    
-    # Backward compat (deprecated)
+    # Production methods
+    "SAR",
+    "TwoTower",
+    "LightGCN",
+    "NCF",
+    "FastRecommender",
+    # Legacy
     "RBM",
     "GeoMLC",
-    
-    # Sandbox gateway
+    # Sandbox
     "sandbox",
 ]
 
@@ -169,21 +144,15 @@ __all__ = [
 # ============================================================================
 
 def list_methods():
-    """List the top 5 production-ready methods."""
-    methods = []
-    
-    if TwoTower is not None:
-        methods.append("TwoTower - Modern retrieval standard")
-    if SAR is not None:
-        methods.append("SAR - Simple Algorithm for Recommendation")
-    if LightGCN is not None:
-        methods.append("LightGCN - Graph-based collaborative filtering")
-    if NCF is not None:
-        methods.append("NCF - Neural Collaborative Filtering")
-    if FastRecommender is not None:
-        methods.append("FastRecommender - Fast prototyping")
-    
-    return methods
+    """List the production-ready methods."""
+    available = []
+    for name in ["SAR", "TwoTower", "LightGCN", "NCF", "FastRecommender"]:
+        try:
+            if __getattr__(name) is not None:
+                available.append(name)
+        except (ImportError, AttributeError):
+            pass
+    return available
 
 
 def get_recommendation():
@@ -191,15 +160,15 @@ def get_recommendation():
     return """
     Recommendation Guide:
     
-    Use TwoTower if:
-    - Large item catalog (>100K items)
-    - Need real-time serving
-    - First stage of pipeline
-    
     Use SAR if:
     - Quick baseline needed
     - Simple item-to-item similarity
     - No deep learning infrastructure
+    
+    Use TwoTower if:
+    - Large item catalog (>100K items)
+    - Need real-time serving
+    - First stage of pipeline
     
     Use LightGCN if:
     - Have user-item graph structure
@@ -215,21 +184,4 @@ def get_recommendation():
     - Rapid prototyping
     - Simple embedding-based model
     - Educational/demo purposes
-    
-    For other methods, check sandbox.list_available()
-    """
-
-
-def migrate_to_sandbox_notice():
-    """Information about the refactoring."""
-    return """
-    ⚠️  REFACTORING NOTICE
-    
-    45+ methods have been moved to sandbox for quality refinement:
-    - All methods are still accessible
-    - Import from: corerec.sandbox.collaborative
-    - Top 5 methods remain in main engine
-    - Sandbox methods will graduate when production-ready
-    
-    This ensures main engine stays lean and battle-tested.
     """

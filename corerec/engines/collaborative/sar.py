@@ -80,7 +80,7 @@ class SAR(BaseRecommender):
         >>> model.fit(train_df)
         >>> recs = model.recommend_k_items(test_df, top_k=10)
     """
-    
+
     def __init__(
         self,
         col_user: str = DEFAULT_USER_COL,
@@ -425,12 +425,12 @@ class SAR(BaseRecommender):
         # cleanup
         del item_cooccurrence
         del work_df
-        
+
         self.is_fitted = True
         logger.info("SAR training complete")
         
         return self
-    
+
     # =========================================================================
     # SCORING
     # =========================================================================
@@ -531,10 +531,12 @@ class SAR(BaseRecommender):
         
         # build result dataframe
         test_users = test[self.col_user].unique()
-        n_users = len(test_users)
+        
+        # actual k might be less than requested if fewer items exist
+        actual_k = top_items.shape[1]
         
         result = pd.DataFrame({
-            self.col_user: np.repeat(test_users, top_k),
+            self.col_user: np.repeat(test_users, actual_k),
             self.col_item: [self.index2item[i] for i in top_items.flatten()],
             self.col_prediction: top_scores.flatten()
         })
@@ -567,25 +569,25 @@ class SAR(BaseRecommender):
         """
         if not self.is_fitted:
             raise ModelNotFittedError()
-        
+
         if user_id not in self.user2index:
             return []  # cold user, can't recommend
-        
+
         user_idx = self.user2index[user_id]
-        
+
         # get user's affinity vector and compute scores
         user_affinity = self.user_affinity[user_idx, :]
         scores = user_affinity.dot(self.item_similarity)
-        
+
         if sparse.issparse(scores):
             scores = scores.toarray().flatten()
         else:
             scores = np.asarray(scores).flatten()
-        
+
         # mask seen items
         seen = user_affinity.toarray().flatten() > 0
         scores[seen] = -np.inf
-        
+
         # mask additional exclusions
         if exclude_items:
             for item in exclude_items:
@@ -815,8 +817,11 @@ class SAR(BaseRecommender):
             scores, top_k=top_k, sort_top_k=sort_top_k
         )
         
+        # actual k might be less than requested
+        actual_k = top_items.shape[1]
+        
         result = pd.DataFrame({
-            self.col_user: np.repeat(unique_users, top_k),
+            self.col_user: np.repeat(unique_users, actual_k),
             self.col_item: [self.index2item[i] for i in top_items.flatten()],
             self.col_prediction: top_scores.flatten()
         })
