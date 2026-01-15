@@ -1,47 +1,31 @@
 """
-Retrieval module for CoreRec framework.
+Retrieval Module - Candidate Generation (Stage 1)
 
-This module contains retrievers for efficient candidate generation.
+This module provides retrievers that generate candidate items from
+large catalogs efficiently. Retrievers prioritize recall over precision.
+
+Usage:
+    from corerec.retrieval import SemanticRetriever, CollaborativeRetriever
+    
+    retriever = SemanticRetriever(encoder="all-MiniLM-L6-v2")
+    retriever.index(items)
+    candidates = retriever.retrieve(query, top_k=100)
 """
 
-from corerec.retrieval.base_retriever import BaseRetriever
-from corerec.retrieval.dssm import DSSM
-
-# Optional imports (may not exist yet)
-try:
-    from corerec.retrieval.dense_encoder import DenseEncoderRetriever
-except ImportError:
-    DenseEncoderRetriever = None
-
-try:
-    from corerec.retrieval.contrastive_retriever import ContrastiveRetriever
-except ImportError:
-    ContrastiveRetriever = None
-
-try:
-    from corerec.retrieval.faiss_index import FAISSIndexRetriever
-except ImportError:
-    FAISSIndexRetriever = None
-
-# New vector store
-try:
-    from corerec.retrieval.vector_store import create_index, VectorIndex, NumpyIndex, FAISSIndex, AnnoyIndex
-except ImportError:
-    create_index = None
-    VectorIndex = None
-    NumpyIndex = None
-    FAISSIndex = None
-    AnnoyIndex = None
+from .base import BaseRetriever, Candidate, RetrievalResult
+from .collaborative import CollaborativeRetriever
+from .semantic import SemanticRetriever
+from .popularity import PopularityRetriever
+from .index import VectorIndex
+from .ensemble import EnsembleRetriever
 
 __all__ = [
     "BaseRetriever",
-    "DSSM",
-    "DenseEncoderRetriever",
-    "ContrastiveRetriever",
-    "FAISSIndexRetriever",
-    "create_index",
+    "Candidate",
+    "RetrievalResult",
+    "CollaborativeRetriever",
+    "SemanticRetriever",
+    "PopularityRetriever",
     "VectorIndex",
-    "NumpyIndex",
-    "FAISSIndex",
-    "AnnoyIndex",
+    "EnsembleRetriever",
 ]
