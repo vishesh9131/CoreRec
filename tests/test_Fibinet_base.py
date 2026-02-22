@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from pathlib import Path
 
-from corerec.engines.unionizedFilterEngine.nn_base.Fibinet_base import Fibinet_base
+from corerec.engines.collaborative.nn_base.Fibinet_base import Fibinet_base
 
 
 class TestFibiNET:

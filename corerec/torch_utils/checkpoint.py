@@ -1437,8 +1437,7 @@ def create_selective_checkpoint_contexts(
                      "For example, if you have `torch.ops.aten.mm`, change it to `torch.ops.aten.mm.default`.") if isinstance(
                         op, torch._ops.OpOverloadPacket) else "")
                 raise ValueError(
-                    f"Expected op in `op_list` to be an OpOverload but got: {op} " f"of type {
-                        type(op)}. {_extra_msg}")
+                    f"Expected op in `op_list` to be an OpOverload but got: {op} of type {type(op)}. {_extra_msg}")
 
         def policy_fn(ctx, op, *args, **kwargs):
             if op in policy_fn_or_list:
@@ -1511,9 +1510,7 @@ def _checkpoint_without_reentrant_generator(
         metadata_fn = _allowed_determinism_checks_to_fns[determinism_check]
     else:
         raise ValueError(
-            f"determinism_check should be one of {
-                list(
-                    _allowed_determinism_checks_to_fns.keys())}, " f"but got {determinism_check}")
+            f"determinism_check should be one of {list(_allowed_determinism_checks_to_fns.keys())}, but got {determinism_check}")
 
     device_type = _infer_device_type(*args)
     device_module = _get_device_module(device_type)

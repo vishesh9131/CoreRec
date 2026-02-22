@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from pathlib import Path
 
-from corerec.engines.unionizedFilterEngine.nn_base.ESCMM_base import ESCMM_base
+from corerec.engines.collaborative.nn_base.ESCMM_base import ESCMM_base
 
 
 class TestESCMM:

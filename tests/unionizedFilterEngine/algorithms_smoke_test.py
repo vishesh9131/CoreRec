@@ -13,7 +13,7 @@ class TestUnionizedAlgorithms(unittest.TestCase):
 
     def test_cornac_bpr(self):
         try:
-            from corerec.engines.unionizedFilterEngine.cornac_bpr import CornacBPR
+            from corerec.engines.collaborative.cornac_bpr import CornacBPR
         except Exception as e:
             self.skipTest(f"CornacBPR import failed: {e}")
         model = CornacBPR(
@@ -28,7 +28,7 @@ class TestUnionizedAlgorithms(unittest.TestCase):
 
     def test_fast_recommender(self):
         try:
-            from corerec.engines.unionizedFilterEngine.fast_recommender import FASTRecommender
+            from corerec.engines.collaborative.fast_recommender import FASTRecommender
         except Exception as e:
             self.skipTest(f"FASTRecommender import failed: {e}")
         model = FASTRecommender(factors=8, iterations=1, batch_size=8, seed=42)
@@ -38,7 +38,7 @@ class TestUnionizedAlgorithms(unittest.TestCase):
 
     def test_fast(self):
         try:
-            from corerec.engines.unionizedFilterEngine.fast import FAST
+            from corerec.engines.collaborative.fast import FAST
         except Exception as e:
             self.skipTest(f"FAST import failed: {e}")
         model = FAST(factors=8, iterations=1, batch_size=8, seed=42)
@@ -48,7 +48,7 @@ class TestUnionizedAlgorithms(unittest.TestCase):
 
     def test_sar(self):
         try:
-            from corerec.engines.unionizedFilterEngine.sar import SAR
+            from corerec.engines.collaborative.sar import SAR
         except Exception as e:
             self.skipTest(f"SAR import failed: {e}")
         model = SAR()
@@ -58,7 +58,7 @@ class TestUnionizedAlgorithms(unittest.TestCase):
 
     def test_rbm(self):
         try:
-            from corerec.engines.unionizedFilterEngine.rbm import RBM
+            from corerec.engines.collaborative.rbm import RBM
         except Exception as e:
             self.skipTest(f"RBM import failed: {e}")
         # Build csr matrix for 3 users x 4 items
@@ -81,7 +81,7 @@ class TestUnionizedAlgorithms(unittest.TestCase):
 
     def test_rlrmc(self):
         try:
-            from corerec.engines.unionizedFilterEngine.rlrmc import RLRMC
+            from corerec.engines.collaborative.rlrmc import RLRMC
         except Exception as e:
             self.skipTest(f"RLRMC import failed: {e}")
         uid_map = {u: i for i, u in enumerate(sorted(set(self.users)))}
@@ -101,7 +101,7 @@ class TestUnionizedAlgorithms(unittest.TestCase):
 
     def test_sli(self):
         try:
-            from corerec.engines.unionizedFilterEngine.sli import SLiRec
+            from corerec.engines.collaborative.sli import SLiRec
         except Exception as e:
             self.skipTest(f"SLiRec import failed: {e}")
         # Build csr matrix where each user has a short sequence
@@ -128,7 +128,7 @@ class TestUnionizedAlgorithms(unittest.TestCase):
 
     def test_sum(self):
         try:
-            from corerec.engines.unionizedFilterEngine.sum import SUMModel
+            from corerec.engines.collaborative.sum import SUMModel
         except Exception as e:
             self.skipTest(f"SUMModel import failed: {e}")
         # Simple sequential data with timestamps
@@ -150,7 +150,7 @@ class TestUnionizedAlgorithms(unittest.TestCase):
 
     def test_geomlc(self):
         try:
-            from corerec.engines.unionizedFilterEngine.geomlc import GeoMLC
+            from corerec.engines.collaborative.geomlc import GeoMLC
         except Exception as e:
             self.skipTest(f"GeoMLC import failed: {e}")
         users = [1, 1, 2, 3]

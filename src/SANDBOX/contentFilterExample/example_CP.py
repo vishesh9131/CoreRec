@@ -1,5 +1,5 @@
 import pandas as pd
-from corerec.engines.contentFilterEngine.context_personalization import (
+from corerec.engines.content_based.context_personalization import (
     CON_CONTEXT_AWARE,
     CON_USER_PROFILING,
     CON_ITEM_PROFILING

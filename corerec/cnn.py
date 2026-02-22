@@ -11,7 +11,7 @@ Usage:
     model = cnn.CNN(input_dim=100, num_classes=10, ...)
 """
 
-from corerec.engines.contentFilterEngine.nn_based_algorithms.cnn import CNN
+from corerec.engines.content_based.nn_based_algorithms.cnn import CNN
 
 __all__ = ["CNN"]
 

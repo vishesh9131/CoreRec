@@ -18,7 +18,7 @@ class TestContextAware(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mod = load_module(
-            "corerec/engines/contentFilterEngine/context_personalization/context_aware.py"
+            "corerec/engines/content_based/context_personalization/context_aware.py"
         )
         cls.ContextAwareRecommender = cls.mod.ContextAwareRecommender
 

@@ -2,13 +2,13 @@ import logging
 from typing import List, Optional
 
 from scipy.sparse import csr_matrix
-from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_base import (
+from corerec.engines.collaborative.mf_base.matrix_factorization_base import (
     MatrixFactorizationBase,
 )
-from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_recommender import (
+from corerec.engines.collaborative.mf_base.matrix_factorization_recommender import (
     MatrixFactorizationRecommender,
 )
-from corerec.engines.contentFilterEngine.tfidf_recommender import TFIDFRecommender
+from corerec.engines.content_based.tfidf_recommender import TFIDFRecommender
 from corerec.engines.hybrid import HybridEngine
 from sklearn.feature_extraction.text import TfidfVectorizer
 

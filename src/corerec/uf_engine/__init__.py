@@ -1,22 +1,22 @@
-from corerec.engines.unionizedFilterEngine.attention_mechanism_base import (
+from corerec.engines.collaborative.attention_mechanism_base import (
     AM_TRANSFORMER,
     AM_ATTENTION,
     AM_A2SD,
     AM_SAS,
 )
-from corerec.engines.unionizedFilterEngine.bayesian_method_base import (
+from corerec.engines.collaborative.bayesian_method_base import (
     BAYESIAN_MF,
     BAYESIAN_PERSONALIZED_RANKING,
     PGM_UF,
     # BAYESIAN_BiVAE,
 )
-from corerec.engines.unionizedFilterEngine.graph_based_base import (
+from corerec.engines.collaborative.graph_based_base import (
     GB_EDGE_AWARE_CF,
     GB_HETEROGENEOUS_NETWORK_UF,
     GB_GEOIMC,
     GB_DEEPWALK,
 )
-from corerec.engines.unionizedFilterEngine.mf_base import (
+from corerec.engines.collaborative.mf_base import (
     MF_ALS,
     MF_A2VSD,
     MF_BAYESIAN_MATRIX_FACTORIZATION,
@@ -40,7 +40,7 @@ from corerec.engines.unionizedFilterEngine.mf_base import (
     MF_USER_BASED_UF,
     MF_WEIGHTED_MATRIX_FACTORIZATION,
 )
-from corerec.engines.unionizedFilterEngine.nn_base import (
+from corerec.engines.collaborative.nn_base import (
     NN_SASREC,
     NN_RNN_SEQUENTIAL_RECOMMENDATION,
     NN_SELF_SUPERVISED_LEARNING_CF,
@@ -95,22 +95,22 @@ from corerec.engines.unionizedFilterEngine.nn_base import (
     NN_FLEN,
     NN_TISAS,
 )
-from corerec.engines.unionizedFilterEngine.regularization_based_base import (
+from corerec.engines.collaborative.regularization_based_base import (
     RB_HYBRID,
 )
-from corerec.engines.unionizedFilterEngine.sequential_model_base import (
+from corerec.engines.collaborative.sequential_model_base import (
     SequenceAwareUFBase,
     SASRecBase,
     GRUBasedUFilterBase,
     NextItNetBase,
 )
-from corerec.engines.unionizedFilterEngine.variational_encoder_base import (
+from corerec.engines.collaborative.variational_encoder_base import (
     VE_PGM,
     VE_BPRE,
     VE_STANDARD,
     VE_MULTINOMIAL,
 )
-from corerec.engines.unionizedFilterEngine import (
+from corerec.engines.collaborative import (
     cr_unionizedFactory,
     cornac_bpr,
     fast_recommender,
@@ -231,7 +231,7 @@ __all__ = [
     "VE_MULTINOMIAL",
 ]
 
-# from corerec.engines.unionizedFilterEngine.misc_base import (
+# from corerec.engines.collaborative.misc_base import (
 #     MISC_FAST,
 #     MISC_FASTAI,
 #     MISC_FASTAI_EMBEDDING,

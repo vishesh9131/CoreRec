@@ -162,26 +162,26 @@ nav:
   
   - Engines:
     - engines/index.md
-    - Unionized Filter Engine:
-      - engines/unionized-filter/index.md
-      - Matrix Factorization: engines/unionized-filter/matrix-factorization.md
-      - Neural Network Based: engines/unionized-filter/neural-network.md
-      - Graph Based: engines/unionized-filter/graph-based.md
-      - Attention Mechanisms: engines/unionized-filter/attention-mechanisms.md
-      - Bayesian Methods: engines/unionized-filter/bayesian-methods.md
-      - Sequential Models: engines/unionized-filter/sequential-models.md
-      - Variational Encoders: engines/unionized-filter/variational-encoders.md
-    - Content Filter Engine:
-      - engines/content-filter/index.md
-      - Traditional ML: engines/content-filter/traditional-ml.md
-      - Neural Networks: engines/content-filter/neural-networks.md
-      - Context & Personalization: engines/content-filter/context-personalization.md
-      - Graph-Based: engines/content-filter/graph-based.md
-      - Embedding Learning: engines/content-filter/embedding-learning.md
-      - Hybrid & Ensemble: engines/content-filter/hybrid-ensemble.md
-      - Fairness & Explainability: engines/content-filter/fairness-explainability.md
-      - Learning Paradigms: engines/content-filter/learning-paradigms.md
-      - Special Techniques: engines/content-filter/special-techniques.md
+    - Collaborative Filtering (Unionized):
+      - engines/collaborative/index.md
+      - Matrix Factorization: engines/collaborative/matrix-factorization.md
+      - Neural Network Based: engines/collaborative/neural-network.md
+      - Graph Based: engines/collaborative/graph-based.md
+      - Attention Mechanisms: engines/collaborative/attention-mechanisms.md
+      - Bayesian Methods: engines/collaborative/bayesian-methods.md
+      - Sequential Models: engines/collaborative/sequential-models.md
+      - Variational Encoders: engines/collaborative/variational-encoders.md
+    - Content-Based Filtering:
+      - engines/content-based/index.md
+      - Traditional ML: engines/content-based/traditional-ml.md
+      - Neural Networks: engines/content-based/neural-networks.md
+      - Context & Personalization: engines/content-based/context-personalization.md
+      - Graph-Based: engines/content-based/graph-based.md
+      - Embedding Learning: engines/content-based/embedding-learning.md
+      - Hybrid & Ensemble: engines/content-based/hybrid-ensemble.md
+      - Fairness & Explainability: engines/content-based/fairness-explainability.md
+      - Learning Paradigms: engines/content-based/learning-paradigms.md
+      - Special Techniques: engines/content-based/special-techniques.md
     - Deep Learning Models:
       - engines/deep-learning/index.md
       - DCN (Deep & Cross): engines/deep-learning/dcn.md
@@ -240,13 +240,13 @@ nav:
       - examples/engines/mind-example.md
       - examples/engines/nasrec-example.md
       - examples/engines/sasrec-example.md
-    - Unionized Filter Examples:
+    - Collaborative Filtering Examples:
       - examples/unionized/fast-example.md
       - examples/unionized/sar-example.md
       - examples/unionized/rbm-example.md
       - examples/unionized/rlrmc-example.md
       - examples/unionized/geomlc-example.md
-    - Content Filter Examples:
+    - Content-Based Filtering Examples:
       - examples/content-filter/tfidf-example.md
     - Advanced Examples:
       - examples/advanced/instagram-reels.md
@@ -286,4 +286,3 @@ nav:
     - FAQ: about/faq.md
     - License: about/license.md
     - Contact: about/contact.md
-

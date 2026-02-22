@@ -11,7 +11,7 @@ Usage:
     model = rnn.RNNModel(input_dim=500, embed_dim=256, ...)
 """
 
-from corerec.engines.contentFilterEngine.nn_based_algorithms.rnn import RNNModel
+from corerec.engines.content_based.nn_based_algorithms.rnn import RNNModel
 
 __all__ = ["RNNModel"]
 

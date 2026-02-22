@@ -192,8 +192,9 @@ def validate_top_k(top_k: int, min_val: int = 1, max_val: int = 10000) -> None:
     """
     if not isinstance(top_k, int):
         raise ValidationError(
-            f"top_k must be an integer. Got {
-                type(top_k).__name__}. " f"Example: top_k=10")
+            # f"top_k must be an integer. Got {type(top_k).__name__}. " f"Example: top_k=10")
+            f"top_k must be an integer. Got {type(top_k).__name__}")
+
 
     if top_k < min_val:
         raise ValidationError(
@@ -287,9 +288,7 @@ def validate_embeddings_dim(
         ValidationError: If embedding_dim is invalid
     """
     if not isinstance(embedding_dim, int):
-        raise ValidationError(
-            f"embedding_dim must be an integer. Got {
-                type(embedding_dim).__name__}. " f"Example: embedding_dim=64")
+        raise ValidationError(f"embedding_dim must be an integer. Got {type(embedding_dim).__name__}")
 
     if embedding_dim < min_val:
         raise ValidationError(
@@ -302,3 +301,5 @@ def validate_embeddings_dim(
             f"embedding_dim cannot exceed {max_val}. Got {embedding_dim}. "
             f"Large embeddings may cause memory issues. Consider using a smaller value."
         )
+
+

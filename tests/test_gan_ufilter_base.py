@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from pathlib import Path
 
-from corerec.engines.unionizedFilterEngine.nn_base.gan_ufilter_base import GAN_ufilter_base
+from corerec.engines.collaborative.nn_base.gan_ufilter_base import GAN_ufilter_base
 
 
 class TestGANUFilter:

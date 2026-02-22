@@ -4,12 +4,12 @@ from numpy import dot
 from numpy.linalg import norm
 
 # Old Import technique
-# from corerec.engines.contentFilterEngine.context_personalization import (
+# from corerec.engines.content_based.context_personalization import (
 #     cr.CON_CONTEXT_AWARE,
 #     cr.CON_USER_PROFILING,
 #     cr.CON_ITEM_PROFILING
 # )
-# from corerec.engines.contentFilterEngine.embedding_representation_learning import (
+# from corerec.engines.content_based.embedding_representation_learning import (
 #     cr.cr.EMB_PERSONALIZED_EMBEDDINGS
 # )
 from typing import Dict, List, Any
@@ -43,8 +43,8 @@ item_recommender = cr.ItemProfiling()
 
 # Initialize Embedding Models
 print("Initializing embedding models...")
-# Access via engines.contentFilterEngine since it's not in top-level yet
-from corerec.engines.contentFilterEngine.embedding_representation_learning.personalized_embeddings import PERSONALIZED_EMBEDDINGS
+# Access via engines.content_based since it's not in top-level yet
+from corerec.engines.content_based.embedding_representation_learning.personalized_embeddings import PERSONALIZED_EMBEDDINGS
 embedding_recommender = PERSONALIZED_EMBEDDINGS()
 
 # Prepare data for embeddings

@@ -17,7 +17,7 @@ class TestItemProfiling(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mod = load_module(
-            "corerec/engines/contentFilterEngine/context_personalization/item_profiling.py"
+            "corerec/engines/content_based/context_personalization/item_profiling.py"
         )
         cls.ItemProfilingRecommender = cls.mod.ItemProfilingRecommender
 

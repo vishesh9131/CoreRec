@@ -59,8 +59,7 @@ class ExecutionStats:
                 "Average latency per example: " +
                 format_time(
                     time_ms=self.latency_avg_ms),
-                f"Total number of iterations: {
-                    self.num_iters}",
+                f"Total number of iterations: {self.num_iters}",
                 f"Total number of iterations per second (across all threads): {
                     self.iters_per_second:.2f}",
                 "Total time: " +

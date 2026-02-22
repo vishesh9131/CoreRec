@@ -11,7 +11,7 @@ def load_tfidf_module():
     # corerec.engines package
     repo_root = Path(__file__).resolve().parents[2]
     mod_path = repo_root / "corerec" / "engines" / \
-        "contentFilterEngine" / "tfidf_recommender.py"
+        "content_based" / "tfidf_recommender.py"
     spec = spec_from_file_location("tfidf_recommender", str(mod_path))
     module = module_from_spec(spec)
     assert spec.loader is not None

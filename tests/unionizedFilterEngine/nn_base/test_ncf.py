@@ -3,7 +3,7 @@
 NCF (Neural Collaborative Filtering) Test Script
 """
 
-from corerec.engines.unionizedFilterEngine.nn_base.ncf import NCF
+from corerec.engines.collaborative.nn_base.ncf import NCF
 import os
 import sys
 import numpy as np

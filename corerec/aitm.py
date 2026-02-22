@@ -12,7 +12,7 @@ Usage:
     model.train(dataloader, criterion, optimizer, num_epochs)
 """
 
-from corerec.engines.contentFilterEngine.nn_based_algorithms.AITM import AITM
+from corerec.engines.content_based.nn_based_algorithms.AITM import AITM
 
 __all__ = ["AITM"]
 

@@ -721,17 +721,13 @@ class TreeSpec:
             # Always require custom node types to match exactly
             if node_type != self.type:
                 raise ValueError(
-                    f"Type mismatch; " f"expected {
-                        self.type!r}, but got {
-                        node_type!r}.",
+                    f"Type mismatch; expected {self.type!r}, but got {node_type!r}.",
                 )
             flatten_fn = SUPPORTED_NODES[node_type].flatten_fn
             child_pytrees, context = flatten_fn(tree)
             if len(child_pytrees) != self.num_children:
                 raise ValueError(
-                    f"Node arity mismatch; " f"expected {
-                        self.num_children}, but got {
-                        len(child_pytrees)}.", )
+                    f"Node arity mismatch; expected {self.num_children}, but got {len(child_pytrees)}.", )
             if context != self.context:
                 raise ValueError(
                     f"Node context mismatch for custom node type {
@@ -743,9 +739,7 @@ class TreeSpec:
                 self.type in STANDARD_DICT_TYPES and node_type in STANDARD_DICT_TYPES)
             if node_type != self.type and not both_standard_dict:
                 raise ValueError(
-                    f"Node type mismatch; " f"expected {
-                        self.type!r}, but got {
-                        node_type!r}.", )
+                    f"Node type mismatch; expected {self.type!r}, but got {node_type!r}.", )
             if len(tree) != self.num_children:
                 raise ValueError(
                     f"Node arity mismatch; " f"expected {

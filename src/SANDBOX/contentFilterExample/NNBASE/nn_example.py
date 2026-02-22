@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.metrics.pairwise import cosine_similarity
-from corerec.engines.contentFilterEngine.nn_based_algorithms import (
+from corerec.engines.content_based.nn_based_algorithms import (
     NN__TransformerModel, NN__RNNModel
 )
 

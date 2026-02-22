@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from corerec.engines.unionizedFilterEngine.nn_base.DLRM_base import DLRM_base
+from corerec.engines.collaborative.nn_base.DLRM_base import DLRM_base
 from corerec.base_recommender import BaseCorerec
 
 

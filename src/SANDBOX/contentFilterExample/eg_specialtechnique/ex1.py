@@ -1,8 +1,8 @@
 import logging
 from typing import List, Dict, Any
-from corerec.engines.contentFilterEngine.probabilistic_statistical_methods import PRO_LSA
-from corerec.engines.contentFilterEngine.special_techniques import SPE_INTERACTIVE_FILTERING, SPE_DYNAMIC_FILTERING
-from corerec.engines.contentFilterEngine.context_personalization import CON_CONTEXT_AWARE, CON_USER_PROFILING, CON_ITEM_PROFILING
+from corerec.engines.content_based.probabilistic_statistical_methods import PRO_LSA
+from corerec.engines.content_based.special_techniques import SPE_INTERACTIVE_FILTERING, SPE_DYNAMIC_FILTERING
+from corerec.engines.content_based.context_personalization import CON_CONTEXT_AWARE, CON_USER_PROFILING, CON_ITEM_PROFILING
 import pandas as pd
 import chardet
 

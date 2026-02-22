@@ -259,8 +259,7 @@ class ConfigModule(ModuleType):
             changes = kwargs
             assert arg2 is None
         assert isinstance(
-            changes, dict), f"expected `dict` got {
-            type(changes)}"
+            changes, dict), f"expected `dict` got {type(changes)}"
         prior: Dict[str, Any] = {}
         config = self
         dirty = False

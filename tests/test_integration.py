@@ -1,11 +1,11 @@
 import pytest
 import numpy as np
 
-from corerec.engines.unionizedFilterEngine.nn_base.FM_base import FM_base
-from corerec.engines.unionizedFilterEngine.nn_base.FFM_base import FFM_base
-from corerec.engines.unionizedFilterEngine.nn_base.Fibinet_base import Fibinet_base
-from corerec.engines.unionizedFilterEngine.nn_base.FLEN_base import FLEN_base
-from corerec.engines.unionizedFilterEngine.nn_base.FGCNN_base import FGCNN_base
+from corerec.engines.collaborative.nn_base.FM_base import FM_base
+from corerec.engines.collaborative.nn_base.FFM_base import FFM_base
+from corerec.engines.collaborative.nn_base.Fibinet_base import Fibinet_base
+from corerec.engines.collaborative.nn_base.FLEN_base import FLEN_base
+from corerec.engines.collaborative.nn_base.FGCNN_base import FGCNN_base
 
 
 class TestIntegration:

@@ -2301,9 +2301,7 @@ def _get_build_directory(name: str, verbose: bool) -> str:
     if root_extensions_directory is None:
         root_extensions_directory = get_default_build_root()
         cu_str = (
-            "cpu" if torch.version.cuda is None else f'cu{
-                torch.version.cuda.replace(
-                    ".", "")}')  # type: ignore[attr-defined]
+            "cpu" if torch.version.cuda is None else f'cu{torch.version.cuda.replace(".", "")}')  # type: ignore[attr-defined]
         python_version = f"py{sys.version_info.major}{sys.version_info.minor}"
         build_folder = f"{python_version}_{cu_str}"
 
@@ -2625,8 +2623,7 @@ def _write_ninja_file(
         flags.append(f'cuda_cflags = {" ".join(cuda_cflags)}')
         flags.append(f'cuda_post_cflags = {" ".join(cuda_post_cflags)}')
     flags.append(
-        f'cuda_dlink_post_cflags = {
-            " ".join(cuda_dlink_post_cflags)}')
+        f'cuda_dlink_post_cflags = {" ".join(cuda_dlink_post_cflags)}')
     flags.append(f'ldflags = {" ".join(ldflags)}')
 
     # Turn into absolute paths so we can emit them into the ninja build

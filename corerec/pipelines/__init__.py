@@ -1,23 +1,34 @@
 """
-CoreRec Data Pipeline Framework
+Pipelines module for modern recommendation systems.
 
-Composable data transformation pipelines for recommendation systems.
-
-Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+Provides multi-stage pipeline architecture for production RecSys.
 """
 
-from corerec.pipelines.data_pipeline import DataPipeline
-from corerec.pipelines.transformers import (
-    MissingValueHandler,
-    CategoryEncoder,
-    FeatureScaler,
-    DataValidator,
-)
+try:
+    from corerec.pipelines.recommendation_pipeline import (
+        RecommendationPipeline,
+        PipelineStage,
+        RetrievalStage,
+        RankingStage,
+        RerankingStage,
+        DiversityRule,
+        FreshnessRule,
+    )
+except ImportError:
+    RecommendationPipeline = None
+    PipelineStage = None
+    RetrievalStage = None
+    RankingStage = None
+    RerankingStage = None
+    DiversityRule = None
+    FreshnessRule = None
 
 __all__ = [
-    "DataPipeline",
-    "MissingValueHandler",
-    "CategoryEncoder",
-    "FeatureScaler",
-    "DataValidator",
+    "RecommendationPipeline",
+    "PipelineStage",
+    "RetrievalStage",
+    "RankingStage",
+    "RerankingStage",
+    "DiversityRule",
+    "FreshnessRule",
 ]

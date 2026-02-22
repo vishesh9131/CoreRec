@@ -17,7 +17,7 @@ class TestExplainable(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mod = load_module(
-            "corerec/engines/contentFilterEngine/fairness_explainability/explainable.py"
+            "corerec/engines/content_based/fairness_explainability/explainable.py"
         )
         cls.EXPLAINABLE = cls.mod.EXPLAINABLE
 
