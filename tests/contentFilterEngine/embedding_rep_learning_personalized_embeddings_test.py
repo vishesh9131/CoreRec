@@ -10,7 +10,7 @@ BASE_DIR = (
     REPO_ROOT /
     "corerec" /
     "engines" /
-    "contentFilterEngine" /
+    "content_based" /
     "embedding_representation_learning")
 
 
@@ -44,25 +44,25 @@ class TestPersonalizedEmbeddings(unittest.TestCase):
             "corerec" /
             "engines")
         ensure_fake_package(
-            "corerec.engines.contentFilterEngine",
-            REPO_ROOT / "corerec" / "engines" / "contentFilterEngine",
+            "corerec.engines.content_based",
+            REPO_ROOT / "corerec" / "engines" / "content_based",
         )
         ensure_fake_package(
-            "corerec.engines.contentFilterEngine.embedding_representation_learning",
+            "corerec.engines.content_based.embedding_representation_learning",
             BASE_DIR)
 
         # Preload submodules explicitly to avoid importing the entire engines
         # package tree
         doc2vec_mod = load_as(
-            "corerec.engines.contentFilterEngine.embedding_representation_learning.doc2vec",
+            "corerec.engines.content_based.embedding_representation_learning.doc2vec",
             "doc2vec.py",
         )
         load_as(
-            "corerec.engines.contentFilterEngine.embedding_representation_learning.word2vec",
+            "corerec.engines.content_based.embedding_representation_learning.word2vec",
             "word2vec.py",
         )
         cls.mod = load_as(
-            "corerec.engines.contentFilterEngine.embedding_representation_learning.personalized_embeddings",
+            "corerec.engines.content_based.embedding_representation_learning.personalized_embeddings",
             "personalized_embeddings.py",
         )
 

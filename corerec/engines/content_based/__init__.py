@@ -1,47 +1,87 @@
 """
-Content Filter Engine
-=====================
+Content-Based Filtering Engine (Refactored)
+============================================
 
-Content-based recommendation algorithms organized by category.
+This engine provides the TOP 5 most useful content-based methods.
+All other methods are available in the sandbox for development.
 
-This engine provides 40+ content-based filtering algorithms:
-- Traditional ML (TF-IDF, SVM, LightGBM, Decision Trees)
-- Neural Networks (DSSM, MIND, TDM, YouTube DNN, Transformers)
-- Graph-Based (GNN, Semantic Models, Graph Filtering)
-- Embedding Learning (Word2Vec, Doc2Vec)
-- Hybrid & Ensemble (Attention, Ensemble Methods)
-- Fairness & Explainability (Fair Ranking, Explainable AI)
-- Learning Paradigms (Transfer, Meta, Few-shot, Zero-shot)
+Top 5 Production-Ready Methods:
+--------------------------------
+1. TFIDFRecommender - Text-based, classic, reliable
+2. YoutubeDNN - Deep neural network, industry-proven
+3. DSSM - Deep semantic matching (Microsoft)
+4. BERT4Rec - Sequential transformer-based
+5. Word2VecRecommender - Embedding-based, versatile
+
+Other 35+ algorithms moved to sandbox for refinement.
 
 Usage:
 ------
     from corerec.engines import content
     
-    # Popular algorithms - direct access
+    # Text-based (classic)
     model = content.TFIDFRecommender()
-    model = content.AttentionMechanisms()
-    model = content.EnsembleRecommender()
     
-    # By category
-    model = content.nn.DSSM()
-    model = content.nn.YoutubeDNN()
-    model = content.embedding.Word2VecRecommender()
-    model = content.traditional.SVMRecommender()
+    # Deep learning
+    model = content.YoutubeDNN(embedding_dim=256)
+    
+    # Semantic matching
+    model = content.DSSM(embedding_dim=128)
+    
+    # Sequential
+    model = content.BERT4Rec(hidden_dim=256)
+    
+    # Embedding-based
+    model = content.Word2VecRecommender(vector_size=100)
 
-Author: Vishesh Yadav (sciencely98@gmail.com)
+Sandbox Access:
+---------------
+    # For experimental methods
+    from corerec.sandbox.content_based import Transformer, CNN, etc.
+
+Author: Vishesh Yadav
 """
 
 # ============================================================================
-# Most Popular Algorithms - Direct access
+# TOP 5 PRODUCTION-READY METHODS
 # ============================================================================
 
-# TF-IDF (most commonly used)
+# 1. TFIDFRecommender (Classic, Reliable)
 try:
     from .tfidf_recommender import TFIDFRecommender
 except ImportError:
     TFIDFRecommender = None
 
-# Hybrid & Ensemble Methods (very popular)
+# 2. YoutubeDNN (Industry Standard)
+try:
+    from .nn_based_algorithms.Youtube_dnn import YoutubeDNN
+except ImportError:
+    YoutubeDNN = None
+
+# 3. DSSM (Deep Semantic Matching)
+try:
+    from .nn_based_algorithms.DSSM import DSSM
+except ImportError:
+    DSSM = None
+
+# 4. BERT4Rec (Sequential Transformer)
+try:
+    from corerec.engines.bert4rec import BERT4Rec
+except ImportError:
+    BERT4Rec = None
+
+# 5. Word2VecRecommender (Embedding-Based)
+try:
+    from .embedding_representation_learning.word2vec import Word2VecRecommender
+except ImportError:
+    Word2VecRecommender = None
+
+
+# ============================================================================
+# Backward Compatibility - Deprecated but Available
+# ============================================================================
+
+# Keep for backward compat
 try:
     from .hybrid_ensemble_methods import AttentionMechanisms
 except ImportError:
@@ -52,159 +92,140 @@ try:
 except ImportError:
     EnsembleRecommender = None
 
-try:
-    from .hybrid_ensemble_methods import HybridCollaborative
-except ImportError:
-    HybridCollaborative = None
-
-# Neural Network Based (popular)
-try:
-    from .nn_based_algorithms.DSSM import DSSM
-except ImportError:
-    DSSM = None
-
-try:
-    from .nn_based_algorithms.MIND import MIND as ContentMIND
-except ImportError:
-    ContentMIND = None
-
-try:
-    from .nn_based_algorithms.Youtube_dnn import YoutubeDNN
-except ImportError:
-    YoutubeDNN = None
-
-# Embedding Learning (popular)
-try:
-    from .embedding_representation_learning.word2vec import Word2VecRecommender
-except ImportError:
-    Word2VecRecommender = None
-
-try:
-    from .embedding_representation_learning.doc2vec import Doc2VecRecommender
-except ImportError:
-    Doc2VecRecommender = None
 
 # ============================================================================
-# Organized Sub-modules by Algorithm Category
+# Sandbox Access (Development/Experimental)
 # ============================================================================
 
-# Traditional ML algorithms
-from . import traditional_ml_algorithms as traditional
+class SandboxAccess:
+    """
+    Gateway to experimental content-based methods.
+    
+    These are functional but under active development.
+    Use for research/experimentation.
+    """
+    
+    @staticmethod
+    def list_available():
+        """List all sandbox methods."""
+        return [
+            "Traditional ML: SVM, LightGBM, Decision Trees",
+            "Neural Networks: CNN, RNN, Transformer, VAE, Autoencoder",
+            "Graph-Based: GNN, Semantic Models",
+            "Hybrid: Ensemble methods, Attention mechanisms",
+            "Context-Aware: User profiling, Item profiling",
+            "Fairness: Fair ranking, Explainable AI",
+            "Learning: Transfer learning, Meta-learning, Few-shot",
+            "Multi-Modal: Text+Image+Audio fusion",
+            "Others: Doc2Vec, TDM, MIND, AITM",
+            "",
+            "Total: 35+ methods in sandbox",
+            "Import from: corerec.sandbox.content_based"
+        ]
+    
+    @staticmethod
+    def get_info(method_name):
+        """Get info about a sandbox method."""
+        info_map = {
+            "CNN": "Convolutional Neural Network for item features",
+            "Transformer": "Transformer architecture for content understanding",
+            "VAE": "Variational Autoencoder for content representation",
+            "Doc2Vec": "Document embeddings for text-based items",
+            "MIND": "Multi-Interest Network with Dynamic routing",
+        }
+        return info_map.get(method_name, "No info available. Check sandbox docs.")
 
-# Neural Network based algorithms
-from . import nn_based_algorithms as nn
 
-# Context and Personalization
-from . import context_personalization as context
+sandbox = SandboxAccess()
 
-# Embedding and Representation Learning
-from . import embedding_representation_learning as embedding
-
-# Fairness and Explainability
-from . import fairness_explainability as fairness
-
-# Graph-based algorithms
-from . import graph_based_algorithms as graph
-
-# Hybrid and Ensemble methods
-from . import hybrid_ensemble_methods as hybrid
-
-# Learning Paradigms
-from . import learning_paradigms as learning
-
-# Miscellaneous techniques
-from . import miscellaneous_techniques as misc
-
-# Multi-modal and Cross-domain methods
-from . import multi_modal_cross_domain_methods as multimodal
-
-# Other approaches
-from . import other_approaches as other
-
-# Performance and Scalability
-from . import performance_scalability as performance
-
-# Probabilistic and Statistical methods
-from . import probabilistic_statistical_methods as probabilistic
-
-# Special techniques
-from . import special_techniques as special
 
 # ============================================================================
-# __all__ - Export list
+# __all__ - Export List (ONLY Top 5)
 # ============================================================================
 
 __all__ = [
-    # Popular algorithms (direct access)
-    "TFIDFRecommender",
+    # Top 5 Production Methods
+    "TFIDFRecommender",     # Classic text-based
+    "YoutubeDNN",           # Industry standard
+    "DSSM",                 # Semantic matching
+    "BERT4Rec",             # Sequential transformer
+    "Word2VecRecommender",  # Embedding-based
+    
+    # Backward compat (deprecated)
     "AttentionMechanisms",
     "EnsembleRecommender",
-    "HybridCollaborative",
-    "DSSM",
-    "ContentMIND",
-    "YoutubeDNN",
-    "Word2VecRecommender",
-    "Doc2VecRecommender",
-    # Organized sub-modules
-    "traditional",  # Traditional ML (TF-IDF, SVM, etc.)
-    "nn",  # Neural Networks (DSSM, MIND, etc.)
-    "context",  # Context & Personalization
-    "embedding",  # Embedding Learning (Word2Vec, etc.)
-    "fairness",  # Fairness & Explainability
-    "graph",  # Graph-based methods
-    "hybrid",  # Hybrid & Ensemble methods
-    "learning",  # Learning Paradigms
-    "misc",  # Miscellaneous techniques
-    "multimodal",  # Multi-modal methods
-    "other",  # Other approaches
-    "performance",  # Performance & Scalability
-    "probabilistic",  # Probabilistic methods
-    "special",  # Special techniques
+    
+    # Sandbox gateway
+    "sandbox",
 ]
+
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
 
-
-def list_algorithms():
-    """List all available algorithms with direct access."""
-    algorithms = []
-
+def list_methods():
+    """List the top 5 production-ready methods."""
+    methods = []
+    
     if TFIDFRecommender is not None:
-        algorithms.append("TFIDFRecommender")
-    if AttentionMechanisms is not None:
-        algorithms.append("AttentionMechanisms")
-    if EnsembleRecommender is not None:
-        algorithms.append("EnsembleRecommender")
-    if HybridCollaborative is not None:
-        algorithms.append("HybridCollaborative")
-    if DSSM is not None:
-        algorithms.append("DSSM")
-    if ContentMIND is not None:
-        algorithms.append("ContentMIND")
+        methods.append("TFIDFRecommender - Text-based, classic")
     if YoutubeDNN is not None:
-        algorithms.append("YoutubeDNN")
+        methods.append("YoutubeDNN - Deep neural network")
+    if DSSM is not None:
+        methods.append("DSSM - Deep semantic matching")
+    if BERT4Rec is not None:
+        methods.append("BERT4Rec - Sequential transformer")
     if Word2VecRecommender is not None:
-        algorithms.append("Word2VecRecommender")
-    if Doc2VecRecommender is not None:
-        algorithms.append("Doc2VecRecommender")
-
-    return algorithms
+        methods.append("Word2VecRecommender - Embedding-based")
+    
+    return methods
 
 
-def list_categories():
-    """List all algorithm categories."""
-    return [
-        "traditional (Traditional ML)",
-        "nn (Neural Networks)",
-        "context (Context & Personalization)",
-        "embedding (Embedding Learning)",
-        "fairness (Fairness & Explainability)",
-        "graph (Graph-Based)",
-        "hybrid (Hybrid & Ensemble)",
-        "learning (Learning Paradigms)",
-        "multimodal (Multi-Modal)",
-        "probabilistic (Probabilistic Methods)",
-        "special (Special Techniques)",
-    ]
+def get_recommendation():
+    """Get recommendation on which method to use."""
+    return """
+    Recommendation Guide:
+    
+    Use TFIDFRecommender if:
+    - Text-based items (articles, products)
+    - No deep learning needed
+    - Fast baseline required
+    
+    Use YoutubeDNN if:
+    - Large-scale deployment
+    - Multi-stage pipeline
+    - Rich item features
+    
+    Use DSSM if:
+    - Semantic understanding needed
+    - Query-document matching
+    - Deep feature learning
+    
+    Use BERT4Rec if:
+    - Sequential user behavior
+    - Time-aware recommendations
+    - Transformer architecture preferred
+    
+    Use Word2VecRecommender if:
+    - Item-to-item similarity
+    - Embedding-based approach
+    - Medium-sized catalog
+    
+    For other methods, check sandbox.list_available()
+    """
+
+
+def migrate_to_sandbox_notice():
+    """Information about the refactoring."""
+    return """
+    ⚠️  REFACTORING NOTICE
+    
+    35+ methods have been moved to sandbox for quality refinement:
+    - All methods still accessible
+    - Import from: corerec.sandbox.content_based
+    - Top 5 methods remain in main engine
+    - Sandbox methods will graduate when production-ready
+    
+    This ensures clean, battle-tested main engine.
+    """

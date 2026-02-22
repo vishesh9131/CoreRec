@@ -10,10 +10,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import time
 
 # Import your custom recommenders
-from corerec.engines.unionizedFilterEngine.mf_base.matrix_factorization_recommender import (
+from corerec.engines.collaborative.mf_base.matrix_factorization_recommender import (
     MatrixFactorizationRecommender,
 )
-from corerec.engines.contentFilterEngine.tfidf_recommender import TFIDFRecommender
+from corerec.engines.content_based.tfidf_recommender import TFIDFRecommender
 from corerec.engines.hybrid import HybridEngine
 from data_loader import load_movielens_data
 

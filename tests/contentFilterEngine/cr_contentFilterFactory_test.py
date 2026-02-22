@@ -7,7 +7,7 @@ from importlib.util import spec_from_file_location, module_from_spec
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CFE_DIR = REPO_ROOT / "corerec" / "engines" / "contentFilterEngine"
+CFE_DIR = REPO_ROOT / "corerec" / "engines" / "content_based"
 
 
 def ensure_fake_package(package_name: str, path: Path):
@@ -42,16 +42,16 @@ class TestContentFilterFactory(unittest.TestCase):
             REPO_ROOT /
             "corerec" /
             "engines")
-        ensure_fake_package("corerec.engines.contentFilterEngine", CFE_DIR)
+        ensure_fake_package("corerec.engines.content_based", CFE_DIR)
 
         # Preload tfidf module under the expected fully-qualified name
         cls.tfidf_mod = load_as(
-            "corerec.engines.contentFilterEngine.tfidf_recommender",
+            "corerec.engines.content_based.tfidf_recommender",
             "tfidf_recommender.py")
         # Now load factory with proper __package__ so `from .tfidf_recommender`
         # works
         cls.factory_mod = load_as(
-            "corerec.engines.contentFilterEngine.cr_contentFilterFactory",
+            "corerec.engines.content_based.cr_contentFilterFactory",
             "cr_contentFilterFactory.py",
         )
 

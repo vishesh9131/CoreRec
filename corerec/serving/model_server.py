@@ -65,7 +65,7 @@ class ModelServer:
 
     Example:
         from corerec.serving import ModelServer
-        from corerec.engines.unionizedFilterEngine.nn_base.ncf import NCF
+        from corerec.engines.collaborative.nn_base.ncf import NCF
 
         model = NCF.load('models/ncf_model.pkl')
         server = ModelServer(model, host="0.0.0.0", port=8000)
@@ -263,9 +263,7 @@ class ModelServer:
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
         self.logger.info(
-            f"Starting CoreRec Model Server on {
-                self.host}:{
-                self.port}")
+            f"Starting CoreRec Model Server on {self.host}:{self.port}")
         self.logger.info(f"Model: {self.model.__class__.__name__}")
         self.logger.info(f"API Docs: http://{self.host}:{self.port}/docs")
 

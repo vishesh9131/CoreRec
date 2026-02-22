@@ -1,191 +1,187 @@
 """
-Unionized Filter Engine
-=======================
+Collaborative Filtering Engine
+==============================
 
-Collaborative filtering and hybrid recommendation algorithms.
+Production-ready collaborative filtering methods:
 
-This engine provides 50+ collaborative filtering algorithms organized by category:
-- Matrix Factorization (SVD, ALS, NMF, PMF, etc.)
-- Neural Network Based (NCF, DeepFM, AutoInt, DCN, etc.)
-- Graph-Based (LightGCN, DeepWalk, GNN, etc.)
-- Attention Mechanisms (SASRec, Transformers, etc.)
-- Bayesian Methods (BPR, Bayesian MF, etc.)
-- Sequential Models (LSTM, GRU, Caser, etc.)
-- Variational Encoders (VAE, CVAE, etc.)
+1. SAR - Simple Algorithm for Recommendation (fast, no DL needed)
+2. TwoTower - Modern retrieval architecture  
+3. LightGCN - Graph-based collaborative filtering
+4. NCF - Neural Collaborative Filtering
+5. FastRecommender - Quick prototyping
 
 Usage:
 ------
-    from corerec.engines import unionized
+    from corerec.engines.collaborative import SAR
     
-    # Popular algorithms - direct access
-    model = unionized.FastRecommender()
-    model = unionized.SAR()
-    model = unionized.RBM()
-    
-    # Matrix Factorization
-    model = unionized.mf.SVD(n_factors=50)
-    model = unionized.mf.ALS()
-    
-    # Neural Networks
-    model = unionized.nn.NCF(embedding_dim=64)
-    model = unionized.nn.DeepFM()
-    
-    # Graph-Based
-    model = unionized.graph.LightGCN(embedding_dim=64)
+    model = SAR(similarity_type='jaccard')
+    model.fit(train_df)
+    recs = model.recommend_k_items(test_df, top_k=10)
 
-Author: Vishesh Yadav (sciencely98@gmail.com)
+Author: Vishesh Yadav
 """
 
 # ============================================================================
-# Most Popular Algorithms - Direct access
+# LAZY IMPORTS - only load what's requested
 # ============================================================================
 
-try:
-    from .fast import FastRecommender
-except ImportError:
-    FastRecommender = None
+_model_imports = {
+    "SAR": (".sar", "SAR"),
+    "TwoTower": ("corerec.engines.two_tower", "TwoTower"),
+    "LightGCN": (".graph_based_base.lightgcn_base", "LightGCN"),
+    "NCF": (".nn_base.ncf", "NCF"),
+    "FastRecommender": (".fast_recommender", "FastRecommender"),
+    # legacy/deprecated
+    "RBM": (".rbm", "RBM"),
+    "GeoMLC": (".geomlc", "GeoMLC"),
+}
 
-try:
-    from .sar import SAR
-except ImportError:
-    SAR = None
+# alternate import paths for some models
+_fallback_imports = {
+    "NCF": (".nn_base.ncf_base", "NCF"),
+    "FastRecommender": (".fast", "FastRecommender"),
+}
 
-try:
-    from .rbm import RBM
-except ImportError:
-    RBM = None
 
-try:
-    from .rlrmc import RLRMC
-except ImportError:
-    RLRMC = None
+def __getattr__(name):
+    """Lazy import handler."""
+    import importlib
+    
+    if name in _model_imports:
+        mod_path, cls_name = _model_imports[name]
+        try:
+            # handle absolute vs relative imports
+            if mod_path.startswith("corerec"):
+                mod = importlib.import_module(mod_path)
+            else:
+                mod = importlib.import_module(mod_path, __name__)
+            cls = getattr(mod, cls_name)
+            globals()[name] = cls
+            return cls
+        except (ImportError, AttributeError):
+            # try fallback
+            if name in _fallback_imports:
+                fb_path, fb_cls = _fallback_imports[name]
+                try:
+                    mod = importlib.import_module(fb_path, __name__)
+                    cls = getattr(mod, fb_cls)
+                    globals()[name] = cls
+                    return cls
+                except (ImportError, AttributeError):
+                    pass
+            globals()[name] = None
+            return None
+    
+    if name == "sandbox":
+        globals()["sandbox"] = SandboxAccess()
+        return globals()["sandbox"]
+    
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-try:
-    from .geomlc import GeoMLC
-except ImportError:
-    GeoMLC = None
 
-try:
-    from .fast_recommender import FastRecommender as FastRec
-except ImportError:
-    FastRec = None
+def __dir__():
+    return list(__all__)
 
-try:
-    from .sli import SLI
-except ImportError:
-    SLI = None
-
-try:
-    from .sum import SUM
-except ImportError:
-    SUM = None
-
-# ============================================================================
-# Organized Sub-modules by Algorithm Category
-# ============================================================================
-
-# Matrix Factorization algorithms
-from . import mf_base as mf
-
-# Neural Network based algorithms
-from . import nn_base as nn
-
-# Graph-based algorithms
-from . import graph_based_base as graph
-
-# Attention mechanism based algorithms
-from . import attention_mechanism_base as attention
-
-# Bayesian methods
-from . import bayesian_method_base as bayesian
-
-# Sequential models
-from . import sequential_model_base as sequential
-
-# Variational encoders
-from . import variational_encoder_base as vae
-
-# Regularization based methods
-try:
-    from . import regularization_based_base as regularization
-except ImportError:
-    regularization = None
 
 # ============================================================================
-# Legacy/Compatibility
+# Sandbox Access
 # ============================================================================
 
-try:
-    from .base_recommender import BaseRecommender as UnionizedBaseRecommender
-except ImportError:
-    UnionizedBaseRecommender = None
+class SandboxAccess:
+    """Gateway to experimental methods under development."""
+    
+    @staticmethod
+    def list_available():
+        """List all sandbox methods."""
+        return [
+            "Matrix Factorization: SVD, ALS, NMF, PMF, BPR",
+            "Neural Networks: DeepFM, DCN, AutoInt, PNN, xDeepFM",
+            "Sequential: GRU, LSTM, Caser, SASRec, NextItNet",
+            "Attention: Transformer-based, DIEN, DIN, BST",
+            "Graph: DeepWalk, GNN variants",
+            "Variational: VAE, BiVAE, CVAE",
+            "Bayesian: Bayesian MF, MCMC methods",
+            "Others: RLRMC, SLI, SUM, etc.",
+            "",
+            "Total: 45+ methods in sandbox",
+            "Import from: corerec.sandbox.collaborative"
+        ]
+    
+    @staticmethod
+    def get_info(method_name):
+        """Get info about a sandbox method."""
+        info_map = {
+            "DeepFM": "Deep Factorization Machine - combines FM with deep learning",
+            "DCN": "Deep & Cross Network - explicit feature crossing",
+            "SASRec": "Self-Attentive Sequential Rec - transformer for sequences",
+            "GRU": "GRU-based sequential recommendation",
+            "DeepWalk": "Random walk based graph embeddings",
+        }
+        return info_map.get(method_name, "No info available. Check sandbox docs.")
 
-try:
-    from .cornac_bpr import BPR as CornacBPR
-except ImportError:
-    CornacBPR = None
 
 # ============================================================================
-# __all__ - Export list
+# __all__ - Export List
 # ============================================================================
 
 __all__ = [
-    # Popular algorithms (direct access)
-    "FastRecommender",
-    "FastRec",
+    # Production methods
     "SAR",
+    "TwoTower",
+    "LightGCN",
+    "NCF",
+    "FastRecommender",
+    # Legacy
     "RBM",
-    "RLRMC",
     "GeoMLC",
-    "SLI",
-    "SUM",
-    # Organized sub-modules
-    "mf",  # Matrix Factorization (SVD, ALS, NMF, etc.)
-    "nn",  # Neural Networks (NCF, DeepFM, etc.)
-    "graph",  # Graph-based (LightGCN, GNN, etc.)
-    "attention",  # Attention mechanisms (SASRec, etc.)
-    "bayesian",  # Bayesian methods (BPR, etc.)
-    "sequential",  # Sequential models (LSTM, GRU, etc.)
-    "vae",  # Variational encoders
-    "regularization",  # Regularization methods
-    # Base classes
-    "UnionizedBaseRecommender",
-    "CornacBPR",
+    # Sandbox
+    "sandbox",
 ]
+
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
 
-
-def list_algorithms():
-    """List all available algorithms in this engine."""
-    algorithms = []
-
-    # Direct access algorithms
-    if FastRecommender is not None:
-        algorithms.append("FastRecommender")
-    if SAR is not None:
-        algorithms.append("SAR")
-    if RBM is not None:
-        algorithms.append("RBM")
-    if RLRMC is not None:
-        algorithms.append("RLRMC")
-    if GeoMLC is not None:
-        algorithms.append("GeoMLC")
-
-    return algorithms
+def list_methods():
+    """List the production-ready methods."""
+    available = []
+    for name in ["SAR", "TwoTower", "LightGCN", "NCF", "FastRecommender"]:
+        try:
+            if __getattr__(name) is not None:
+                available.append(name)
+        except (ImportError, AttributeError):
+            pass
+    return available
 
 
-def list_categories():
-    """List all algorithm categories."""
-    return [
-        "mf (Matrix Factorization)",
-        "nn (Neural Networks)",
-        "graph (Graph-Based)",
-        "attention (Attention Mechanisms)",
-        "bayesian (Bayesian Methods)",
-        "sequential (Sequential Models)",
-        "vae (Variational Encoders)",
-        "regularization (Regularization Methods)",
-    ]
+def get_recommendation():
+    """Get recommendation on which method to use."""
+    return """
+    Recommendation Guide:
+    
+    Use SAR if:
+    - Quick baseline needed
+    - Simple item-to-item similarity
+    - No deep learning infrastructure
+    
+    Use TwoTower if:
+    - Large item catalog (>100K items)
+    - Need real-time serving
+    - First stage of pipeline
+    
+    Use LightGCN if:
+    - Have user-item graph structure
+    - Want to leverage network effects
+    - Social recommendation scenario
+    
+    Use NCF if:
+    - Learning collaborative patterns
+    - Mid-size dataset
+    - Need interpretable embeddings
+    
+    Use FastRecommender if:
+    - Rapid prototyping
+    - Simple embedding-based model
+    - Educational/demo purposes
+    """

@@ -3,7 +3,7 @@
 DeepFM Test Script
 """
 
-from corerec.engines.unionizedFilterEngine.nn_base.DeepFM_base import DeepFMModel
+from corerec.engines.collaborative.nn_base.DeepFM_base import DeepFMModel
 import os
 import sys
 import numpy as np

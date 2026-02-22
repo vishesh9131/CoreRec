@@ -103,8 +103,7 @@ class Connector:
         print(f"🎯 Connector initialized:")
         print(f"   Function: {predict_function.__name__}")
         print(
-            f"   Frontend: {frontend} ({
-                get_frontend_info(frontend)['name']})")
+            f"   Frontend: {frontend} ({get_frontend_info(frontend)['name']})")
         print(f"   Title: {title}")
 
     def get_recommendations(
@@ -132,8 +131,7 @@ class Connector:
 
             if self.debug:
                 print(
-                    f"🔍 Calling {
-                        self.predict_function.__name__} with args: {func_args}")
+                    f"🔍 Calling {self.predict_function.__name__} with args: {func_args}")
 
             # Call user's prediction function
             raw_recommendations = self.predict_function(**func_args)
@@ -144,8 +142,7 @@ class Connector:
 
             if self.debug:
                 print(
-                    f"✅ Generated {
-                        len(formatted_recommendations)} recommendations for user {user_id}")
+                    f"✅ Generated {len(formatted_recommendations)} recommendations for user {user_id}")
 
             return formatted_recommendations
 

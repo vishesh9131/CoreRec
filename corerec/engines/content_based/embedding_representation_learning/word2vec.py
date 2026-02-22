@@ -1,4 +1,4 @@
-# corerec/engines/contentFilterEngine/embedding_representation_learning/word2vec.py
+# corerec/engines/content_based/embedding_representation_learning/word2vec.py
 
 import torch
 

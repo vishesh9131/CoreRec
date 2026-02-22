@@ -97,8 +97,8 @@ git checkout -b fix/your-bug-fix
 ### Adding New Algorithms
 
 1. Place the algorithm in the appropriate engine:
-   - `corerec/engines/unionizedFilterEngine/` for collaborative filtering
-   - `corerec/engines/contentFilterEngine/` for content-based
+   - `corerec/engines/collaborative/` for collaborative filtering
+   - `corerec/engines/content_based/` for content-based
    - `corerec/engines/` for deep learning models
 
 2. Ensure it inherits from `BaseRecommender`

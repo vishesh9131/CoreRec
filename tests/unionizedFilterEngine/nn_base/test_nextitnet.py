@@ -3,7 +3,7 @@
 NextItNet Test Script
 """
 
-from corerec.engines.unionizedFilterEngine.nn_base.nextitnet import NextItNetModel
+from corerec.engines.collaborative.nn_base.nextitnet import NextItNetModel
 import os
 import sys
 import numpy as np
