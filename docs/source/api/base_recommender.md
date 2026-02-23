@@ -34,7 +34,7 @@ class BaseRecommender(ABC):
 
 ## Initialization
 
-```python
+```
 BaseRecommender(
     name: Optional[str] = None,
     trainable: bool = True,
