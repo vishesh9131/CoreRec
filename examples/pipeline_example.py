@@ -118,7 +118,7 @@ business_reranker.add_blocklist([999, 998])  # blocked items
 
 # === Build Pipeline ===
 
-from corerec.pipeline import RecommendationPipeline, PipelineConfig
+from corerec.pipelines import RecommendationPipeline, PipelineConfig
 
 pipeline = RecommendationPipeline(
     config=PipelineConfig(

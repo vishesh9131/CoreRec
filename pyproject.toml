@@ -119,6 +119,9 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
 ]
+markers = [
+    "docs_build: marks tests that run full documentation builds (deselect with '-m \"not docs_build\"')",
+]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]

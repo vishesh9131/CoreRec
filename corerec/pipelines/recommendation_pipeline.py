@@ -182,11 +182,13 @@ class FreshnessRule:
         return result
 
 
-class RecommendationPipeline:
+class StagePipeline:
     """
-    Full pipeline orchestrator.
-    
-    This is what gets called at inference time.
+    Stage-based pipeline orchestrator.
+
+    A simpler pipeline that chains PipelineStage instances sequentially.
+    For the full-featured orchestrator with retrieval/ranking/reranking
+    integration, use RecommendationPipeline from corerec.pipelines.orchestrator.
     """
     
     def __init__(self, config: Dict):

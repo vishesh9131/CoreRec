@@ -21,7 +21,8 @@ def load_pipeline_config(
     Returns:
         Configuration dictionary
     
-    Example YAML:
+    Example YAML::
+
         pipeline:
           name: production_v1
           
@@ -87,7 +88,7 @@ def build_pipeline_from_config(config: Dict[str, Any]) -> "RecommendationPipelin
     Returns:
         Configured RecommendationPipeline
     """
-    from .base import RecommendationPipeline, PipelineConfig
+    from .orchestrator import RecommendationPipeline, PipelineConfig
     
     pipeline_config = config.get('pipeline', config)
     

@@ -24,7 +24,8 @@ class PairwiseRanker(BaseRanker):
     Final ranking is computed by aggregating pairwise comparisons
     (e.g., via Bradley-Terry model or simple win counting).
     
-    Example:
+    Example::
+
         ranker = PairwiseRanker(
             compare_fn=my_pairwise_model.predict_proba
         )

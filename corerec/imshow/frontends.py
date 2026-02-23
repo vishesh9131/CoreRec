@@ -74,10 +74,10 @@ def get_frontend_info(frontend: str) -> Dict[str, Any]:
     """
     frontends = available_frontends()
     if frontend not in frontends:
+        available = list(frontends.keys())
         raise ValueError(
-            f"Frontend '{frontend}' not available. Choose from: {
-                list(
-                    frontends.keys())}")
+            f"Frontend '{frontend}' not available. Choose from: {available}"
+        )
 
     return frontends[frontend]
 

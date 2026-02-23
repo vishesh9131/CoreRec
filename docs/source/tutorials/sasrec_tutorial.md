@@ -189,6 +189,5 @@ Compare SASRec with similar models on your dataset.
 
 ## Further Reading
 
-- [SASRec API Reference](../api/engines.rst#sasrec)
+- [SASRec API Reference](../api/engines.md)
 - Paper: See original paper for details
-- [Code Examples](../examples/sasrec_advanced.md)

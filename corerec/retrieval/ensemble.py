@@ -26,11 +26,12 @@ class EnsembleRetriever(BaseRetriever):
     one retriever might fail (cold start, sparse history, etc).
     
     Fusion strategies:
-    - 'union': combine all candidates, dedupe, keep max score
-    - 'rrf': Reciprocal Rank Fusion (position-based, score-agnostic)
-    - 'weighted': weighted sum of normalized scores
+    - ``union`` -- combine all candidates, dedupe, keep max score
+    - ``rrf`` -- Reciprocal Rank Fusion (position-based, score-agnostic)
+    - ``weighted`` -- weighted sum of normalized scores
     
-    Example:
+    Example::
+
         ensemble = EnsembleRetriever(
             retrievers=[
                 ("collab", collaborative_retriever, 1.0),

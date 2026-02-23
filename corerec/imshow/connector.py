@@ -25,7 +25,8 @@ class Connector:
     """
     Main connector class for plugging recommendation functions into frontends.
 
-    Example:
+    Example::
+
         def my_recommender(user_id, num_items=10):
             # Your recommendation logic
             return [
@@ -76,10 +77,10 @@ class Connector:
         validate_prediction_function(predict_function)
 
         if frontend not in available_frontends():
+            available = list(available_frontends().keys())
             raise ValueError(
-                f"Frontend '{frontend}' not available. Choose from: {
-                    list(
-                        available_frontends().keys())}")
+                f"Frontend '{frontend}' not available. Choose from: {available}"
+            )
 
         # Store configuration
         self.frontend = frontend
