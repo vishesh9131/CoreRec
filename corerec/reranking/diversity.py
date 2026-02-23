@@ -21,12 +21,13 @@ class DiversityReranker(BaseReranker):
     iteratively select items that are both relevant AND different
     from already selected items.
     
-    Trade-off controlled by lambda_:
-    - lambda_ = 1.0: pure relevance (no diversity)
-    - lambda_ = 0.0: pure diversity (ignore relevance)
-    - lambda_ = 0.5: balanced
+    Trade-off controlled by ``lambda_``:
+    - ``lambda_`` = 1.0 -- pure relevance (no diversity)
+    - ``lambda_`` = 0.0 -- pure diversity (ignore relevance)
+    - ``lambda_`` = 0.5 -- balanced
     
-    Example:
+    Example::
+
         reranker = DiversityReranker(
             lambda_=0.7,
             similarity_fn=cosine_similarity,  # how to measure item similarity
@@ -156,7 +157,8 @@ class CategorySpreadReranker(BaseReranker):
     Ensures no more than max_per_category consecutive items
     from the same category. Simpler than MMR, faster too.
     
-    Example:
+    Example::
+
         reranker = CategorySpreadReranker(
             category_fn=lambda item: item_categories[item],
             max_consecutive=2

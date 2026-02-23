@@ -12,22 +12,19 @@ from typing import Any, Dict, List, Optional
 
 @dataclass
 class Explanation:
-    """
-    An explanation for a recommendation.
-    
-    Attributes:
-        item_id: the item being explained
-        text: human-readable explanation
-        explanation_type: category of explanation
-        confidence: how confident we are in this explanation
-        supporting_items: items that support this explanation
-        features: key features that drove the recommendation
-    """
+    """An explanation for a recommendation."""
+
+    #: the item being explained
     item_id: Any
+    #: human-readable explanation
     text: str
+    #: category of explanation
     explanation_type: str = "generic"
+    #: how confident we are in this explanation
     confidence: float = 1.0
+    #: items that support this explanation
     supporting_items: List[Any] = field(default_factory=list)
+    #: key features that drove the recommendation
     features: Dict[str, Any] = field(default_factory=dict)
     
     def __repr__(self) -> str:

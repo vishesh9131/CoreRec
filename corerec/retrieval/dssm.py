@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from typing import Dict, List, Tuple, Any, Union, Optional
 
-from corerec.retrieval.base_retriever import BaseRetriever
+from corerec.retrieval.model_retriever import BaseRetriever
 from corerec.core.towers import MLPTower
 
 

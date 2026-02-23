@@ -27,7 +27,8 @@ class FeatureCrossRanker(BaseRanker):
     - Learned crosses (if you have a trained DCN model)
     - Simple polynomial features
     
-    Example:
+    Example::
+
         ranker = FeatureCrossRanker(
             feature_extractor=extract_user_item_features,
             crosses=[

@@ -17,7 +17,8 @@ class GenerativeExplainer(BaseExplainer):
     Can use any LLM (OpenAI, local models, etc) to generate
     natural, context-aware explanations.
     
-    Example:
+    Example::
+
         explainer = GenerativeExplainer(
             llm=openai_client,
             item_context_fn=get_item_info,

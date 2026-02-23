@@ -13,18 +13,15 @@ import numpy as np
 
 @dataclass
 class Candidate:
-    """
-    A single candidate item from retrieval.
-    
-    Attributes:
-        item_id: unique identifier for the item
-        score: retrieval score (higher = more relevant)
-        source: which retriever produced this candidate
-        metadata: optional extra info (embeddings, features, etc)
-    """
+    """A single candidate item from retrieval."""
+
+    #: unique identifier for the item
     item_id: Any
+    #: retrieval score (higher = more relevant)
     score: float
+    #: which retriever produced this candidate
     source: str = "unknown"
+    #: optional extra info (embeddings, features, etc)
     metadata: Dict[str, Any] = field(default_factory=dict)
     
     def __lt__(self, other: "Candidate") -> bool:
@@ -37,18 +34,15 @@ class Candidate:
 
 @dataclass
 class RetrievalResult:
-    """
-    Result from a retrieval operation.
-    
-    Attributes:
-        candidates: list of retrieved candidates
-        query_id: identifier for the query (user_id, session_id, etc)
-        retriever_name: name of the retriever that produced this
-        timing_ms: how long retrieval took in milliseconds
-    """
+    """Result from a retrieval operation."""
+
+    #: list of retrieved candidates
     candidates: List[Candidate]
+    #: identifier for the query (user_id, session_id, etc)
     query_id: Any = None
+    #: name of the retriever that produced this
     retriever_name: str = "unknown"
+    #: how long retrieval took in milliseconds
     timing_ms: float = 0.0
     
     def __len__(self) -> int:

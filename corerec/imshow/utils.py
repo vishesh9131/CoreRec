@@ -196,6 +196,9 @@ def create_sample_data(
             minutes = random.randint(2, 30)
             seconds = random.randint(0, 59)
 
+            days_ago = random.randint(1, 30)
+            likes = random.randint(100, 50000)
+
             sample_data.append(
                 {
                     "id": f"video_{i + 1}",
@@ -203,16 +206,9 @@ def create_sample_data(
                     "channel": random.choice(channels),
                     "category": random.choice(categories),
                     "views": f"{views:,}",
-                    "duration": f"{minutes}:{
-                        seconds:02d}",
-                    "uploaded": f"{
-                        random.randint(
-                            1,
-                            30)} days ago",
-                    "likes": f"{
-                        random.randint(
-                            100,
-                            50000):,            }",
+                    "duration": f"{minutes}:{seconds:02d}",
+                    "uploaded": f"{days_ago} days ago",
+                    "likes": f"{likes:,}",
                 })
 
     elif frontend == "netflix":
@@ -266,12 +262,8 @@ def create_sample_data(
 
 def generate_user_id() -> str:
     """Generate a random user ID."""
-    return f"user_{
-        ''.join(
-            random.choices(
-                string.ascii_lowercase +
-                string.digits,
-                k=8))}"
+    suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    return f"user_{suffix}"
 
 
 def parse_function_args(func: Callable, **kwargs) -> Dict[str, Any]:
@@ -420,15 +412,13 @@ def get_mock_interaction_data(
     for i in range(num_interactions):
         interactions.append(
             {
-                "user_id": user_id, "item_id": f"item_{
-                    random.randint(
-                        1, 100)}", "action": random.choice(actions), "timestamp": f"2024-01-{
-                    random.randint(
-                        1, 30):02d}T{
-                            random.randint(
-                                0, 23):02d}:{
-                                    random.randint(
-                                        0, 59):02d}:00", "score": random.uniform(
-                                            0.1, 1.0), })
+                "user_id": user_id,
+                "item_id": f"item_{random.randint(1, 100)}",
+                "action": random.choice(actions),
+                "timestamp": "2024-01-{:02d}T{:02d}:{:02d}:00".format(
+                    random.randint(1, 30), random.randint(0, 23), random.randint(0, 59)
+                ),
+                "score": random.uniform(0.1, 1.0),
+            })
 
     return interactions

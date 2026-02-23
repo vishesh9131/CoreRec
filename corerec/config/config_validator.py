@@ -87,28 +87,28 @@ class ConfigValidator:
 
             # Check type
             if not isinstance(value, rule["type"]):
+                expected = rule['type'].__name__
+                actual = type(value).__name__
                 self.errors.append(
-                    f"Key '{key}' has wrong type: expected {
-                        rule['type'].__name__}, got {
-                        type(value).__name__}")
+                    f"Key '{key}' has wrong type: expected {expected}, got {actual}")
                 continue
 
             # Check range for numbers
             if rule["min"] is not None and value < rule["min"]:
+                min_val = rule['min']
                 self.errors.append(
-                    f"Key '{key}' value {value} is below minimum {
-                        rule['min']}")
+                    f"Key '{key}' value {value} is below minimum {min_val}")
 
             if rule["max"] is not None and value > rule["max"]:
+                max_val = rule['max']
                 self.errors.append(
-                    f"Key '{key}' value {value} is above maximum {
-                        rule['max']}")
+                    f"Key '{key}' value {value} is above maximum {max_val}")
 
             # Check allowed values
             if rule["allowed"] is not None and value not in rule["allowed"]:
+                allowed = rule['allowed']
                 self.errors.append(
-                    f"Key '{key}' value {value} not in allowed values {
-                        rule['allowed']}")
+                    f"Key '{key}' value {value} not in allowed values {allowed}")
 
         return len(self.errors) == 0
 

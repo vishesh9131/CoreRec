@@ -1,7 +1,0 @@
-numpy
-matplotlib
-pandas
-networkx
-scikit-learn
-torch
-torchvision

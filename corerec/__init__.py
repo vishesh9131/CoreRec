@@ -20,7 +20,7 @@ Author: Vishesh Yadav (sciencely98@gmail.com)
 License: Research purposes only
 """
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 __author__ = "Vishesh Yadav"
 __email__ = "sciencely98@gmail.com"
 
@@ -48,7 +48,7 @@ def __getattr__(name):
     # submodules that should be importable
     _submodules = {
         "engines",
-        "core", 
+        "core",
         "utils",
         "metrics",
         "evaluation",
@@ -59,10 +59,15 @@ def __getattr__(name):
         "trainer",
         "pipelines",
         "retrieval",
+        "ranking",
+        "reranking",
         "multimodal",
+        "embeddings",
+        "explanation",
         "sandbox",
         "api",
-        "models",
+        "hybrid",
+        "serving",
     }
     
     if name in _submodules:
@@ -215,8 +220,14 @@ __all__ = [
     "visualization",
     "pipelines",
     "retrieval",
+    "ranking",
+    "reranking",
     "multimodal",
+    "embeddings",
+    "explanation",
     "sandbox",
+    "hybrid",
+    "serving",
     # Base classes
     "BaseRecommender",
     "BaseCorerec",

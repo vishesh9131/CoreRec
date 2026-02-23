@@ -22,7 +22,8 @@ class PointwiseRanker(BaseRanker):
     - A simple callable that takes features and returns score
     - A weighted combination of feature values
     
-    Example:
+    Example::
+
         # with a trained model
         ranker = PointwiseRanker(model=trained_model)
         ranker.fit(feature_extractor=my_feature_fn)

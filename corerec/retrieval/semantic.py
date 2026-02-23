@@ -19,7 +19,8 @@ class SemanticRetriever(BaseRetriever):
     Encodes item descriptions (or any text) into dense vectors,
     builds an index, and retrieves via approximate nearest neighbor search.
     
-    Example:
+    Example::
+
         retriever = SemanticRetriever(
             encoder="sentence-transformers/all-MiniLM-L6-v2"
         )

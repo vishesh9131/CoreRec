@@ -18,12 +18,13 @@ class MultimodalEncoder:
     - Music: artist (text) + audio features + genre
     
     Fusion strategies:
-    - 'concat': concatenate all embeddings
-    - 'average': average embeddings (requires same dim)
-    - 'weighted': weighted average
-    - 'attention': learned attention weights (requires training)
+    - ``concat`` -- concatenate all embeddings
+    - ``average`` -- average embeddings (requires same dim)
+    - ``weighted`` -- weighted average
+    - ``attention`` -- learned attention weights (requires training)
     
-    Example:
+    Example::
+
         encoder = MultimodalEncoder(
             encoders={
                 'text': text_encoder,

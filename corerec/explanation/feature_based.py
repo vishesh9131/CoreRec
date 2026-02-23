@@ -20,7 +20,8 @@ class FeatureExplainer(BaseExplainer):
     - "Similar to items in your history"
     - "Matches your preferred price range"
     
-    Example:
+    Example::
+
         explainer = FeatureExplainer(
             item_features=item_feature_dict,
             user_preferences=user_pref_dict,

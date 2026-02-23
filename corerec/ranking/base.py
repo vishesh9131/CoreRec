@@ -16,22 +16,19 @@ from corerec.retrieval.base import Candidate, RetrievalResult
 
 @dataclass
 class RankedCandidate:
-    """
-    A candidate with ranking score and optional auxiliary predictions.
-    
-    Attributes:
-        item_id: unique identifier
-        score: ranking score (higher = better)
-        retrieval_score: original score from retrieval
-        rank: position in ranked list (1-indexed)
-        predictions: multi-task predictions (e.g., p(click), p(purchase))
-        features: feature values used for scoring
-    """
+    """A candidate with ranking score and optional auxiliary predictions."""
+
+    #: unique identifier
     item_id: Any
+    #: ranking score (higher = better)
     score: float
+    #: original score from retrieval
     retrieval_score: float = 0.0
+    #: position in ranked list (1-indexed)
     rank: int = 0
+    #: multi-task predictions (e.g., p(click), p(purchase))
     predictions: Dict[str, float] = field(default_factory=dict)
+    #: feature values used for scoring
     features: Dict[str, Any] = field(default_factory=dict)
     
     def __lt__(self, other: "RankedCandidate") -> bool:
@@ -43,18 +40,15 @@ class RankedCandidate:
 
 @dataclass
 class RankingResult:
-    """
-    Output from ranking operation.
-    
-    Attributes:
-        candidates: ranked list (best first)
-        query_id: identifier for the query
-        ranker_name: which ranker produced this
-        timing_ms: ranking latency
-    """
+    """Output from ranking operation."""
+
+    #: ranked list (best first)
     candidates: List[RankedCandidate]
+    #: identifier for the query
     query_id: Any = None
+    #: which ranker produced this
     ranker_name: str = "unknown"
+    #: ranking latency
     timing_ms: float = 0.0
     
     def __len__(self) -> int:

@@ -22,18 +22,15 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PipelineConfig:
-    """
-    Configuration for a recommendation pipeline.
-    
-    Attributes:
-        retrieval_k: candidates to retrieve per retriever
-        ranking_k: candidates to pass to ranking
-        final_k: final recommendations to return
-        fusion_strategy: how to merge retrieval results
-    """
+    """Configuration for a recommendation pipeline."""
+
+    #: candidates to retrieve per retriever
     retrieval_k: int = 500
+    #: candidates to pass to ranking
     ranking_k: int = 100
+    #: final recommendations to return
     final_k: int = 10
+    #: how to merge retrieval results
     fusion_strategy: str = "rrf"
 
 
@@ -81,7 +78,8 @@ class RecommendationPipeline:
     into a single cohesive pipeline. Handles data flow, timing,
     and provides debugging info.
     
-    Example:
+    Example::
+
         pipeline = RecommendationPipeline()
         
         # add retrieval sources (multiple is fine)

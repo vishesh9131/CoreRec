@@ -22,11 +22,12 @@ class FairnessReranker(BaseReranker):
     respecting relevance.
     
     Fairness objectives:
-    - 'proportional': exposure proportional to group size
-    - 'equal': equal exposure across groups
-    - 'min_exposure': ensure minimum exposure per group
+    - ``proportional`` -- exposure proportional to group size
+    - ``equal`` -- equal exposure across groups
+    - ``min_exposure`` -- ensure minimum exposure per group
     
-    Example:
+    Example::
+
         reranker = FairnessReranker(
             group_fn=lambda item: item_to_seller[item],
             objective='proportional',
