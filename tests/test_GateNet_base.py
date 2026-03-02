@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from pathlib import Path
 
-from corerec.engines.unionizedFilterEngine.nn_base.GateNet_base import GateNet_base
+from corerec.engines.collaborative.nn_base.GateNet_base import GateNet_base
 
 
 class TestGateNet:

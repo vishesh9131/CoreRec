@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 project = "CoreRec"
 copyright = "2024, Vishesh Yadav"
 author = "Vishesh Yadav"
-release = "1.0.0"
+release = "0.5.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -27,7 +27,17 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.todo",
     "sphinx.ext.coverage",
+    "sphinx.ext.autosummary",
+    "sphinx_copybutton",
     "myst_parser",
+    "sphinx_design",
+]
+
+# Mock heavy imports that may not be installed during doc build
+autodoc_mock_imports = [
+    "torch", "torchvision", "transformers", "scipy", "sklearn",
+    "faiss", "annoy", "flask", "fastapi", "uvicorn", "yaml",
+    "sentence_transformers", "matplotlib", "seaborn",
 ]
 
 templates_path = ["_templates"]
@@ -57,7 +67,6 @@ napoleon_type_aliases = None
 autodoc_default_options = {
     "members": True,
     "member-order": "bysource",
-    "special-members": "__init__",
     "undoc-members": True,
     "exclude-members": "__weakref__",
 }
@@ -84,10 +93,7 @@ myst_enable_extensions = [
     "tasklist",
 ]
 
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 
 # Theme options for sphinx_book_theme
 html_theme_options = {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# quickstart for contentFilterEngine
+# quickstart for content_based
 
 import os
 import sys
@@ -14,7 +14,7 @@ from importlib import import_module
 def run_tfidf():
     try:
         # import tfidf directly by path through package
-        mod = import_module("corerec.engines.contentFilterEngine.tfidf_recommender")
+        mod = import_module("corerec.engines.content_based.tfidf_recommender")
         TFIDF = getattr(mod, "TFIDFRecommender")
     except Exception as e:
         print("TFIDFRecommender not available:", e)
@@ -40,7 +40,7 @@ def run_tfidf():
 
 def run_factory():
     try:
-        mod = import_module("corerec.engines.contentFilterEngine.cr_contentFilterFactory")
+        mod = import_module("corerec.engines.content_based.cr_contentFilterFactory")
         CFF = getattr(mod, "ContentFilterFactory")
     except Exception as e:
         print("ContentFilterFactory not available:", e)

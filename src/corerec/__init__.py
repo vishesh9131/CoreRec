@@ -54,4 +54,4 @@ corerec (replaced core_rec to corerec)
 # from .cf_engine import *
 # from .uf_engine import *
 
-# from .unionizedFilterEngine import unionizedFilterEngine as UF_Engine
+# from .collaborative import collaborative as UF_Engine

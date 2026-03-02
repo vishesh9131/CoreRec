@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.metrics.pairwise import cosine_similarity
-from corerec.engines.contentFilterEngine.multi_modal_cross_domain_methods import (
+from corerec.engines.content_based.multi_modal_cross_domain_methods import (
     MUL_MULTI_MODAL
 )
 

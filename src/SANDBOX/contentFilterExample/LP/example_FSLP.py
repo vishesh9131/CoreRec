@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MultiLabelBinarizer
-from corerec.engines.contentFilterEngine.learning_paradigms import LEA_FEW_SHOT
+from corerec.engines.content_based.learning_paradigms import LEA_FEW_SHOT
 # Learning Paradigms: While this example uses FewShotLearner, 
 # you can similarly utilize ZeroShotLearner, TransferLearningLearner, 
 # or MetaLearner by importing and initializing them accordingly.

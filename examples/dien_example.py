@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from corerec.engines.unionizedFilterEngine.nn_base.DIEN_base import DIEN_base
+from corerec.engines.collaborative.nn_base.DIEN_base import DIEN_base
 
 # Set random seed for reproducibility
 np.random.seed(42)

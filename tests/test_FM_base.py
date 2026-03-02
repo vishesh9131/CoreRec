@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from pathlib import Path
 
-from corerec.engines.unionizedFilterEngine.nn_base.FM_base import FM_base
+from corerec.engines.collaborative.nn_base.FM_base import FM_base
 
 
 class TestFM:

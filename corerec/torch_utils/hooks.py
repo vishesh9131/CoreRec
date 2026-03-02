@@ -153,9 +153,7 @@ class BackwardHook:
 
                 if len(out) != len(res):
                     raise RuntimeError(
-                        "Backward hook returned an invalid number of grad_input, " f"got {
-                            len(out)}, but expected {
-                            len(res)}")
+                        f"Backward hook returned an invalid number of grad_input, got {len(out)}, but expected {len(res)}")
 
                 res = out
 

@@ -57,13 +57,14 @@ class DataPipeline:
 
     Chains multiple transformers together for clean data processing.
 
-    Architecture:
+    Architecture::
 
-    Raw Data → [Transformer 1] → [Transformer 2] → ... → Clean Data
-         ↓           ↓                ↓                     ↓
-    Missing Values  Encoding      Scaling            Ready for Model
+        Raw Data → [Transformer 1] → [Transformer 2] → ... → Clean Data
+             ↓           ↓                ↓                     ↓
+        Missing Values  Encoding      Scaling            Ready for Model
 
-    Example:
+    Example::
+
         from corerec.pipelines import DataPipeline
         from corerec.pipelines import MissingValueHandler, CategoryEncoder
 
@@ -101,7 +102,8 @@ class DataPipeline:
         Returns:
             self for method chaining
 
-        Example:
+        Example::
+
             pipeline.add(MissingValueHandler()).add(CategoryEncoder())
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)

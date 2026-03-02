@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List
 import pandas as pd
 
-from corerec.engines.contentFilterEngine.probabilistic_statistical_methods import PRO_LSA
+from corerec.engines.content_based.probabilistic_statistical_methods import PRO_LSA
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

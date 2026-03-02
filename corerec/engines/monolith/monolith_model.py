@@ -84,7 +84,6 @@ class MonolithModel(BaseModel):
 
             vocab_size = feature_config.get("vocab_size", 100000)
             dim = feature_config.get("dim", self.embedding_dim)
-
             if self.use_collisionless and vocab_size > 1000000:
                 # Use collisionless embeddings for very large vocabularies
                 self.embedding_tables[feature_name] = CollisionlessEmbedding(

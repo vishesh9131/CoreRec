@@ -274,14 +274,7 @@ def print_report(reports: List[AlgorithmTestReport]):
 
     # Print per algorithm summary
     lines = []
-    header = f"{
-        'ALGORITHM':30} {
-        'TOTAL':>5} {
-            'PASS':>5} {
-                'FAIL':>5} {
-                    'ERR':>4} {
-                        'SKIP':>5} {
-                            'TIME(s)':>7} STATUS"
+    header = f"{'ALGORITHM':30} {'TOTAL':>5} {'PASS':>5} {'FAIL':>5} {'ERR':>4} {'SKIP':>5} {'TIME(s)':>7} STATUS"
     print(header)
     print("-" * len(header))
 
@@ -304,24 +297,11 @@ def print_report(reports: List[AlgorithmTestReport]):
         overall_skip += skipped
 
         print(
-            f"{
-                algo:30} {
-                total:5d} {
-                passed:5d} {
-                    failed:5d} {
-                        errors:4d} {
-                            skipped:5d} {
-                                duration:7.2f} {status}")
+            f"{algo:30} {total:5d} {passed:5d} {failed:5d} {errors:4d} {skipped:5d} {duration:7.2f} {status}")
 
     print("-" * len(header))
     print(
-        f"{
-            'TOTAL':30} {
-            overall_total:5d} {
-                overall_pass:5d} {
-                    overall_fail:5d} {
-                        overall_err:4d} {
-                            overall_skip:5d}")
+        f"{'TOTAL':30} {overall_total:5d} {overall_pass:5d} {overall_fail:5d} {overall_err:4d} {overall_skip:5d}")
 
 
 def save_json_report(reports: List[AlgorithmTestReport], output_path: Path):

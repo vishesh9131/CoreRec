@@ -119,6 +119,9 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
 ]
+markers = [
+    "docs_build: marks tests that run full documentation builds (deselect with '-m \"not docs_build\"')",
+]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
@@ -161,3 +164,12 @@ module = [
 ]
 ignore_errors = true
 
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+select = ["E", "W", "F", "I", "C", "B"]
+ignore = ["E501", "B008", "C901"]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]

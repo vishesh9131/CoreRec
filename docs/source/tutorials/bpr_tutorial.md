@@ -90,7 +90,6 @@ model = BPR(
     num_negatives=5,
     epochs=20,
     batch_size=256,
-    learning_rate=0.001,
     verbose=True
 )
 

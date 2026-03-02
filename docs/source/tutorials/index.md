@@ -142,6 +142,18 @@ mind_content_tutorial
 tfidf_tutorial
 ```
 
+## Pipeline & System Tutorials
+
+End-to-end system tutorials:
+
+```{toctree}
+---
+maxdepth: 1
+---
+pipeline_tutorial
+imshow_tutorial
+```
+
 ## Tutorial Structure
 
 Each tutorial follows a consistent structure:

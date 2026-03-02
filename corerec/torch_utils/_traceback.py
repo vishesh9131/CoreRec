@@ -152,12 +152,7 @@ def format_frame(frame, *, base=None, line=False):
     if line:
         extra_line = f"{frame.line}  # "
     return (
-        f"{extra_line}{
-            shorten_filename(
-                frame.filename,
-                base=base)}:{
-            frame.lineno} in {
-                    frame.name}")
+        f"{extra_line}{shorten_filename(frame.filename, base=base)}:{frame.lineno} in {frame.name}")
 
 
 def format_traceback_short(tb):

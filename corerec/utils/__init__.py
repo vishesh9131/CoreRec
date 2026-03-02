@@ -20,6 +20,19 @@ from .seed import set_seed
 
 from .config import load_config, merge_configs
 
+# Similarity utilities (for SAR and other CF models)
+from .similarity import (
+    jaccard,
+    cosine_similarity,
+    lift,
+    inclusion_index,
+    mutual_information,
+    lexicographers_mutual_information,
+    exponential_decay,
+    get_top_k_scored_items,
+    rescale,
+)
+
 # Diagnostics (optional - may not be available if NumPy not installed)
 try:
     from .diagnostics import (
@@ -55,5 +68,15 @@ __all__ = [
     "check_mkl_warning",
     "print_system_info",
     "fix_mkl_warning_instructions",
+    # Similarity functions
+    "jaccard",
+    "cosine_similarity",
+    "lift",
+    "inclusion_index",
+    "mutual_information",
+    "lexicographers_mutual_information",
+    "exponential_decay",
+    "get_top_k_scored_items",
+    "rescale",
 ]
 

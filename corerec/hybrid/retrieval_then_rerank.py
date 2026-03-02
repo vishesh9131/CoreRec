@@ -15,7 +15,7 @@ import time
 import os
 
 from corerec.core.base_model import BaseModel
-from corerec.retrieval.base_retriever import BaseRetriever
+from corerec.retrieval.model_retriever import BaseRetriever
 from corerec.ranking.base_ranker import BaseRanker
 
 

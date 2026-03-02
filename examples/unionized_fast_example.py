@@ -23,7 +23,7 @@ if __name__ == "__main__":
     except AttributeError:
         # Fallback to FastRecommender if FAST doesn't exist
         try:
-            from corerec.engines.unionizedFilterEngine.fast import FAST
+            from corerec.engines.collaborative.fast import FAST
 
             model = FAST(factors=32, iterations=1, batch_size=1024, seed=42)
         except:

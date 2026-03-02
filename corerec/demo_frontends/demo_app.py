@@ -75,8 +75,7 @@ def run_streamlit_app():
 
                 # Launch button
                 if st.button(
-                        f"🚀 Launch {
-                            platform_info['name']} Demo",
+                        f"🚀 Launch {platform_info['name']} Demo",
                         key=f"launch_{selected_platform}"):
                     st.success(f"Launching {platform_info['name']} demo...")
 
@@ -86,9 +85,7 @@ def run_streamlit_app():
                             frontend_manager.run_platform(selected_platform)
                     except Exception as e:
                         st.error(
-                            f"Error launching {
-                                platform_info['name']}: {
-                                str(e)}")
+                            f"Error launching {platform_info['name']}: {str(e)}")
 
             with col2:
                 # Platform stats or additional info

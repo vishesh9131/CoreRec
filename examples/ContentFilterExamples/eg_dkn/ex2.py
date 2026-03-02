@@ -8,7 +8,7 @@ import corerec.dkn as dkn
 # would need their own top-level modules if frequently used
 # For now, keeping direct imports for less common ones
 try:
-    from corerec.engines.contentFilterEngine.nn_based_algorithms import (
+    from corerec.engines.content_based.nn_based_algorithms import (
         DSSM as TRA_DSSM,
         WideAndDeep as TRA_WIDENDEEP,
         TDM as TRA_TDM,

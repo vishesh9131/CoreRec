@@ -427,10 +427,7 @@ class DataLoader(Generic[_T_co]):
                 if isinstance(multiprocessing_context, str):
                     valid_start_methods = torch.multiprocessing.get_all_start_methods()
                     if multiprocessing_context not in valid_start_methods:
-                        raise ValueError(
-                            "multiprocessing_context option " f"should specify a valid start method in {
-                                valid_start_methods!r}, but got " f"multiprocessing_context={
-                                multiprocessing_context!r}")
+                        raise ValueError("multiprocessing_context option " f"should specify a valid start method in {valid_start_methods!r}, but got " f"multiprocessing_context={multiprocessing_context!r}")
                     multiprocessing_context = torch.multiprocessing.get_context(
                         multiprocessing_context)
 
@@ -461,8 +458,7 @@ class DataLoader(Generic[_T_co]):
             "persistent_workers",
         ):
             raise ValueError(
-                f"{attr} attribute should not be set after {
-                    self.__class__.__name__} is initialized")
+                f"{attr} attribute should not be set after {self.__class__.__name__} is initialized")
 
         super().__setattr__(attr, val)
 
@@ -669,8 +665,7 @@ class _BaseDataLoaderIter:
                 generator=loader.generator).item())
         self._persistent_workers = loader.persistent_workers
         self._num_yielded = 0
-        self._profile_name = f"enumerate(DataLoader)#{
-            self.__class__.__name__}.__next__"
+        self._profile_name = f"enumerate(DataLoader)#{self.__class__.__name__}.__next__"
 
     def __iter__(self) -> "_BaseDataLoaderIter":
         return self
@@ -706,10 +701,7 @@ class _BaseDataLoaderIter:
                 and self._num_yielded > self._IterableDataset_len_called
             ):
                 warn_msg = (
-                    f"Length of IterableDataset {
-                        self._dataset} was reported to be {
-                        self._IterableDataset_len_called}" f"(when accessing len(dataloader)), but {
-                        self._num_yielded} samples have been fetched. ")
+                    f"Length of IterableDataset {self._dataset} was reported to be {self._IterableDataset_len_called}" f"(when accessing len(dataloader)), but {self._num_yielded} samples have been fetched. ")
                 if self._num_workers > 0:
                     warn_msg += (
                         "For multiprocessing data-loading, this could be caused by not properly configuring the "
@@ -1405,8 +1397,7 @@ class _MultiProcessingDataLoaderIter(_BaseDataLoaderIter):
                 return data
             else:
                 raise RuntimeError(
-                    f"DataLoader timed out after {
-                        self._timeout} seconds")
+                    f"DataLoader timed out after {self._timeout} seconds")
         elif self._pin_memory:
             while self._pin_memory_thread.is_alive():
                 success, data = self._try_get_data()

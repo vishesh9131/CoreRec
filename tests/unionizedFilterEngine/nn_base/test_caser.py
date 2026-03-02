@@ -3,7 +3,7 @@
 Caser (Convolutional Sequence Embedding Recommendation) Test Script
 """
 
-from corerec.engines.unionizedFilterEngine.nn_base.caser import Caser
+from corerec.engines.collaborative.nn_base.caser import Caser
 import os
 import sys
 import numpy as np
