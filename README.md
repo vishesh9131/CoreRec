@@ -12,10 +12,10 @@
   <br/>
   <code>pip install corerec</code> &nbsp;&nbsp; <code>pip install cr_learn</code>
   <br/><br/>
-  <a href="https://corerec.online/docs/">📖 Docs</a> &nbsp;·&nbsp;
-  <a href="https://pypi.org/project/corerec/">📦 PyPI</a> &nbsp;·&nbsp;
-  <a href="https://github.com/vishesh9131/CoreRec/issues">🐛 Issues</a> &nbsp;·&nbsp;
-  <a href="https://github.com/vishesh9131/Core![1772465531060](image/README/1772465531060.png)![1772465535536](image/README/1772465535536.png)![1772465553886](image/README/1772465553886.png)Rec/blob/main/MODERN_RECSYS_GUIDE.md">🚀 Modern Guide</a>
+  <a href="https://corerec.online/docs/">Docs</a> &nbsp;·&nbsp;
+  <a href="https://pypi.org/project/corerec/">PyPI</a> &nbsp;·&nbsp;
+  <a href="https://github.com/vishesh9131/CoreRec/issues">Issues</a> &nbsp;·&nbsp;
+  <a href="https://github.com/vishesh9131/Core![1772465531060](image/README/1772465531060.png)![1772465535536](image/README/1772465535536.png)![1772465553886](image/README/1772465553886.png)Rec/blob/main/MODERN_RECSYS_GUIDE.md">Modern Guide</a>
 </div>
 
 ---
