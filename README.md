@@ -12,7 +12,7 @@
   <br/>
   <code>pip install corerec</code> &nbsp;&nbsp; <code>pip install cr_learn</code>
   <br/><br/>
-  <a href="https://vishesh9131.github.io/CoreRec/">📖 Docs</a> &nbsp;·&nbsp;
+  <a href="https://corerec.online/docs/">📖 Docs</a> &nbsp;·&nbsp;
   <a href="https://pypi.org/project/corerec/">📦 PyPI</a> &nbsp;·&nbsp;
   <a href="https://github.com/vishesh9131/CoreRec/issues">🐛 Issues</a> &nbsp;·&nbsp;
   <a href="https://github.com/vishesh9131/CoreRec/blob/main/MODERN_RECSYS_GUIDE.md">🚀 Modern Guide</a>
