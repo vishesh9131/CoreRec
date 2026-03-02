@@ -1,5 +1,4 @@
 [![Downloads](https://static.pepy.tech/badge/corerec)](https://pepy.tech/project/corerec)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/corerec?label=PyPI%20Downloads)](https://pypi.org/project/corerec)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/vishesh9131/corerec)](https://github.com/vishesh9131/CoreRec/commits)
 [![Libraries.io dependency status](https://img.shields.io/librariesio/github/vishesh9131/corerec)](https://libraries.io/github/vishesh9131/corerec)
 [![Libraries.io SourceRank](https://img.shields.io/librariesio/sourcerank/PyPI/corerec)](https://libraries.io/pypi/corerec)
