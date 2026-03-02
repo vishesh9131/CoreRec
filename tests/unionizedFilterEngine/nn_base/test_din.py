@@ -3,7 +3,7 @@
 DIN (Deep Interest Network) Test Script
 """
 
-from corerec.engines.unionizedFilterEngine.nn_base.DIN_base import DIN_base
+from corerec.engines.collaborative.nn_base.DIN_base import DIN_base
 import os
 import sys
 import numpy as np

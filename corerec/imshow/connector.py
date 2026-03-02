@@ -25,7 +25,8 @@ class Connector:
     """
     Main connector class for plugging recommendation functions into frontends.
 
-    Example:
+    Example::
+
         def my_recommender(user_id, num_items=10):
             # Your recommendation logic
             return [
@@ -76,10 +77,10 @@ class Connector:
         validate_prediction_function(predict_function)
 
         if frontend not in available_frontends():
+            available = list(available_frontends().keys())
             raise ValueError(
-                f"Frontend '{frontend}' not available. Choose from: {
-                    list(
-                        available_frontends().keys())}")
+                f"Frontend '{frontend}' not available. Choose from: {available}"
+            )
 
         # Store configuration
         self.frontend = frontend
@@ -103,8 +104,7 @@ class Connector:
         print(f"🎯 Connector initialized:")
         print(f"   Function: {predict_function.__name__}")
         print(
-            f"   Frontend: {frontend} ({
-                get_frontend_info(frontend)['name']})")
+            f"   Frontend: {frontend} ({get_frontend_info(frontend)['name']})")
         print(f"   Title: {title}")
 
     def get_recommendations(
@@ -132,8 +132,7 @@ class Connector:
 
             if self.debug:
                 print(
-                    f"🔍 Calling {
-                        self.predict_function.__name__} with args: {func_args}")
+                    f"🔍 Calling {self.predict_function.__name__} with args: {func_args}")
 
             # Call user's prediction function
             raw_recommendations = self.predict_function(**func_args)
@@ -144,8 +143,7 @@ class Connector:
 
             if self.debug:
                 print(
-                    f"✅ Generated {
-                        len(formatted_recommendations)} recommendations for user {user_id}")
+                    f"✅ Generated {len(formatted_recommendations)} recommendations for user {user_id}")
 
             return formatted_recommendations
 

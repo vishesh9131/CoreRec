@@ -229,32 +229,21 @@ celerybeat.pid
 .deploy
 
 # Project-specific ignores
-src/SANDBOX/Analysis/data_mother/
-src/SANDBOX/dataset/
-src/USECASES/tempCodeRunnerFile.py
-engine/__pycache__/
-examples/ContentFilterExamples/nogo.py
-examples/Youtube_MoE/models/
-cr_learn_setup/CRDS/
-cr_learn/cr_learn/CRDS
-cr_learn/cr_learn/CRDS2.zip
-CRLearn/CRDS/
-corerec/engines/test_struct_UF/
-tests/test_cf.py
-graph_dataset.csv
 documentation.zip
-
-# Ignore production setup (we have it in root now)
-./production
+saved_models/
+report.json
 
 # Don't ignore these specific files
 !.gitignore
 !.github/
 !docs/images/*.png
 !docs/images/*.svg
+/.claude
+/.cursor
+AGENTS.md
+BEFORE_CLEANUP_READ_THIS.md
+BRANCH_STRUCTURE.md
+BEFORE_CLEANUP_READ_THIS.md
+/src
+QUICK_START_MODERN.md
 /cr_learn_setup
-CHANGES_SUMMARY.md
-BUILD_DOCS.md
-BUILD_DOCS.md
-Learning.ipynb
-Learning.md

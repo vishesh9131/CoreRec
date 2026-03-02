@@ -1,6 +1,6 @@
 # moe_recommender.py
 
-from corerec.engines.unionizedFilterEngine.base_recommender import BaseRecommender
+from corerec.engines.collaborative.base_recommender import BaseRecommender
 from typing import List, Dict
 from scipy.sparse import csr_matrix
 import logging

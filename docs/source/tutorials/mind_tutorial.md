@@ -178,6 +178,5 @@ Compare MIND with similar models on your dataset.
 
 ## Further Reading
 
-- [MIND API Reference](../api/engines.rst#mind)
+- [MIND API Reference](../api/engines.md)
 - Paper: See original paper for details
-- [Code Examples](../examples/mind_advanced.md)

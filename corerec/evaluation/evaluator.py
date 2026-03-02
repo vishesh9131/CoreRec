@@ -17,7 +17,8 @@ class Evaluator:
 
     Evaluates models on test data using multiple metrics.
 
-    Example:
+    Example::
+
         from corerec.evaluation import Evaluator
 
         evaluator = Evaluator(metrics=['ndcg@10', 'map@10', 'recall@20'])
@@ -114,7 +115,8 @@ class Evaluator:
         Returns:
             Dict mapping model_name to evaluation results
 
-        Example:
+        Example::
+
             results = evaluator.compare_models({
                 'NCF': ncf_model,
                 'DeepFM': deepfm_model
@@ -180,7 +182,8 @@ class CrossValidator:
     """
     Cross-validation utilities.
 
-    Example:
+    Example::
+
         cv = CrossValidator(n_folds=5)
         avg_score = cv.cross_validate(model, data, metric='ndcg@10')
 

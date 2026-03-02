@@ -18,7 +18,7 @@ class TestUserProfiling(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mod = load_module(
-            "corerec/engines/contentFilterEngine/context_personalization/user_profiling.py"
+            "corerec/engines/content_based/context_personalization/user_profiling.py"
         )
         cls.UserProfilingRecommender = cls.mod.UserProfilingRecommender
 

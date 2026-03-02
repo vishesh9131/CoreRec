@@ -93,7 +93,6 @@ model = SVD(
     n_epochs=30,
     epochs=20,
     batch_size=256,
-    learning_rate=0.001,
     verbose=True
 )
 

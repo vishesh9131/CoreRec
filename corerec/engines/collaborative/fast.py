@@ -111,8 +111,9 @@ class FAST(BaseRecommender):
         self._create_mappings(unique_user_ids, unique_item_ids)
 
         # Map IDs to indices
-        user_indices = [self.user_map[user_id] for user_id in user_ids]
-        item_indices = [self.item_map[item_id] for item_id in item_ids]
+        user_indices = np.array([self.user_map[user_id] for user_id in user_ids])
+        item_indices = np.array([self.item_map[item_id] for item_id in item_ids])
+        ratings_array = np.array(ratings)
 
         # Create user-item matrix
         n_users = len(self.user_map)
@@ -125,47 +126,51 @@ class FAST(BaseRecommender):
         self._init_params(n_users, n_items)
 
         # Training loop
+        n_samples = len(user_indices)
+        indices = np.arange(n_samples)
+
         for iteration in range(self.iterations):
             # Shuffle data
             if self.seed is not None:
                 np.random.seed(self.seed + iteration)
-            indices = np.arange(len(user_indices))
             np.random.shuffle(indices)
 
             # Mini-batch training
-            for i in range(0, len(user_indices), self.batch_size):
-                batch_indices = indices[i : i + self.batch_size]
-                for idx in batch_indices:
-                    user_idx = user_indices[idx]
-                    item_idx = item_indices[idx]
-                    rating = ratings[idx]
+            for i in range(0, n_samples, self.batch_size):
+                batch_idx = indices[i : i + self.batch_size]
+                
+                u_batch = user_indices[batch_idx]
+                i_batch = item_indices[batch_idx]
+                r_batch = ratings_array[batch_idx]
 
-                    # Make prediction
-                    pred = self._predict(user_idx, item_idx)
+                # Vectorized prediction
+                # dot product of factors (Batch, Factors) * (Batch, Factors) -> (Batch,)
+                dot = np.sum(self.user_factors[u_batch] * self.item_factors[i_batch], axis=1)
+                preds = self.global_bias + self.user_bias[u_batch] + self.item_bias[i_batch] + dot
 
-                    # Calculate error
-                    error = rating - pred
+                # Calculate error
+                errors = r_batch - preds
 
-                    # Update factors
-                    user_factor_update = self.learning_rate * (
-                        error * self.item_factors[item_idx]
-                        - self.weight_decay * self.user_factors[user_idx]
-                    )
-                    item_factor_update = self.learning_rate * (
-                        error * self.user_factors[user_idx]
-                        - self.weight_decay * self.item_factors[item_idx]
-                    )
+                # Gradients
+                # user_update = lr * (error * item_factor - weight_decay * user_factor)
+                # item_update = lr * (error * user_factor - weight_decay * item_factor)
+                
+                # Expand errors for broadcasting: (Batch,) -> (Batch, 1)
+                errors_expanded = errors[:, None]
+                
+                u_grads = (errors_expanded * self.item_factors[i_batch]) - (self.weight_decay * self.user_factors[u_batch])
+                i_grads = (errors_expanded * self.user_factors[u_batch]) - (self.weight_decay * self.item_factors[i_batch])
+                
+                ub_grads = errors - (self.weight_decay * self.user_bias[u_batch])
+                ib_grads = errors - (self.weight_decay * self.item_bias[i_batch])
 
-                    self.user_factors[user_idx] += user_factor_update
-                    self.item_factors[item_idx] += item_factor_update
-
-                    # Update biases
-                    self.user_bias[user_idx] += self.learning_rate * (
-                        error - self.weight_decay * self.user_bias[user_idx]
-                    )
-                    self.item_bias[item_idx] += self.learning_rate * (
-                        error - self.weight_decay * self.item_bias[item_idx]
-                    )
+                # Update parameters
+                # Use add.at to correctly accumulate updates for duplicate indices in the batch
+                lr = self.learning_rate
+                np.add.at(self.user_factors, u_batch, lr * u_grads)
+                np.add.at(self.item_factors, i_batch, lr * i_grads)
+                np.add.at(self.user_bias, u_batch, lr * ub_grads)
+                np.add.at(self.item_bias, i_batch, lr * ib_grads)
 
     def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
         """
@@ -192,24 +197,18 @@ class FAST(BaseRecommender):
         if user_id not in self.user_map:
             raise ValueError(f"User ID {user_id} not found in training data")
 
-        # Validate top_n (the parameter is called top_n, not top_k)
+        # Validate top_n
         if not isinstance(top_n, int) or top_n <= 0:
             raise ValueError(f"top_n must be a positive integer, got {top_n}")
 
-        if self.user_factors is None or self.item_factors is None:
-            raise ValueError("Model has not been trained. Call fit() first.")
-
-        # Map user_id to internal index
-        if user_id not in self.user_map:
-            raise ValueError(f"User ID {user_id} not found in training data")
-
         user_idx = self.user_map[user_id]
 
-        # Calculate scores for all items
-        scores = np.zeros(len(self.item_map))
-
-        for item_idx in range(len(self.item_map)):
-            scores[item_idx] = self._predict(user_idx, item_idx)
+        # Vectorized score calculation for all items
+        # scores = global + user_bias + item_biases + (user_factors . item_factors^T)
+        # item_factors is (N_items, K), user_factors[user_idx] is (K,)
+        # dot -> (N_items,)
+        dot_scores = self.item_factors @ self.user_factors[user_idx]
+        scores = (self.global_bias + self.user_bias[user_idx]) + self.item_bias + dot_scores
 
         # If requested, exclude items the user has already interacted with
         if exclude_seen:
@@ -217,10 +216,16 @@ class FAST(BaseRecommender):
             scores[seen_items] = float("-inf")
 
         # Get top-n item indices
-        top_item_indices = np.argsort(-scores)[:top_n]
+        # If N_items is large, sorting everything is expensive. argpartition is faster.
+        if top_n < len(scores):
+            top_indices_unsorted = np.argpartition(-scores, top_n)[:top_n]
+            # Sort the top-n results
+            top_indices = top_indices_unsorted[np.argsort(-scores[top_indices_unsorted])]
+        else:
+            top_indices = np.argsort(-scores)[:top_n]
 
         # Map indices back to original item IDs
-        top_items = [self.reverse_item_map[idx] for idx in top_item_indices]
+        top_items = [self.reverse_item_map[idx] for idx in top_indices]
 
         return top_items
 

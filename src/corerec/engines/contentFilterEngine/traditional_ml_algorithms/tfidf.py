@@ -1,2 +1,0 @@
-# tfidf implementation
-pass

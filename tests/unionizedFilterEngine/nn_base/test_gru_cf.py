@@ -3,7 +3,7 @@
 GRU-CF (GRU-based Collaborative Filtering) Test Script
 """
 
-from corerec.engines.unionizedFilterEngine.nn_base.gru_cf import GRUNet
+from corerec.engines.collaborative.nn_base.gru_cf import GRUNet
 import os
 import sys
 import numpy as np

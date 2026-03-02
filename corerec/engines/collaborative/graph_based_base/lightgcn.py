@@ -1,4 +1,4 @@
-# corerec/engines/unionizedFilterEngine/lightgcn.py
+# corerec/engines/collaborative/lightgcn.py
 import numpy as np
 import torch
 import torch.nn as nn

@@ -5,7 +5,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from threadpoolctl import threadpool_limits
 
-from corerec.engines.unionizedFilterEngine.cr_unionizedFactory import (
+from corerec.engines.collaborative.cr_unionizedFactory import (
     UnionizedRecommenderFactory as RecommenderFactory,
 )
 from corerec.config.recommender_config import CONFIG
