@@ -1,601 +1,532 @@
 [![Downloads](https://static.pepy.tech/badge/corerec)](https://pepy.tech/project/corerec)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/m/vishesh9131/corerec)
-![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/vishesh9131/corerec)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/corerec?label=PyPi%20Downloads)
-![Libraries.io SourceRank](https://img.shields.io/librariesio/sourcerank/PyPI/corerec)
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/vishesh9131/corerec)
-![GitHub repo size](https://img.shields.io/github/repo-size/vishesh9131/corerec)
-
-
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/corerec?label=PyPI%20Downloads)](https://pypi.org/project/corerec)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/vishesh9131/corerec)](https://github.com/vishesh9131/CoreRec/commits)
+[![Libraries.io dependency status](https://img.shields.io/librariesio/github/vishesh9131/corerec)](https://libraries.io/github/vishesh9131/corerec)
+[![Libraries.io SourceRank](https://img.shields.io/librariesio/sourcerank/PyPI/corerec)](https://libraries.io/pypi/corerec)
+[![GitHub code size](https://img.shields.io/github/languages/code-size/vishesh9131/corerec)](https://github.com/vishesh9131/CoreRec)
+[![GitHub repo size](https://img.shields.io/github/repo-size/vishesh9131/corerec)](https://github.com/vishesh9131/CoreRec)
 
 <div align="center">
-    <img src="docs/images/coreRec.svg" style="vertical-align: middle; margin-right: 0px; margin-bottom: 20px;" width="70" height="70">
-    <h1>CoreRec & VishGraphs Manual</h1>
+  <img src="docs/images/coreRec.svg" width="80" height="80" style="margin-bottom: 16px;" /><br/>
+  <h1>CoreRec</h1>
+  <p><strong>Production-grade recommendation systems framework.<br/>57+ models · Unified API · Multi-stage pipelines · Research to deployment.</strong></p>
+  <br/>
+  <code>pip install corerec</code> &nbsp;&nbsp; <code>pip install cr_learn</code>
+  <br/><br/>
+  <a href="https://vishesh9131.github.io/CoreRec/">📖 Docs</a> &nbsp;·&nbsp;
+  <a href="https://pypi.org/project/corerec/">📦 PyPI</a> &nbsp;·&nbsp;
+  <a href="https://github.com/vishesh9131/CoreRec/issues">🐛 Issues</a> &nbsp;·&nbsp;
+  <a href="https://github.com/vishesh9131/CoreRec/blob/main/MODERN_RECSYS_GUIDE.md">🚀 Modern Guide</a>
 </div>
 
-Discover the power of graph analysis and recommendation with CoreRec & VishGraphs. Dive into our comprehensive manual and explore the endless possibilities.
+---
 
-<h2>
-    <img src="docs/images/intro.png" style="vertical-align: middle; margin-right: 8px;" width="30" height="30">
-    Introduction
-</h2>
+## What is CoreRec?
 
-CoreRec is a modern recommendation engine built for the deep learning era. It implements industry-standard architectures (Two-Tower, Transformers, GNNs) with a multi-stage pipeline approach used by Netflix, YouTube, and other major platforms. CoreRec seamlessly integrates collaborative filtering, content-based methods, and sequential models into a unified framework.
+CoreRec is a modern recommendation engine built for the deep learning era. It implements industry-standard architectures — Two-Tower retrieval, Transformers, Graph Neural Networks — following the multi-stage pipeline approach used at Netflix, YouTube, and major e-commerce platforms.
 
-VishGraphs is your ultimate Python library for graph visualization and analysis. Whether you're a data scientist, researcher, or hobbyist, VishGraphs offers intuitive tools to generate, visualize, and analyze graphs effortlessly.
+- **Unified API**: every model shares `fit`, `predict`, `recommend`, `save`, `load`
+- **57+ algorithms**: deep learning, collaborative filtering, graph-based, sequential, Bayesian
+- **Multi-stage pipeline**: Retrieval → Ranking → Reranking in a single orchestrated system
+- **cr_learn**: companion dataset library for fast prototyping on real-world data
 
-> **NEW**: CoreRec now supports modern embedding-based architectures! See [MODERN_RECSYS_GUIDE.md](MODERN_RECSYS_GUIDE.md) for the complete guide on Two-Tower models, vector databases, and multi-modal fusion.
+### Downloads per month
 
-### Our Downloads per month
-<img src="docs/images/g1.png" style="vertical-align: middle; margin-right: 0px; margin-bottom: 20px;" width="400" height="400">
+<img src="docs/images/g1.png" width="400" height="400" />
 
-> **Note:**
-> last updated: 2024-11-20
-<h2>
-    <img src="docs/images/feature.png" style="vertical-align: middle; margin-right: 10px;" width="40" height="38">
-    Features
-</h2>
+> Last updated: 2024-11-20
 
+---
 
-#### core_rec.py
+## Installation
 
-- **`GraphTransformer(num_layers, d_model, num_heads, d_feedforward, input_dim)`**
-  - A Transformer model for graph data with customizable parameters.
-  
-- **`GraphDataset(adj_matrix)`**
-  - A PyTorch dataset for graph data, streamlining model training.
-  
-- **`train_model(model, data_loader, criterion=False, optimizer=False, num_epochs=False)`**
-  - Train your model with ease using our flexible training function.
-  
-- **`predict(model, graph, node_index, top_k=5)`**
-  - Predict similar nodes with precision using trained models.
-  
-- **`aaj_accuracy(graph, node_index, recommended_indices)`**
-  - Measure the accuracy of your recommendations with our robust metrics.
-
-#### vish_graphs.py
-
-- **`generate_large_random_graph(num_people, file_path="large_random_graph.csv", seed=None)`**
-  - Generate and save large random graphs effortlessly.
-  
-- **`draw_graph(adj_matrix, top_nodes=None, recommended_nodes=None, node_labels=None, transparent_labeled=True, edge_weights=None)`**
-  - Create stunning 2D visualizations of your graphs.
-  
-- **`draw_graph_3d(adj_matrix, top_nodes=None, recommended_nodes=None, node_labels=None, transparent_labeled=True, edge_weights=None)`**
-  - Experience your graphs in 3D with customizable features.
-  
-- **`show_bipartite_relationship(adj_matrix)`**
-  - Visualize bipartite relationships with clarity.
-
-<h2>
-    <img src="docs/images/install.png" style="vertical-align: middle; margin-right: 10px;" width="40" height="38">
-    Installation
-</h2>
-
-Install CoreRec using pip:
 ```bash
 pip install --upgrade corerec
+pip install cr_learn          # dataset companion (optional but recommended)
 ```
 
-### Quick Start Examples
+### Requirements
+- Python ≥ 3.8
+- PyTorch ≥ 1.9
+- NumPy, Pandas, SciPy
 
-#### Modern Deep Learning (Industry Standard)
+---
+
+## Quickstart in 60 seconds
+
+```python
+from corerec.engines import DCN
+from cr_learn import ml_1m
+
+# 1. Load a real dataset (auto-downloads MovieLens 1M)
+data = ml_1m.load()
+ratings = data['ratings']
+
+user_ids = ratings['user_id'].values
+item_ids = ratings['movie_id'].values
+r        = ratings['rating'].values
+
+# 2. Train
+model = DCN(embedding_dim=64, epochs=10, verbose=True)
+model.fit(user_ids=user_ids, item_ids=item_ids, ratings=r)
+
+# 3. Recommend
+recs = model.recommend(user_id=1, top_k=10)
+print(recs)
+```
+
+That's it. The same three lines — `fit`, `recommend`, `predict` — work for every model in CoreRec.
+
+---
+
+## Core API
+
+Every model in CoreRec inherits from `BaseRecommender` and exposes the same interface:
+
+```python
+model.fit(user_ids, item_ids, ratings)          # train
+model.predict(user_id, item_id)                 # → float score
+model.recommend(user_id, top_k=10)              # → list of item IDs
+model.batch_predict([(uid, iid), ...])          # → list of floats
+model.save('model.pkl')                         # persist
+model = ModelClass.load('model.pkl')            # restore
+```
+
+---
+
+## Model Families
+
+### <img src="docs/images/feature.png" width="20" height="20" style="vertical-align:middle"/> Deep Learning (29 models)
+
+Best for feature-rich data with complex interaction patterns.
+
+| Model | Description | Import |
+|-------|-------------|--------|
+| **DCN** | Deep & Cross Network — explicit + implicit feature crossing | `from corerec.engines import DCN` |
+| **DeepFM** | Factorization Machines + Deep Network | `from corerec.engines import DeepFM` |
+| **GNNRec** | Graph Neural Network recommender | `from corerec.engines import GNNRec` |
+| **MIND** | Multi-Interest sequential network | `from corerec.engines import MIND` |
+| **SASRec** | Self-Attentive Sequential Recommendation | `from corerec.engines import SASRec` |
+| **NASRec** | Neural Architecture Search for RecSys | `from corerec.engines import NASRec` |
+| **BERT4Rec** | Bidirectional Transformer for sequences | `from corerec.engines.content_based import BERT4Rec` |
+| **TwoTower** | Dual-encoder retrieval (YouTube-style) | `from corerec.engines import TwoTower` |
+| AFM, AutoInt, DIN, DIEN, DLRM, PNN, NCF, NFM, FIBINet, xDeepFM, Wide&Deep, YouTubeDNN, ESMM, MMoE, PLE, FGCNN, Monolith … | | see `corerec.engines` |
+
+#### DCN example
+
+```python
+from corerec.engines import DCN
+from cr_learn import ml_1m
+
+data = ml_1m.load()
+ratings = data['ratings']
+
+model = DCN(
+    embedding_dim=64,
+    num_cross_layers=3,
+    deep_layers=[128, 64],
+    epochs=20,
+    learning_rate=0.001,
+    verbose=True,
+)
+model.fit(
+    user_ids=ratings['user_id'].values,
+    item_ids=ratings['movie_id'].values,
+    ratings=ratings['rating'].values,
+)
+
+score = model.predict(user_id=1, item_id=100)
+recs  = model.recommend(user_id=1, top_k=10)
+print(f"Score: {score:.3f}  |  Top-10: {recs}")
+```
+
+#### TwoTower (retrieval at scale)
 
 ```python
 from corerec.engines import TwoTower
-from corerec.retrieval.vector_store import create_index
 
-# Two-Tower for fast retrieval (like YouTube, Netflix)
-model = TwoTower(
-    user_input_dim=64,
-    item_input_dim=128,
-    embedding_dim=256
-)
+model = TwoTower(user_input_dim=64, item_input_dim=128, embedding_dim=256)
 model.fit(user_ids, item_ids, interactions)
 
-# Build vector index for fast search
-item_embs = model.get_item_embeddings()
-index = create_index("faiss", dim=256)
-index.add(item_embs, item_ids)
-
-# Retrieve top candidates
-candidates = model.recommend(user_id, top_k=10)
+candidates = model.recommend(user_id=42, top_k=100)
 ```
 
-#### Sequential Models (Time-Aware)
+#### Sequential / transformer
 
 ```python
-from corerec.engines import BERT4Rec
+from corerec.engines.content_based import BERT4Rec
 
-# Bidirectional transformer for sequences
 model = BERT4Rec(hidden_dim=256, num_layers=4)
 model.fit(user_ids, item_ids, interactions)
-next_items = model.recommend(user_id, top_k=10)
+next_items = model.recommend(user_id=1, top_k=10)
 ```
 
-#### Multi-Modal Fusion
+---
+
+### Collaborative Filtering
+
+Simple Algorithm for Recommendation (SAR) — fast, no GPU required.
+
+```python
+from corerec.engines.collaborative import SAR
+import pandas as pd
+
+df = pd.DataFrame({
+    'userID': [0, 0, 1, 1, 2],
+    'itemID': [10, 20, 10, 30, 20],
+    'rating': [5.0, 4.0, 5.0, 3.0, 4.0],
+})
+
+model = SAR(similarity_type='jaccard')   # also: 'cosine', 'lift', 'cooccurrence'
+model.fit(df)
+
+recs = model.recommend(user_id=0, top_k=5)
+batch_recs = model.recommend_k_items(df[['userID']], top_k=10)  # all users at once
+```
+
+---
+
+### Content-Based Filtering
+
+```python
+from corerec.engines.content_based import TFIDFRecommender
+
+items = [101, 102, 103]
+docs  = {101: "action adventure film", 102: "romantic comedy", 103: "thriller suspense"}
+
+model = TFIDFRecommender()
+model.fit(items=items, docs=docs)
+
+recs  = model.recommend_by_text(query_text="action thriller", top_n=5)
+```
+
+---
+
+### Graph-Based
+
+```python
+from corerec.engines import GNNRec
+
+model = GNNRec(embedding_dim=64, epochs=20)
+model.fit(user_ids, item_ids, ratings)
+recs = model.recommend(user_id=1, top_k=10)
+```
+
+---
+
+### Multi-Modal Fusion
 
 ```python
 from corerec.multimodal.fusion_strategies import MultiModalFusion
 
-# Combine text, images, and metadata
 fusion = MultiModalFusion(
     modality_dims={'text': 768, 'image': 2048, 'meta': 32},
     output_dim=256,
-    strategy='attention'
+    strategy='attention',
 )
 item_embedding = fusion({'text': text_emb, 'image': img_emb, 'meta': meta})
 ```
 
-#### Traditional Methods (Still Supported)
+---
+
+## Multi-Stage Pipeline
+
+Production systems use Retrieval → Ranking → Reranking. CoreRec ships this pattern out of the box:
 
 ```python
-# Collaborative Filtering
-from corerec.engines import unionized
-collab_model = unionized.FastRecommender()
-collab_model.fit(user_ids, item_ids, ratings)
+from corerec.pipelines import RecommendationPipeline, PipelineConfig
 
-# Content-Based Filtering
-from corerec.engines import content
-content_model = content.TFIDFRecommender()
-content_model.fit(item_features)
+pipeline = RecommendationPipeline(
+    config=PipelineConfig(retrieval_k=200, ranking_k=50, final_k=10)
+)
+pipeline.add_retriever(my_retriever, weight=1.0)
+pipeline.set_ranker(my_ranker)
+pipeline.add_reranker(diversity_reranker)
 
-# Graph-Based Recommendations
-from corerec.engines import GNNRec
-gnn_model = GNNRec(num_layers=3, embedding_dim=128)
-gnn_model.fit(user_ids, item_ids, graph_structure)
+result = pipeline.recommend(user_id=123, top_k=10)
 ```
 
-### Using Optimizers / Boosters
-CoreRec provides various optimizers for training models:
+---
+
+## cr_learn — Dataset Library
+
+`cr_learn` is CoreRec's companion package. It provides one-line access to real recommendation datasets, auto-downloading and caching them locally.
+
+```bash
+pip install cr_learn
+```
+
+### Available datasets
+
+| Dataset | Module | Load |
+|---------|--------|------|
+| MovieLens 1M | `cr_learn.ml_1m` | `ml_1m.load()` |
+| IJCAI-16 (Tmall/O2O) | `cr_learn.ijcai` | `ijcai.load()` |
+| Tmall | `cr_learn.tmall` | `tmall.load()` |
+| Steam Games | `cr_learn.steam_games` | `steam_games.load()` |
+| BeiDou/BeiBei | `cr_learn.beibei` | `beibei.load()` |
+| LibraryThing | `cr_learn.library_thing` | `library_thing.load()` |
+| Rees46 | `cr_learn.rees46` | `rees46.load()` |
+
+### Example: MovieLens 1M
 
 ```python
-from corerec.cr_boosters.adam import Adam
-from corerec.cr_boosters.nadam import NAdam
+from cr_learn import ml_1m
 
-# Use with your model
+data = ml_1m.load()
+# Returns dict with keys: 'users', 'ratings', 'movies',
+#                         'user_interactions', 'item_features', 'trn_buy'
+
+print(data['ratings'].head())
+#    user_id  movie_id  rating  timestamp
+# 0        1      1193     5.0  978300760
+# ...
+
+# Ready-to-use training data
+ratings = data['ratings']
+user_ids = ratings['user_id'].values
+item_ids = ratings['movie_id'].values
+r        = ratings['rating'].values
+```
+
+### Example: IJCAI-16 (O2O commerce)
+
+```python
+from cr_learn import ijcai
+
+data = ijcai.load(limit_rows=50000)
+# Returns dict with train/test DataFrames + user/item features
+```
+
+### Datasets auto-detect in examples
+
+All example scripts try `cr_learn` first and fall back to the bundled `sample_data/` CSVs — no manual setup needed.
+
+---
+
+## Optimizers / Boosters
+
+CoreRec ships its own optimizer suite (compatible with `torch.optim` API):
+
+```python
+from corerec.cr_boosters.adam   import Adam
+from corerec.cr_boosters.nadam  import NAdam
+
 optimizer = Adam(model.parameters(), lr=0.001)
 ```
-CoreRec has various in-built optimizers for training models.
 
-### Available Optimizers
- 
+Available: **Adam · NAdam · Adamax · Adadelta · Adagrad · ASGD · LBFGS · RMSprop · SGD · SparseAdam**
 
-- **Adam**
-- **Nadam**
-- **Adamax**
-- **Adadelta**
-- **Adagrad**
-- **ASGD**
-- **LBFGS**
-- **RMSprop**
-- **SGD**
-- **SparseAdam**
+---
 
+## Runnable Examples
 
-<h2>
-    <img src="docs/images/coreRec.svg" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
-    CoreRec Manual
-</h2>
+### Deep Learning Engines
 
-<h3>
-    <img src="docs/images/star.png" style="vertical-align: middle; margin-right: 0px;" width="20" height="20">
-    Table of Contents
-</h3>
+```bash
+python examples/engines_dcn_example.py        # Deep & Cross Network
+python examples/engines_deepfm_example.py     # DeepFM
+python examples/engines_gnnrec_example.py     # GNN-based recommender
+python examples/engines_mind_example.py       # MIND (multi-interest)
+python examples/engines_nasrec_example.py     # NASRec
+python examples/engines_sasrec_example.py     # SASRec (self-attentive)
+```
 
-1. [Introduction](#introduction)
-2. [Installation](#installation)
-3. [Usage](#usage)
-    - [Generating Random Graphs](#generating-random-graphs)
-    - [Drawing Graphs](#drawing-graphs)
-4. [Directory Structure](#directory-structure)
-5. [Troubleshooting](#troubleshooting)
-6. [Contributing](#contributing)
-7. [License](#license)
+### Collaborative / Hybrid
 
-# Introduction
-- CoreRec:
-CoreRec is a cutting-edge recommendation engine for graph data analysis and visualization. It excels in recommending similar nodes, training machine learning models, and visualizing complex network structures.
-- VishGraphs:
-VishGraphs is a Python library designed for graph visualization and analysis. It offers tools for generating random graphs, drawing graphs in 2D and 3D, and analyzing graph properties.
+```bash
+python examples/unionized_sar_example.py      # SAR (item-to-item similarity)
+python examples/unionized_fast_example.py     # FastAI-style embedding
+python examples/unionized_rbm_example.py      # Restricted Boltzmann Machine
+python examples/unionized_rlrmc_example.py    # Riemannian low-rank matrix completion
+python examples/unionized_geomlc_example.py   # Geometric matrix completion
+```
 
-<h3>
-    <img src="docs/images/struct.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
-    Directory Structure
-</h3>
+### Content Filter
+
+```bash
+python examples/content_filter_tfidf_example.py   # TF-IDF content filter
+```
+
+### Frontends (imshow)
+
+```bash
+python examples/imshow_connector_example.py   # plug-and-play demo UI
+# Then open http://127.0.0.1:8000
+```
+
+### Full Test Suite
+
+```bash
+python examples/run_all_algo_tests_example.py  # discover + run all algorithm tests
+```
+
+> **Tip**: All scripts add the project root to `sys.path` automatically. If `cr_learn` is installed, they prefer it; otherwise they use `sample_data/` CSVs bundled in this repo.
+
+---
+
+## Project Structure
 
 <table>
-<thead>
-<tr>
-<th>Description</th>
-<th>Quick Access</th>
-</tr>
-</thead>
+<thead><tr><th>Area</th><th>Path</th></tr></thead>
 <tbody>
-
-<tr><td><h3>CoreRec</h3>
-Core recommendation engine components and utilities
-</td><td><pre>
-
-CoreRec/
-├── corerec/              
-│   ├── engines/         
-│   │   ├── content_based/
-│   │   ├── collaborative/
-│   │   └── test_struct_UF/
-│   ├── preprocessing/   
-│   ├── torch_nn/       
-│   └── config/         
-│
-├── examples/            
-│   ├── Youtube_MoE/    
-│   └── ContentFilterExamples/  
-│
-├── documentation/       
-│   └── _build/
-│
-├── datasets/          
-│
-├── src/                
-│   ├── CoreRec/
-│   ├── SANDBOX/
-│   └── USECASES/
-│
-├── tests/             
-│
-├── vish_graphs/       
-│
-└── roadmap/             
-
+<tr><td><strong>Core models</strong></td><td><pre>
+corerec/
+├── engines/
+│   ├── dcn.py, deepfm.py, gnnrec.py, mind.py,
+│   │   sasrec.py, nasrec.py, bert4rec.py, two_tower.py
+│   ├── collaborative/       SAR, LightGCN, NCF, TwoTower
+│   └── content_based/       TFIDFRecommender, YoutubeDNN, DSSM
+├── pipelines/               RecommendationPipeline, DataPipeline
+├── retrieval/               Candidate retrieval, ensemble fusion
+├── ranking/                 Pointwise, pairwise, feature-cross rankers
+├── reranking/               Diversity, fairness rerankers
+├── multimodal/              MultiModalFusion, encoders
+├── embeddings/              Pretrained embeddings, tables
+├── evaluation/              Evaluator, metrics (RMSE, NDCG, MAP …)
+├── explanation/             Feature-based & generative explainers
+├── serving/                 ModelServer, batch inference
+├── api/                     BaseRecommender, exceptions, mixins
+└── cr_boosters/             Adam, NAdam, SGD, … optimizers
 </pre></td></tr>
-
-<tr><td><h3>Engines</h3>
-Engines Parts and Algorithms it Supports
-</td><td><pre>
-engines/
-├── __init__.py
-├── content_based.py
-├── hybrid.py
-│
-├── content_based/
-│   ├── __init__.py
-│   ├── base_recommender.py
-│   ├── cr_contentFilterFactory.py
-│   ├── tfidf_recommender.py
-│   │
-│   ├── traditional_ml_algorithms/
-│   │   ├── LR.py
-│   │   ├── decision_tree.py
-│   │   ├── lightgbm.py
-│   │   ├── svm.py
-│   │   ├── tfidf.py
-│   │   └── vw.py
-│   │
-│   ├── nn_based_algorithms/
-│   │   ├── AITM.py
-│   │   ├── DSSM.py
-│   │   ├── MIND.py
-│   │   ├── TDM.py
-│   │   ├── WidenDeep.py
-│   │   ├── Word2Vec.py
-│   │   ├── Youtube_dnn.py
-│   │   ├── autoencoder.py
-│   │   ├── cnn.py
-│   │   ├── dkn.py
-│   │   ├── lstur.py
-│   │   ├── naml.py
-│   │   ├── npa.py
-│   │   ├── nrms.py
-│   │   ├── rnn.py
-│   │   ├── transformer.py
-│   │   └── vae.py
-│   │
-│   ├── context_personalization/
-│   │   ├── context_aware.py
-│   │   ├── item_profiling.py
-│   │   └── user_profiling.py
-│   │
-│   ├── fairness_explainability/
-│   │   ├── explainable.py
-│   │   ├── fairness_aware.py
-│   │   └── privacy_preserving.py
-│   │
-│   └── [Other specialized modules...]
-│
-├── collaborative/
-│   ├── __init__.py
-│   ├── als_recommender.py
-│   ├── base_recommender.py
-│   ├── cr_unionizedFactory.py
-│   ├── initializer.py
-│   ├── matrix_factorization.py
-│   │
-│   ├── nn_base/
-│   │   ├── AFM_base.py
-│   │   ├── AutoFI_base.py
-│   │   ├── DCN_base.py
-│   │   ├── DIEN_base.py
-│   │   ├── DIN_base.py
-│   │   ├── DeepFM_base.py
-│   │   ├── NFM_base.py
-│   │   └── [Other neural network models...]
-│   │
-│   ├── graph_based_base/
-│   │   ├── DeepWalk_base.py
-│   │   ├── GNN_base.py
-│   │   ├── lightgcn_base.py
-│   │   └── [Other graph-based models...]
-│   │
-│   ├── mf_base/
-│   │   ├── ALS_base.py
-│   │   ├── SVD_base.py
-│   │   ├── nmf_base.py
-│   │   └── [Other matrix factorization models...]
-│   │
-│   └── attention_mechanism_base/
-│       ├── Attention_based_uf_base.py
-│       ├── SASRec_base.py
-│       └── Transformer_based_uf_base.py
-│
-└── test_struct_UF/
-    ├── factory/
-    ├── matrix_factorization_algorithms/
-    ├── neural_network_based_algorithms/
-    ├── graph_based_algorithms/
-    └── attention_mechanism_based_algorithms/
-         
-
+<tr><td><strong>Datasets</strong></td><td><pre>
+cr_learn_setup/cr_learn/
+├── ml_1m.py       MovieLens 1M
+├── ijcai.py       IJCAI-16 O2O
+├── tmall.py       Tmall
+├── beibei.py      BeiBei
+├── steam_games.py Steam Games
+├── rees46.py      Rees46
+└── library_thing.py
 </pre></td></tr>
+<tr><td><strong>Docs & Examples</strong></td><td><pre>
+docs/source/
+├── tutorials/     57 model tutorials (DCN, DeepFM, SASRec …)
+├── api/           Full API reference
+├── user_guide/    Data prep, training, persistence, best practices
+└── examples/      Basic, advanced, production deployment
 
-
-
-
+examples/          Runnable .py scripts for every engine
+</pre></td></tr>
 </tbody>
 </table>
 
+---
 
-# Usage
-### Generating Random Graphs
-Generate random graphs effortlessly with the `generate_random_graph` function:
+## VishGraphs
+
+CoreRec ships with **VishGraphs**, a companion library for graph visualization and analysis:
 
 ```python
 import vish_graphs as vg
-graph_file = vg.generate_random_graph(10, "random_graph.csv")
+
+# Generate a random graph and save to CSV
+graph_file = vg.generate_random_graph(num_people=100, file_path="graph.csv")
+
+# Load as adjacency matrix and visualize
+adj_matrix = vg.bipartite_matrix_maker(graph_file)
+nodes      = list(range(len(adj_matrix)))
+top_nodes  = [0, 1, 2]
+
+vg.draw_graph(adj_matrix, nodes, top_nodes)         # 2D
+vg.draw_graph_3d(adj_matrix, nodes, top_nodes)      # 3D
+vg.show_bipartite_relationship(adj_matrix)          # bipartite view
 ```
 
-# The use cases are:-
-## 🔍 Delve into Advanced Graph Analysis and Recommendation with VishGraphs and CoreRec! 🚀
-Welcome to a world of cutting-edge graph analysis and recommendation tools brought to you by VishGraphs and CoreRec. Uncover the potential of data visualization and machine learning in a sophisticated manner.
+**API summary:**
 
-[🔗 Explore Detailed UseCases Here 🔗](https://github.com/vishesh9131/CoreRec/blob/main/src/USECASES/usecases.md)
-
-## CoreRec
-
-```python
-import core_rec as cs
-```
-
-### 1. `GraphTransformer(num_layers, d_model, num_heads, d_feedforward, input_dim)`
-
-Main Algorithm CoreRec Provides Based on Transformer Architecture works fine with PyTorch, CoreRec etc. In Simple terms it uses **DNG Score** to rank prediction of surrondings of Target node Providing a Enhanced way to compute **Attention**.
-
-**Use case:** Providing recommendations for nodes based on their similarity within a graph.
-
-### 2. `GraphTransformerV2(num_layers, d_model, num_heads, d_feedforward, input_dim)`
-
-GraphTransformerV2 adds dropout and layer normalization, enhancing robustness compared to GraphTransformer's simpler architecture.
-
-**Use case:** More Evolved Training machine learning models for graph-related tasks, such as node classification or link prediction.
-
-### 3. `GraphDataset(adj_matrix, weight_matrix)`
-
-Defines a PyTorch dataset for graph data, allowing easy integration with DataLoader for model training.
-
-**Use case:** Preparing graph data for training machine learning models.
-
-### 4. `train_model(model, data_loader, criterion, optimizer, num_epochs)`
-
-Trains a given model using the provided data loader, loss function, optimizer, and number of epochs.
-
-**Use case:** Training machine learning models for graph-related tasks using graph data.
-
-In the `test.py` file, various functionalities from `vish_graphs.py` and `core_rec.py` are utilized and demonstrated:
-- Random graph generation (`generate_random_graph`).
-- Identification of top nodes in a graph (`find_top_nodes`).
-- Training a Transformer model for graph data (`GraphTransformerV2`, `GraphDataset`, `train_model`).
-- Recommending similar nodes using a trained model (`recommend_similar_nodes`).
-- Visualization of a graph in 3D (`draw_graph_3d`).
-
-## vishgraphs
-
-```python
-import vishgraphs as vg
-```
-### 1. `generate_random_graph(num_people, file_path="graph_dataset.csv", seed=None)`
-
-Generate a random graph with a specified number of people and save the adjacency matrix to a CSV file.
-
-**Use case:** Generating synthetic graph data for testing algorithms or simulations.
-
-### 2. `draw_graph(adj_matrix, nodes, top_nodes)`
-
-Draw a 2D visualization of a graph based on its adjacency matrix, highlighting top nodes if specified.
-
-**Use case:** Visualizing relationships within a graph dataset.
-
-### 3. `find_top_nodes(matrix, num_nodes=10)`
-
-Identify the top nodes with the greatest number of strong correlations in a graph.
-
-**Use case:** Identifying influential or highly connected nodes in a network.
-
-### 4. `draw_graph_3d(adj_matrix, nodes, top_nodes)`
-
-Create a 3D visualization of a graph based on its adjacency matrix, with optional highlighting of top nodes.
-
-**Use case:** Visualizing complex network structures in a three-dimensional space.
-
-### 5. `show_bipartite_relationship_with_cosine(adj_matrix)`
-
-Visualize bipartite relationships in a graph using cosine similarity and community detection algorithms.
-
-**Use case:** Analyzing relationships between different sets of nodes in a bipartite graph.
-
-### 6. `bipartite_matrix_maker(csv_path)`
-
-Read a CSV file containing a bipartite adjacency matrix and return it as a list.
-
-**Use case:** Preparing data for analyzing bipartite networks.
+| Function | Description |
+|----------|-------------|
+| `generate_random_graph(n, file_path, seed)` | Generate & save random adjacency matrix |
+| `draw_graph(adj, top_nodes, recommended_nodes, ...)` | 2D graph visualization |
+| `draw_graph_3d(adj, top_nodes, ...)` | 3D graph visualization |
+| `show_bipartite_relationship(adj)` | Bipartite relationship view |
+| `find_top_nodes(matrix, num_nodes)` | Most-connected nodes |
+| `bipartite_matrix_maker(csv_path)` | Load adjacency matrix from CSV |
 
 ---
 
-Explore the codebase and utilize these functionalities for your graph analysis and recommendation tasks! If you have any questions or need further assistance, don't hesitate to reach out. Happy graph analyzing! 📊🔍
+## Documentation
 
-### Drawing Graphs
-VishGraphs supports drawing graphs in both 2D and 3D:
+Full documentation is available at **[vishesh9131.github.io/CoreRec](https://vishesh9131.github.io/CoreRec/)**.
 
-```python
-adj_matrix = vishgraphs.bipartite_matrix_maker(graph_file)
-nodes = list(range(len(adj_matrix)))
-top_nodes = [0, 1, 2] # Example top nodes
-vishgraphs.draw_graph(adj_matrix, nodes, top_nodes)
+Build locally:
+
+```bash
+pip install sphinx sphinx-design myst-parser sphinx-book-theme
+sphinx-build -b html docs/source docs/build/html
+open docs/build/html/index.html
 ```
 
-
-## Core Team 👨‍💻
-
-These are the humans that form the CoreRec's core team, which runs the project.
-(Team is not yet decided)
-<!-- In alphabetical order: -->
-
-| [@vishesh9131][vishesh9131-user] | 
-| :---: | 
-| [![][vishesh9131-img]][vishesh9131-user] | 
-| **Founder / Creator** | 
-
-[vishesh9131-img]:https://avatars.githubusercontent.com/u/87526302?s=96&v=4
-
-[vishesh9131-user]: https://github.com/vishesh9131
+**Key sections:**
+- [Installation](https://vishesh9131.github.io/CoreRec/installation.html)
+- [QuickStart](https://vishesh9131.github.io/CoreRec/quickstart.html)
+- [57 Model Tutorials](https://vishesh9131.github.io/CoreRec/tutorials/index.html)
+- [API Reference](https://vishesh9131.github.io/CoreRec/api/engines.html)
+- [Production Deployment](https://vishesh9131.github.io/CoreRec/examples/production_deployment.html)
 
 ---
 
-<h3>
-    <img src="docs/images/trouble.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
-    Troubleshooting
-</h3>
+## Troubleshooting
 
-### Troubleshooting Guide
-
-For issues with CoreRec and VishGraphs:
-
-1. **Check Documentation:** Ensure you're following the library's guidelines and examples correctly.
-2. **GitHub Issues:** Report bugs or seek help by creating an issue on the GitHub repository.
-3. **Verify Data:** Confirm that your input data is correctly formatted and compatible.
-4. **Model Parameters:** Double-check model configurations and training parameters.
-5. **Visualization Inputs:** Ensure correct parameters for graph visualization functions.
-6. **Community Help:** Utilize community forums for additional support.
-
-This streamlined approach should help resolve common issues efficiently.
-
-<h3>
-    <img src="docs/images/cont.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
-    Contributing
-</h3>
-
-We welcome contributions to enhance the functionalities of our graph analysis and recommendation tools. If you're interested in contributing, here are a few ways you can help:
-
-- **Bug Fixes:** Identify and fix bugs in the existing code.
-- **Feature Enhancements:** Suggest and implement improvements to current features.
-- **New Features:** Propose and develop new features that could benefit users of the libraries.
-- **Documentation:** Help improve the documentation to make the libraries more user-friendly.
-
-### To contribute, please follow these steps:
-1. Fork the repository.
-2. Create a new branch for your feature or fix.
-3. Develop your changes while adhering to the coding standards and guidelines.
-4. Submit a pull request with a clear description of the changes and any relevant issue numbers.
-
-Your contributions are greatly appreciated and will help make these tools more effective and accessible to everyone!
-
-<h3>
-    <img src="docs/images/lic.png" style="vertical-align: middle; margin-right: 0px;" width="40" height="40">
-    License
-</h3>
-VishGraphs is distributed under the following terms:
-
->The library and utilities are only for research purposes. Please do not use it commercially without the author's (@Vishesh9131) consent.
-
-## Examples and Demos
-
-- **Dataset note (crlearn)**: Examples will try to use the IJCAI dataset via `cr_learn.ijcai.load()` when available. If not available, they fall back to CSVs in `sample_data/`. You don't need to change the scripts; they auto-detect.
-
-- **Deep engines (tiny, runnable demos)**
+<details>
+<summary><strong>ImportError / module not found</strong></summary>
 
 ```bash
-# Deep & Cross Network
-python examples/engines_dcn_example.py
-
-# DeepFM
-python examples/engines_deepfm_example.py
-
-# GNN-based recommender
-python examples/engines_gnnrec_example.py
-
-# MIND (multi-interest) sequential recommender
-python examples/engines_mind_example.py
-
-# NASRec
-python examples/engines_nasrec_example.py
-
-# SASRec (self-attentive sequential)
-python examples/engines_sasrec_example.py
+pip install --upgrade corerec
 ```
+</details>
 
-- **UnionizedFilterEngine (collaborative/hybrid)**
+<details>
+<summary><strong>NumPy 2.x conflict with PyTorch</strong></summary>
 
 ```bash
-# FastAI-style embedding dot-bias
-python examples/unionized_fast_example.py
-
-# FastAI-style recommender variant
-python examples/unionized_fast_recommender_example.py
-
-# SAR (item-to-item similarity)
-python examples/unionized_sar_example.py
-
-# RLRMC (Riemannian low-rank)
-python examples/unionized_rlrmc_example.py
-
-# RBM (Restricted Boltzmann Machine)
-python examples/unionized_rbm_example.py
-
-# GeoMLC (geometric matrix completion)
-python examples/unionized_geomlc_example.py
+pip install "numpy<2"
 ```
+</details>
 
-- **Content Filter**
+<details>
+<summary><strong>CUDA / GPU issues</strong></summary>
 
 ```bash
-# TF-IDF based content filter
-python examples/content_filter_tfidf_example.py
+pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu118
 ```
+</details>
 
-- **Frontends (imshow plug-and-play)**
+<details>
+<summary><strong>cr_learn dataset download fails</strong></summary>
 
-```bash
-# Minimal plug-and-play frontend server
-python examples/imshow_connector_example.py
-# Then open http://127.0.0.1:8000 in your browser
-```
+Examples fall back to `sample_data/` CSVs bundled in this repo automatically. No action needed.
+</details>
 
-- **Unified Test Runner**
+For anything else: [open an issue](https://github.com/vishesh9131/CoreRec/issues) or check the [FAQ](https://vishesh9131.github.io/CoreRec/about/faq.html).
 
-```bash
-# Discover and run the test suite with a compact report
-python examples/run_all_algo_tests_example.py
-```
+---
 
-Tips
-- All example scripts add the project root to `sys.path` automatically so you can run them directly.
-- If `cr_learn` is installed, examples will prefer it; otherwise they use `sample_data/` CSVs bundled in this repo.
+## Contributing
+
+We welcome bug fixes, new features, docs improvements, and new models.
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/my-thing`)
+3. Make your changes following the existing code style
+4. Open a pull request with a clear description
+
+See [CONTRIBUTING.md](https://vishesh9131.github.io/CoreRec/contributing.html) for the full guide.
+
+---
+
+## Core Team
+
+| [@vishesh9131](https://github.com/vishesh9131) |
+| :---: |
+| [![](https://avatars.githubusercontent.com/u/87526302?s=96&v=4)](https://github.com/vishesh9131) |
+| **Founder / Creator** |
+
+---
+
+## License
+
+> This library and its utilities are for **research purposes only**. Commercial use requires explicit consent from the author ([@vishesh9131](https://github.com/vishesh9131)).
+
+<img src="docs/images/lic.png" width="20" height="20" style="vertical-align:middle"/> See [LICENSE](LICENSE) for details.
