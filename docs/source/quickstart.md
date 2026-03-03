@@ -43,23 +43,23 @@ loaded_model = DCN.load('my_model.pkl')
 
 ## Available Models
 
-**Core Engines (6)**:
-- DCN, DeepFM, GNNRec, MIND, NASRec, SASRec
+### Production Models (Tested & Stable)
 
-**Neural Networks (29)**:
-- AFM, AutoInt, Bert4Rec, DIEN, DIN, DLRM, NCF, ...
+These 13 models are fully tested, CI-enforced, and recommended for production use:
 
-**Matrix Factorization (9)**:
-- SVD, ALS, A2SVD, ...
+- **Deep Learning**: DCN, DeepFM, GNNRec, MIND, NASRec, SASRec, TwoTower, BERT4Rec
+- **Collaborative**: SAR, NCF, FAST, FASTRecommender, LightGCN
+- **Content-Based**: TFIDFRecommender
 
-**Graph-Based (6)**:
-- LightGCN, GeoIMC, ...
+### Sandbox Models (Experimental)
 
-**Sequential (6)**:
-- RBM, SAR, SLiRec, ...
+~50 additional models for research and exploration. These are **not production-tested** — see [Model Tiers](models/index.md#model-tiers) for details.
 
-**Bayesian (3)**:
-- BPR, BPRMF, VMF
+- **Neural Networks**: AFM, AutoInt, DIEN, DIN, DLRM, Wide&Deep, and more
+- **Matrix Factorization**: SVD, ALS, A2SVD, and more
+- **Graph-Based**: GeoIMC, LightGCN-Base, GNN-Base
+- **Sequential**: RBM, SLiRec, SUM
+- **Bayesian**: BPR, BPRMF, VMF
 
 ## Next Steps
 
@@ -93,6 +93,6 @@ recs = model.recommend(user_id, top_k=10)
 from corerec.engines.gnnrec import GNNRec
 
 model = GNNRec()
-model.fit(users, items, ratings, social_network=edges)
+model.fit(users, items, ratings)
 recs = model.recommend(user_id, top_k=10)
 ```

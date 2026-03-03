@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 import logging
-import pickle
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Any, Union
 from scipy.sparse import csr_matrix
@@ -296,6 +295,8 @@ class DCN(BaseRecommender):
 
         # Build model with correct dimensions (after we know max_features)
         num_features = len(feature_values) + 1  # +1 for padding/unknown
+        self._num_features = num_features
+        self._max_features = max_features
         self.model = self._build_model(num_features, max_features)
 
         # Convert to tensors
@@ -419,8 +420,37 @@ class DCN(BaseRecommender):
         path_obj = Path(path)
         path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(path_obj, "wb") as f:
-            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+        checkpoint = {
+            "config": {
+                "name": self.name,
+                "embedding_dim": self.embedding_dim,
+                "num_cross_layers": self.num_cross_layers,
+                "deep_layers": self.deep_layers,
+                "dropout": self.dropout,
+                "learning_rate": self.learning_rate,
+                "batch_size": self.batch_size,
+                "epochs": self.epochs,
+                "early_stopping_patience": self.early_stopping_patience,
+                "checkpoint_dir": self.checkpoint_dir,
+                "verbose": self.verbose,
+                "device": self.device,
+            },
+            "build_params": {
+                "num_features": self._num_features,
+                "max_features": self._max_features,
+            },
+            "model_state_dict": self.model.state_dict() if self.model else None,
+            "user_map": self.user_map,
+            "item_map": self.item_map,
+            "feature_map": self.feature_map,
+            "reverse_user_map": self.reverse_user_map,
+            "reverse_item_map": self.reverse_item_map,
+            "user_features": self.user_features,
+            "item_features": self.item_features,
+            "is_fitted": self.is_fitted,
+        }
+
+        torch.save(checkpoint, path_obj)
 
         if self.verbose:
             logger.info(f"Model saved to {path}")
@@ -428,10 +458,43 @@ class DCN(BaseRecommender):
     @classmethod
     def load(cls, path: Union[str, Path]) -> "DCN":
         """Load model from disk."""
-        with open(path, "rb") as f:
-            model = pickle.load(f)
+        checkpoint = torch.load(path, weights_only=False)
+        cfg = checkpoint["config"]
 
-        if model.verbose:
+        instance = cls(
+            name=cfg["name"],
+            embedding_dim=cfg["embedding_dim"],
+            num_cross_layers=cfg["num_cross_layers"],
+            deep_layers=cfg["deep_layers"],
+            dropout=cfg["dropout"],
+            learning_rate=cfg["learning_rate"],
+            batch_size=cfg["batch_size"],
+            epochs=cfg["epochs"],
+            early_stopping_patience=cfg["early_stopping_patience"],
+            checkpoint_dir=cfg["checkpoint_dir"],
+            verbose=cfg["verbose"],
+            device=cfg["device"],
+        )
+
+        instance.user_map = checkpoint["user_map"]
+        instance.item_map = checkpoint["item_map"]
+        instance.feature_map = checkpoint["feature_map"]
+        instance.reverse_user_map = checkpoint["reverse_user_map"]
+        instance.reverse_item_map = checkpoint["reverse_item_map"]
+        instance.user_features = checkpoint["user_features"]
+        instance.item_features = checkpoint["item_features"]
+        instance.is_fitted = checkpoint["is_fitted"]
+
+        bp = checkpoint["build_params"]
+        instance._num_features = bp["num_features"]
+        instance._max_features = bp["max_features"]
+
+        if checkpoint["model_state_dict"] is not None:
+            instance.model = instance._build_model(bp["num_features"], bp["max_features"])
+            instance.model.load_state_dict(checkpoint["model_state_dict"])
+            instance.model.eval()
+
+        if instance.verbose:
             logger.info(f"Model loaded from {path}")
 
-        return model
+        return instance

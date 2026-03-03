@@ -183,15 +183,40 @@ class MIND(BaseRecommender):
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs):
         """Load model from disk."""
-        import pickle
+        checkpoint = torch.load(path, weights_only=False)
+        cfg = checkpoint["config"]
 
-        with open(path, "rb") as f:
-            model = pickle.load(f)
+        instance = cls(
+            name=cfg["name"],
+            embedding_dim=cfg["embedding_dim"],
+            num_interests=cfg["num_interests"],
+            hidden_dims=cfg["hidden_dims"],
+            dropout=cfg["dropout"],
+            routing_iterations=cfg["routing_iterations"],
+            learning_rate=cfg["learning_rate"],
+            batch_size=cfg["batch_size"],
+            epochs=cfg["epochs"],
+            max_seq_length=cfg["max_seq_length"],
+            verbose=cfg["verbose"],
+            device=cfg["device"],
+        )
 
-        if hasattr(model, "verbose") and model.verbose:
+        instance.user_history = checkpoint["user_history"]
+        instance.user_map = checkpoint["user_map"]
+        instance.item_map = checkpoint["item_map"]
+        instance.reverse_item_map = checkpoint["reverse_item_map"]
+        instance.is_fitted = checkpoint["is_fitted"]
+        instance._num_items = checkpoint["build_params"]["num_items"]
+
+        if checkpoint["model_state_dict"] is not None:
+            instance.model = instance._build_model(instance._num_items)
+            instance.model.load_state_dict(checkpoint["model_state_dict"])
+            instance.model.eval()
+
+        if instance.verbose:
             logger.info(f"Model loaded from {path}")
 
-        return model
+        return instance
 
     def fit(
         self,
@@ -239,8 +264,9 @@ class MIND(BaseRecommender):
         if current_user is not None:
             self.user_history[current_user] = current_history
 
-        # Build model
-        self.model = self._build_model(len(unique_items))
+        # Build model -- keep track of how many items for save/load
+        self._num_items = len(unique_items)
+        self.model = self._build_model(self._num_items)
 
         # Create training sequences and targets
         train_sequences = []
@@ -442,13 +468,36 @@ class MIND(BaseRecommender):
 
     def save(self, path: Union[str, Path], **kwargs) -> None:
         """Save model to disk."""
-        import pickle
-
         path_obj = Path(path)
         path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(path_obj, "wb") as f:
-            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+        checkpoint = {
+            "config": {
+                "name": self.name,
+                "embedding_dim": self.embedding_dim,
+                "num_interests": self.num_interests,
+                "hidden_dims": self.hidden_dims,
+                "dropout": self.dropout,
+                "routing_iterations": self.routing_iterations,
+                "learning_rate": self.learning_rate,
+                "batch_size": self.batch_size,
+                "epochs": self.epochs,
+                "max_seq_length": self.max_seq_length,
+                "verbose": self.verbose,
+                "device": self.device,
+            },
+            "build_params": {
+                "num_items": self._num_items,
+            },
+            "model_state_dict": self.model.state_dict() if self.model else None,
+            "user_history": self.user_history,
+            "user_map": self.user_map,
+            "item_map": self.item_map,
+            "reverse_item_map": self.reverse_item_map,
+            "is_fitted": self.is_fitted,
+        }
+
+        torch.save(checkpoint, path_obj)
 
         if self.verbose:
             logger.info(f"{self.name} model saved to {path}")

@@ -1,5 +1,10 @@
 # PNN Tutorial: Product-based Neural Network
 
+```{admonition} Sandbox Model — Experimental
+:class: warning
+This model is part of the CoreRec **Sandbox** — an experimental collection of algorithms for research and exploration. Sandbox models are **not production-tested** and may have incomplete implementations. For production-ready models, see the [Production Models](../models/index.md#production-models-tested--stable).
+```
+
 ## Introduction
 
 **PNN** uses a product layer to capture interactive patterns between inter-field categories before feeding into fully connected layers.
@@ -43,7 +48,13 @@ l_1 = ReLU(W_z z + W_p p + b_1)
 ŷ = σ(W_out l_n + b_out)
 ```
 
-## Tutorial with cr_learn
+## Reference Implementation
+
+```{admonition} Implementation Note
+:class: info
+The code examples below are **reference implementations** for learning purposes. This is a sandbox model and has not been production-tested. Verify behavior thoroughly before using in production.
+```
+
 
 ### Step 1: Import and Load Data
 
@@ -170,6 +181,17 @@ print(f"Loaded model prediction: {test_score:.3f}")
 2. **Kernel Trick**: Use factorization to speed up product layer
 3. **Hidden Units**: [256, 128, 64]
 4. **Regularization**: L2 or Dropout needed
+
+## Scaling & Production Considerations
+
+If you plan to move this sandbox model toward production use, consider:
+
+- **Data Volume**: Test with realistic dataset sizes; sandbox implementations may not be optimized for large-scale data.
+- **Distributed Training**: For datasets exceeding single-machine memory, consider wrapping the model in distributed training frameworks (e.g., PyTorch DDP, Horovod).
+- **Hyperparameter Tuning**: Use systematic search (Optuna, Ray Tune) rather than manual tuning. The defaults in sandbox models are not tuned for any specific domain.
+- **Serving Latency**: Profile inference time. Some architectures (e.g., attention-based) may need quantization or ONNX export for low-latency serving.
+- **Monitoring**: Implement A/B testing and online metrics (CTR, engagement, diversity) before replacing an existing system.
+- **Validation**: Write comprehensive unit tests and integration tests before deploying. Sandbox models do not have CI coverage.
 
 ## Further Reading
 

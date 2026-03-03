@@ -7,23 +7,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: Set PYTHONPATH
-      run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/engine" >> $GITHUB_ENV
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: python
-    - name: Run tests
-      run: |
-        python -m unittest discover -s src/USECASES/unittest -p "*.py"
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run production model tests
+        run: |
+          python -m pytest tests/test_all_production_models.py -v --tb=short
