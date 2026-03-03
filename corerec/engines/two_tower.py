@@ -12,7 +12,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional, Any, Union
+from pathlib import Path
+import pickle
 import logging
 
 from corerec.api.base_recommender import BaseRecommender
@@ -338,10 +340,12 @@ class TwoTower(BaseRecommender):
         # encode user
         # (in practice, you'd pass actual features here)
         user_feat = torch.zeros(1, self.user_input_dim, device=self.device)
-        user_feat[0, user_idx] = 1.0  # one-hot if no features
-        
-        user_emb = self.model.encode_user(user_feat).cpu().numpy()
-        
+        user_feat[0, min(user_idx, self.user_input_dim - 1)] = 1.0
+
+        self.model.eval()
+        with torch.no_grad():
+            user_emb = self.model.encode_user(user_feat).cpu().numpy()
+
         # score all items via cached embeddings
         scores = np.dot(user_emb, self.item_embeddings_cache.T).flatten()
         
@@ -366,6 +370,90 @@ class TwoTower(BaseRecommender):
         
         return emb
     
+    def predict(self, user_id: Any, item_id: Any, **kwargs) -> float:
+        """Predict affinity score for a single user-item pair."""
+        if not self.is_fitted:
+            raise ValueError("Model not fitted yet")
+
+        if user_id not in self.user_map or item_id not in self.item_map:
+            return 0.0
+
+        user_idx = self.user_map[user_id]
+        item_idx = self.item_map[item_id]
+
+        user_feat = torch.zeros(1, self.user_input_dim, device=self.device)
+        user_feat[0, min(user_idx, self.user_input_dim - 1)] = 1.0
+
+        self.model.eval()
+        with torch.no_grad():
+            user_emb = self.model.encode_user(user_feat).cpu().numpy()
+
+        item_emb = self.item_embeddings_cache[item_idx]
+        score = float(np.dot(user_emb.flatten(), item_emb))
+        return score
+
+    def save(self, path: Union[str, Path], **kwargs) -> None:
+        """Save model to disk."""
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        state = {
+            "model_state_dict": self.model.state_dict() if self.model else None,
+            "user_map": self.user_map,
+            "item_map": self.item_map,
+            "reverse_item_map": self.reverse_item_map,
+            "item_embeddings_cache": self.item_embeddings_cache,
+            "config": {
+                "name": self.name,
+                "user_input_dim": self.user_input_dim,
+                "item_input_dim": self.item_input_dim,
+                "embedding_dim": self.embedding_dim,
+                "hidden_dims": self.hidden_dims,
+                "dropout": self.dropout,
+                "loss_type": self.loss_type,
+                "lr": self.lr,
+                "batch_size": self.batch_size,
+                "num_epochs": self.num_epochs,
+            },
+            "is_fitted": self.is_fitted,
+        }
+        torch.save(state, path)
+
+    @classmethod
+    def load(cls, path: Union[str, Path]) -> "TwoTower":
+        """Load model from disk."""
+        state = torch.load(path, map_location="cpu", weights_only=False)
+        cfg = state["config"]
+        instance = cls(
+            name=cfg["name"],
+            user_input_dim=cfg["user_input_dim"],
+            item_input_dim=cfg["item_input_dim"],
+            embedding_dim=cfg["embedding_dim"],
+            hidden_dims=cfg["hidden_dims"],
+            dropout=cfg["dropout"],
+            loss_type=cfg["loss_type"],
+            learning_rate=cfg["lr"],
+            batch_size=cfg["batch_size"],
+            num_epochs=cfg["num_epochs"],
+        )
+        instance.user_map = state["user_map"]
+        instance.item_map = state["item_map"]
+        instance.reverse_item_map = state["reverse_item_map"]
+        instance.item_embeddings_cache = state["item_embeddings_cache"]
+        instance.is_fitted = state["is_fitted"]
+
+        if state["model_state_dict"] is not None:
+            instance.model = TwoTowerModel(
+                user_input_dim=cfg["user_input_dim"],
+                item_input_dim=cfg["item_input_dim"],
+                embedding_dim=cfg["embedding_dim"],
+                hidden_dims=cfg["hidden_dims"],
+                dropout=cfg["dropout"],
+            )
+            instance.model.load_state_dict(state["model_state_dict"])
+            instance.model.eval()
+        return instance
+
     def get_item_embeddings(self) -> np.ndarray:
         """Get all item embeddings (for building vector index)."""
         return self.item_embeddings_cache

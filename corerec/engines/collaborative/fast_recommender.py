@@ -305,3 +305,25 @@ class FASTRecommender(BaseRecommender):
         instance.reverse_item_map = model_data["reverse_item_map"]
 
         return instance
+
+    def predict(self, user_id, item_id, **kwargs) -> float:
+        """Predict score for a single user-item pair."""
+        if self.user_factors is None:
+            raise ValueError("Model not fitted")
+        if user_id not in self.user_map or item_id not in self.item_map:
+            return 0.0
+        user_idx = self.user_map[user_id]
+        item_idx = self.item_map[item_id]
+        return self._predict(user_idx, item_idx)
+
+    def save(self, path, **kwargs) -> None:
+        """Save model to disk (delegates to save_model)."""
+        self.save_model(str(path))
+
+    @classmethod
+    def load(cls, path) -> "FASTRecommender":
+        """Load model from disk (delegates to load_model)."""
+        filepath = str(path)
+        if not filepath.endswith(".npy"):
+            filepath += ".npy"
+        return cls.load_model(filepath)

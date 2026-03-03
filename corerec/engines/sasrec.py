@@ -396,7 +396,7 @@ class SASRec(BaseRecommender):
             pickle.dump(export_data, f)
         self.logger.info(f"Item embeddings exported to {filepath}")
 
-    def predict(self, last_emb: torch.Tensor, item_indices: Optional[torch.LongTensor] = None) -> torch.Tensor:
+    def _score_items(self, last_emb: torch.Tensor, item_indices: Optional[torch.LongTensor] = None) -> torch.Tensor:
         """
         Compute scores for items given last_emb [batch_size, hidden].
         If item_indices is None -> return scores over all items [batch_size, n_items+1]
@@ -404,12 +404,43 @@ class SASRec(BaseRecommender):
         """
         assert self.model is not None, "Model not initialized"
         item_weights = self.model.item_emb.weight  # [n_items+1, hidden]
-        # scores = last_emb @ item_weights.T
         scores = torch.matmul(last_emb, item_weights.t())  # [batch, n_items+1]
         if item_indices is None:
             return scores
         else:
             return scores[:, item_indices]
+
+    # keep the old name as an alias for backward compatibility
+    predict_scores = _score_items
+
+    def predict(self, user_id: Any, item_id: Any, **kwargs) -> float:
+        """Predict score for a single user-item pair (BaseRecommender interface)."""
+        if not self.is_fitted or self.model is None:
+            raise ValueError("Model not fitted yet")
+
+        if user_id not in self.user_sequences:
+            return 0.0
+        if item_id not in self.item_to_index:
+            return 0.0
+
+        seq = list(self.user_sequences[user_id])
+        if len(seq) > self.max_seq_length:
+            seq_in = seq[-self.max_seq_length:]
+        else:
+            seq_in = [0] * (self.max_seq_length - len(seq)) + seq
+
+        input_seq = torch.LongTensor([seq_in]).to(self.device)
+        padding_mask = (input_seq == 0)
+
+        self.model.eval()
+        with torch.no_grad():
+            logits = self.model(input_seq, padding_mask)
+            last_idx = max(0, torch.sum(input_seq > 0, dim=1).item() - 1)
+            last_emb = logits[0, last_idx, :].unsqueeze(0)
+            scores = self._score_items(last_emb).squeeze(0).cpu().numpy()
+
+        item_idx = self.item_to_index[item_id]
+        return float(scores[item_idx])
 
     def fit(
         self,
@@ -730,7 +761,7 @@ class SASRec(BaseRecommender):
 
                 if self.loss_type == 'bpr':
                     # Get full scores for all items
-                    full_scores = self.predict(last_emb, item_indices=None)  # [batch, n_items+1]
+                    full_scores = self._score_items(last_emb, item_indices=None)  # [batch, n_items+1]
                     
                     # Check for NaN in scores
                     if torch.isnan(full_scores).any() or torch.isinf(full_scores).any():
@@ -753,7 +784,7 @@ class SASRec(BaseRecommender):
                     loss = loss / self.neg_samples
 
                 elif self.loss_type == 'ce':
-                    logits = self.predict(last_emb)  # [batch, n_items+1]
+                    logits = self._score_items(last_emb)  # [batch, n_items+1]
                     
                     # Check for NaN in logits
                     if torch.isnan(logits).any() or torch.isinf(logits).any():
@@ -766,7 +797,7 @@ class SASRec(BaseRecommender):
 
                 else:  # 'bce' default
                     # Get full scores for all items
-                    full_scores = self.predict(last_emb, item_indices=None)  # [batch, n_items+1]
+                    full_scores = self._score_items(last_emb, item_indices=None)  # [batch, n_items+1]
                     
                     # Check for NaN in scores
                     if torch.isnan(full_scores).any() or torch.isinf(full_scores).any():
@@ -942,7 +973,7 @@ class SASRec(BaseRecommender):
             last_idx = torch.sum(input_seq > 0, dim=1) - 1
             last_idx = torch.clamp(last_idx, min=0)
             last_emb = logits[0, last_idx[0], :].unsqueeze(0)  # [1, hidden]
-            scores = self.predict(last_emb)  # [1, n_items+1]
+            scores = self._score_items(last_emb)  # [1, n_items+1]
             scores = scores.squeeze(0).cpu().numpy()
 
         scores[0] = -np.inf  # disallow padding

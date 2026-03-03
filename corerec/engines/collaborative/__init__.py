@@ -28,7 +28,7 @@ Author: Vishesh Yadav
 _model_imports = {
     "SAR": (".sar", "SAR"),
     "TwoTower": ("corerec.engines.two_tower", "TwoTower"),
-    "LightGCN": (".graph_based_base.lightgcn_base", "LightGCN"),
+    "LightGCN": (".graph_based_base.lightgcn", "LightGCN"),
     "NCF": (".nn_base.ncf", "NCF"),
     "FastRecommender": (".fast_recommender", "FastRecommender"),
     # legacy/deprecated

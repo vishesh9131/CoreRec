@@ -1,6 +1,6 @@
 # Tutorial Index
 
-Comprehensive tutorials for all 57 CoreRec models with cr_learn examples.
+Comprehensive tutorials for all CoreRec models.
 
 ## Getting Started
 
@@ -9,9 +9,11 @@ Before diving into specific models, we recommend:
 2. Follow the [QuickStart](../quickstart.md)
 3. Understand [Core Concepts](../concepts.md)
 
-## Core Engine Models
+## Production Models (Tested & Stable)
 
-These 6 models are production-ready and cover most use cases:
+These models are **production-ready** — fully tested, CI-enforced, and implement the complete `BaseRecommender` interface. Start here.
+
+### Core Engine Models
 
 ```{toctree}
 ---
@@ -23,11 +25,41 @@ gnnrec_tutorial
 mind_tutorial
 nasrec_tutorial
 sasrec_tutorial
+bert4rec_tutorial
 ```
 
-## Neural Network Models (29)
+### Collaborative Filtering Models
 
-Deep learning models for complex pattern recognition:
+```{toctree}
+---
+maxdepth: 1
+---
+ncf_tutorial
+sar_tutorial
+lightgcn_tutorial
+```
+
+### Content-Based Models
+
+```{toctree}
+---
+maxdepth: 1
+---
+tfidf_tutorial
+```
+
+---
+
+## Sandbox Models (Experimental)
+
+```{admonition} Sandbox Notice
+:class: warning
+The models below are **experimental**. They are included for research and learning purposes. Sandbox models may have incomplete implementations and are not covered by production CI tests. See [Model Tiers](../models/index.md#model-tiers) for details.
+```
+
+Each sandbox tutorial explains the model's architecture, mathematical foundations, use cases, and scaling considerations. Code examples are provided as **reference implementations** — they may require additional validation before production use.
+
+### Neural Network Models (Sandbox)
 
 ```{toctree}
 ---
@@ -36,7 +68,6 @@ maxdepth: 1
 afm_tutorial
 autofi_tutorial
 autoint_tutorial
-bert4rec_tutorial
 bst_tutorial
 bivae_tutorial
 caser_tutorial
@@ -60,7 +91,6 @@ gan_tutorial
 gatenet_tutorial
 gnn_base_tutorial
 gru_cf_tutorial
-ncf_tutorial
 nfm_tutorial
 nextitnet_tutorial
 widedeep_tutorial
@@ -72,9 +102,7 @@ monolith_tutorial
 tdm_tutorial
 ```
 
-## Matrix Factorization Models (9)
-
-Classic collaborative filtering approaches:
+### Matrix Factorization Models (Sandbox)
 
 ```{toctree}
 ---
@@ -89,22 +117,17 @@ svd_tutorial
 userbased_tutorial
 ```
 
-## Graph-Based Models (6)
-
-Models leveraging graph structure:
+### Graph-Based Models (Sandbox)
 
 ```{toctree}
 ---
 maxdepth: 1
 ---
 geoimc_tutorial
-lightgcn_tutorial
 lightgcn_base_tutorial
 ```
 
-## Sequential Models (6)
-
-Time-aware recommendation models:
+### Sequential Models (Sandbox)
 
 ```{toctree}
 ---
@@ -112,14 +135,11 @@ maxdepth: 1
 ---
 rbm_tutorial
 rlrmc_tutorial
-sar_tutorial
 slirec_tutorial
 sum_tutorial
 ```
 
-## Bayesian Models (3)
-
-Probabilistic approaches:
+### Bayesian Models (Sandbox)
 
 ```{toctree}
 ---
@@ -130,16 +150,13 @@ bprmf_tutorial
 vmf_tutorial
 ```
 
-## Content-Based Models (3)
-
-Feature-based recommendations:
+### Content-Based Models (Sandbox)
 
 ```{toctree}
 ---
 maxdepth: 1
 ---
 mind_content_tutorial
-tfidf_tutorial
 ```
 
 ## Pipeline & System Tutorials
@@ -156,28 +173,30 @@ imshow_tutorial
 
 ## Tutorial Structure
 
-Each tutorial follows a consistent structure:
+### Production Model Tutorials
+Full working examples with tested code you can copy-paste and run.
 
-1. **Introduction** - What the model does
-2. **How It Works** - Architecture and math
-3. **Step-by-Step Tutorial** - Complete example with cr_learn
-4. **Advanced Usage** - Customization and tuning
-5. **Key Takeaways** - When to use, best practices
-6. **Further Reading** - Papers and references
+### Sandbox Model Tutorials
+Each sandbox tutorial covers:
+1. **Introduction** — What the model does and its original paper
+2. **Architecture & Theory** — How it works, with diagrams and math
+3. **Reference Implementation** — Code examples (informational, not production-tested)
+4. **Use Cases & Scaling** — When to use it, how to scale, and production considerations
+5. **Key Takeaways** — Best practices and further reading
 
 ## Learning Path
 
 ### Beginners
-1. Start with [DCN Tutorial](dcn_tutorial.md)
-2. Try [Matrix Factorization](svd_tutorial.md)
-3. Explore [Sequential Models](sasrec_tutorial.md)
+1. Start with [DCN Tutorial](dcn_tutorial.md) (Production)
+2. Try [NCF Tutorial](ncf_tutorial.md) (Production)
+3. Explore [SAR Tutorial](sar_tutorial.md) (Production)
 
 ### Intermediate
-1. Deep dive into [DeepFM](deepfm_tutorial.md)
-2. Learn [Graph Methods](gnnrec_tutorial.md)
-3. Master [Multi-Interest](mind_tutorial.md)
+1. Deep dive into [DeepFM](deepfm_tutorial.md) (Production)
+2. Learn [Graph Methods with LightGCN](lightgcn_tutorial.md) (Production)
+3. Master [Multi-Interest with MIND](mind_tutorial.md) (Production)
 
 ### Advanced
-1. Study [Neural Architecture Search](nasrec_tutorial.md)
-2. Implement [Custom Models](../examples/advanced_usage.md)
+1. Study [Neural Architecture Search](nasrec_tutorial.md) (Production)
+2. Explore [Sandbox Models](../models/index.md#sandbox-models-experimental) for research
 3. Deploy to [Production](../examples/production_deployment.md)

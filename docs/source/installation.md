@@ -20,23 +20,6 @@ cd CoreRec
 pip install -e .
 ```
 
-## Install with Optional Dependencies
-
-### For Deep Learning Models
-```bash
-pip install corerec[deeplearning]
-```
-
-### For Graph Models
-```bash
-pip install corerec[graph]
-```
-
-### For All Features
-```bash
-pip install corerec[all]
-```
-
 ## Install cr_learn (for tutorials)
 
 ```bash

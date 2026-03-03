@@ -51,6 +51,15 @@ CoreRec organizes models into engines:
 - **Unionized Filter Engine**: Collaborative filtering
 - **Content Filter Engine**: Content-based methods
 
+#### Model Tiers
+
+CoreRec models are organized into two tiers:
+
+- **Production Models** (13 models): Fully tested, CI-enforced, and implement the complete `BaseRecommender` interface. These are recommended for production deployments. Examples: DCN, DeepFM, SASRec, NCF, LightGCN.
+- **Sandbox Models** (~50 models): Experimental implementations for research and learning. These cover a wide range of published algorithms but are not production-tested. Always validate thoroughly before using in production.
+
+See the [Model Documentation](models/index.md#model-tiers) for the full breakdown.
+
 ### Workflow
 
 1. **Data Preparation**: Load and preprocess your dataset

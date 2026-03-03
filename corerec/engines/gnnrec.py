@@ -6,7 +6,6 @@ from typing import List, Dict, Optional, Tuple
 from scipy.sparse import csr_matrix
 from corerec.api.base_recommender import BaseRecommender
 from corerec.api.exceptions import ModelNotFittedError, InvalidParameterError
-import pickle
 from pathlib import Path
 from typing import Union
 import logging
@@ -197,9 +196,13 @@ class GNNRec(BaseRecommender):
         d_mat_inv_sqrt = torch.diag(d_inv_sqrt)
         laplacian_matrix = d_mat_inv_sqrt @ adj_matrix @ d_mat_inv_sqrt
 
-        # Build model
-        self.model = self._build_model(num_users, num_items, laplacian_matrix)
+        # Build model -- stash build params for save/load round-trip
+        self._build_params = {
+            "num_users": num_users,
+            "num_items": num_items,
+        }
         self.laplacian_matrix = laplacian_matrix
+        self.model = self._build_model(num_users, num_items, laplacian_matrix)
 
         # Create training data
         train_user_indices = torch.tensor(user_indices, dtype=torch.long).to(self.device)
@@ -344,13 +347,33 @@ class GNNRec(BaseRecommender):
 
     def save(self, path: Union[str, Path], **kwargs) -> None:
         """Save model to disk."""
-        import pickle
-
         path_obj = Path(path)
         path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(path_obj, "wb") as f:
-            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+        checkpoint = {
+            "config": {
+                "name": self.name,
+                "embedding_dim": self.embedding_dim,
+                "num_gnn_layers": self.num_gnn_layers,
+                "dropout": self.dropout,
+                "learning_rate": self.learning_rate,
+                "batch_size": self.batch_size,
+                "epochs": self.epochs,
+                "verbose": self.verbose,
+                "device": self.device,
+            },
+            "build_params": self._build_params,
+            "laplacian_matrix": self.laplacian_matrix,
+            "model_state_dict": self.model.state_dict() if self.model else None,
+            "user_map": self.user_map,
+            "item_map": self.item_map,
+            "reverse_user_map": self.reverse_user_map,
+            "reverse_item_map": self.reverse_item_map,
+            "user_item_matrix": self.user_item_matrix,
+            "is_fitted": self.is_fitted,
+        }
+
+        torch.save(checkpoint, path_obj)
 
         if self.verbose:
             logger.info(f"{self.name} model saved to {path}")
@@ -358,12 +381,39 @@ class GNNRec(BaseRecommender):
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs) -> "GNNRec":
         """Load model from disk."""
-        import pickle
+        checkpoint = torch.load(path, weights_only=False)
+        cfg = checkpoint["config"]
 
-        with open(path, "rb") as f:
-            model = pickle.load(f)
+        instance = cls(
+            name=cfg["name"],
+            embedding_dim=cfg["embedding_dim"],
+            num_gnn_layers=cfg["num_gnn_layers"],
+            dropout=cfg["dropout"],
+            learning_rate=cfg["learning_rate"],
+            batch_size=cfg["batch_size"],
+            epochs=cfg["epochs"],
+            verbose=cfg["verbose"],
+            device=cfg["device"],
+        )
 
-        if hasattr(model, "verbose") and model.verbose:
+        instance.user_map = checkpoint["user_map"]
+        instance.item_map = checkpoint["item_map"]
+        instance.reverse_user_map = checkpoint["reverse_user_map"]
+        instance.reverse_item_map = checkpoint["reverse_item_map"]
+        instance.user_item_matrix = checkpoint["user_item_matrix"]
+        instance.is_fitted = checkpoint["is_fitted"]
+
+        bp = checkpoint["build_params"]
+        instance._build_params = bp
+        instance.laplacian_matrix = checkpoint["laplacian_matrix"]
+
+        if checkpoint["model_state_dict"] is not None:
+            laplacian = instance.laplacian_matrix.to(instance.device)
+            instance.model = instance._build_model(bp["num_users"], bp["num_items"], laplacian)
+            instance.model.load_state_dict(checkpoint["model_state_dict"])
+            instance.model.eval()
+
+        if instance.verbose:
             logger.info(f"Model loaded from {path}")
 
-        return model
+        return instance

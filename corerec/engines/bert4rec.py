@@ -12,7 +12,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from typing import List, Dict, Tuple, Optional, Any
+from typing import List, Dict, Tuple, Optional, Any, Union
+from pathlib import Path
 import math
 import logging
 
@@ -99,8 +100,8 @@ class BERT4RecModel(nn.Module):
         
         self.ln_final = nn.LayerNorm(hidden_dim)
         
-        # output projection to vocab
-        self.output_proj = nn.Linear(hidden_dim, vocab_size)
+        # output projection to vocab (indices 0..vocab_size so size = vocab_size+1)
+        self.output_proj = nn.Linear(hidden_dim, vocab_size + 1)
         
         self._init_weights()
     
@@ -383,4 +384,87 @@ class BERT4Rec(BaseRecommender):
         recommendations = [self.idx_to_item.get(idx) for idx in top_indices if idx in self.idx_to_item]
         
         return [r for r in recommendations if r is not None]
+
+    def predict(self, user_id: Any, item_id: Any, **kwargs) -> float:
+        """Predict score for a single user-item pair."""
+        if not self.is_fitted:
+            raise ValueError("Model not fitted")
+
+        if user_id not in self.user_seqs or item_id not in self.item_to_idx:
+            return 0.0
+
+        seq = self.user_seqs[user_id][-self.max_len:]
+        input_seq = seq + [self.model.mask_token_id]
+        input_t = torch.tensor([input_seq], dtype=torch.long, device=self.device)
+
+        self.model.eval()
+        with torch.no_grad():
+            logits = self.model(input_t)
+            last_logits = logits[0, -1, :]
+            scores = F.softmax(last_logits, dim=-1).cpu().numpy()
+
+        item_idx = self.item_to_idx[item_id]
+        return float(scores[item_idx]) if 0 < item_idx < len(scores) else 0.0
+
+    def save(self, path: Union[str, Path], **kwargs) -> None:
+        """Save model to disk."""
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        state = {
+            "model_state_dict": self.model.state_dict() if self.model else None,
+            "item_to_idx": self.item_to_idx,
+            "idx_to_item": self.idx_to_item,
+            "user_seqs": self.user_seqs,
+            "config": {
+                "name": self.name,
+                "hidden_dim": self.hidden_dim,
+                "num_layers": self.num_layers,
+                "num_heads": self.num_heads,
+                "max_len": self.max_len,
+                "dropout": self.dropout,
+                "mask_prob": self.mask_prob,
+                "lr": self.lr,
+                "batch_size": self.batch_size,
+                "num_epochs": self.num_epochs,
+            },
+            "vocab_size": len(self.item_to_idx),
+            "is_fitted": self.is_fitted,
+        }
+        torch.save(state, path)
+
+    @classmethod
+    def load(cls, path: Union[str, Path]) -> "BERT4Rec":
+        """Load model from disk."""
+        state = torch.load(path, map_location="cpu", weights_only=False)
+        cfg = state["config"]
+        instance = cls(
+            name=cfg["name"],
+            hidden_dim=cfg["hidden_dim"],
+            num_layers=cfg["num_layers"],
+            num_heads=cfg["num_heads"],
+            max_len=cfg["max_len"],
+            dropout=cfg["dropout"],
+            mask_prob=cfg["mask_prob"],
+            learning_rate=cfg["lr"],
+            batch_size=cfg["batch_size"],
+            num_epochs=cfg["num_epochs"],
+        )
+        instance.item_to_idx = state["item_to_idx"]
+        instance.idx_to_item = state["idx_to_item"]
+        instance.user_seqs = state["user_seqs"]
+        instance.is_fitted = state["is_fitted"]
+
+        if state["model_state_dict"] is not None:
+            instance.model = BERT4RecModel(
+                vocab_size=state["vocab_size"],
+                hidden_dim=cfg["hidden_dim"],
+                num_layers=cfg["num_layers"],
+                num_heads=cfg["num_heads"],
+                max_len=cfg["max_len"],
+                dropout=cfg["dropout"],
+            )
+            instance.model.load_state_dict(state["model_state_dict"])
+            instance.model.eval()
+        return instance
 

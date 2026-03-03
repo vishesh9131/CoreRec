@@ -5,7 +5,6 @@ import numpy as np
 from typing import List, Dict, Optional, Tuple
 from corerec.api.base_recommender import BaseRecommender
 from corerec.api.exceptions import ModelNotFittedError, InvalidParameterError
-import pickle
 from pathlib import Path
 from typing import Union
 import logging
@@ -120,15 +119,38 @@ class NASRec(BaseRecommender):
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs) -> "NASRec":
         """Load model from disk."""
-        import pickle
+        checkpoint = torch.load(path, weights_only=False)
+        cfg = checkpoint["config"]
 
-        with open(path, "rb") as f:
-            model = pickle.load(f)
+        instance = cls(
+            name=cfg["name"],
+            embedding_dim=cfg["embedding_dim"],
+            hidden_dims=cfg["hidden_dims"],
+            num_cells=cfg["num_cells"],
+            learning_rate=cfg["learning_rate"],
+            batch_size=cfg["batch_size"],
+            epochs=cfg["epochs"],
+            verbose=cfg["verbose"],
+            device=cfg["device"],
+        )
 
-        if hasattr(model, "verbose") and model.verbose:
+        instance.user_map = checkpoint["user_map"]
+        instance.item_map = checkpoint["item_map"]
+        instance.is_fitted = checkpoint["is_fitted"]
+
+        bp = checkpoint["build_params"]
+        instance._num_users = bp["num_users"]
+        instance._num_items = bp["num_items"]
+
+        if checkpoint["model_state_dict"] is not None:
+            instance.model = instance._build_model(bp["num_users"], bp["num_items"])
+            instance.model.load_state_dict(checkpoint["model_state_dict"])
+            instance.model.eval()
+
+        if instance.verbose:
             logger.info(f"Model loaded from {path}")
 
-        return model
+        return instance
 
     def fit(
         self, user_ids: List[int], item_ids: List[int], ratings: List[float], **kwargs
@@ -145,8 +167,10 @@ class NASRec(BaseRecommender):
         self.user_map = {user: idx for idx, user in enumerate(unique_users)}
         self.item_map = {item: idx for idx, item in enumerate(unique_items)}
 
-        # Build model
-        self.model = self._build_model(len(unique_users), len(unique_items))
+        # Build model -- stash counts for save/load
+        self._num_users = len(unique_users)
+        self._num_items = len(unique_items)
+        self.model = self._build_model(self._num_users, self._num_items)
 
         # Create training data
         user_indices = [self.user_map[user] for user in user_ids]
@@ -275,13 +299,32 @@ class NASRec(BaseRecommender):
 
     def save(self, path: Union[str, Path], **kwargs) -> None:
         """Save model to disk."""
-        import pickle
-
         path_obj = Path(path)
         path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(path_obj, "wb") as f:
-            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+        checkpoint = {
+            "config": {
+                "name": self.name,
+                "embedding_dim": self.embedding_dim,
+                "hidden_dims": self.hidden_dims,
+                "num_cells": self.num_cells,
+                "learning_rate": self.learning_rate,
+                "batch_size": self.batch_size,
+                "epochs": self.epochs,
+                "verbose": self.verbose,
+                "device": self.device,
+            },
+            "build_params": {
+                "num_users": self._num_users,
+                "num_items": self._num_items,
+            },
+            "model_state_dict": self.model.state_dict() if self.model else None,
+            "user_map": self.user_map,
+            "item_map": self.item_map,
+            "is_fitted": self.is_fitted,
+        }
+
+        torch.save(checkpoint, path_obj)
 
         if self.verbose:
             logger.info(f"{self.name} model saved to {path}")

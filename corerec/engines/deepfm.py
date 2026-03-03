@@ -11,7 +11,6 @@ from corerec.utils.validation import (
     validate_top_k,
     validate_model_fitted,
 )
-import pickle
 from pathlib import Path
 import logging
 import os
@@ -459,23 +458,29 @@ class DeepFM(BaseRecommender):
         path_obj = Path(path)
         path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-        model_data = {
+        checkpoint = {
+            "config": {
+                "name": self.name,
+                "embedding_dim": self.embedding_dim,
+                "hidden_layers": self.hidden_layers,
+                "dropout": self.dropout,
+                "learning_rate": self.learning_rate,
+                "batch_size": self.batch_size,
+                "epochs": self.epochs,
+                "verbose": self.verbose,
+                "device": self.device,
+            },
             "model_state_dict": self.model.state_dict(),
             "feature_map": self.feature_map,
             "field_dims": self.field_dims,
-            "embedding_dim": self.embedding_dim,
-            "hidden_layers": self.hidden_layers,
-            "dropout": self.dropout,
             "user_features": self.user_features,
             "item_features": self.item_features,
             "user_feature_types": self.user_feature_types,
             "item_feature_types": self.item_feature_types,
-            "name": self.name,
-            "verbose": self.verbose,
+            "is_fitted": self.is_fitted,
         }
 
-        with open(path_obj, "wb") as f:
-            pickle.dump(model_data, f)
+        torch.save(checkpoint, path_obj)
 
         if self.verbose:
             logger.info(f"{self.name} model saved to {path}")
@@ -495,30 +500,33 @@ class DeepFM(BaseRecommender):
         if not path_obj.exists():
             raise FileNotFoundError(f"Model file not found: {path}")
 
-        with open(path_obj, "rb") as f:
-            model_data = pickle.load(f)
+        checkpoint = torch.load(path_obj, weights_only=False)
+        cfg = checkpoint["config"]
 
         instance = cls(
-            name=model_data.get("name", "DeepFM"),
-            embedding_dim=model_data.get("embedding_dim", 16),
-            hidden_layers=model_data.get("hidden_layers", [400, 400, 400]),
-            dropout=model_data.get("dropout", 0.3),
-            verbose=model_data.get("verbose", False),
+            name=cfg.get("name", "DeepFM"),
+            embedding_dim=cfg.get("embedding_dim", 16),
+            hidden_layers=cfg.get("hidden_layers", [400, 400, 400]),
+            dropout=cfg.get("dropout", 0.3),
+            learning_rate=cfg.get("learning_rate", 0.001),
+            batch_size=cfg.get("batch_size", 256),
+            epochs=cfg.get("epochs", 20),
+            verbose=cfg.get("verbose", False),
+            device=cfg.get("device", "cpu"),
         )
 
-        instance.feature_map = model_data["feature_map"]
-        instance.field_dims = model_data["field_dims"]
-        instance.user_features = model_data.get("user_features")
-        instance.item_features = model_data.get("item_features")
-        instance.user_feature_types = model_data.get("user_feature_types", [])
-        instance.item_feature_types = model_data.get("item_feature_types", [])
+        instance.feature_map = checkpoint["feature_map"]
+        instance.field_dims = checkpoint["field_dims"]
+        instance.user_features = checkpoint.get("user_features")
+        instance.item_features = checkpoint.get("item_features")
+        instance.user_feature_types = checkpoint.get("user_feature_types", [])
+        instance.item_feature_types = checkpoint.get("item_feature_types", [])
 
-        # Rebuild model
         instance.model = instance._build_model(instance.field_dims)
-        instance.model.load_state_dict(model_data["model_state_dict"])
+        instance.model.load_state_dict(checkpoint["model_state_dict"])
         instance.model.eval()
 
-        instance.is_fitted = True
+        instance.is_fitted = checkpoint.get("is_fitted", True)
 
         if instance.verbose:
             logger.info(f"{instance.name} model loaded from {path}")
