@@ -57,7 +57,7 @@ where α_k = 1/(K+1) (uniform weighting)
 ### Step 1: Import and Load Data
 
 ```python
-from corerec.engines.lightgcn import LightGCN
+from corerec.engines.collaborative import LightGCN
 from cr_learn import ml_1m
 from sklearn.model_selection import train_test_split
 import numpy as np

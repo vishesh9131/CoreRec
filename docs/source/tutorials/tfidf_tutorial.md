@@ -16,73 +16,46 @@ The model learns user and item representations for prediction.
 
 ## Tutorial with cr_learn
 
-### Step 1: Import and Load Data
+TFIDFRecommender is **content-based** — it needs item IDs and their text descriptions (e.g. titles, descriptions), not user-item ratings.
+
+### Step 1: Import and Prepare Data
 
 ```python
-from corerec.engines.content_based.tfidf import TFIDFRecommender
-import cr_learn
-import numpy as np
+from corerec.engines.content_based import TFIDFRecommender
 
-# Load dataset
-data = cr_learn.load_dataset('movielens-100k')
-print(f"Loaded {len(data.ratings)} ratings")
+# TFIDF needs: list of item IDs and dict mapping item_id -> text description
+items = list(range(20))
+docs = {i: f"item {i} description with keywords topic{i % 5} category{i % 3}" for i in items}
 
-# Split data
-train_data, test_data = data.train_test_split(test_size=0.2)
+# For real data, use item metadata from your dataset (e.g. product titles, article text)
+# data = ml_1m.load()
+# movies = data['movies']  # DataFrame with movie_id, title, genres
+# items = movies['movie_id'].tolist()
+# docs = {row['movie_id']: f"{row['title']} {row['genres']}" for _, row in movies.iterrows()}
+
+print(f"Prepared {len(items)} items with text")
 ```
 
-### Step 2: Initialize Model
+### Step 2: Initialize and Fit
 
 ```python
-model = TFIDFRecommender(
-    name="TFIDF_Model",
-    embedding_dim=64,
-    epochs=20,
-    batch_size=256,
-    learning_rate=0.001,
-    verbose=True
-)
-
-print(f"Initialized {model.name}")
-```
-
-### Step 3: Train
-
-```python
-model.fit(
-    user_ids=train_data.user_ids,
-    item_ids=train_data.item_ids,
-    ratings=train_data.ratings
-)
+model = TFIDFRecommender()
+model.fit(items, docs)
 
 print("Training complete!")
 ```
 
-### Step 4: Predict
+### Step 3: Predict and Recommend
 
 ```python
-# Single prediction
-score = model.predict(user_id=1, item_id=100)
-print(f"Predicted score: {score:.3f}")
+# Similarity between two items
+score = model.predict(items[0], items[1])
+print(f"Similarity score: {score:.3f}")
 
-# Batch predictions
-pairs = [(1, 100), (2, 200), (3, 300)]
-scores = model.batch_predict(pairs)
-for (uid, iid), s in zip(pairs, scores):
-    print(f"User {uid}, Item {iid}: {s:.3f}")
-```
+# Top-k similar items for an item (content-based recommendations)
+recommendations = model.recommend(items[0], top_k=10)
 
-### Step 5: Recommend
-
-```python
-# Get top-10 recommendations
-recommendations = model.recommend(
-    user_id=1,
-    top_k=10,
-    exclude_items=train_data.get_user_items(1)
-)
-
-print(f"Top-10 recommendations for User 1:")
+print(f"Top-10 similar items for item {items[0]}:")
 for rank, item_id in enumerate(recommendations, 1):
     print(f"  {rank}. Item {item_id}")
 ```

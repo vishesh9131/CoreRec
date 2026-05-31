@@ -58,57 +58,40 @@ where ; denotes concatenation
 ### Step 1: Import and Load Data
 
 ```python
-from corerec.engines.ncf import NCF
+from corerec.engines.collaborative import NCF
 from cr_learn import ml_1m
 from sklearn.model_selection import train_test_split
-import numpy as np
 
-# Load dataset with CORRECT API
-data = ml_1m.load()  # Returns dict with 'ratings', 'users', 'movies'
-ratings_df = data['ratings']  # DataFrame with user_id, movie_id, rating, timestamp
-
-print(f"Loaded {len(ratings_df)} ratings")
-
-# Split data
+data = ml_1m.load()
+ratings_df = data['ratings']
 train_df, test_df = train_test_split(ratings_df, test_size=0.2, random_state=42)
 
-# Extract arrays for model
-train_users = train_df['user_id'].values
-train_items = train_df['movie_id'].values
-train_ratings = train_df['rating'].values
+# NCF expects user_id, item_id, rating columns
+ncf_train = train_df.rename(columns={'movie_id': 'item_id'}).copy()
+ncf_test = test_df.rename(columns={'movie_id': 'item_id'}).copy()
 
-test_users = test_df['user_id'].values
-test_items = test_df['movie_id'].values
-test_ratings = test_df['rating'].values
+print(f"Loaded {len(ratings_df)} ratings")
 ```
 
 ### Step 2: Initialize Model
 
 ```python
 model = NCF(
-    name="NCF_Model",
-    embedding_dim=32,
-    mlp_layers=[64, 32, 16, 8],
-    gmf_dim=32,
-    pretrain=False,
-    dropout=0.0,
-    epochs=20,
+    model_type="NeuMF",
+    gmf_embedding_dim=32,
+    mlp_embedding_dim=32,
+    mlp_hidden_layers=(64, 32, 16),
+    num_epochs=5,
     batch_size=256,
     learning_rate=0.001,
     verbose=True
 )
-
-print(f"Initialized {model.name}")
 ```
 
 ### Step 3: Train
 
 ```python
-model.fit(
-    user_ids=train_users,
-    item_ids=train_items,
-    ratings=train_ratings
-)
+model.fit(ncf_train)
 
 print("Training complete!")
 ```
@@ -116,25 +99,18 @@ print("Training complete!")
 ### Step 4: Predict
 
 ```python
-# Single prediction
-score = model.predict(user_id=1, item_id=100)
+sample_user = ncf_train['user_id'].iloc[0]
+sample_item = ncf_train['item_id'].iloc[0]
+score = model.predict(sample_user, sample_item)
 print(f"Predicted score: {score:.3f}")
-
-# Batch predictions
-test_predictions = model.batch_predict(list(zip(test_users[:100], test_items[:100])))
 ```
 
 ### Step 5: Recommend
 
 ```python
-# Get top-10 recommendations for user
-user_id = 1
-recommendations = model.recommend(
-    user_id=user_id,
-    top_k=10
-)
+recommendations = model.recommend(user_id=sample_user, top_n=10)
 
-print(f"Top-10 recommendations for User {user_id}:")
+print(f"Top-10 recommendations for User {sample_user}:")
 for rank, item_id in enumerate(recommendations, 1):
     print(f"  {rank}. Item {item_id}")
 ```
@@ -145,22 +121,22 @@ for rank, item_id in enumerate(recommendations, 1):
 from sklearn.metrics import mean_squared_error
 import numpy as np
 
-# Predict all test ratings
+test_users = ncf_test['user_id'].values[:100]
+test_items = ncf_test['item_id'].values[:100]
+test_ratings = ncf_test['rating'].values[:100]
 test_pred = [model.predict(u, i) for u, i in zip(test_users, test_items)]
 rmse = np.sqrt(mean_squared_error(test_ratings, test_pred))
-print(f"Test RMSE: {rmse:.4f}")
+print(f"Sample Test RMSE: {rmse:.4f}")
 ```
 
 ### Step 7: Save & Load
 
 ```python
-# Save model
 model.save('ncf_model.pkl')
 
-# Load model
 loaded = NCF.load('ncf_model.pkl')
-test_score = loaded.predict(1, 100)
-print(f"Loaded model prediction: {test_score:.3f}")
+recs = loaded.recommend(sample_user, top_n=5)
+print(f"Loaded model recommendations: {recs}")
 ```
 
 ## Key Takeaways

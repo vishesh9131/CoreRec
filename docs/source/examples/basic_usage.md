@@ -1,156 +1,104 @@
 # Basic Usage Examples
 
-This guide provides basic examples for getting started with CoreRec.
+This guide provides basic examples for getting started with CoreRec production models.
 
 ## Quick Start
 
-### Simple Recommendation
+### Simple Recommendation (DCN)
 
 ```python
 from corerec.engines.dcn import DCN
 import numpy as np
 
-# Prepare data
 user_ids = np.array([0, 0, 1, 1, 2, 2])
 item_ids = np.array([0, 1, 0, 2, 1, 2])
 ratings = np.array([5, 4, 5, 3, 4, 5])
 
-# Create and train model
 model = DCN(embedding_dim=32, epochs=10, verbose=True)
-model.fit(user_ids, item_ids, ratings)
+model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
 
-# Make predictions
 score = model.predict(user_id=0, item_id=2)
 print(f"Predicted score: {score}")
 
-# Get recommendations
 recommendations = model.recommend(user_id=0, top_k=5)
 print(f"Recommendations: {recommendations}")
 ```
 
 ## Common Patterns
 
-### Loading Data
+### Loading Data from CSV
 
 ```python
 import pandas as pd
 
-# From CSV
 data = pd.read_csv('ratings.csv')
 user_ids = data['user_id'].values
 item_ids = data['item_id'].values
 ratings = data['rating'].values
-
-# From DataFrame
-df = pd.DataFrame({
-    'user_id': [0, 0, 1, 1],
-    'item_id': [0, 1, 0, 2],
-    'rating': [5, 4, 5, 3]
-})
 ```
 
-### Training a Model
+### Training a Deep Learning Model
 
 ```python
 from corerec.engines.deepfm import DeepFM
 
-model = DeepFM(
-    embedding_dim=64,
-    epochs=20,
-    learning_rate=0.001,
-    verbose=True
-)
-
-model.fit(
-    user_ids=user_ids,
-    item_ids=item_ids,
-    ratings=ratings
-)
+model = DeepFM(embedding_dim=64, epochs=20, learning_rate=0.001, verbose=True)
+model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
 ```
 
-### Making Predictions
+### Collaborative Filtering (SAR)
 
 ```python
-# Single prediction
-score = model.predict(user_id=1, item_id=10)
+from corerec.engines.collaborative import SAR
+import pandas as pd
 
-# Batch predictions
-scores = []
-for user_id, item_id in zip(user_ids, item_ids):
-    score = model.predict(user_id, item_id)
-    scores.append(score)
+df = pd.DataFrame({
+    'userID': [0, 0, 1, 1],
+    'itemID': [0, 1, 0, 2],
+    'rating': [5, 4, 5, 3]
+})
+
+model = SAR(similarity_type='jaccard')
+model.fit(df)
+recs = model.recommend(user_id=0, top_k=10)
 ```
 
-### Generating Recommendations
+### Neural Collaborative Filtering (NCF)
 
 ```python
-# Top-K recommendations
-recommendations = model.recommend(user_id=1, top_k=10)
+from corerec.engines.collaborative import NCF
 
-# Exclude known items
-known_items = [0, 1, 2]
-recommendations = model.recommend(
-    user_id=1,
-    top_k=10,
-    exclude_items=known_items
-)
+ncf_df = pd.DataFrame({'user_id': [0, 0, 1], 'item_id': [0, 1, 2], 'rating': [1, 1, 1]})
+model = NCF(num_epochs=10, verbose=True)
+model.fit(ncf_df)
+recs = model.recommend(user_id=0, top_n=10)
+```
+
+### Sequential Models (SASRec)
+
+```python
+from corerec.engines.sasrec import SASRec
+import numpy as np
+
+user_list = [0, 1]
+item_list = [0, 1, 2]
+interaction_matrix = np.array([[1, 1, 0], [0, 1, 1]], dtype=np.float32)
+
+model = SASRec(num_epochs=5, hidden_units=32, max_seq_length=10, verbose=True)
+model.fit(user_list, item_list, interaction_matrix)
+recs = model.recommend(user_list[0], top_n=5)
 ```
 
 ### Saving and Loading Models
 
 ```python
-# Save model
 model.save('my_model.pkl')
-
-# Load model
 from corerec.engines.dcn import DCN
-loaded_model = DCN.load('my_model.pkl')
-```
-
-## Model Selection
-
-### For Collaborative Filtering
-
-```python
-from corerec.engines.unionizedFilterEngine.mf_base.als_recommender import ALSRecommender
-import numpy as np
-
-# Create user-item matrix
-user_item_matrix = np.random.rand(100, 50)  # 100 users, 50 items
-
-model = ALSRecommender(n_factors=50, n_iterations=20)
-model.fit(user_item_matrix)
-```
-
-### For Deep Learning
-
-```python
-from corerec.engines.dcn import DCN
-
-model = DCN(
-    embedding_dim=64,
-    epochs=20,
-    learning_rate=0.001
-)
-model.fit(user_ids, item_ids, ratings)
-```
-
-### For Sequential Data
-
-```python
-from corerec.engines.sasrec import SASRec
-
-model = SASRec(
-    embedding_dim=64,
-    n_layers=2,
-    max_len=50
-)
-model.fit(user_sequences, item_ids)
+loaded = DCN.load('my_model.pkl')
 ```
 
 ## Next Steps
 
-- See [Advanced Usage](advanced_usage.md) for more complex examples
+- See [Advanced Usage](advanced_usage.md) for ensemble patterns
 - Check [Production Deployment](production_deployment.md) for deployment guides
-- Explore [Tutorials](../tutorials/index.md) for model-specific tutorials
-
+- Explore [Tutorials](../tutorials/index.md) for model-specific walkthroughs

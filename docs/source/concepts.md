@@ -40,7 +40,7 @@ Combine multiple approaches to leverage strengths of each.
 ### Key Components
 
 #### Base Recommender
-All models inherit from `BaseRecommender`, providing:
+All **production** models inherit from `BaseRecommender`, providing:
 - Unified API (`fit`, `predict`, `recommend`)
 - Model persistence (`save`, `load`)
 - Consistent error handling
@@ -55,7 +55,7 @@ CoreRec organizes models into engines:
 
 CoreRec models are organized into two tiers:
 
-- **Production Models** (13 models): Fully tested, CI-enforced, and implement the complete `BaseRecommender` interface. These are recommended for production deployments. Examples: DCN, DeepFM, SASRec, NCF, LightGCN.
+- **Production Models** (14 models): Fully tested, CI-enforced, and implement the complete `BaseRecommender` interface. These are recommended for production deployments. Examples: DCN, DeepFM, SASRec, NCF, LightGCN, TwoTower, FAST.
 - **Sandbox Models** (~50 models): Experimental implementations for research and learning. These cover a wide range of published algorithms but are not production-tested. Always validate thoroughly before using in production.
 
 See the [Model Documentation](models/index.md#model-tiers) for the full breakdown.

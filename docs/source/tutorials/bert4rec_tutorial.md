@@ -48,58 +48,50 @@ PE(pos, 2i+1) = cos(pos/10000^(2i/d))
 
 ### Step 1: Import and Load Data
 
+BERT4Rec needs a user–item **interaction matrix** (binary or implicit feedback).
+
 ```python
-from corerec.engines.bert4rec import Bert4Rec
+from corerec.engines.bert4rec import BERT4Rec
 from cr_learn import ml_1m
 from sklearn.model_selection import train_test_split
 import numpy as np
 
-# Load dataset with CORRECT API
-data = ml_1m.load()  # Returns dict with 'ratings', 'users', 'movies'
-ratings_df = data['ratings']  # DataFrame with user_id, movie_id, rating, timestamp
-
-print(f"Loaded {len(ratings_df)} ratings")
-
-# Split data
+data = ml_1m.load()
+ratings_df = data['ratings']
 train_df, test_df = train_test_split(ratings_df, test_size=0.2, random_state=42)
 
-# Extract arrays for model
-train_users = train_df['user_id'].values
-train_items = train_df['movie_id'].values
-train_ratings = train_df['rating'].values
+user_list = sorted(train_df['user_id'].unique())
+item_list = sorted(train_df['movie_id'].unique())
+user_idx = {u: i for i, u in enumerate(user_list)}
+item_idx = {it: j for j, it in enumerate(item_list)}
 
-test_users = test_df['user_id'].values
-test_items = test_df['movie_id'].values
-test_ratings = test_df['rating'].values
+train_mat = np.zeros((len(user_list), len(item_list)), dtype=np.float32)
+for _, row in train_df.iterrows():
+    train_mat[user_idx[row['user_id']], item_idx[row['movie_id']]] = 1.0
+
+print(f"Loaded {len(ratings_df)} ratings → {len(user_list)} users, {len(item_list)} items")
 ```
 
 ### Step 2: Initialize Model
 
 ```python
-model = Bert4Rec(
-    name="Bert4Rec_Model",
-    max_seq_len=50,
+model = BERT4Rec(
     hidden_dim=64,
     num_layers=2,
     num_heads=2,
+    max_len=50,
     mask_prob=0.15,
-    epochs=20,
+    num_epochs=5,
     batch_size=256,
     learning_rate=0.001,
     verbose=True
 )
-
-print(f"Initialized {model.name}")
 ```
 
 ### Step 3: Train
 
 ```python
-model.fit(
-    user_ids=train_users,
-    item_ids=train_items,
-    ratings=train_ratings
-)
+model.fit(user_list, item_list, train_mat)
 
 print("Training complete!")
 ```
@@ -107,25 +99,18 @@ print("Training complete!")
 ### Step 4: Predict
 
 ```python
-# Single prediction
-score = model.predict(user_id=1, item_id=100)
+sample_user = next(iter(model.user_seqs)) if model.user_seqs else user_list[0]
+sample_item = item_list[0]
+score = model.predict(sample_user, sample_item)
 print(f"Predicted score: {score:.3f}")
-
-# Batch predictions
-test_predictions = model.batch_predict(list(zip(test_users[:100], test_items[:100])))
 ```
 
 ### Step 5: Recommend
 
 ```python
-# Get top-10 recommendations for user
-user_id = 1
-recommendations = model.recommend(
-    user_id=user_id,
-    top_k=10
-)
+recommendations = model.recommend(user_id=sample_user, top_k=10)
 
-print(f"Top-10 recommendations for User {user_id}:")
+print(f"Top-10 recommendations for User {sample_user}:")
 for rank, item_id in enumerate(recommendations, 1):
     print(f"  {rank}. Item {item_id}")
 ```
@@ -134,24 +119,23 @@ for rank, item_id in enumerate(recommendations, 1):
 
 ```python
 from sklearn.metrics import mean_squared_error
-import numpy as np
 
-# Predict all test ratings
+test_users = test_df['user_id'].values[:100]
+test_items = test_df['movie_id'].values[:100]
+test_ratings = test_df['rating'].values[:100]
 test_pred = [model.predict(u, i) for u, i in zip(test_users, test_items)]
 rmse = np.sqrt(mean_squared_error(test_ratings, test_pred))
-print(f"Test RMSE: {rmse:.4f}")
+print(f"Sample Test RMSE: {rmse:.4f}")
 ```
 
 ### Step 7: Save & Load
 
 ```python
-# Save model
-model.save('bert4rec_model.pkl')
+model.save('bert4rec.pt')
 
-# Load model
-loaded = Bert4Rec.load('bert4rec_model.pkl')
-test_score = loaded.predict(1, 100)
-print(f"Loaded model prediction: {test_score:.3f}")
+loaded = BERT4Rec.load('bert4rec.pt')
+recs = loaded.recommend(sample_user, top_k=5)
+print(f"Loaded model recommendations: {recs}")
 ```
 
 ## Key Takeaways

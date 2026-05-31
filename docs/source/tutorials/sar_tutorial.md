@@ -19,41 +19,32 @@ The model learns user and item representations for prediction.
 ### Step 1: Import and Load Data
 
 ```python
-from corerec.engines.sequential.sar import SAR
-import cr_learn
-import numpy as np
+from corerec.engines.collaborative import SAR
+from cr_learn import ml_1m
+from sklearn.model_selection import train_test_split
 
-# Load dataset
-data = cr_learn.load_dataset('movielens-100k')
-print(f"Loaded {len(data.ratings)} ratings")
+# Load dataset (returns dict with 'ratings' DataFrame)
+data = ml_1m.load()
+ratings_df = data['ratings']
+# SAR expects userID, itemID, rating columns (rename if needed)
+ratings_df = ratings_df.rename(columns={"user_id": "userID", "movie_id": "itemID"})
+train_df, test_df = train_test_split(ratings_df, test_size=0.2, random_state=42)
 
-# Split data
-train_data, test_data = data.train_test_split(test_size=0.2)
+print(f"Loaded {len(ratings_df)} ratings")
 ```
 
 ### Step 2: Initialize Model
 
 ```python
-model = SAR(
-    name="SAR_Model",
-    embedding_dim=64,
-    epochs=20,
-    batch_size=256,
-    learning_rate=0.001,
-    verbose=True
-)
+model = SAR(similarity_type='jaccard')
 
-print(f"Initialized {model.name}")
+print(f"Initialized SAR with {model.similarity_type} similarity")
 ```
 
 ### Step 3: Train
 
 ```python
-model.fit(
-    user_ids=train_data.user_ids,
-    item_ids=train_data.item_ids,
-    ratings=train_data.ratings
-)
+model.fit(train_df)
 
 print("Training complete!")
 ```
@@ -61,48 +52,25 @@ print("Training complete!")
 ### Step 4: Predict
 
 ```python
-# Single prediction
-score = model.predict(user_id=1, item_id=100)
+# Single prediction (use userID and itemID from your data)
+sample_user = train_df['userID'].iloc[0]
+sample_item = train_df['itemID'].iloc[0]
+score = model.predict(sample_user, sample_item)
 print(f"Predicted score: {score:.3f}")
-
-# Batch predictions
-pairs = [(1, 100), (2, 200), (3, 300)]
-scores = model.batch_predict(pairs)
-for (uid, iid), s in zip(pairs, scores):
-    print(f"User {uid}, Item {iid}: {s:.3f}")
 ```
 
 ### Step 5: Recommend
 
 ```python
-# Get top-10 recommendations
-recommendations = model.recommend(
-    user_id=1,
-    top_k=10,
-    exclude_items=train_data.get_user_items(1)
-)
+# Get top-10 recommendations for a user
+recommendations = model.recommend(user_id=sample_user, top_k=10)
 
-print(f"Top-10 recommendations for User 1:")
+print(f"Top-10 recommendations for User {sample_user}:")
 for rank, item_id in enumerate(recommendations, 1):
     print(f"  {rank}. Item {item_id}")
 ```
 
-### Step 6: Evaluate
-
-```python
-from corerec.metrics import rmse, ndcg_at_k
-
-# Rating prediction
-predictions = [model.predict(u, i) for u, i, r in test_data]
-test_rmse = rmse(test_data.ratings, predictions)
-print(f"Test RMSE: {test_rmse:.4f}")
-
-# Ranking quality
-ndcg = ndcg_at_k(model, test_data, k=10)
-print(f"NDCG@10: {ndcg:.4f}")
-```
-
-### Step 7: Save & Load
+### Step 6: Save & Load
 
 ```python
 # Save model
@@ -110,8 +78,8 @@ model.save('sar_model.pkl')
 
 # Load model
 loaded = SAR.load('sar_model.pkl')
-test_score = loaded.predict(1, 100)
-print(f"Loaded model prediction: {test_score:.3f}")
+recs = loaded.recommend(sample_user, top_k=5)
+print(f"Loaded model recommendations: {recs}")
 ```
 
 ## Key Takeaways
