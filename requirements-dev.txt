@@ -6,7 +6,7 @@
 
 # Testing
 pytest>=7.0.0,<9.0.0
-pytest-cov>=3.0.0,<6.0.0
+pytest-cov>=3.0.0,<8.0.0
 pytest-xdist>=2.5.0,<4.0.0  # For parallel test execution
 pytest-mock>=3.6.0,<4.0.0
 
