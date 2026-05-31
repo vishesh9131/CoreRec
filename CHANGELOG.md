@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-03-31
+
+### Added
+- Safe bundle persistence (`corerec_safe_v1`) for all 14 production models
+- Production platform tests (retrieval, ranking, reranking, serving, pipelines)
+- Model catalog documentation pages
+
+### Fixed
+- Safe bundle ID map round-trip for int keys (DCN, FAST, DeepFM, etc.)
+- Predict score parity on save/load for all production models
+- Documentation alignment (QuickStart, tutorials, `top_k`, artifact paths)
+
+### Changed
+- Unified `recommend(..., top_k=)` API across production models
+
+## [Unreleased - historical]
+
 ### Added
 - LICENSE file (MIT License)
 - Proper packaging configuration (pyproject.toml, setup.py in root)
