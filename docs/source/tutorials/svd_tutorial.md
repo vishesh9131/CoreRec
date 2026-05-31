@@ -164,10 +164,10 @@ print(f"Test RMSE: {rmse:.4f}")
 
 ```python
 # Save model
-model.save('svd_model.pkl')
+model.save('artifacts/svd_model')
 
 # Load model
-loaded = SVD.load('svd_model.pkl')
+loaded = SVD.load('artifacts/svd_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

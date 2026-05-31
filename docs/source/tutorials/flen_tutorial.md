@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('flen_model.pkl')
+model.save('artifacts/flen_model')
 
 # Load model
-loaded = FLEN_base.load('flen_model.pkl')
+loaded = FLEN_base.load('artifacts/flen_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

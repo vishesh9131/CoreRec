@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('autofi_model.pkl')
+model.save('artifacts/autofi_model')
 
 # Load model
-loaded = AutoFI_base.load('autofi_model.pkl')
+loaded = AutoFI_base.load('artifacts/autofi_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

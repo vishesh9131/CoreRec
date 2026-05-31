@@ -40,16 +40,16 @@ sample_item = train_items[0]
 score = model.predict(sample_user, sample_item)
 print(f"Score: {score:.3f}")
 
-recs = model.recommend(sample_user, top_n=10)
+recs = model.recommend(sample_user, top_k=10)
 print(f"Recommendations: {recs}")
 ```
 
 ### Step 4: Save & Load
 
 ```python
-model.save('fast_recommender.pkl')
-loaded = FASTRecommender.load('fast_recommender.pkl')
-print(loaded.recommend(sample_user, top_n=5))
+model.save('artifacts/fast_recommender')
+loaded = FASTRecommender.load('artifacts/fast_recommender')
+print(loaded.recommend(sample_user, top_k=5))
 ```
 
 ## Key Takeaways

@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('gatenet_model.pkl')
+model.save('artifacts/gatenet_model')
 
 # Load model
-loaded = GateNet_base.load('gatenet_model.pkl')
+loaded = GateNet_base.load('artifacts/gatenet_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

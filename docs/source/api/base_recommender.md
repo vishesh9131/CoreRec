@@ -194,8 +194,8 @@ score = model.predict(user_id=1, item_id=100)
 recommendations = model.recommend(user_id=1, top_k=10)
 
 # Model persistence
-model.save('model.pkl')
-loaded_model = DCN.load('model.pkl')
+model.save('artifacts/model')
+loaded_model = DCN.load('artifacts/model')
 ```
 
 ## See Also

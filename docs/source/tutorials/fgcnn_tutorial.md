@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('fgcnn_model.pkl')
+model.save('artifacts/fgcnn_model')
 
 # Load model
-loaded = FGCNN_base.load('fgcnn_model.pkl')
+loaded = FGCNN_base.load('artifacts/fgcnn_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

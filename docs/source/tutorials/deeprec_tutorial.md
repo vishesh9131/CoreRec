@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('deeprec_model.pkl')
+model.save('artifacts/deeprec_model')
 
 # Load model
-loaded = DeepRec_base.load('deeprec_model.pkl')
+loaded = DeepRec_base.load('artifacts/deeprec_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

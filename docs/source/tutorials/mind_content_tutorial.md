@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('mind_content_model.pkl')
+model.save('artifacts/mind_content_model')
 
 # Load model
-loaded = MINDRecommender.load('mind_content_model.pkl')
+loaded = MINDRecommender.load('artifacts/mind_content_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

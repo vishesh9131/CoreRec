@@ -165,10 +165,10 @@ print(f"Test RMSE: {rmse:.4f}")
 
 ```python
 # Save model
-model.save('rbm_model.pkl')
+model.save('artifacts/rbm_model')
 
 # Load model
-loaded = RBM.load('rbm_model.pkl')
+loaded = RBM.load('artifacts/rbm_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

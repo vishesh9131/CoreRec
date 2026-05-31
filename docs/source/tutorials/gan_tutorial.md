@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('gan_model.pkl')
+model.save('artifacts/gan_model')
 
 # Load model
-loaded = GAN_ufilter_base.load('gan_model.pkl')
+loaded = GAN_ufilter_base.load('artifacts/gan_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

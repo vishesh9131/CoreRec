@@ -153,10 +153,10 @@ print(f"Test RMSE: {rmse:.4f}")
 
 ```python
 # Save model
-model.save('pnn_model.pkl')
+model.save('artifacts/pnn_model')
 
 # Load model
-loaded = PNN.load('pnn_model.pkl')
+loaded = PNN.load('artifacts/pnn_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

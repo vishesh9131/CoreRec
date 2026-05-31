@@ -39,7 +39,7 @@ early_stop = EarlyStopping(patience=5, min_delta=0.001)
 
 # Save the best model during training
 checkpoint = ModelCheckpoint(
-    filepath='best_model.pkl',
+    filepath='artifacts/best_model',
     monitor='val_loss',
     save_best_only=True,
 )

@@ -126,9 +126,9 @@ print(f"Sample Test RMSE: {rmse:.4f}")
 ### Step 7: Save & Load
 
 ```python
-model.save('mind_model.pkl')
+model.save('artifacts/mind_model')
 
-loaded = MIND.load('mind_model.pkl')
+loaded = MIND.load('artifacts/mind_model')
 recs = loaded.recommend(sample_user, top_k=5)
 print(f"Loaded model recommendations: {recs}")
 ```

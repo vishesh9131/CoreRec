@@ -138,7 +138,7 @@ class SaveLoadError(CoreRecException):
     Exception raised when model save/load operations fail.
     
     Example:
-        >>> model.save('/invalid/path/model.pkl')
+        >>> model.save('/invalid/path/model')
         SaveLoadError: Cannot save model to /invalid/path/model.pkl
     """
 ```
@@ -152,8 +152,8 @@ class SaveLoadError(CoreRecException):
 **Solution:**
 ```python
 # Use valid paths with proper permissions
-model.save('/valid/path/model.pkl')
-model = ModelClass.load('/valid/path/model.pkl')
+model.save('/valid/path/model')
+model = ModelClass.load('/valid/path/model')
 ```
 
 ### RecommendationError

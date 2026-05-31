@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('vmf_model.pkl')
+model.save('artifacts/vmf_model')
 
 # Load model
-loaded = VMFBase.load('vmf_model.pkl')
+loaded = VMFBase.load('artifacts/vmf_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

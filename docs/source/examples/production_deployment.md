@@ -2,49 +2,56 @@
 
 This guide covers best practices for deploying CoreRec models in production environments.
 
+```{admonition} Recommended: CoreRec ModelServer
+:class: tip
+For production REST serving, use the built-in **ModelServer** instead of rolling your own Flask/FastAPI app. See {doc}`../api/serving` and the example below.
+```
+
 ## Model Serialization
 
-### Saving Models for Production
+Production models default to the **safe bundle** format (`corerec_safe_v1`). Pass a **base path** (not a `.pkl` filename):
 
 ```python
 from corerec.engines.dcn import DCN
 
-# Train model
 model = DCN(embedding_dim=64, epochs=20)
 model.fit(user_ids, item_ids, ratings)
 
-# Save for production
-model.save('production_model.pkl')
-
-# Include metadata
-metadata = {
-    'version': '1.0.0',
-    'training_date': '2024-01-01',
-    'dataset': 'production_data',
-    'performance_metrics': {
-        'rmse': 0.85,
-        'mae': 0.65
-    }
-}
-model.save('production_model.pkl', metadata=metadata)
+model.save("artifacts/production_dcn")  # writes .meta.json + .weights.pt
+loaded = DCN.load("artifacts/production_dcn")
 ```
 
-### Loading Models in Production
+See {doc}`../user_guide/safe_bundle_persistence` for layout and legacy migration.
+
+## Serving with ModelServer (recommended)
 
 ```python
+from corerec.serving import ModelServer
 from corerec.engines.dcn import DCN
 
-# Load model
-model = DCN.load('production_model.pkl')
+model = DCN.load("artifacts/production_dcn")
+server = ModelServer(model, host="0.0.0.0", port=8000)
+server.start()
 
-# Verify model is ready
-assert model.is_fitted, "Model must be fitted"
-
-# Use for predictions
-score = model.predict(user_id=1, item_id=10)
+# Endpoints: POST /predict, POST /recommend, POST /batch/predict,
+#            POST /batch/recommend, GET /health, GET /info
 ```
 
-## API Deployment
+Install serving extras: `pip install "corerec[serving]"`.
+
+Example request:
+
+```bash
+curl -X POST http://localhost:8000/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": 1, "top_k": 10}'
+```
+
+Full API: {doc}`../api/serving`.
+
+## API Deployment (custom Flask / FastAPI)
+
+Use this only when you need custom middleware or auth beyond `ModelServer`.
 
 ### Flask API Example
 
@@ -53,33 +60,19 @@ from flask import Flask, request, jsonify
 from corerec.engines.dcn import DCN
 
 app = Flask(__name__)
-
-# Load model at startup
-model = DCN.load('production_model.pkl')
+model = DCN.load("artifacts/production_dcn")
 
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.json
-    user_id = data['user_id']
-    item_id = data['item_id']
-    
-    try:
-        score = model.predict(user_id=user_id, item_id=item_id)
-        return jsonify({'score': float(score)})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    score = model.predict(user_id=data['user_id'], item_id=data['item_id'])
+    return jsonify({'score': float(score)})
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
     data = request.json
-    user_id = data['user_id']
-    top_k = data.get('top_k', 10)
-    
-    try:
-        recommendations = model.recommend(user_id=user_id, top_k=top_k)
-        return jsonify({'recommendations': recommendations})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    recs = model.recommend(user_id=data['user_id'], top_k=data.get('top_k', 10))
+    return jsonify({'recommendations': recs})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
@@ -93,9 +86,7 @@ from pydantic import BaseModel
 from corerec.engines.dcn import DCN
 
 app = FastAPI()
-
-# Load model at startup
-model = DCN.load('production_model.pkl')
+model = DCN.load("artifacts/production_dcn")
 
 class PredictRequest(BaseModel):
     user_id: int
@@ -116,11 +107,8 @@ def predict(request: PredictRequest):
 @app.post("/recommend")
 def recommend(request: RecommendRequest):
     try:
-        recommendations = model.recommend(
-            user_id=request.user_id,
-            top_k=request.top_k
-        )
-        return {"recommendations": recommendations}
+        recs = model.recommend(user_id=request.user_id, top_k=request.top_k)
+        return {"recommendations": recs}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 ```
@@ -135,62 +123,34 @@ from functools import lru_cache
 @lru_cache(maxsize=1000)
 def get_cached_recommendations(user_id, top_k):
     return model.recommend(user_id=user_id, top_k=top_k)
-
-# Use cached version
-recommendations = get_cached_recommendations(user_id=1, top_k=10)
 ```
 
 ### Batch Processing
 
 ```python
-# Process multiple requests at once
 def batch_recommend(user_ids, top_k=10):
-    results = {}
-    for user_id in user_ids:
-        results[user_id] = model.recommend(user_id=user_id, top_k=top_k)
-    return results
+    return {uid: model.recommend(user_id=uid, top_k=top_k) for uid in user_ids}
 ```
 
 ## Monitoring and Logging
 
-### Logging Predictions
-
 ```python
 import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-def predict_with_logging(user_id, item_id):
-    score = model.predict(user_id=user_id, item_id=item_id)
-    logger.info(f"Prediction: user={user_id}, item={item_id}, score={score}")
-    return score
-```
-
-### Performance Monitoring
-
-```python
 import time
 
+logger = logging.getLogger(__name__)
+
 def predict_with_timing(user_id, item_id):
-    start_time = time.time()
+    t0 = time.time()
     score = model.predict(user_id=user_id, item_id=item_id)
-    elapsed = time.time() - start_time
-    
-    logger.info(f"Prediction took {elapsed:.4f}s")
+    logger.info("predict user=%s item=%s score=%s ms=%.2f", user_id, item_id, score, (time.time()-t0)*1000)
     return score
 ```
 
 ## Error Handling
 
-### Robust Error Handling
-
 ```python
-from corerec.api.exceptions import (
-    ModelNotFittedError,
-    RecommendationError,
-    InvalidDataError
-)
+from corerec.api.exceptions import ModelNotFittedError, RecommendationError
 
 def safe_predict(user_id, item_id):
     try:
@@ -199,61 +159,51 @@ def safe_predict(user_id, item_id):
         logger.error("Model not fitted")
         return None
     except RecommendationError as e:
-        logger.error(f"Recommendation error: {e}")
-        return None
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        logger.error("Recommendation error: %s", e)
         return None
 ```
 
 ## Model Versioning
 
-### Version Management
-
 ```python
-import os
 from pathlib import Path
 
-MODEL_DIR = Path('models')
-VERSION = '1.0.0'
+MODEL_DIR = Path("artifacts/models")
 
 def save_versioned_model(model, version):
-    model_path = MODEL_DIR / f'model_v{version}.pkl'
-    model.save(str(model_path))
-    return model_path
+    path = MODEL_DIR / f"model_v{version}"
+    model.save(str(path))
+    return path
 
 def load_latest_model():
-    versions = sorted([f for f in MODEL_DIR.glob('model_v*.pkl')])
-    if versions:
-        latest = versions[-1]
-        return DCN.load(str(latest))
-    return None
+    dirs = sorted(MODEL_DIR.glob("model_v*"))
+    return DCN.load(str(dirs[-1])) if dirs else None
 ```
 
 ## Docker Deployment
 
-### Dockerfile Example
-
 ```dockerfile
-FROM python:3.9-slim
-
+FROM python:3.11-slim
 WORKDIR /app
+RUN pip install "corerec[serving]"
+COPY serve.py .
+COPY artifacts/production_dcn/ ./artifacts/production_dcn/
+CMD ["python", "serve.py"]
+```
 
-# Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+`serve.py`:
 
-# Copy application
-COPY app.py .
-COPY production_model.pkl .
+```python
+from corerec.serving import ModelServer
+from corerec.engines.dcn import DCN
 
-# Run application
-CMD ["python", "app.py"]
+model = DCN.load("artifacts/production_dcn")
+ModelServer(model, host="0.0.0.0", port=8000).start()
 ```
 
 ## See Also
 
-- [Basic Usage](basic_usage.md) - Basic examples
-- [Advanced Usage](advanced_usage.md) - Advanced patterns
-- [Tutorials](../tutorials/index.md) - Model-specific tutorials
-
+- [ModelServer API](../api/serving.md)
+- [Safe bundle persistence](../user_guide/safe_bundle_persistence.md)
+- [Basic Usage](basic_usage.md)
+- [Pipeline tutorial](../tutorials/pipeline_tutorial.md)

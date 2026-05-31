@@ -30,8 +30,8 @@ class ModelPersistenceMixin:
         
         model = MyModel()
         model.fit(data)
-        model.save('model.pkl')
-        loaded = MyModel.load('model.pkl')
+        model.save('artifacts/model')
+        loaded = MyModel.load('artifacts/model')
     """
 ```
 
@@ -77,8 +77,8 @@ class MyModel(BaseRecommender, ModelPersistenceMixin):
 
 model = MyModel()
 model.fit(data)
-model.save('model.pkl')
-loaded = MyModel.load('model.pkl')
+model.save('artifacts/model')
+loaded = MyModel.load('artifacts/model')
 ```
 
 ### BatchProcessingMixin
@@ -302,7 +302,7 @@ class MyModel(
 
 model = MyModel()
 model.fit(data)
-model.save('model.pkl')
+model.save('artifacts/model')
 predictions = model.batch_predict(user_ids, item_ids)
 ```
 

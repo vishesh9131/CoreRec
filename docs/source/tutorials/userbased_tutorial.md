@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('userbased_model.pkl')
+model.save('artifacts/userbased_model')
 
 # Load model
-loaded = UserBasedUF.load('userbased_model.pkl')
+loaded = UserBasedUF.load('artifacts/userbased_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

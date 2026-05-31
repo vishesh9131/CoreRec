@@ -158,10 +158,10 @@ print(f"Test RMSE: {rmse:.4f}")
 
 ```python
 # Save model
-model.save('caser_model.pkl')
+model.save('artifacts/caser_model')
 
 # Load model
-loaded = Caser.load('caser_model.pkl')
+loaded = Caser.load('artifacts/caser_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

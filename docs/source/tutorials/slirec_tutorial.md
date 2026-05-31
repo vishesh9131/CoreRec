@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('slirec_model.pkl')
+model.save('artifacts/slirec_model')
 
 # Load model
-loaded = SLiRec.load('slirec_model.pkl')
+loaded = SLiRec.load('artifacts/slirec_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

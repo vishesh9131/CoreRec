@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('difm_model.pkl')
+model.save('artifacts/difm_model')
 
 # Load model
-loaded = DIFM_base.load('difm_model.pkl')
+loaded = DIFM_base.load('artifacts/difm_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```
