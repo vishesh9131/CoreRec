@@ -155,10 +155,10 @@ print(f"Test RMSE: {rmse:.4f}")
 
 ```python
 # Save model
-model.save('youtubednn_model.pkl')
+model.save('artifacts/youtubednn_model')
 
 # Load model
-loaded = YouTubeDNN.load('youtubednn_model.pkl')
+loaded = YouTubeDNN.load('artifacts/youtubednn_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('nextitnet_model.pkl')
+model.save('artifacts/nextitnet_model')
 
 # Load model
-loaded = NextItNet.load('nextitnet_model.pkl')
+loaded = NextItNet.load('artifacts/nextitnet_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

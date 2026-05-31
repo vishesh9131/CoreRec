@@ -160,10 +160,10 @@ print(f"Test RMSE: {rmse:.4f}")
 
 ```python
 # Save model
-model.save('geoimc_model.pkl')
+model.save('artifacts/geoimc_model')
 
 # Load model
-loaded = GeoIMC.load('geoimc_model.pkl')
+loaded = GeoIMC.load('artifacts/geoimc_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

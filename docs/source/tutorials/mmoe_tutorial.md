@@ -156,10 +156,10 @@ print(f"Test RMSE: {rmse:.4f}")
 
 ```python
 # Save model
-model.save('mmoe_model.pkl')
+model.save('artifacts/mmoe_model')
 
 # Load model
-loaded = MMoE.load('mmoe_model.pkl')
+loaded = MMoE.load('artifacts/mmoe_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

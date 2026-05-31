@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('gnn_base_model.pkl')
+model.save('artifacts/gnn_base_model')
 
 # Load model
-loaded = GNN_base.load('gnn_base_model.pkl')
+loaded = GNN_base.load('artifacts/gnn_base_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

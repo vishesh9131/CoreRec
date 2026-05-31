@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('matrixfactorization_model.pkl')
+model.save('artifacts/matrixfactorization_model')
 
 # Load model
-loaded = MatrixFactorization.load('matrixfactorization_model.pkl')
+loaded = MatrixFactorization.load('artifacts/matrixfactorization_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

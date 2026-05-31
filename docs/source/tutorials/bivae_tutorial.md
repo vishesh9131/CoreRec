@@ -159,10 +159,10 @@ print(f"Test RMSE: {rmse:.4f}")
 
 ```python
 # Save model
-model.save('bivae_model.pkl')
+model.save('artifacts/bivae_model')
 
 # Load model
-loaded = BiVAE.load('bivae_model.pkl')
+loaded = BiVAE.load('artifacts/bivae_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('deepfm_base_model.pkl')
+model.save('artifacts/deepfm_base_model')
 
 # Load model
-loaded = DeepFM_base.load('deepfm_base_model.pkl')
+loaded = DeepFM_base.load('artifacts/deepfm_base_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('sum_model.pkl')
+model.save('artifacts/sum_model')
 
 # Load model
-loaded = SUMModel.load('sum_model.pkl')
+loaded = SUMModel.load('artifacts/sum_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

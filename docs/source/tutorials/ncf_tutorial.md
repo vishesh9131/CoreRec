@@ -108,7 +108,7 @@ print(f"Predicted score: {score:.3f}")
 ### Step 5: Recommend
 
 ```python
-recommendations = model.recommend(user_id=sample_user, top_n=10)
+recommendations = model.recommend(user_id=sample_user, top_k=10)
 
 print(f"Top-10 recommendations for User {sample_user}:")
 for rank, item_id in enumerate(recommendations, 1):
@@ -132,10 +132,10 @@ print(f"Sample Test RMSE: {rmse:.4f}")
 ### Step 7: Save & Load
 
 ```python
-model.save('ncf_model.pkl')
+model.save('artifacts/ncf_model')
 
-loaded = NCF.load('ncf_model.pkl')
-recs = loaded.recommend(sample_user, top_n=5)
+loaded = NCF.load('artifacts/ncf_model')
+recs = loaded.recommend(sample_user, top_k=5)
 print(f"Loaded model recommendations: {recs}")
 ```
 

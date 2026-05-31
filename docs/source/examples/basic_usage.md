@@ -71,7 +71,7 @@ from corerec.engines.collaborative import NCF
 ncf_df = pd.DataFrame({'user_id': [0, 0, 1], 'item_id': [0, 1, 2], 'rating': [1, 1, 1]})
 model = NCF(num_epochs=10, verbose=True)
 model.fit(ncf_df)
-recs = model.recommend(user_id=0, top_n=10)
+recs = model.recommend(user_id=0, top_k=10)
 ```
 
 ### Sequential Models (SASRec)
@@ -86,15 +86,15 @@ interaction_matrix = np.array([[1, 1, 0], [0, 1, 1]], dtype=np.float32)
 
 model = SASRec(num_epochs=5, hidden_units=32, max_seq_length=10, verbose=True)
 model.fit(user_list, item_list, interaction_matrix)
-recs = model.recommend(user_list[0], top_n=5)
+recs = model.recommend(user_list[0], top_k=5)
 ```
 
 ### Saving and Loading Models
 
 ```python
-model.save('my_model.pkl')
+model.save('artifacts/my_model')  # safe bundle default
 from corerec.engines.dcn import DCN
-loaded = DCN.load('my_model.pkl')
+loaded = DCN.load('artifacts/my_model')
 ```
 
 ## Next Steps

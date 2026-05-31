@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('deepcrossing_model.pkl')
+model.save('artifacts/deepcrossing_model')
 
 # Load model
-loaded = DeepCrossing_base.load('deepcrossing_model.pkl')
+loaded = DeepCrossing_base.load('artifacts/deepcrossing_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

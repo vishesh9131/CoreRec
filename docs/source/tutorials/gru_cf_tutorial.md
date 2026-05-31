@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('gru_cf_model.pkl')
+model.save('artifacts/gru_cf_model')
 
 # Load model
-loaded = GRUCF.load('gru_cf_model.pkl')
+loaded = GRUCF.load('artifacts/gru_cf_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

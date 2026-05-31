@@ -154,10 +154,10 @@ print(f"Test RMSE: {rmse:.4f}")
 
 ```python
 # Save model
-model.save('widedeep_model.pkl')
+model.save('artifacts/widedeep_model')
 
 # Load model
-loaded = WideDeep.load('widedeep_model.pkl')
+loaded = WideDeep.load('artifacts/widedeep_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

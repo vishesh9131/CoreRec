@@ -79,10 +79,10 @@ print(f"NDCG@10: {ndcg:.4f}")
 
 ```python
 # Save model
-model.save('tfidf_model.pkl')
+model.save('artifacts/tfidf_model')
 
 # Load model
-loaded = TFIDFRecommender.load('tfidf_model.pkl')
+loaded = TFIDFRecommender.load('artifacts/tfidf_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

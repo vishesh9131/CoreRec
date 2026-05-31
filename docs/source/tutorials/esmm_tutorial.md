@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('esmm_model.pkl')
+model.save('artifacts/esmm_model')
 
 # Load model
-loaded = ESMM_base.load('esmm_model.pkl')
+loaded = ESMM_base.load('artifacts/esmm_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

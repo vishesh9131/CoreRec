@@ -139,6 +139,7 @@ from corerec.engines.dcn import DCN
 from cr_learn import ml_1m
 from sklearn.model_selection import train_test_split
 
+# pip install "corerec[datasets]" first
 data = ml_1m.load()
 train_df, _ = train_test_split(data['ratings'], test_size=0.2, random_state=42)
 
@@ -147,7 +148,7 @@ model.fit(user_ids=train_df['user_id'].values, item_ids=train_df['movie_id'].val
           ratings=train_df['rating'].values)
 
 recs = model.recommend(user_id=1, top_k=10)
-model.save('dcn_model.pkl')
+model.save('artifacts/dcn')
 ```
 
 <p class="landing-section-title">Learn More</p>

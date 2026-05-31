@@ -25,7 +25,7 @@ ensemble.add_model(deepfm_model, name="DeepFM", weight=1.0)
 ensemble.train()
 
 # Get ensemble recommendations
-recommendations = ensemble.recommend(user_id=1, top_n=10)
+recommendations = ensemble.recommend(user_id=1, top_k=10)
 ```
 
 ## Hyperparameter Tuning
@@ -161,7 +161,7 @@ metadata = {
     'dataset': 'movielens-100k',
     'version': '1.0.0'
 }
-model.save('model.pkl', metadata=metadata)
+model.save('artifacts/model', metadata=metadata)
 ```
 
 ## Handling Cold Start
@@ -181,7 +181,7 @@ hybrid_model = HybridCollaborative(
 hybrid_model.train(user_item_matrix, item_features)
 
 # Works for both warm and cold users
-recommendations = hybrid_model.recommend(user_id=new_user_id, top_n=10)
+recommendations = hybrid_model.recommend(user_id=new_user_id, top_k=10)
 ```
 
 ## Performance Optimization

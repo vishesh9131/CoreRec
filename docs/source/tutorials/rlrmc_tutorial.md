@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('rlrmc_model.pkl')
+model.save('artifacts/rlrmc_model')
 
 # Load model
-loaded = RLRMC.load('rlrmc_model.pkl')
+loaded = RLRMC.load('artifacts/rlrmc_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

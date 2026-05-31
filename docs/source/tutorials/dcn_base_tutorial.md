@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('dcn_base_model.pkl')
+model.save('artifacts/dcn_base_model')
 
 # Load model
-loaded = DCN_base.load('dcn_base_model.pkl')
+loaded = DCN_base.load('artifacts/dcn_base_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

@@ -123,9 +123,9 @@ print(f"Sample Test RMSE: {rmse:.4f}")
 ### Step 7: Save & Load
 
 ```python
-model.save('nasrec_model.pkl')
+model.save('artifacts/nasrec_model')
 
-loaded = NASRec.load('nasrec_model.pkl')
+loaded = NASRec.load('artifacts/nasrec_model')
 recs = loaded.recommend(sample_user, top_k=5)
 print(f"Loaded model recommendations: {recs}")
 ```

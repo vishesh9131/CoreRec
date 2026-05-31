@@ -159,10 +159,10 @@ print(f"Test RMSE: {rmse:.4f}")
 
 ```python
 # Save model
-model.save('afm_model.pkl')
+model.save('artifacts/afm_model')
 
 # Load model
-loaded = AFM.load('afm_model.pkl')
+loaded = AFM.load('artifacts/afm_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

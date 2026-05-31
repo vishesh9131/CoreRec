@@ -155,10 +155,10 @@ print(f"Test RMSE: {rmse:.4f}")
 
 ```python
 # Save model
-model.save('bprmf_model.pkl')
+model.save('artifacts/bprmf_model')
 
 # Load model
-loaded = BPRMF.load('bprmf_model.pkl')
+loaded = BPRMF.load('artifacts/bprmf_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```

@@ -118,10 +118,10 @@ print(f"Test RMSE: {test_rmse:.4f}")
 
 ```python
 # Save model
-model.save('lightgcn_base_model.pkl')
+model.save('artifacts/lightgcn_base_model')
 
 # Load model
-loaded = LightGCNBase.load('lightgcn_base_model.pkl')
+loaded = LightGCNBase.load('artifacts/lightgcn_base_model')
 test_score = loaded.predict(1, 100)
 print(f"Loaded model prediction: {test_score:.3f}")
 ```
