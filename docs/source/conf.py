@@ -8,13 +8,18 @@ import sys
 
 sys.path.insert(0, os.path.abspath("../.."))
 
+try:
+    from corerec import __version__ as _corerec_version
+except ImportError:
+    _corerec_version = "0.5.3"
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "CoreRec"
 copyright = "2024, Vishesh Yadav"
 author = "Vishesh Yadav"
-release = "0.5.1"
+release = _corerec_version
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

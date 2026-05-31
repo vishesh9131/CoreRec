@@ -38,8 +38,12 @@ train_df = pd.DataFrame(interactions)
 from corerec.engines.collaborative import SAR
 from corerec.retrieval import CollaborativeRetriever, PopularityRetriever
 
-# Collaborative filtering retriever
-sar = SAR(col_user='user_id', col_item='item_id', col_rating='rating')
+# Collaborative filtering retriever (use default userID/itemID columns)
+train_df = train_df.rename(columns={
+    'user_id': 'userID',
+    'item_id': 'itemID',
+})
+sar = SAR()
 sar.fit(train_df)
 collab_retriever = CollaborativeRetriever(model=sar, name="collab")
 
