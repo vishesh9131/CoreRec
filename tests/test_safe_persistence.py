@@ -50,8 +50,18 @@ class TestSafePersistence(unittest.TestCase):
             loaded = FAST.load(path)
             self.assertTrue(loaded.is_fitted)
             self.assertIsNotNone(loaded.user_factors)
+            self.assertAlmostEqual(model.predict(0, 10), loaded.predict(0, 10), delta=1e-2)
 
-    def test_sar_safe_save_load(self):
+    def test_dcn_predict_parity_after_safe_load(self):
+        model = DCN(embedding_dim=8, num_cross_layers=1, deep_layers=[8], epochs=1, batch_size=4)
+        users, items, ratings = [0, 0, 1], [10, 11, 10], [5.0, 4.0, 3.0]
+        model.fit(users, items, ratings)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "dcn")
+            model.save(path, safe=True)
+            loaded = DCN.load(path)
+            self.assertIsInstance(next(iter(loaded.user_map.keys())), int)
+            self.assertAlmostEqual(model.predict(0, 10), loaded.predict(0, 10), delta=1e-2)
         df = pd.DataFrame(
             {"userID": [0, 0, 1, 1], "itemID": [10, 11, 10, 12], "rating": [5, 4, 3, 5]}
         )

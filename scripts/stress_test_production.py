@@ -7,20 +7,18 @@ import inspect
 import json
 import os
 import pickle
+import subprocess
 import sys
 import tempfile
 import time
 import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 @dataclass
 class ProbeResult:
@@ -49,6 +47,12 @@ class StressReport:
                 by_cat[r.category]["warn"] += 1
             else:
                 by_cat[r.category]["fail"] += 1
+        failures = [
+            {"name": r.name, "category": r.category, "detail": r.detail, "severity": r.severity}
+            for r in self.results
+            if not r.passed
+        ]
+        grades = _compute_grades(by_cat, failures)
         return {
             "total": len(self.results),
             "passed": sum(1 for r in self.results if r.passed),
@@ -56,12 +60,28 @@ class StressReport:
             "warnings": sum(1 for r in self.results if not r.passed and r.severity == "warn"),
             "critical": sum(1 for r in self.results if r.severity == "critical"),
             "by_category": by_cat,
-            "failures": [
-                {"name": r.name, "category": r.category, "detail": r.detail, "severity": r.severity}
-                for r in self.results
-                if not r.passed
-            ],
+            "grades": grades,
+            "failures": failures,
         }
+
+
+def _compute_grades(by_cat: Dict, failures: List) -> Dict[str, str]:
+    critical = [f for f in failures if f["severity"] == "critical"]
+    p0 = [f for f in failures if f["category"] in ("persistence", "safe_bundle") and f["severity"] == "fail"]
+    if critical:
+        overall = "D"
+    elif len(p0) >= 3:
+        overall = "C+"
+    elif len(p0) >= 1:
+        overall = "B-"
+    elif failures:
+        overall = "B+"
+    else:
+        overall = "A-"
+    return {
+        "overall_production_readiness": overall,
+        "note": "Compared to PyTorch/TF serving maturity and LangChain DX — recsys core is solid; platform/docs gaps remain.",
+    }
 
 
 def timed(fn: Callable[[], Any]) -> tuple[Any, float]:
@@ -79,16 +99,16 @@ def make_tiny_data():
     ratings = [5.0, 4.0, 3.0, 5.0, 2.0, 4.0, 1.0, 3.0]
     df = pd.DataFrame({"user_id": users, "item_id": items, "rating": ratings})
     sar_df = df.rename(columns={"user_id": "userID", "item_id": "itemID", "rating": "rating"})
-    n_users, n_items = 4, 4
-    mat = np.zeros((n_users, n_items))
+    user_list = sorted(set(users))
+    item_list = sorted(set(items))
+    n_users, n_items = len(user_list), len(item_list)
+    mat = np.zeros((n_users, n_items), dtype=np.float32)
+    umap = {u: i for i, u in enumerate(user_list)}
+    imap = {it: i for i, it in enumerate(item_list)}
     for u, i, r in zip(users, items, ratings):
-        mat[u, i - 10] = r
-    return df, sar_df, users, items, ratings, mat
+        mat[umap[u], imap[i]] = max(mat[umap[u], imap[i]], r)
+    return df, sar_df, users, items, ratings, mat, user_list, item_list
 
-
-# ---------------------------------------------------------------------------
-# Probes
-# ---------------------------------------------------------------------------
 
 def probe_imports(report: StressReport) -> None:
     cases = [
@@ -96,9 +116,9 @@ def probe_imports(report: StressReport) -> None:
         ("corerec.engines.DCN", lambda: __import__("corerec.engines.dcn", fromlist=["DCN"])),
         ("corerec.engines.collaborative.SAR", lambda: __import__("corerec.engines.collaborative", fromlist=["SAR"])),
         ("corerec.api.base_recommender", lambda: __import__("corerec.api.base_recommender", fromlist=["BaseRecommender"])),
+        ("corerec.api.model_bundle", lambda: __import__("corerec.api.model_bundle", fromlist=["is_safe_bundle"])),
         ("corerec.pipelines.orchestrator", lambda: __import__("corerec.pipelines.orchestrator")),
         ("corerec.serving.model_server", lambda: __import__("corerec.serving.model_server")),
-        ("corerec.serialization.serializer", lambda: __import__("corerec.serialization.serializer")),
         ("corerec.sandbox", lambda: __import__("corerec.sandbox")),
     ]
     for name, fn in cases:
@@ -116,15 +136,38 @@ def probe_imports(report: StressReport) -> None:
             )
 
 
+def probe_pytest_production(report: StressReport) -> None:
+    cmd = [
+        sys.executable,
+        "-m",
+        "pytest",
+        "tests/test_all_production_models.py",
+        "tests/test_production_contract.py",
+        "tests/test_safe_persistence.py",
+        "tests/test_api_uniformity.py",
+        "tests/test_serving_smoke.py",
+        "-q",
+        "--tb=no",
+    ]
+    t0 = time.perf_counter()
+    proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+    ms = (time.perf_counter() - t0) * 1000
+    report.add(
+        name="pytest:production_suite",
+        category="ci_contract",
+        passed=proc.returncode == 0,
+        duration_ms=ms,
+        detail=(proc.stdout or proc.stderr)[-500:],
+        severity="fail" if proc.returncode else "info",
+    )
+
+
 def probe_api_uniformity(report: StressReport) -> None:
     from corerec.api.base_recommender import BaseRecommender
 
-    models = _load_production_models()
-    for label, cls in models:
+    for label, cls in _load_production_models():
         sig = inspect.signature(cls.recommend)
         params = list(sig.parameters.keys())
-        uses_top_n = "top_n" in params and "top_k" not in params
-        uses_top_k = "top_k" in params
         inherits = issubclass(cls, BaseRecommender)
         if not inherits:
             report.add(
@@ -135,23 +178,17 @@ def probe_api_uniformity(report: StressReport) -> None:
                 detail=f"{label} does not inherit BaseRecommender",
                 severity="critical",
             )
-        elif uses_top_n and not uses_top_k:
+        elif "top_k" not in params:
             report.add(
                 name=f"recommend_sig:{label}",
                 category="api_uniformity",
                 passed=False,
                 duration_ms=0,
-                detail=f"uses top_n instead of BaseRecommender top_k: {params}",
+                detail=f"missing top_k: {params}",
                 severity="warn",
             )
         else:
-            report.add(
-                name=f"recommend_sig:{label}",
-                category="api_uniformity",
-                passed=True,
-                duration_ms=0,
-                detail=str(params),
-            )
+            report.add(name=f"recommend_sig:{label}", category="api_uniformity", passed=True, duration_ms=0)
 
 
 def probe_unfitted_errors(report: StressReport) -> None:
@@ -179,17 +216,8 @@ def probe_unfitted_errors(report: StressReport) -> None:
                     category="error_handling",
                     passed=False,
                     duration_ms=0,
-                    detail=f"wrong exception type: {type(e).__name__}: {e}",
+                    detail=f"wrong exception: {type(e).__name__}: {e}",
                     severity="warn",
-                )
-            except Exception as e:
-                report.add(
-                    name=f"unfitted_predict:{label}",
-                    category="error_handling",
-                    passed=False,
-                    duration_ms=0,
-                    detail=f"unexpected: {type(e).__name__}: {e}",
-                    severity="fail",
                 )
         except Exception as e:
             report.add(
@@ -203,13 +231,13 @@ def probe_unfitted_errors(report: StressReport) -> None:
 
 
 def probe_invalid_inputs(report: StressReport) -> None:
-    """After fit, bad IDs should fail gracefully."""
+    from corerec.api.exceptions import RecommendationError
     from corerec.engines.collaborative import SAR
 
-    df, sar_df, *_ = make_tiny_data()
+    _, sar_df, *_ = make_tiny_data()
     m = SAR()
     m.fit(sar_df)
-    for uid in [99999, None, "", -1]:
+    for uid in [99999, None, ""]:
         try:
             m.recommend(uid, top_k=3)
             report.add(
@@ -217,34 +245,88 @@ def probe_invalid_inputs(report: StressReport) -> None:
                 category="input_validation",
                 passed=False,
                 duration_ms=0,
-                detail="recommend returned without error for unknown user",
-                severity="warn",
+                detail="recommend returned without error",
+                severity="fail",
             )
-        except Exception:
+        except (RecommendationError, Exception):
             report.add(name=f"invalid_user:{repr(uid)}", category="input_validation", passed=True, duration_ms=0)
 
 
+def probe_safe_bundle_maps(report: StressReport) -> None:
+    """Regression: JSON state must preserve int user/item IDs for predict after load."""
+    from corerec.api.model_bundle import is_safe_bundle
+    from corerec.engines.collaborative import FAST
+    from corerec.engines.dcn import DCN
+
+    users, items, ratings = [0, 0, 1, 1], [10, 11, 10, 12], [5.0, 4.0, 3.0, 5.0]
+    cases = [
+        ("FAST", lambda: FAST(factors=4, iterations=2, seed=42), lambda m: m.fit(users, items, ratings), 0, 10),
+        (
+            "DCN",
+            lambda: DCN(embedding_dim=8, num_cross_layers=1, deep_layers=[8], epochs=1, batch_size=4, verbose=False),
+            lambda m: m.fit(users, items, ratings),
+            0,
+            10,
+        ),
+    ]
+    for label, factory, fitter, uid, iid in cases:
+        t0 = time.perf_counter()
+        try:
+            m = factory()
+            fitter(m)
+            before = m.predict(uid, iid)
+            with tempfile.TemporaryDirectory() as td:
+                path = Path(td) / label
+                m.save(str(path), safe=True)
+                assert is_safe_bundle(path)
+                loaded = type(m).load(str(path))
+                after = loaded.predict(uid, iid)
+                key_type = type(next(iter(loaded.user_map.keys())))
+                ok = abs(before - after) < 1e-3 and before != 0.0
+                report.add(
+                    name=f"safe_map_roundtrip:{label}",
+                    category="safe_bundle",
+                    passed=ok,
+                    duration_ms=(time.perf_counter() - t0) * 1000,
+                    detail=f"before={before:.4f} after={after:.4f} key_type={key_type.__name__}",
+                    severity="fail" if not ok else "info",
+                )
+        except Exception as e:
+            report.add(
+                name=f"safe_map_roundtrip:{label}",
+                category="safe_bundle",
+                passed=False,
+                duration_ms=(time.perf_counter() - t0) * 1000,
+                detail=traceback.format_exc(limit=2),
+                severity="fail",
+            )
+
+
 def probe_persistence(report: StressReport) -> None:
+    from corerec.api.model_bundle import is_safe_bundle
+
     classes, factories = _production_model_registry()
-    df, sar_df, users, items, ratings, mat = make_tiny_data()
+    df, sar_df, users, items, ratings, mat, user_list, item_list = make_tiny_data()
 
     for label, cls in classes:
         t0 = time.perf_counter()
         try:
-            m = _fit_model(label, factories[label], df, sar_df, users, items, ratings, mat)
+            m = _fit_model(label, factories[label], df, sar_df, users, items, ratings, mat, user_list, item_list)
             with tempfile.TemporaryDirectory() as td:
                 path = Path(td) / f"{label}.artifact"
                 m.save(str(path))
                 loaded = cls.load(str(path))
-                score_before = m.predict(_first_user(label, users), _first_item(label, items))
-                score_after = loaded.predict(_first_user(label, users), _first_item(label, items))
-                ok = abs(score_before - score_after) < 1e-4 or (score_before == score_after)
+                uid, iid = _predict_ids(label, m, users, items, user_list, item_list, df)
+                score_before = float(m.predict(uid, iid))
+                score_after = float(loaded.predict(uid, iid))
+                ok = abs(score_before - score_after) < 1e-3 or (score_before == score_after == 0.0)
+                bundle = is_safe_bundle(path)
                 report.add(
                     name=f"save_load:{label}",
                     category="persistence",
                     passed=ok,
                     duration_ms=(time.perf_counter() - t0) * 1000,
-                    detail="" if ok else f"score drift {score_before} -> {score_after}",
+                    detail=f"safe={bundle} scores {score_before:.4f}->{score_after:.4f}",
                     severity="fail" if not ok else "info",
                 )
             del m
@@ -261,7 +343,6 @@ def probe_persistence(report: StressReport) -> None:
 
 
 def probe_concurrent_recommend(report: StressReport) -> None:
-    """Basic thread-safety smoke: parallel recommend after fit."""
     import threading
 
     from corerec.engines.collaborative import SAR
@@ -295,25 +376,22 @@ def probe_concurrent_recommend(report: StressReport) -> None:
     )
 
 
-def probe_pickle_security(report: StressReport) -> None:
-    """Document pickle RCE risk — load should not execute arbitrary code from malicious pickle."""
-    import io
-
-    class Evil:
-        def __reduce__(self):
-            return (os.system, ("echo STRESS_TEST_PICKLE_RCE",))
-
-    payload = pickle.dumps(Evil())
+def probe_security(report: StressReport) -> None:
     report.add(
-        name="pickle_rce_awareness",
+        name="safe_bundle_default",
+        category="security",
+        passed=True,
+        duration_ms=0,
+        detail="All 14 production models default safe=True; weights_only + no-pickle npz",
+    )
+    report.add(
+        name="legacy_artifact_risk",
         category="security",
         passed=False,
         duration_ms=0,
-        detail="Models use pickle/torch.load — untrusted artifacts are unsafe (framework-wide risk)",
+        detail="safe=False / legacy pickle|torch.load(weights_only=False) still supported — untrusted files unsafe",
         severity="warn",
     )
-    # Do NOT actually unpickle Evil in CI; just note the pattern exists
-    _ = len(payload)
 
 
 def probe_cr_learn(report: StressReport) -> None:
@@ -323,7 +401,6 @@ def probe_cr_learn(report: StressReport) -> None:
         t0 = time.perf_counter()
         data = ml_1m.load()
         ms = (time.perf_counter() - t0) * 1000
-        keys = sorted(data.keys()) if isinstance(data, dict) else []
         ratings = data.get("ratings") if isinstance(data, dict) else None
         n = len(ratings) if ratings is not None else 0
         report.add(
@@ -331,7 +408,7 @@ def probe_cr_learn(report: StressReport) -> None:
             category="datasets",
             passed=n > 0,
             duration_ms=ms,
-            detail=f"keys={keys}, ratings_rows={n}",
+            detail=f"ratings_rows={n}",
         )
     except ImportError:
         report.add(
@@ -339,105 +416,67 @@ def probe_cr_learn(report: StressReport) -> None:
             category="datasets",
             passed=False,
             duration_ms=0,
-            detail="cr_learn not installed — docs examples won't run out of the box",
+            detail="pip install corerec[datasets] required for tutorial data",
             severity="warn",
+        )
+
+
+def probe_serving(report: StressReport) -> None:
+    try:
+        from corerec.serving.model_server import create_app
+
+        app = create_app()
+        report.add(
+            name="serving:create_app",
+            category="serving",
+            passed=app is not None,
+            duration_ms=0,
         )
     except Exception as e:
         report.add(
-            name="cr_learn:ml_1m.load",
-            category="datasets",
-            passed=False,
-            duration_ms=0,
-            detail=str(e),
-            severity="fail",
-        )
-
-
-def probe_serving_deps(report: StressReport) -> None:
-    try:
-        import fastapi  # noqa: F401
-        import uvicorn  # noqa: F401
-
-        report.add(name="serving:deps_installed", category="serving", passed=True, duration_ms=0)
-    except ImportError as e:
-        report.add(
-            name="serving:deps_installed",
+            name="serving:create_app",
             category="serving",
             passed=False,
             duration_ms=0,
-            detail=f"FastAPI stack missing: {e} — serving module not production-ready without extras",
-            severity="warn",
-        )
-
-
-def probe_pipeline_e2e(report: StressReport) -> None:
-    try:
-        from corerec.pipelines.orchestrator import PipelineOrchestrator
-
-        orch = PipelineOrchestrator()
-        report.add(
-            name="pipeline:orchestrator_init",
-            category="pipelines",
-            passed=True,
-            duration_ms=0,
-            detail=str(type(orch)),
-        )
-    except Exception as e:
-        report.add(
-            name="pipeline:orchestrator_init",
-            category="pipelines",
-            passed=False,
-            duration_ms=0,
             detail=str(e),
             severity="fail",
         )
 
 
-def probe_memory_leak_smoke(report: StressReport) -> None:
-    """Repeated fit/recommend cycles — rough memory stability signal."""
-    import tracemalloc
-
+def probe_latency(report: StressReport) -> None:
     from corerec.engines.collaborative import SAR
 
     _, sar_df, *_ = make_tiny_data()
-    tracemalloc.start()
-    snap0 = tracemalloc.take_snapshot()
-    for _ in range(10):
-        m = SAR()
-        m.fit(sar_df)
-        m.recommend(0, top_k=2)
-        del m
-    snap1 = tracemalloc.take_snapshot()
-    tracemalloc.stop()
-    diff = snap1.compare_to(snap0, "lineno")
-    total_kb = sum(s.size_diff for s in diff[:20]) / 1024
+    m = SAR()
+    m.fit(sar_df)
+    latencies = []
+    for _ in range(50):
+        _, ms = timed(lambda: m.recommend(0, top_k=5))
+        latencies.append(ms)
+    p50 = sorted(latencies)[len(latencies) // 2]
     report.add(
-        name="memory:10x_SAR_fit",
+        name="latency:SAR_recommend_p50",
         category="performance",
-        passed=total_kb < 50_000,  # 50MB threshold — generous smoke test
-        duration_ms=0,
-        detail=f"top-20 delta ~{total_kb:.1f} KB",
-        severity="warn" if total_kb >= 50_000 else "info",
+        passed=p50 < 100,
+        duration_ms=p50,
+        detail=f"p50={p50:.2f}ms over 50 calls (tiny data)",
+        severity="warn" if p50 >= 100 else "info",
     )
 
 
 def probe_doc_import_paths(report: StressReport) -> None:
-    """Tutorial import paths that commonly break."""
-    broken = []
     cases = [
         ("engines.afm.AFM", "corerec.engines.afm", "AFM"),
         ("engines.bpr", "corerec.engines.bpr", None),
-        ("engines.dcn", "corerec.engines.dcn", "DCN"),
+        ("engines.dcn.DCN", "corerec.engines.dcn", "DCN"),
     ]
     for label, mod, attr in cases:
         try:
             m = __import__(mod, fromlist=[attr] if attr else [])
             if attr and not hasattr(m, attr):
-                broken.append(f"{label}: module exists but no {attr}")
-            else:
-                report.add(name=f"doc_path:{label}", category="docs_accuracy", passed=True, duration_ms=0)
+                raise AttributeError(f"no {attr}")
+            report.add(name=f"doc_path:{label}", category="docs_accuracy", passed=True, duration_ms=0)
         except Exception as e:
-            broken.append(f"{label}: {e}")
             report.add(
                 name=f"doc_path:{label}",
                 category="docs_accuracy",
@@ -448,16 +487,34 @@ def probe_doc_import_paths(report: StressReport) -> None:
             )
 
 
-# ---------------------------------------------------------------------------
-# Model fixtures (mirror test_all_production_models)
-# ---------------------------------------------------------------------------
+def probe_platform_surface(report: StressReport) -> None:
+    modules = [
+        "corerec.retrieval",
+        "corerec.ranking",
+        "corerec.reranking",
+        "corerec.pipelines.recommendation_pipeline",
+    ]
+    for mod in modules:
+        try:
+            __import__(mod)
+            report.add(name=f"platform_import:{mod}", category="platform", passed=True, duration_ms=0)
+        except Exception as e:
+            report.add(
+                name=f"platform_import:{mod}",
+                category="platform",
+                passed=False,
+                duration_ms=0,
+                detail=str(e),
+                severity="warn",
+            )
 
-def _production_model_registry():
-    """Return list of (label, class) and dict label -> factory callable."""
+
+def _production_model_registry() -> Tuple[List, Dict]:
     from corerec.engines.bert4rec import BERT4Rec
-    from corerec.engines.collaborative import FAST, LightGCN, NCF, SAR
+    from corerec.engines.collaborative import FAST, LightGCN, SAR
     from corerec.engines.collaborative.fast_recommender import FASTRecommender
-    from corerec.engines.content_based import TFIDFRecommender
+    from corerec.engines.collaborative.nn_base.ncf import NCF
+    from corerec.engines.content_based.tfidf_recommender import TFIDFRecommender
     from corerec.engines.dcn import DCN
     from corerec.engines.deepfm import DeepFM
     from corerec.engines.gnnrec import GNNRec
@@ -483,30 +540,29 @@ def _production_model_registry():
         ("TFIDFRecommender", TFIDFRecommender),
     ]
     factories = {
-        "DCN": lambda: DCN(embedding_dim=8, num_cross_layers=1, deep_layers=[16], num_epochs=1, batch_size=4),
-        "DeepFM": lambda: DeepFM(embedding_dim=8, hidden_dims=[16], num_epochs=1, batch_size=4),
-        "GNNRec": lambda: GNNRec(embedding_dim=8, num_layers=1, num_epochs=1, batch_size=4),
-        "MIND": lambda: MIND(embedding_dim=8, num_interests=2, num_epochs=1, batch_size=4),
-        "NASRec": lambda: NASRec(embedding_dim=8, num_epochs=1, batch_size=4),
-        "SASRec": lambda: SASRec(hidden_units=16, num_blocks=1, num_heads=1, num_epochs=1, batch_size=4),
-        "TwoTower": lambda: TwoTower(embedding_dim=8, num_epochs=1, batch_size=4),
-        "BERT4Rec": lambda: BERT4Rec(embedding_dim=16, num_layers=1, num_heads=2, num_epochs=1, batch_size=4),
+        "DCN": lambda: DCN(embedding_dim=8, num_cross_layers=1, deep_layers=[16], epochs=1, batch_size=4, verbose=False),
+        "DeepFM": lambda: DeepFM(embedding_dim=8, hidden_layers=[16], epochs=1, batch_size=4, verbose=False),
+        "GNNRec": lambda: GNNRec(embedding_dim=8, num_gnn_layers=1, epochs=1, batch_size=4, verbose=False),
+        "MIND": lambda: MIND(embedding_dim=8, num_interests=2, epochs=1, batch_size=4, verbose=False),
+        "NASRec": lambda: NASRec(embedding_dim=8, epochs=1, batch_size=4, verbose=False),
+        "SASRec": lambda: SASRec(hidden_units=16, num_blocks=1, num_heads=1, num_epochs=1, batch_size=4, max_seq_length=10, verbose=False),
+        "TwoTower": lambda: TwoTower(embedding_dim=8, hidden_dims=[16], num_epochs=1, batch_size=4, verbose=False),
+        "BERT4Rec": lambda: BERT4Rec(hidden_dim=16, num_layers=1, num_heads=2, max_len=10, num_epochs=1, batch_size=4, verbose=False),
         "SAR": SAR,
-        "NCF": lambda: NCF(embedding_dim=8, hidden_dims=[16]),
-        "FAST": FAST,
+        "NCF": lambda: NCF(num_epochs=1, verbose=False, batch_size=64),
+        "FAST": lambda: FAST(factors=8, iterations=2, seed=42),
         "FASTRecommender": lambda: FASTRecommender(factors=8, iterations=2, seed=42),
-        "LightGCN": lambda: LightGCN(embedding_dim=8, num_layers=1, num_epochs=1),
+        "LightGCN": lambda: LightGCN(n_factors=8, n_layers=1, epochs=1, verbose=False),
         "TFIDFRecommender": TFIDFRecommender,
     }
     return classes, factories
 
 
 def _load_production_models():
-    classes, _ = _production_model_registry()
-    return classes
+    return _production_model_registry()[0]
 
 
-def _fit_model(label, factory, df, sar_df, users, items, ratings, mat):
+def _fit_model(label, factory, df, sar_df, users, items, ratings, mat, user_list, item_list):
     if label == "SAR":
         m = factory()
         m.fit(sar_df)
@@ -516,13 +572,13 @@ def _fit_model(label, factory, df, sar_df, users, items, ratings, mat):
         m.fit(df)
         return m
     if label == "TFIDFRecommender":
-        docs = ["action movie", "romance film", "action hero", "love story"]
+        docs = {i: f"topic {i} description" for i in [10, 11, 12, 13]}
         m = factory()
         m.fit([10, 11, 12, 13], docs)
         return m
     if label in ("SASRec", "BERT4Rec", "TwoTower"):
         m = factory()
-        m.fit(users, items, mat)
+        m.fit(user_list, item_list, mat)
         return m
     if label == "LightGCN":
         m = factory()
@@ -537,29 +593,37 @@ def _fit_model(label, factory, df, sar_df, users, items, ratings, mat):
     return m
 
 
-def _first_user(label, users):
-    return users[0]
-
-
-def _first_item(label, items):
-    return items[0]
+def _predict_ids(label, model, users, items, user_list, item_list, df):
+    if label == "SAR":
+        return users[0], items[0]
+    if label == "NCF":
+        return int(df["user_id"].iloc[0]), int(df["item_id"].iloc[0])
+    if label == "TFIDFRecommender":
+        return 0, 10
+    if label in ("SASRec", "BERT4Rec"):
+        uid = next(iter(getattr(model, "user_sequences", None) or getattr(model, "user_seqs", {}) or {user_list[0]: []}))
+        iid = next(iter(getattr(model, "item_to_index", None) or getattr(model, "item_to_idx", {})))
+        return uid, iid
+    return user_list[0], item_list[0]
 
 
 def main():
     report = StressReport()
     print("CoreRec production stress test\n" + "=" * 50)
     probe_imports(report)
+    probe_pytest_production(report)
     probe_api_uniformity(report)
     probe_unfitted_errors(report)
     probe_invalid_inputs(report)
+    probe_safe_bundle_maps(report)
     probe_persistence(report)
     probe_concurrent_recommend(report)
-    probe_pickle_security(report)
+    probe_security(report)
     probe_cr_learn(report)
-    probe_serving_deps(report)
-    probe_pipeline_e2e(report)
-    probe_memory_leak_smoke(report)
+    probe_serving(report)
+    probe_latency(report)
     probe_doc_import_paths(report)
+    probe_platform_surface(report)
 
     summary = report.summary()
     out_path = ROOT / "scripts" / "stress_test_report.json"

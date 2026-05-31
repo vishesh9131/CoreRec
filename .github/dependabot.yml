@@ -1,0 +1,29 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      production-dependencies:
+        patterns:
+          - "torch*"
+          - "numpy*"
+          - "pandas*"
+          - "scipy*"
+          - "scikit-learn*"
+          - "requests*"
+          - "urllib3*"
+          - "fastapi*"
+          - "uvicorn*"
+          - "pydantic*"
+    ignore:
+      - dependency-name: "numpy"
+        versions: [">=2.0.0"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

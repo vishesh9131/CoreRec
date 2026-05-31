@@ -8,6 +8,13 @@ import numpy as np
 from scipy import sparse
 
 
+def coerce_id(value: Any) -> Any:
+    """Restore integer IDs serialized as JSON strings (e.g. ``\"0\"`` → ``0``)."""
+    if isinstance(value, str) and value.lstrip("-").isdigit():
+        return int(value)
+    return value
+
+
 def pairs(mapping: Optional[Dict[Any, Any]]) -> List[List[Any]]:
     if not mapping:
         return []
@@ -18,13 +25,19 @@ def dict_from_pairs(
     pairs_list: Optional[List[List[Any]]],
     *,
     int_keys: bool = False,
+    coerce_numeric: bool = True,
 ) -> Dict[Any, Any]:
     if not pairs_list:
         return {}
     out: Dict[Any, Any] = {}
     for entry in pairs_list:
-        key = int(entry[0]) if int_keys else entry[0]
-        out[key] = entry[1]
+        key = entry[0]
+        val = entry[1]
+        if int_keys or coerce_numeric:
+            key = coerce_id(key)
+        if coerce_numeric:
+            val = coerce_id(val)
+        out[key] = val
     return out
 
 
@@ -75,6 +88,7 @@ def load_map_state(
     state: Dict[str, Any],
     *names: str,
     int_key_names: Optional[tuple] = None,
+    coerce_numeric: bool = True,
 ) -> Dict[str, Dict[Any, Any]]:
     int_key_names = int_key_names or ()
     loaded: Dict[str, Dict[Any, Any]] = {}
@@ -82,5 +96,22 @@ def load_map_state(
         loaded[name] = dict_from_pairs(
             state.get(f"{name}_pairs"),
             int_keys=name in int_key_names,
+            coerce_numeric=coerce_numeric,
         )
     return loaded
+
+
+def save_feature_map(feature_map: Optional[Dict[str, Dict[Any, Any]]]) -> Dict[str, List[List[Any]]]:
+    if not feature_map:
+        return {"feature_map_entries": []}
+    return {"feature_map_entries": [[k, pairs(v)] for k, v in feature_map.items()]}
+
+
+def load_feature_map(state: Dict[str, Any]) -> Dict[str, Dict[Any, Any]]:
+    entries = state.get("feature_map_entries")
+    if entries:
+        return {k: dict_from_pairs(v, coerce_numeric=True) for k, v in entries}
+    legacy = state.get("feature_map")
+    if isinstance(legacy, dict):
+        return legacy
+    return {}
