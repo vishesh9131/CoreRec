@@ -17,7 +17,7 @@ tqdm>=4.62.0,<5.0.0
 argcomplete>=3.0.0,<4.0.0
 
 # Optional but commonly used
-gdown>=4.0.0,<5.0.0  # For dataset downloads
+gdown>=4.0.0,<6.0.0  # For dataset downloads
 requests>=2.32.0,<3.0.0
 urllib3>=2.2.0,<3.0.0
 
