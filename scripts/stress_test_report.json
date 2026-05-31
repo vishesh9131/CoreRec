@@ -1,0 +1,103 @@
+{
+  "total": 56,
+  "passed": 53,
+  "failed": 0,
+  "warnings": 3,
+  "critical": 0,
+  "by_category": {
+    "imports": {
+      "pass": 8,
+      "fail": 0,
+      "warn": 0
+    },
+    "ci_contract": {
+      "pass": 1,
+      "fail": 0,
+      "warn": 0
+    },
+    "api_uniformity": {
+      "pass": 14,
+      "fail": 0,
+      "warn": 0
+    },
+    "error_handling": {
+      "pass": 14,
+      "fail": 0,
+      "warn": 0
+    },
+    "input_validation": {
+      "pass": 3,
+      "fail": 0,
+      "warn": 0
+    },
+    "safe_bundle": {
+      "pass": 2,
+      "fail": 0,
+      "warn": 0
+    },
+    "persistence": {
+      "pass": 1,
+      "fail": 0,
+      "warn": 0
+    },
+    "concurrency": {
+      "pass": 1,
+      "fail": 0,
+      "warn": 0
+    },
+    "security": {
+      "pass": 1,
+      "fail": 0,
+      "warn": 1
+    },
+    "datasets": {
+      "pass": 1,
+      "fail": 0,
+      "warn": 0
+    },
+    "serving": {
+      "pass": 1,
+      "fail": 0,
+      "warn": 0
+    },
+    "performance": {
+      "pass": 1,
+      "fail": 0,
+      "warn": 0
+    },
+    "docs_accuracy": {
+      "pass": 1,
+      "fail": 0,
+      "warn": 2
+    },
+    "platform": {
+      "pass": 4,
+      "fail": 0,
+      "warn": 0
+    }
+  },
+  "grades": {
+    "overall_production_readiness": "B+",
+    "note": "Compared to PyTorch/TF serving maturity and LangChain DX \u2014 recsys core is solid; platform/docs gaps remain."
+  },
+  "failures": [
+    {
+      "name": "legacy_artifact_risk",
+      "category": "security",
+      "detail": "safe=False / legacy pickle|torch.load(weights_only=False) still supported \u2014 untrusted files unsafe",
+      "severity": "warn"
+    },
+    {
+      "name": "doc_path:engines.afm.AFM",
+      "category": "docs_accuracy",
+      "detail": "No module named 'corerec.engines.afm'",
+      "severity": "warn"
+    },
+    {
+      "name": "doc_path:engines.bpr",
+      "category": "docs_accuracy",
+      "detail": "No module named 'corerec.engines.bpr'",
+      "severity": "warn"
+    }
+  ]
+}

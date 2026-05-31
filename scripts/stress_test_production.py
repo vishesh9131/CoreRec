@@ -303,43 +303,29 @@ def probe_safe_bundle_maps(report: StressReport) -> None:
 
 
 def probe_persistence(report: StressReport) -> None:
-    from corerec.api.model_bundle import is_safe_bundle
-
-    classes, factories = _production_model_registry()
-    df, sar_df, users, items, ratings, mat, user_list, item_list = make_tiny_data()
-
-    for label, cls in classes:
-        t0 = time.perf_counter()
-        try:
-            m = _fit_model(label, factories[label], df, sar_df, users, items, ratings, mat, user_list, item_list)
-            with tempfile.TemporaryDirectory() as td:
-                path = Path(td) / f"{label}.artifact"
-                m.save(str(path))
-                loaded = cls.load(str(path))
-                uid, iid = _predict_ids(label, m, users, items, user_list, item_list, df)
-                score_before = float(m.predict(uid, iid))
-                score_after = float(loaded.predict(uid, iid))
-                ok = abs(score_before - score_after) < 1e-3 or (score_before == score_after == 0.0)
-                bundle = is_safe_bundle(path)
-                report.add(
-                    name=f"save_load:{label}",
-                    category="persistence",
-                    passed=ok,
-                    duration_ms=(time.perf_counter() - t0) * 1000,
-                    detail=f"safe={bundle} scores {score_before:.4f}->{score_after:.4f}",
-                    severity="fail" if not ok else "info",
-                )
-            del m
-            gc.collect()
-        except Exception as e:
-            report.add(
-                name=f"save_load:{label}",
-                category="persistence",
-                passed=False,
-                duration_ms=(time.perf_counter() - t0) * 1000,
-                detail=traceback.format_exc(limit=2),
-                severity="fail",
-            )
+    """Persistence is covered by pytest save/load + predict parity (see test_all_production_models)."""
+    cmd = [
+        sys.executable,
+        "-m",
+        "pytest",
+        "tests/test_all_production_models.py",
+        "-k",
+        "save_load",
+        "-q",
+        "--tb=no",
+        "--no-cov",
+    ]
+    t0 = time.perf_counter()
+    proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+    ms = (time.perf_counter() - t0) * 1000
+    report.add(
+        name="persistence:pytest_save_load_parity",
+        category="persistence",
+        passed=proc.returncode == 0,
+        duration_ms=ms,
+        detail=(proc.stdout or proc.stderr)[-400:],
+        severity="fail" if proc.returncode else "info",
+    )
 
 
 def probe_concurrent_recommend(report: StressReport) -> None:
@@ -423,18 +409,25 @@ def probe_cr_learn(report: StressReport) -> None:
 
 def probe_serving(report: StressReport) -> None:
     try:
-        from corerec.serving.model_server import create_app
+        from corerec.serving.model_server import FASTAPI_AVAILABLE, ModelServer
+        from corerec.engines.collaborative import SAR
 
-        app = create_app()
+        if not FASTAPI_AVAILABLE:
+            raise ImportError("Install corerec[serving] for FastAPI support")
+
+        _, sar_df, *_ = make_tiny_data()
+        model = SAR()
+        model.fit(sar_df)
+        server = ModelServer(model)
         report.add(
-            name="serving:create_app",
+            name="serving:ModelServer",
             category="serving",
-            passed=app is not None,
+            passed=server.app is not None,
             duration_ms=0,
         )
     except Exception as e:
         report.add(
-            name="serving:create_app",
+            name="serving:ModelServer",
             category="serving",
             passed=False,
             duration_ms=0,
