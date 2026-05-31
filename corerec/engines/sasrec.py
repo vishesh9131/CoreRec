@@ -12,6 +12,7 @@ from pathlib import Path
 
 # Project imports (assumed present)
 from corerec.api.base_recommender import BaseRecommender
+from corerec.api.exceptions import RecommendationError
 from corerec.utils.validation import (
     validate_fit_inputs,
     validate_user_id,
@@ -464,6 +465,15 @@ class SASRec(BaseRecommender):
         interaction_matrix: 2D binary or counts matrix shape [n_users, n_items]
         validation_data: optional dict {user_id: (input_seq, ground_truth_list)}
         """
+        from corerec.api.dataset import coerce_dataset
+        from corerec.api.exceptions import InvalidDataError
+
+        ds = coerce_dataset(arg1)
+        if ds is not None:
+            if ds.infer_mode() != "matrix":
+                raise InvalidDataError("SASRec.fit() expects a matrix RecommenderDataset.")
+            arg1, arg2, arg3 = ds.user_ids, ds.item_ids, ds.interaction_matrix
+
         # Handle both calling conventions by checking first argument type
         import scipy.sparse as sp
         
@@ -947,18 +957,31 @@ class SASRec(BaseRecommender):
         self.is_fitted = True
         return self
 
-    def recommend(self, user_id: Any, top_n: int = 10, exclude_seen: bool = True) -> List[Any]:
-        """
-        Recommend top-n items for a user.
-        """
+    def recommend(
+        self,
+        user_id: Any,
+        top_k: int = 10,
+        exclude_items: Optional[List[Any]] = None,
+        *,
+        top_n: Optional[int] = None,
+        exclude_seen: bool = True,
+        **kwargs,
+    ) -> List[Any]:
+        """Recommend top-K items for a user."""
+        top_k, exclude_items, _ = self._normalize_recommend(
+            top_k=top_k,
+            top_n=top_n,
+            exclude_items=exclude_items,
+            exclude_seen=exclude_seen if exclude_seen is not False else False,
+            **kwargs,
+        )
         validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_sequences if hasattr(self, 'user_sequences') else {})
+        validate_top_k(top_k)
 
         if user_id not in self.user_sequences:
-            self.logger.warning(f"Unknown user: {user_id}")
-            return []
+            raise RecommendationError(f"Unknown user_id: {user_id!r}")
 
-        seq = list(self.user_sequences[user_id])  # original sequence of internal indices
+        seq = list(self.user_sequences[user_id])
         if len(seq) > self.max_seq_length:
             seq_in = seq[-self.max_seq_length:]
         else:
@@ -981,10 +1004,15 @@ class SASRec(BaseRecommender):
             for item_idx in seq:
                 if 0 <= item_idx < len(scores):
                     scores[item_idx] = -np.inf
+        if exclude_items:
+            for item in exclude_items:
+                idx = self.item_to_index.get(item)
+                if idx is not None and 0 <= idx < len(scores):
+                    scores[idx] = -np.inf
         if self.item_popularity_bias and self.item_popularity is not None:
             scores[1:] = scores[1:] - self.item_popularity
 
-        top_indices = np.argsort(scores)[::-1][:top_n]
+        top_indices = np.argsort(scores)[::-1][:top_k]
         recommendations = [self.index_to_item.get(int(idx), None) for idx in top_indices]
         return recommendations
 

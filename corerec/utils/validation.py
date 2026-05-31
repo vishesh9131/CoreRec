@@ -12,6 +12,9 @@ import numpy as np
 import pandas as pd
 
 
+from corerec.api.exceptions import ModelNotFittedError
+
+
 class ValidationError(ValueError):
     """Custom exception for validation errors with helpful messages."""
 
@@ -218,20 +221,12 @@ def validate_model_fitted(is_fitted: bool, model_name: str = "Model") -> None:
         model_name: Name of the model for error message
 
     Raises:
-        ValidationError: If model is not fitted
+        ModelNotFittedError: If model is not fitted
     """
     if not is_fitted:
-        raise ValidationError(
+        raise ModelNotFittedError(
             f"{model_name} has not been trained yet. "
-            f"Please call model.fit(user_ids, item_ids, ratings) before making predictions. "
-            f"\n\nExample:\n"
-            f"    model = {model_name}()\n"
-            f"    model.fit(\n"
-            f"        user_ids=[1, 2, 3, 4, 5],\n"
-            f"        item_ids=[10, 20, 30, 40, 50],\n"
-            f"        ratings=[5.0, 4.0, 3.0, 5.0, 2.0]\n"
-            f"    )\n"
-            f"    recommendations = model.recommend(user_id=1, top_k=10)"
+            f"Call model.fit(...) before predict() or recommend()."
         )
 
 

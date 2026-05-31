@@ -30,7 +30,7 @@ The code examples below are **reference implementations** for learning purposes.
 ### Step 1: Import and Load Data
 
 ```python
-from corerec.engines.neural_network.fgcnn import FGCNN_base
+from corerec.sandbox.collaborative_full.nn_base.FGCNN_base import FGCNN_base as FGCNN
 from cr_learn import ml_1m
 from sklearn.model_selection import train_test_split
 import numpy as np

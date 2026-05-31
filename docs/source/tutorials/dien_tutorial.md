@@ -72,7 +72,7 @@ The code examples below are **reference implementations** for learning purposes.
 ### Step 1: Import and Load Data
 
 ```python
-from corerec.engines.dien import DIEN
+from corerec.sandbox.collaborative_full.nn_base.DIEN_base import DIEN_base as DIEN
 from cr_learn import ml_1m
 from sklearn.model_selection import train_test_split
 import numpy as np

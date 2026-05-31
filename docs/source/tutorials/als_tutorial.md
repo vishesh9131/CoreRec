@@ -62,7 +62,7 @@ The code examples below are **reference implementations** for learning purposes.
 ### Step 1: Import and Load Data
 
 ```python
-from corerec.engines.als import ALS
+from corerec.sandbox.collaborative_full.mf_base.als_base import ALS_base as ALS
 from cr_learn import ml_1m
 from sklearn.model_selection import train_test_split
 import numpy as np

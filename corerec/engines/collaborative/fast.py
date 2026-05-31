@@ -2,6 +2,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from typing import List, Optional, Dict, Any, Tuple
 from .base_recommender import BaseRecommender
+from corerec.api.exceptions import ModelNotFittedError
 from corerec.utils.validation import (
     validate_fit_inputs,
     validate_user_id,
@@ -89,7 +90,15 @@ class FAST(BaseRecommender):
             + np.dot(self.user_factors[user_idx], self.item_factors[item_idx])
         )
 
-    def fit(self, user_ids: List[int], item_ids: List[int], ratings: List[float]) -> None:
+    def fit(self, user_ids: List[int], item_ids: Optional[List[int]] = None, ratings: Optional[List[float]] = None) -> None:
+        from corerec.api.dataset import is_recommender_dataset
+
+        if is_recommender_dataset(user_ids) and item_ids is None:
+            user_ids, item_ids, ratings = user_ids.as_triplet()
+        else:
+            (user_ids, item_ids, ratings), _ = self._unpack_fit_args(
+                user_ids, item_ids, ratings, supported_modes=("triplet",)
+            )
         """
         Train the FAST model using the provided data.
 
@@ -172,34 +181,47 @@ class FAST(BaseRecommender):
                 np.add.at(self.user_bias, u_batch, lr * ub_grads)
                 np.add.at(self.item_bias, i_batch, lr * ib_grads)
 
-    def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
+    def recommend(
+        self,
+        user_id: int,
+        top_k: int = 10,
+        exclude_items: Optional[List[int]] = None,
+        *,
+        top_n: Optional[int] = None,
+        exclude_seen: bool = True,
+        **kwargs,
+    ) -> List[int]:
         """
-        Generate top-N recommendations for a specific user.
+        Generate top-K recommendations for a specific user.
 
         Parameters:
         -----------
         user_id : int
             ID of the user to generate recommendations for
-        top_n : int
+        top_k : int
             Number of recommendations to generate
+        exclude_items : list, optional
+            Item IDs to exclude from recommendations
+        top_n : int, optional
+            Deprecated alias for ``top_k``.
         exclude_seen : bool
             Whether to exclude items the user has already interacted with
-
-        Returns:
-        --------
-        List[int] : List of recommended item IDs
         """
-        # Check if model is fitted
+        top_k, exclude_items, _ = self._normalize_recommend(
+            top_k=top_k,
+            top_n=top_n,
+            exclude_items=exclude_items,
+            exclude_seen=exclude_seen if exclude_seen is not False else False,
+            **kwargs,
+        )
+
         if self.user_factors is None or self.item_factors is None:
-            raise ValueError("Model has not been trained. Call fit() first.")
+            raise ModelNotFittedError("Model has not been trained. Call fit() first.")
 
-        # Validate user_id
-        if user_id not in self.user_map:
-            raise ValueError(f"User ID {user_id} not found in training data")
+        self._validate_user_in_map(user_id, self.user_map)
 
-        # Validate top_n
-        if not isinstance(top_n, int) or top_n <= 0:
-            raise ValueError(f"top_n must be a positive integer, got {top_n}")
+        if not isinstance(top_k, int) or top_k <= 0:
+            raise ValueError(f"top_k must be a positive integer, got {top_k}")
 
         user_idx = self.user_map[user_id]
 
@@ -215,14 +237,16 @@ class FAST(BaseRecommender):
             seen_items = self.user_item_matrix[user_idx].indices
             scores[seen_items] = float("-inf")
 
-        # Get top-n item indices
-        # If N_items is large, sorting everything is expensive. argpartition is faster.
-        if top_n < len(scores):
-            top_indices_unsorted = np.argpartition(-scores, top_n)[:top_n]
-            # Sort the top-n results
+        if exclude_items:
+            for item in exclude_items:
+                if item in self.item_map:
+                    scores[self.item_map[item]] = float("-inf")
+
+        if top_k < len(scores):
+            top_indices_unsorted = np.argpartition(-scores, top_k)[:top_k]
             top_indices = top_indices_unsorted[np.argsort(-scores[top_indices_unsorted])]
         else:
-            top_indices = np.argsort(-scores)[:top_n]
+            top_indices = np.argsort(-scores)[:top_k]
 
         # Map indices back to original item IDs
         top_items = [self.reverse_item_map[idx] for idx in top_indices]

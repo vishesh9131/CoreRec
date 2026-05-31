@@ -340,6 +340,7 @@ class SAR(BaseRecommender):
     # =========================================================================
     
     def fit(self, df: pd.DataFrame) -> "SAR":
+        df = self._coerce_fit_dataframe(df, sar_format=True)
         """
         Train the SAR model on interaction data.
         
@@ -570,8 +571,12 @@ class SAR(BaseRecommender):
         if not self.is_fitted:
             raise ModelNotFittedError()
 
-        if user_id not in self.user2index:
-            return []  # cold user, can't recommend
+        cold_start = kwargs.pop("cold_start", False)
+        mapped = self._validate_user_in_map(
+            user_id, self.user2index, cold_start=cold_start
+        )
+        if mapped is None:
+            return []
 
         user_idx = self.user2index[user_id]
 

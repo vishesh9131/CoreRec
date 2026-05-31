@@ -299,3 +299,14 @@ class RecommendationPipeline:
             f"ranker={self._ranker is not None}, "
             f"rerankers={len(self._rerankers)})"
         )
+
+
+# Backward-compatible alias (docs/tutorials may reference this name)
+PipelineOrchestrator = RecommendationPipeline
+
+__all__ = [
+    "PipelineConfig",
+    "PipelineResult",
+    "RecommendationPipeline",
+    "PipelineOrchestrator",
+]

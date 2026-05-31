@@ -16,9 +16,18 @@ import json
 import copy
 import inspect
 import warnings
+import warnings
 import numpy as np
 from datetime import datetime
 from glob import glob
+
+from corerec.api.exceptions import (
+    InvalidDataError,
+    InvalidParameterError,
+    ModelNotFittedError,
+    RecommendationError,
+)
+from corerec.api.recommend_args import normalize_recommend_kwargs
 
 
 class BaseRecommender(ABC):
@@ -305,6 +314,128 @@ class BaseRecommender(ABC):
                 )
             return True
         return False
+
+    # ------------------------------------------------------------------
+    # Shared production helpers (API uniformity)
+    # ------------------------------------------------------------------
+
+    def _check_fitted(self, message: Optional[str] = None) -> None:
+        """Raise ModelNotFittedError if the model has not been fitted."""
+        if not self.is_fitted:
+            raise ModelNotFittedError(
+                message
+                or f"{self.name} must be fitted before inference. Call fit() first."
+            )
+
+    def _normalize_recommend(
+        self,
+        top_k: int = 10,
+        top_n: Optional[int] = None,
+        exclude_items: Optional[List[Any]] = None,
+        exclude_seen: Optional[bool] = None,
+        items_to_ignore: Optional[List[Any]] = None,
+        **kwargs: Any,
+    ) -> tuple:
+        """Return ``(top_k, exclude_items, kwargs)`` with legacy arg shims."""
+        top_k, exclude_items, kwargs = normalize_recommend_kwargs(
+            top_k=top_k,
+            top_n=top_n,
+            exclude_items=exclude_items,
+            exclude_seen=exclude_seen,
+            items_to_ignore=items_to_ignore,
+            **kwargs,
+        )
+        return top_k, exclude_items, kwargs
+
+    def _validate_user_in_map(
+        self,
+        user_id: Any,
+        user_map: Dict[Any, Any],
+        *,
+        cold_start: bool = False,
+    ) -> Any:
+        """
+        Validate user_id exists in training map.
+
+        Raises RecommendationError unless ``cold_start=True`` (returns None).
+        """
+        if user_id is None or user_id == "":
+            raise InvalidParameterError("user_id cannot be None or empty.")
+        if user_id not in user_map:
+            if cold_start:
+                return None
+            examples = list(user_map.keys())[:5]
+            raise RecommendationError(
+                f"Unknown user_id {user_id!r}. Not seen during training. "
+                f"Examples: {examples} (total {len(user_map)} users)."
+            )
+        return user_map[user_id]
+
+    def _unpack_fit_args(
+        self,
+        *args: Any,
+        supported_modes: tuple,
+        sar_format: bool = False,
+        **kwargs: Any,
+    ) -> tuple:
+        """
+        Unpack :class:`~corerec.api.dataset.RecommenderDataset` or DataFrame
+        into positional args expected by ``fit()``.
+        """
+        from corerec.api.dataset import RecommenderDataset, coerce_dataset
+
+        if not args:
+            return args, kwargs
+
+        ds = coerce_dataset(args[0])
+        if ds is None:
+            return args, kwargs
+
+        mode = ds.infer_mode()
+        if mode not in supported_modes:
+            raise InvalidDataError(
+                f"{self.__class__.__name__} does not support dataset mode '{mode}'. "
+                f"Supported: {supported_modes}"
+            )
+
+        if mode == "triplet":
+            u, i, r = ds.as_triplet()
+            return (u, i, r), kwargs
+        if mode == "dataframe":
+            df = ds.as_sar_dataframe() if sar_format else ds.as_ncf_dataframe()
+            return (df,), kwargs
+        if mode == "matrix":
+            u, i, m = ds.as_matrix()
+            return (u, i, m), kwargs
+        if mode == "content":
+            items, docs = ds.as_content()
+            if isinstance(docs, list):
+                docs = {item: doc for item, doc in zip(items, docs)}
+            return (items, docs), kwargs
+
+        raise InvalidDataError(f"Unhandled dataset mode: {mode}")
+
+    def _coerce_fit_dataframe(self, data: Any, *, sar_format: bool = False) -> Any:
+        """If *data* is a dataset/DataFrame wrapper, return a concrete DataFrame."""
+        from corerec.api.dataset import coerce_dataset
+
+        ds = coerce_dataset(data)
+        if ds is None:
+            return data
+        mode = ds.infer_mode()
+        if mode in ("dataframe", "triplet"):
+            return ds.as_sar_dataframe() if sar_format else ds.as_ncf_dataframe()
+        raise InvalidDataError(
+            f"{self.__class__.__name__}.fit() expects a DataFrame or triplet dataset, got '{mode}'."
+        )
+
+    def fit_from_dataset(self, dataset: "RecommenderDataset", **kwargs: Any) -> "BaseRecommender":
+        """Train using a :class:`~corerec.api.dataset.RecommenderDataset`."""
+        from corerec.api.dataset import RecommenderDataset
+
+        if not isinstance(dataset, RecommenderDataset):
+            raise InvalidDataError("fit_from_dataset expects a RecommenderDataset instance.")
+        return self.fit(dataset, **kwargs)
 
     # Abstract methods that must be implemented by subclasses
 
