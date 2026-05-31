@@ -418,26 +418,47 @@ class DCN(BaseRecommender):
         predictions.sort(key=lambda x: x[1], reverse=True)
         return [item_id for item_id, _ in predictions[:top_k]]
 
-    def save(self, path: Union[str, Path], **kwargs) -> None:
-        """Save model to disk."""
+    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
+        """Save model to disk (safe bundle by default; legacy full checkpoint if safe=False)."""
         path_obj = Path(path)
-        path_obj.parent.mkdir(parents=True, exist_ok=True)
 
+        config = {
+            "name": self.name,
+            "embedding_dim": self.embedding_dim,
+            "num_cross_layers": self.num_cross_layers,
+            "deep_layers": self.deep_layers,
+            "dropout": self.dropout,
+            "learning_rate": self.learning_rate,
+            "batch_size": self.batch_size,
+            "epochs": self.epochs,
+            "early_stopping_patience": self.early_stopping_patience,
+            "checkpoint_dir": self.checkpoint_dir,
+            "verbose": self.verbose,
+            "device": self.device,
+        }
+        state = {
+            "_num_features": self._num_features,
+            "_max_features": self._max_features,
+            "user_map": self.user_map,
+            "item_map": self.item_map,
+            "feature_map": self.feature_map,
+            "reverse_user_map": self.reverse_user_map,
+            "reverse_item_map": self.reverse_item_map,
+            "user_features": self.user_features,
+            "item_features": self.item_features,
+            "is_fitted": self.is_fitted,
+        }
+
+        from corerec.api.torch_bundle import save_torch_production
+
+        if save_torch_production(self, path_obj, config=config, state=state, safe=safe):
+            if self.verbose:
+                logger.info(f"Model saved (safe bundle) to {path_obj}")
+            return
+
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
         checkpoint = {
-            "config": {
-                "name": self.name,
-                "embedding_dim": self.embedding_dim,
-                "num_cross_layers": self.num_cross_layers,
-                "deep_layers": self.deep_layers,
-                "dropout": self.dropout,
-                "learning_rate": self.learning_rate,
-                "batch_size": self.batch_size,
-                "epochs": self.epochs,
-                "early_stopping_patience": self.early_stopping_patience,
-                "checkpoint_dir": self.checkpoint_dir,
-                "verbose": self.verbose,
-                "device": self.device,
-            },
+            "config": config,
             "build_params": {
                 "num_features": self._num_features,
                 "max_features": self._max_features,
@@ -460,7 +481,21 @@ class DCN(BaseRecommender):
 
     @classmethod
     def load(cls, path: Union[str, Path]) -> "DCN":
-        """Load model from disk."""
+        """Load model from disk (safe bundle or legacy checkpoint)."""
+        from corerec.api.torch_bundle import load_torch_production
+
+        def _build(instance, bundle):
+            if bundle.get("state_dict") is not None:
+                instance.model = instance._build_model(
+                    instance._num_features, instance._max_features
+                )
+
+        loaded = load_torch_production(cls, path, build_model=_build)
+        if loaded is not None:
+            if loaded.verbose:
+                logger.info(f"Model loaded (safe bundle) from {path}")
+            return loaded
+
         checkpoint = torch.load(path, weights_only=False)
         cfg = checkpoint["config"]
 

@@ -41,7 +41,8 @@ jobs:
       - name: Run production model tests
         run: |
           python -m pytest tests/test_all_production_models.py tests/test_api_uniformity.py \
-            tests/test_production_contract.py -v \
+            tests/test_production_contract.py tests/test_safe_persistence.py \
+            tests/test_api_modules.py -v \
             --tb=short --strict-markers
 
       - name: Run platform integration tests

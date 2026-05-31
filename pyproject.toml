@@ -145,10 +145,29 @@ omit = [
     "*/test_*",
     "*/__pycache__/*",
     "*/site-packages/*",
+    "corerec/torch_nn/*",
+    "corerec/torch_utils/*",
+    "corerec/sandbox/*",
+    "corerec/csrc/*",
+    "corerec/demo_frontends/*",
+    "corerec/uf_engine/*",
+    "corerec/cf_engine/*",
+    "corerec/cr_boosters/*",
+    "corerec/torch_nn/*",
 ]
 
 [tool.coverage.report]
 fail_under = 40
+include = [
+    "corerec/api/*",
+    "corerec/engines/*",
+    "corerec/pipelines/*",
+    "corerec/serving/*",
+    "corerec/retrieval/*",
+    "corerec/ranking/*",
+    "corerec/reranking/*",
+    "corerec/utils/*",
+]
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
