@@ -131,9 +131,9 @@ print(f"Sample Test RMSE: {rmse:.4f}")
 ### Step 7: Save & Load
 
 ```python
-model.save('bert4rec.pt')
+model.save('artifacts/bert4rec')
 
-loaded = BERT4Rec.load('bert4rec.pt')
+loaded = BERT4Rec.load('artifacts/bert4rec')
 recs = loaded.recommend(sample_user, top_k=5)
 print(f"Loaded model recommendations: {recs}")
 ```
