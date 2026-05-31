@@ -457,6 +457,9 @@ class DeepFM(BaseRecommender):
         if not self.is_fitted:
             raise ModelNotFittedError(f"{self.name} has not been fitted yet.")
 
+        from corerec.api.bundle_helpers import load_map_state, save_feature_map, save_map_state
+        from corerec.api.torch_bundle import save_torch_production
+
         path_obj = Path(path)
         config = {
             "name": self.name,
@@ -470,16 +473,14 @@ class DeepFM(BaseRecommender):
             "device": self.device,
         }
         state = {
-            "feature_map": self.feature_map,
             "field_dims": self.field_dims,
             "user_features": self.user_features,
             "item_features": self.item_features,
             "user_feature_types": self.user_feature_types,
             "item_feature_types": self.item_feature_types,
             "is_fitted": self.is_fitted,
+            **save_feature_map(self.feature_map),
         }
-
-        from corerec.api.torch_bundle import save_torch_production
 
         if save_torch_production(self, path_obj, config=config, state=state, safe=safe):
             if self.verbose:
@@ -509,13 +510,23 @@ class DeepFM(BaseRecommender):
         Returns:
             Loaded DeepFM instance
         """
+        from corerec.api.bundle_helpers import load_feature_map
         from corerec.api.torch_bundle import load_torch_production
+
+        def _restore(instance, config, state, arrays, bundle):
+            instance.feature_map = load_feature_map(state)
+            instance.field_dims = state["field_dims"]
+            instance.user_features = state.get("user_features")
+            instance.item_features = state.get("item_features")
+            instance.user_feature_types = state.get("user_feature_types", [])
+            instance.item_feature_types = state.get("item_feature_types", [])
+            instance.is_fitted = state.get("is_fitted", True)
 
         def _build(instance, bundle):
             if bundle.get("state_dict") is not None:
                 instance.model = instance._build_model(instance.field_dims)
 
-        loaded = load_torch_production(cls, path, build_model=_build)
+        loaded = load_torch_production(cls, path, build_model=_build, restore=_restore)
         if loaded is not None:
             if loaded.verbose:
                 logger.info(f"{loaded.name} model loaded (safe bundle) from {path}")

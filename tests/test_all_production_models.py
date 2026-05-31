@@ -19,6 +19,17 @@ import pandas as pd
 from corerec.api.base_recommender import BaseRecommender
 
 
+def assert_predict_parity(testcase, model, loaded, user_id, item_id, delta=1e-2):
+    """Assert predict() score is unchanged after save/load (catches JSON ID map bugs)."""
+    before = float(model.predict(user_id, item_id))
+    after = float(loaded.predict(user_id, item_id))
+    if abs(before) < 1e-9 and abs(after) < 1e-9:
+        return
+    testcase.assertAlmostEqual(
+        before, after, delta=delta, msg=f"predict score drift: {before} -> {after}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Shared synthetic data generators
 # ---------------------------------------------------------------------------
@@ -80,6 +91,7 @@ class TestDCN(unittest.TestCase):
             model.save(path)
             loaded = DCN.load(path)
             self.assertTrue(loaded.is_fitted)
+            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
             recs = loaded.recommend(self.user_ids[0], top_k=3)
             self.assertIsInstance(recs, list)
 
@@ -117,6 +129,7 @@ class TestDeepFM(unittest.TestCase):
             model.save(path)
             loaded = DeepFM.load(path)
             self.assertTrue(loaded.is_fitted)
+            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
 
 
 class TestGNNRec(unittest.TestCase):
@@ -152,6 +165,7 @@ class TestGNNRec(unittest.TestCase):
             model.save(path)
             loaded = GNNRec.load(path)
             self.assertTrue(loaded.is_fitted)
+            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
 
 
 class TestMIND(unittest.TestCase):
@@ -187,6 +201,7 @@ class TestMIND(unittest.TestCase):
             model.save(path)
             loaded = MIND.load(path)
             self.assertTrue(loaded.is_fitted)
+            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
 
 
 class TestNASRec(unittest.TestCase):
@@ -222,6 +237,7 @@ class TestNASRec(unittest.TestCase):
             model.save(path)
             loaded = NASRec.load(path)
             self.assertTrue(loaded.is_fitted)
+            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
 
 
 class TestSASRec(unittest.TestCase):
@@ -260,6 +276,9 @@ class TestSASRec(unittest.TestCase):
             model.save(path)
             loaded = SASRec.load(path)
             self.assertTrue(loaded.is_fitted)
+            uid = next(iter(model.user_sequences))
+            iid = next(iter(model.item_to_index))
+            assert_predict_parity(self, model, loaded, uid, iid)
 
 
 class TestTwoTower(unittest.TestCase):
@@ -299,6 +318,7 @@ class TestTwoTower(unittest.TestCase):
             model.save(path)
             loaded = TwoTower.load(path)
             self.assertTrue(loaded.is_fitted)
+            assert_predict_parity(self, model, loaded, self.user_list[0], self.item_list[0])
             recs = loaded.recommend(self.user_list[0], top_k=3)
             self.assertIsInstance(recs, list)
 
@@ -340,6 +360,10 @@ class TestBERT4Rec(unittest.TestCase):
             model.save(path)
             loaded = BERT4Rec.load(path)
             self.assertTrue(loaded.is_fitted)
+            if model.user_seqs:
+                uid = next(iter(model.user_seqs))
+                iid = next(iter(model.item_to_idx))
+                assert_predict_parity(self, model, loaded, uid, iid)
 
 
 # ===================================================================
@@ -391,6 +415,9 @@ class TestSAR(unittest.TestCase):
             model.save(path)
             loaded = SAR.load(path)
             self.assertTrue(loaded.is_fitted)
+            uid = int(self.df["userID"].iloc[0])
+            iid = int(self.df["itemID"].iloc[0])
+            assert_predict_parity(self, model, loaded, uid, iid)
 
 
 class TestNCF(unittest.TestCase):
@@ -432,6 +459,9 @@ class TestNCF(unittest.TestCase):
             model.save(path)
             loaded = NCF.load(path)
             self.assertTrue(loaded.is_fitted)
+            uid = int(self.df["user_id"].iloc[0])
+            iid = int(self.df["item_id"].iloc[0])
+            assert_predict_parity(self, model, loaded, uid, iid)
 
 
 class TestFAST(unittest.TestCase):
@@ -471,6 +501,7 @@ class TestFAST(unittest.TestCase):
             model.save(path)
             loaded = FAST.load(path)
             self.assertIsNotNone(loaded.user_factors)
+            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
 
 
 class TestFASTRecommender(unittest.TestCase):
@@ -511,6 +542,7 @@ class TestFASTRecommender(unittest.TestCase):
             model.save(path)
             loaded = FASTRecommender.load(path)
             self.assertIsNotNone(loaded.user_factors)
+            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
 
 
 class TestLightGCN(unittest.TestCase):
@@ -554,6 +586,7 @@ class TestLightGCN(unittest.TestCase):
             model.save(path)
             loaded = LightGCN.load(path)
             self.assertTrue(loaded.is_fitted)
+            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
             recs = loaded.recommend(self.user_ids[0], top_k=3)
             self.assertIsInstance(recs, list)
 
@@ -598,6 +631,7 @@ class TestTFIDFRecommender(unittest.TestCase):
             model.save(path)
             loaded = TFIDFRecommender.load(path)
             self.assertTrue(loaded.is_fitted)
+            assert_predict_parity(self, model, loaded, self.items[0], self.items[1])
 
 
 # ===================================================================

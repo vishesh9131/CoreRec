@@ -258,6 +258,8 @@ class FASTRecommender(BaseRecommender):
         if self.user_factors is None or self.item_factors is None:
             raise ModelNotFittedError("Model has not been trained. Call fit() first.")
 
+        from corerec.api.bundle_helpers import load_map_state, save_map_state
+
         config = {
             "factors": self.factors,
             "weight_decay": self.weight_decay,
@@ -268,11 +270,13 @@ class FASTRecommender(BaseRecommender):
             "verbose": self.verbose,
         }
         state = {
-            "user_map": self.user_map,
-            "item_map": self.item_map,
-            "reverse_user_map": self.reverse_user_map,
-            "reverse_item_map": self.reverse_item_map,
             "is_fitted": True,
+            **save_map_state(
+                user_map=self.user_map,
+                item_map=self.item_map,
+                reverse_user_map=self.reverse_user_map,
+                reverse_item_map=self.reverse_item_map,
+            ),
         }
         arrays = {
             "user_factors": self.user_factors,
@@ -304,13 +308,22 @@ class FASTRecommender(BaseRecommender):
     @classmethod
     def load_model(cls, filepath: str) -> "FASTRecommender":
         """Load a model from a file (safe bundle or legacy npy)."""
+        from corerec.api.bundle_helpers import load_map_state
         from corerec.api.torch_bundle import load_numpy_production
 
         def _restore(instance, config, state, arrays):
-            instance.user_map = state["user_map"]
-            instance.item_map = state["item_map"]
-            instance.reverse_user_map = state["reverse_user_map"]
-            instance.reverse_item_map = state["reverse_item_map"]
+            maps = load_map_state(
+                state,
+                "user_map",
+                "item_map",
+                "reverse_user_map",
+                "reverse_item_map",
+                int_key_names=("reverse_user_map", "reverse_item_map"),
+            )
+            instance.user_map = maps["user_map"]
+            instance.item_map = maps["item_map"]
+            instance.reverse_user_map = maps["reverse_user_map"]
+            instance.reverse_item_map = maps["reverse_item_map"]
             instance.user_factors = arrays["user_factors"]
             instance.item_factors = arrays["item_factors"]
             instance.user_bias = arrays["user_bias"]

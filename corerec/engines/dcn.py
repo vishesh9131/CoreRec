@@ -422,6 +422,8 @@ class DCN(BaseRecommender):
         """Save model to disk (safe bundle by default; legacy full checkpoint if safe=False)."""
         path_obj = Path(path)
 
+        from corerec.api.bundle_helpers import pairs, save_map_state
+
         config = {
             "name": self.name,
             "embedding_dim": self.embedding_dim,
@@ -439,14 +441,16 @@ class DCN(BaseRecommender):
         state = {
             "_num_features": self._num_features,
             "_max_features": self._max_features,
-            "user_map": self.user_map,
-            "item_map": self.item_map,
-            "feature_map": self.feature_map,
-            "reverse_user_map": self.reverse_user_map,
-            "reverse_item_map": self.reverse_item_map,
+            "feature_map_pairs": pairs(self.feature_map),
             "user_features": self.user_features,
             "item_features": self.item_features,
             "is_fitted": self.is_fitted,
+            **save_map_state(
+                user_map=self.user_map,
+                item_map=self.item_map,
+                reverse_user_map=self.reverse_user_map,
+                reverse_item_map=self.reverse_item_map,
+            ),
         }
 
         from corerec.api.torch_bundle import save_torch_production
@@ -483,6 +487,27 @@ class DCN(BaseRecommender):
     def load(cls, path: Union[str, Path]) -> "DCN":
         """Load model from disk (safe bundle or legacy checkpoint)."""
         from corerec.api.torch_bundle import load_torch_production
+        from corerec.api.bundle_helpers import dict_from_pairs, load_map_state
+
+        def _restore(instance, config, state, arrays, bundle):
+            maps = load_map_state(
+                state,
+                "user_map",
+                "item_map",
+                "reverse_user_map",
+                "reverse_item_map",
+                int_key_names=("reverse_user_map", "reverse_item_map"),
+            )
+            instance.user_map = maps["user_map"]
+            instance.item_map = maps["item_map"]
+            instance.reverse_user_map = maps["reverse_user_map"]
+            instance.reverse_item_map = maps["reverse_item_map"]
+            instance.feature_map = dict_from_pairs(state.get("feature_map_pairs"))
+            instance._num_features = state["_num_features"]
+            instance._max_features = state["_max_features"]
+            instance.user_features = state.get("user_features")
+            instance.item_features = state.get("item_features")
+            instance.is_fitted = state.get("is_fitted", True)
 
         def _build(instance, bundle):
             if bundle.get("state_dict") is not None:
@@ -490,7 +515,7 @@ class DCN(BaseRecommender):
                     instance._num_features, instance._max_features
                 )
 
-        loaded = load_torch_production(cls, path, build_model=_build)
+        loaded = load_torch_production(cls, path, build_model=_build, restore=_restore)
         if loaded is not None:
             if loaded.verbose:
                 logger.info(f"Model loaded (safe bundle) from {path}")

@@ -47,8 +47,8 @@ jobs:
 
       - name: Run platform integration tests
         run: |
-          python -m pytest tests/test_pipeline_integration.py tests/test_serving_smoke.py -v \
-            --tb=short
+          python -m pytest tests/test_pipeline_integration.py tests/test_serving_smoke.py \
+            tests/test_platform_stages.py -v --tb=short
 
       - name: Run full test suite
         run: |
