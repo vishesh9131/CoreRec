@@ -26,6 +26,17 @@ from .mixins import (
 )
 from .recommend_args import normalize_recommend_kwargs
 from .safe_persistence import save_artifact, load_artifact, COREREC_SAVE_VERSION
+from .bundle_helpers import (
+    dict_from_pairs,
+    dense_to_sparse_csr,
+    load_map_state,
+    nested_dict_from_lists,
+    nested_lists,
+    pairs,
+    save_map_state,
+    sparse_to_dense,
+    tensor_to_numpy,
+)
 from .model_bundle import (
     artifact_base,
     is_safe_bundle,

@@ -348,23 +348,50 @@ class GNNRec(BaseRecommender):
 
         return top_items
 
-    def save(self, path: Union[str, Path], **kwargs) -> None:
+    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         """Save model to disk."""
-        path_obj = Path(path)
-        path_obj.parent.mkdir(parents=True, exist_ok=True)
+        from corerec.api.bundle_helpers import save_map_state, sparse_to_dense, tensor_to_numpy
 
+        path_obj = Path(path)
+        config = {
+            "name": self.name,
+            "embedding_dim": self.embedding_dim,
+            "num_gnn_layers": self.num_gnn_layers,
+            "dropout": self.dropout,
+            "learning_rate": self.learning_rate,
+            "batch_size": self.batch_size,
+            "epochs": self.epochs,
+            "verbose": self.verbose,
+            "device": self.device,
+        }
+        state = {
+            "build_params": self._build_params,
+            "is_fitted": self.is_fitted,
+            **save_map_state(
+                user_map=self.user_map,
+                item_map=self.item_map,
+                reverse_user_map=self.reverse_user_map,
+                reverse_item_map=self.reverse_item_map,
+            ),
+        }
+        arrays = {}
+        lap = tensor_to_numpy(self.laplacian_matrix)
+        if lap is not None:
+            arrays["laplacian_matrix"] = lap
+        uim = sparse_to_dense(self.user_item_matrix)
+        if uim is not None:
+            arrays["user_item_matrix"] = np.asarray(uim, dtype=np.float64)
+
+        from corerec.api.torch_bundle import save_torch_production
+
+        if save_torch_production(self, path_obj, config=config, state=state, arrays=arrays, safe=safe):
+            if self.verbose:
+                logger.info(f"{self.name} model saved (safe bundle) to {path}")
+            return
+
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
         checkpoint = {
-            "config": {
-                "name": self.name,
-                "embedding_dim": self.embedding_dim,
-                "num_gnn_layers": self.num_gnn_layers,
-                "dropout": self.dropout,
-                "learning_rate": self.learning_rate,
-                "batch_size": self.batch_size,
-                "epochs": self.epochs,
-                "verbose": self.verbose,
-                "device": self.device,
-            },
+            "config": config,
             "build_params": self._build_params,
             "laplacian_matrix": self.laplacian_matrix,
             "model_state_dict": self.model.state_dict() if self.model else None,
@@ -384,6 +411,44 @@ class GNNRec(BaseRecommender):
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs) -> "GNNRec":
         """Load model from disk."""
+        from corerec.api.bundle_helpers import dense_to_sparse_csr, load_map_state
+        from corerec.api.torch_bundle import load_torch_production
+
+        def _restore(instance, config, state, arrays, bundle):
+            maps = load_map_state(
+                state,
+                "user_map",
+                "item_map",
+                "reverse_user_map",
+                "reverse_item_map",
+                int_key_names=("reverse_user_map", "reverse_item_map"),
+            )
+            instance.user_map = maps["user_map"]
+            instance.item_map = maps["item_map"]
+            instance.reverse_user_map = maps["reverse_user_map"]
+            instance.reverse_item_map = maps["reverse_item_map"]
+            instance._build_params = state["build_params"]
+            instance.is_fitted = state.get("is_fitted", True)
+            arrays = arrays or {}
+            if "laplacian_matrix" in arrays:
+                instance.laplacian_matrix = torch.tensor(
+                    arrays["laplacian_matrix"], device=instance.device, dtype=torch.float32
+                )
+            if "user_item_matrix" in arrays:
+                instance.user_item_matrix = dense_to_sparse_csr(arrays["user_item_matrix"])
+
+        def _build(instance, bundle):
+            if bundle.get("state_dict") is not None:
+                bp = instance._build_params
+                laplacian = instance.laplacian_matrix.to(instance.device)
+                instance.model = instance._build_model(bp["num_users"], bp["num_items"], laplacian)
+
+        loaded = load_torch_production(cls, path, build_model=_build, restore=_restore)
+        if loaded is not None:
+            if loaded.verbose:
+                logger.info(f"{loaded.name} model loaded (safe bundle) from {path}")
+            return loaded
+
         checkpoint = torch.load(path, weights_only=False)
         cfg = checkpoint["config"]
 

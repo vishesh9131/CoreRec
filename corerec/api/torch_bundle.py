@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
 from corerec.api.model_bundle import is_safe_bundle, load_bundle, save_bundle
@@ -16,17 +15,22 @@ def save_torch_production(
     *,
     config: Dict[str, Any],
     state: Dict[str, Any],
+    arrays: Optional[Dict[str, Any]] = None,
     safe: bool = True,
+    state_dict: Optional[Dict[str, Any]] = None,
 ) -> bool:
     """Save using safe bundle. Returns True if saved, False to use legacy path."""
     if not safe:
         return False
+    if state_dict is None and getattr(instance, "model", None) is not None:
+        state_dict = instance.model.state_dict()
     save_bundle(
         path,
         model_class=f"{instance.__class__.__module__}.{instance.__class__.__name__}",
         config=config,
         state=state,
-        state_dict=instance.model.state_dict() if getattr(instance, "model", None) is not None else None,
+        state_dict=state_dict,
+        arrays=arrays,
     )
     return True
 
@@ -36,6 +40,10 @@ def load_torch_production(
     path: Any,
     *,
     build_model: Callable[[T, Dict[str, Any]], None],
+    factory: Optional[Callable[[Dict[str, Any]], T]] = None,
+    restore: Optional[
+        Callable[[T, Dict[str, Any], Dict[str, Any], Optional[Dict[str, Any]], Dict[str, Any]], None]
+    ] = None,
     map_location: Any = None,
 ) -> Optional[T]:
     """Load from safe bundle if present. Returns None to fall back to legacy loader."""
@@ -43,10 +51,12 @@ def load_torch_production(
         return None
     bundle = load_bundle(path, map_location=map_location)
     cfg = bundle["config"]
-    instance = cls(**cfg)
-    st = bundle["state"]
-    for key, val in st.items():
-        setattr(instance, key, val)
+    instance = factory(cfg) if factory else cls(**cfg)
+    if restore is not None:
+        restore(instance, cfg, bundle["state"], bundle.get("arrays"), bundle)
+    else:
+        for key, val in bundle["state"].items():
+            setattr(instance, key, val)
     build_model(instance, bundle)
     if bundle.get("state_dict") is not None and getattr(instance, "model", None) is not None:
         instance.model.load_state_dict(bundle["state_dict"])

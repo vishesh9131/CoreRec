@@ -236,20 +236,43 @@ class TFIDFRecommender(BaseRecommender):
         
         return recommendations
     
-    def save(self, path: Union[str, Path], **kwargs) -> None:
+    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         """
         Save model to disk.
         
         Args:
             path: File path to save model
+            safe: Use corerec_safe_v1 bundle (default). Set False for legacy pickle.
             **kwargs: Additional arguments (unused)
         """
         if not self.is_fitted:
             self._check_fitted()
-        
+
+        from corerec.api.bundle_helpers import pairs, save_map_state, sparse_to_dense
+
         path_obj = Path(path)
+        config = {"name": self.name, "verbose": self.verbose}
+        state = {
+            "docs_pairs": pairs(self.docs),
+            "is_fitted": self.is_fitted,
+            **save_map_state(item_to_index=self.item_to_index, index_to_item=self.index_to_item),
+        }
+        arrays = {}
+        if self.tfidf_matrix is not None:
+            dense = sparse_to_dense(self.tfidf_matrix)
+            if dense is not None:
+                arrays["tfidf_matrix"] = np.asarray(dense, dtype=np.float64)
+        if self.feature_matrix is not None:
+            arrays["feature_matrix"] = np.asarray(self.feature_matrix, dtype=np.float64)
+
+        from corerec.api.torch_bundle import save_numpy_production
+
+        if save_numpy_production(self, path_obj, config=config, state=state, arrays=arrays, safe=safe):
+            if self.verbose:
+                print(f"{self.name} saved (safe bundle) to {path}")
+            return
+
         path_obj.parent.mkdir(parents=True, exist_ok=True)
-        
         with open(path_obj, 'wb') as f:
             pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
         
@@ -268,6 +291,46 @@ class TFIDFRecommender(BaseRecommender):
         Returns:
             Loaded TFIDFRecommender instance
         """
+        from corerec.api.bundle_helpers import dict_from_pairs, load_map_state
+        from corerec.api.torch_bundle import load_numpy_production
+        from scipy import sparse as sp
+
+        def _restore(instance, config, state, arrays):
+            maps = load_map_state(
+                state, "item_to_index", "index_to_item", int_key_names=("index_to_item",)
+            )
+            instance.item_to_index = maps["item_to_index"]
+            instance.index_to_item = maps["index_to_item"]
+            instance.docs = dict_from_pairs(state.get("docs_pairs"))
+            instance.is_fitted = state.get("is_fitted", True)
+            instance.num_items = len(instance.item_to_index)
+            arrays = arrays or {}
+            if arrays.get("feature_matrix") is not None:
+                instance.feature_matrix = arrays["feature_matrix"]
+            if arrays.get("tfidf_matrix") is not None:
+                instance.tfidf_matrix = sp.csr_matrix(arrays["tfidf_matrix"])
+            if instance.docs and instance.item_to_index:
+                ordered_items = sorted(instance.item_to_index, key=lambda x: instance.item_to_index[x])
+                texts = [instance.docs.get(item, "") for item in ordered_items]
+                instance.vectorizer = TfidfVectorizer(
+                    lowercase=True,
+                    stop_words="english",
+                    max_features=1000,
+                    ngram_range=(1, 2),
+                )
+                instance.tfidf_matrix = instance.vectorizer.fit_transform(texts)
+
+        loaded = load_numpy_production(
+            cls,
+            path,
+            restore=_restore,
+            factory=lambda cfg: cls(name=cfg.get("name"), verbose=cfg.get("verbose", False)),
+        )
+        if loaded is not None:
+            if loaded.verbose:
+                print(f"{loaded.name} loaded (safe bundle) from {path}")
+            return loaded
+
         with open(path, 'rb') as f:
             model = pickle.load(f)
         

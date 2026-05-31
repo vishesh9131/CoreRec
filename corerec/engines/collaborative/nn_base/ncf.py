@@ -805,7 +805,7 @@ class NCF(BaseRecommender):
         # Return top-N recommendations
         return [item for item, _ in item_scores[:top_k]]
 
-    def save(self, filepath):
+    def save(self, filepath, safe: bool = True):
         """
         Save model to file
 
@@ -813,15 +813,16 @@ class NCF(BaseRecommender):
         -----------
         filepath: str
             Path to save the model
+        safe: bool
+            Use corerec_safe_v1 bundle (default). Set False for legacy torch checkpoint.
         """
         if not self.is_fitted:
             self._check_fitted()
 
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else ".", exist_ok=True)
+        from corerec.api.bundle_helpers import nested_lists, save_map_state
 
-        # Prepare data to save
-        model_data = {
+        config = {
+            "name": self.name,
             "model_config": {
                 "model_type": self.model_type,
                 "gmf_embedding_dim": self.gmf_embedding_dim,
@@ -839,7 +840,40 @@ class NCF(BaseRecommender):
                 "loss_type": self.loss_type,
                 "l2_regularization": self.l2_regularization,
                 "sample_strategy": self.sample_strategy,
+                "device": self.device,
             },
+        }
+        state = {
+            "num_users": self.num_users,
+            "num_items": self.num_items,
+            "item_popularity": self.item_popularity,
+            "user_history_pairs": nested_lists({k: list(v) for k, v in self.user_history.items()}),
+            "is_fitted": True,
+            **save_map_state(
+                user_mapping=self.user_mapping,
+                item_mapping=self.item_mapping,
+                reverse_user_mapping=self.reverse_user_mapping,
+                reverse_item_mapping=self.reverse_item_mapping,
+            ),
+        }
+
+        from corerec.api.torch_bundle import save_torch_production
+
+        if save_torch_production(
+            self,
+            filepath,
+            config=config,
+            state=state,
+            safe=safe,
+            state_dict=self.model.state_dict(),
+        ):
+            self.logger.info(f"Model saved (safe bundle) to {filepath}")
+            return
+
+        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else ".", exist_ok=True)
+        model_data = {
+            "model_config": config["model_config"],
+            "training_config": config["training_config"],
             "user_item_data": {
                 "user_mapping": self.user_mapping,
                 "item_mapping": self.item_mapping,
@@ -852,13 +886,11 @@ class NCF(BaseRecommender):
             },
             "model_state": self.model.state_dict(),
         }
-
-        # Save to file
         torch.save(model_data, filepath)
         self.logger.info(f"Model saved to {filepath}")
 
     @classmethod
-    def load(cls, filepath, device=None):
+    def load(cls, filepath, device=None, safe: bool = True):
         """
         Load model from file
 
@@ -874,13 +906,67 @@ class NCF(BaseRecommender):
         NCF
             Loaded model
         """
+        from corerec.api.bundle_helpers import load_map_state, nested_dict_from_lists
+        from corerec.api.torch_bundle import load_torch_production
+
+        def _factory(cfg):
+            mc = cfg["model_config"]
+            tc = cfg["training_config"]
+            dev = device or tc.get("device") or ("cuda" if torch.cuda.is_available() else "cpu")
+            return cls(
+                name=cfg.get("name", os.path.basename(filepath).split(".")[0]),
+                model_type=mc["model_type"],
+                gmf_embedding_dim=mc["gmf_embedding_dim"],
+                mlp_embedding_dim=mc["mlp_embedding_dim"],
+                mlp_hidden_layers=mc["mlp_hidden_layers"],
+                dropout=mc["dropout"],
+                batch_norm=mc["batch_norm"],
+                activation=mc["activation"],
+                learning_rate=tc["learning_rate"],
+                batch_size=tc["batch_size"],
+                num_epochs=tc["num_epochs"],
+                negative_samples=tc["negative_samples"],
+                loss_type=tc["loss_type"],
+                l2_regularization=tc["l2_regularization"],
+                sample_strategy=tc["sample_strategy"],
+                device=dev,
+            )
+
+        def _restore(instance, config, state, arrays, bundle):
+            maps = load_map_state(
+                state,
+                "user_mapping",
+                "item_mapping",
+                "reverse_user_mapping",
+                "reverse_item_mapping",
+                int_key_names=("reverse_user_mapping", "reverse_item_mapping"),
+            )
+            instance.user_mapping = maps["user_mapping"]
+            instance.item_mapping = maps["item_mapping"]
+            instance.reverse_user_mapping = maps["reverse_user_mapping"]
+            instance.reverse_item_mapping = maps["reverse_item_mapping"]
+            instance.num_users = state["num_users"]
+            instance.num_items = state["num_items"]
+            instance.item_popularity = state.get("item_popularity")
+            instance.user_history = {
+                k: set(v)
+                for k, v in nested_dict_from_lists(state.get("user_history_pairs")).items()
+            }
+            instance.is_fitted = state.get("is_fitted", True)
+
+        def _build(instance, bundle):
+            if bundle.get("state_dict") is not None:
+                instance._build_model()
+
+        loaded = load_torch_production(cls, filepath, build_model=_build, factory=_factory, restore=_restore)
+        if loaded is not None:
+            return loaded
+
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # Load saved data
         model_data = torch.load(filepath, map_location=device)
 
-        # Create a new instance with saved configuration
         instance = cls(
             name=os.path.basename(filepath).split(".")[0],
             model_type=model_data["model_config"]["model_type"],
@@ -900,7 +986,6 @@ class NCF(BaseRecommender):
             device=device,
         )
 
-        # Restore user-item data
         instance.user_mapping = model_data["user_item_data"]["user_mapping"]
         instance.item_mapping = model_data["user_item_data"]["item_mapping"]
         instance.reverse_user_mapping = model_data["user_item_data"]["reverse_user_mapping"]
@@ -912,7 +997,6 @@ class NCF(BaseRecommender):
         }
         instance.item_popularity = model_data["user_item_data"]["item_popularity"]
 
-        # Build model and load state
         instance._build_model()
         instance.model.load_state_dict(model_data["model_state"])
         instance.model.eval()

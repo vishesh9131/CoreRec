@@ -76,6 +76,60 @@ class TestSafePersistence(unittest.TestCase):
             loaded = DCN.load(legacy)
             self.assertTrue(loaded.is_fitted)
 
+    def test_deepfm_safe_save_load(self):
+        from corerec.engines.deepfm import DeepFM
+
+        model = DeepFM(embedding_dim=8, hidden_layers=[8], epochs=1, batch_size=4, verbose=False)
+        users, items, ratings = [0, 0, 1], [10, 11, 10], [5.0, 4.0, 3.0]
+        model.fit(users, items, ratings)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "deepfm")
+            model.save(path, safe=True)
+            self.assertTrue(is_safe_bundle(path))
+            loaded = DeepFM.load(path)
+            self.assertTrue(loaded.is_fitted)
+
+    def test_sasrec_safe_save_load(self):
+        from corerec.engines.sasrec import SASRec
+
+        user_ids, item_ids, mat = list(range(5)), list(range(8)), None
+        import numpy as np
+
+        rng = np.random.RandomState(0)
+        mat = (rng.rand(5, 8) < 0.4).astype(np.float32)
+        model = SASRec(
+            hidden_units=8,
+            num_blocks=1,
+            num_epochs=1,
+            batch_size=4,
+            verbose=False,
+        )
+        model.fit(user_ids, item_ids, mat)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "sasrec")
+            model.save(path, safe=True)
+            self.assertTrue(is_safe_bundle(path))
+            loaded = SASRec.load(path)
+            self.assertTrue(loaded.is_fitted)
+            self.assertGreater(len(loaded.user_sequences), 0)
+            user_with_history = next(iter(loaded.user_sequences))
+            recs = loaded.recommend(user_with_history, top_k=2)
+            self.assertIsInstance(recs, list)
+
+    def test_tfidf_safe_save_load(self):
+        from corerec.engines.content_based.tfidf_recommender import TFIDFRecommender
+
+        items = [0, 1, 2]
+        docs = {i: f"document text for item {i}" for i in items}
+        model = TFIDFRecommender(verbose=False)
+        model.fit(items, docs)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "tfidf")
+            model.save(path, safe=True)
+            self.assertTrue(is_safe_bundle(path))
+            loaded = TFIDFRecommender.load(path)
+            self.assertTrue(loaded.is_fitted)
+
 
 if __name__ == "__main__":
     unittest.main()

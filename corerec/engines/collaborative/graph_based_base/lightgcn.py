@@ -329,23 +329,50 @@ class LightGCN(BaseRecommender):
         return [self.reverse_item_map[int(i)] for i in top_indices
                 if int(i) in self.reverse_item_map]
 
-    def save(self, path: Union[str, Path], **kwargs) -> None:
+    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         """Save model to disk."""
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
+        from corerec.api.bundle_helpers import nested_lists, save_map_state, tensor_to_numpy
 
+        path = Path(path)
+        config = {
+            "n_factors": self.n_factors,
+            "n_layers": self.n_layers,
+            "learning_rate": self.learning_rate,
+            "regularization": self.regularization,
+            "batch_size": self.batch_size,
+            "epochs": self.epochs,
+            "dropout": self.dropout,
+            "early_stopping_patience": self.early_stopping_patience,
+            "verbose": self.verbose,
+        }
         state = {
-            "config": {
-                "n_factors": self.n_factors,
-                "n_layers": self.n_layers,
-                "learning_rate": self.learning_rate,
-                "regularization": self.regularization,
-                "batch_size": self.batch_size,
-                "epochs": self.epochs,
-                "dropout": self.dropout,
-                "early_stopping_patience": self.early_stopping_patience,
-                "verbose": self.verbose,
-            },
+            "n_users": self.n_users,
+            "n_items": self.n_items,
+            "user_interactions_pairs": nested_lists(self.user_interactions),
+            "is_fitted": self.is_fitted,
+            **save_map_state(
+                user_id_map=self.user_id_map,
+                item_id_map=self.item_id_map,
+                reverse_user_map=self.reverse_user_map,
+                reverse_item_map=self.reverse_item_map,
+            ),
+        }
+        arrays = {}
+        user_emb = tensor_to_numpy(self.user_embedding)
+        item_emb = tensor_to_numpy(self.item_embedding)
+        if user_emb is not None:
+            arrays["user_embedding"] = user_emb
+        if item_emb is not None:
+            arrays["item_embedding"] = item_emb
+
+        from corerec.api.torch_bundle import save_numpy_production
+
+        if save_numpy_production(self, path, config=config, state=state, arrays=arrays, safe=safe):
+            return
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        legacy = {
+            "config": config,
             "n_users": self.n_users,
             "n_items": self.n_items,
             "user_id_map": self.user_id_map,
@@ -364,11 +391,43 @@ class LightGCN(BaseRecommender):
             "is_fitted": self.is_fitted,
         }
         with open(path, "wb") as f:
-            pickle.dump(state, f, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(legacy, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     @classmethod
     def load(cls, path: Union[str, Path]) -> "LightGCN":
         """Load model from disk."""
+        from corerec.api.bundle_helpers import load_map_state, nested_dict_from_lists
+        from corerec.api.torch_bundle import load_numpy_production
+
+        def _restore(instance, config, state, arrays):
+            maps = load_map_state(
+                state,
+                "user_id_map",
+                "item_id_map",
+                "reverse_user_map",
+                "reverse_item_map",
+                int_key_names=("reverse_user_map", "reverse_item_map"),
+            )
+            instance.n_users = state["n_users"]
+            instance.n_items = state["n_items"]
+            instance.user_id_map = maps["user_id_map"]
+            instance.item_id_map = maps["item_id_map"]
+            instance.reverse_user_map = maps["reverse_user_map"]
+            instance.reverse_item_map = maps["reverse_item_map"]
+            instance.user_interactions = {
+                k: set(v) for k, v in nested_dict_from_lists(state.get("user_interactions_pairs")).items()
+            }
+            instance.is_fitted = state.get("is_fitted", True)
+            arrays = arrays or {}
+            if arrays.get("user_embedding") is not None:
+                instance.user_embedding = torch.tensor(arrays["user_embedding"]).to(instance.device)
+            if arrays.get("item_embedding") is not None:
+                instance.item_embedding = torch.tensor(arrays["item_embedding"]).to(instance.device)
+
+        loaded = load_numpy_production(cls, path, restore=_restore)
+        if loaded is not None:
+            return loaded
+
         with open(path, "rb") as f:
             state = pickle.load(f)
 

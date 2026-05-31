@@ -363,9 +363,61 @@ class SASRec(BaseRecommender):
 
     @classmethod
     def load(cls, path: Union[str, Path], device: Optional[torch.device] = None):
+        from corerec.api.bundle_helpers import dict_from_pairs, load_map_state, nested_dict_from_lists, pairs
+        from corerec.api.torch_bundle import load_torch_production
+
+        def _factory(cfg):
+            dev = device
+            if dev is None and cfg.get("device"):
+                dev = torch.device(cfg["device"])
+            init_cfg = {k: v for k, v in cfg.items() if k != "device"}
+            return cls(device=dev, **init_cfg)
+
+        def _coerce_id(key):
+            if isinstance(key, str) and key.lstrip("-").isdigit():
+                return int(key)
+            return key
+
+        def _restore(instance, config, state, arrays, bundle):
+            maps = load_map_state(
+                state, "item_to_index", "index_to_item", int_key_names=("index_to_item",)
+            )
+            instance.item_to_index = maps["item_to_index"]
+            instance.index_to_item = maps["index_to_item"]
+            instance.user_sequences = {
+                _coerce_id(k): [int(i) for i in v]
+                for k, v in nested_dict_from_lists(state.get("user_sequences_pairs")).items()
+            }
+            instance.user_cooling_weights = dict_from_pairs(state.get("user_cooling_weights_pairs"))
+            instance.is_fitted = state.get("is_fitted", True)
+            if arrays and arrays.get("item_popularity") is not None:
+                instance.item_popularity = arrays["item_popularity"]
+
+        def _build(instance, bundle):
+            if bundle.get("state_dict") is None:
+                return
+            n_items = bundle["state"]["n_items"]
+            instance.model = SASRecModel(
+                n_items=n_items,
+                hidden_units=instance.hidden_units,
+                num_blocks=instance.num_blocks,
+                num_heads=instance.num_heads,
+                dropout_rate=instance.dropout_rate,
+                max_seq_length=instance.max_seq_length,
+                position_encoding=instance.position_encoding,
+                attention_type=instance.attention_type,
+                activation=instance.activation,
+            ).to(instance.device)
+
+        loaded = load_torch_production(cls, path, build_model=_build, factory=_factory, restore=_restore)
+        if loaded is not None:
+            if device is not None and loaded.model is not None:
+                loaded.device = device
+                loaded.model.to(device)
+            return loaded
+
         with open(path, 'rb') as f:
             obj = pickle.load(f)
-        # If loading an instance of SASRec, return it; otherwise raise
         if isinstance(obj, SASRec):
             if device is not None and hasattr(obj, 'model') and obj.model is not None:
                 obj.device = device
@@ -373,8 +425,54 @@ class SASRec(BaseRecommender):
             return obj
         raise ValueError("Loaded object is not a SASRec instance")
 
-    def save(self, path: Union[str, Path]):
+    def save(self, path: Union[str, Path], safe: bool = True):
+        from corerec.api.bundle_helpers import nested_lists, pairs, save_map_state
+
         path = Path(path)
+        n_items = len(self.index_to_item)
+        config = {
+            "name": self.name,
+            "hidden_units": self.hidden_units,
+            "num_blocks": self.num_blocks,
+            "num_heads": self.num_heads,
+            "dropout_rate": self.dropout_rate,
+            "max_seq_length": self.max_seq_length,
+            "position_encoding": self.position_encoding,
+            "attention_type": self.attention_type,
+            "activation": self.activation,
+            "device": str(self.device),
+            "learning_rate": self.learning_rate,
+            "l2_reg": self.l2_reg,
+            "batch_size": self.batch_size,
+            "num_epochs": self.num_epochs,
+            "neg_samples": self.neg_samples,
+            "loss_type": self.loss_type,
+            "early_stopping_patience": self.early_stopping_patience,
+            "save_checkpoints": self.save_checkpoints,
+            "checkpoint_dir": self.checkpoint_dir,
+            "export_embeddings": self.export_embeddings,
+            "item_popularity_bias": self.item_popularity_bias,
+            "user_cooling": self.user_cooling,
+            "log_interval": self.log_interval,
+            "verbose": self.verbose,
+        }
+        state = {
+            "n_items": n_items,
+            "user_sequences_pairs": nested_lists(self.user_sequences),
+            "user_cooling_weights_pairs": pairs(self.user_cooling_weights),
+            "is_fitted": self.is_fitted,
+            **save_map_state(item_to_index=self.item_to_index, index_to_item=self.index_to_item),
+        }
+        arrays = {}
+        if self.item_popularity is not None:
+            arrays["item_popularity"] = np.asarray(self.item_popularity, dtype=np.float64)
+
+        from corerec.api.torch_bundle import save_torch_production
+
+        if save_torch_production(self, path, config=config, state=state, arrays=arrays, safe=safe):
+            self.logger.info(f"{self.name} model saved (safe bundle) to {path}")
+            return
+
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, 'wb') as f:
             pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)

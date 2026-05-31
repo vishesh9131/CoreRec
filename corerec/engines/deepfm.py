@@ -446,32 +446,30 @@ class DeepFM(BaseRecommender):
 
         return top_items
 
-    def save(self, path: Union[str, Path], **kwargs) -> None:
+    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         """
         Save the model to disk.
 
         Args:
             path: Path to save the model
+            safe: Use corerec_safe_v1 bundle (default). Set False for legacy torch checkpoint.
         """
         if not self.is_fitted:
             raise ModelNotFittedError(f"{self.name} has not been fitted yet.")
 
         path_obj = Path(path)
-        path_obj.parent.mkdir(parents=True, exist_ok=True)
-
-        checkpoint = {
-            "config": {
-                "name": self.name,
-                "embedding_dim": self.embedding_dim,
-                "hidden_layers": self.hidden_layers,
-                "dropout": self.dropout,
-                "learning_rate": self.learning_rate,
-                "batch_size": self.batch_size,
-                "epochs": self.epochs,
-                "verbose": self.verbose,
-                "device": self.device,
-            },
-            "model_state_dict": self.model.state_dict(),
+        config = {
+            "name": self.name,
+            "embedding_dim": self.embedding_dim,
+            "hidden_layers": self.hidden_layers,
+            "dropout": self.dropout,
+            "learning_rate": self.learning_rate,
+            "batch_size": self.batch_size,
+            "epochs": self.epochs,
+            "verbose": self.verbose,
+            "device": self.device,
+        }
+        state = {
             "feature_map": self.feature_map,
             "field_dims": self.field_dims,
             "user_features": self.user_features,
@@ -479,6 +477,20 @@ class DeepFM(BaseRecommender):
             "user_feature_types": self.user_feature_types,
             "item_feature_types": self.item_feature_types,
             "is_fitted": self.is_fitted,
+        }
+
+        from corerec.api.torch_bundle import save_torch_production
+
+        if save_torch_production(self, path_obj, config=config, state=state, safe=safe):
+            if self.verbose:
+                logger.info(f"{self.name} model saved (safe bundle) to {path}")
+            return
+
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint = {
+            "config": config,
+            "model_state_dict": self.model.state_dict(),
+            **state,
         }
 
         torch.save(checkpoint, path_obj)
@@ -497,6 +509,18 @@ class DeepFM(BaseRecommender):
         Returns:
             Loaded DeepFM instance
         """
+        from corerec.api.torch_bundle import load_torch_production
+
+        def _build(instance, bundle):
+            if bundle.get("state_dict") is not None:
+                instance.model = instance._build_model(instance.field_dims)
+
+        loaded = load_torch_production(cls, path, build_model=_build)
+        if loaded is not None:
+            if loaded.verbose:
+                logger.info(f"{loaded.name} model loaded (safe bundle) from {path}")
+            return loaded
+
         path_obj = Path(path)
         if not path_obj.exists():
             raise FileNotFoundError(f"Model file not found: {path}")
