@@ -42,6 +42,7 @@ class FAST(BaseRecommender):
         batch_size: int = 256,
         seed: Optional[int] = None,
     ):
+        super().__init__(name="FAST")
         self.factors = factors
         self.weight_decay = weight_decay
         self.learning_rate = learning_rate
@@ -181,6 +182,9 @@ class FAST(BaseRecommender):
                 np.add.at(self.user_bias, u_batch, lr * ub_grads)
                 np.add.at(self.item_bias, i_batch, lr * ib_grads)
 
+        self.is_fitted = True
+        return self
+
     def recommend(
         self,
         user_id: int,
@@ -211,12 +215,10 @@ class FAST(BaseRecommender):
             top_k=top_k,
             top_n=top_n,
             exclude_items=exclude_items,
-            exclude_seen=exclude_seen if exclude_seen is not False else False,
             **kwargs,
         )
 
-        if self.user_factors is None or self.item_factors is None:
-            raise ModelNotFittedError("Model has not been trained. Call fit() first.")
+        self._check_fitted()
 
         self._validate_user_in_map(user_id, self.user_map)
 
@@ -256,7 +258,7 @@ class FAST(BaseRecommender):
     def save_model(self, filepath: str) -> None:
         """Save the model to a file"""
         if self.user_factors is None or self.item_factors is None:
-            raise ValueError("Model has not been trained. Call fit() first.")
+            raise ModelNotFittedError("Model has not been trained. Call fit() first.")
 
         # Save model data
         model_data = {
@@ -310,8 +312,7 @@ class FAST(BaseRecommender):
 
     def predict(self, user_id, item_id, **kwargs) -> float:
         """Predict score for a single user-item pair."""
-        if self.user_factors is None:
-            raise ValueError("Model not fitted")
+        self._check_fitted()
         if user_id not in self.user_map or item_id not in self.item_map:
             return 0.0
         user_idx = self.user_map[user_id]

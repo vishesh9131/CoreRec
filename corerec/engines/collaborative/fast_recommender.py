@@ -225,7 +225,6 @@ class FASTRecommender(BaseRecommender):
             top_k=top_k,
             top_n=top_n,
             exclude_items=exclude_items,
-            exclude_seen=exclude_seen if exclude_seen is not False else False,
             **kwargs,
         )
         validate_model_fitted(self.is_fitted, self.name)
@@ -257,7 +256,7 @@ class FASTRecommender(BaseRecommender):
     def save_model(self, filepath: str) -> None:
         """Save the model to a file"""
         if self.user_factors is None or self.item_factors is None:
-            raise ValueError("Model has not been trained. Call fit() first.")
+            raise ModelNotFittedError("Model has not been trained. Call fit() first.")
 
         # Save model data
         model_data = {
@@ -312,7 +311,7 @@ class FASTRecommender(BaseRecommender):
     def predict(self, user_id, item_id, **kwargs) -> float:
         """Predict score for a single user-item pair."""
         if self.user_factors is None:
-            raise ValueError("Model not fitted")
+            self._check_fitted()
         if user_id not in self.user_map or item_id not in self.item_map:
             return 0.0
         user_idx = self.user_map[user_id]

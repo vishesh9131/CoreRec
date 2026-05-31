@@ -18,6 +18,7 @@ import math
 import logging
 
 from corerec.api.base_recommender import BaseRecommender
+from corerec.api.exceptions import ModelNotFittedError
 
 
 class TransformerBlock(nn.Module):
@@ -351,7 +352,7 @@ class BERT4Rec(BaseRecommender):
         Generate recommendations by appending mask token and predicting.
         """
         if not self.is_fitted:
-            raise ValueError("Model not fitted")
+            self._check_fitted()
         
         if user_id not in self.user_seqs:
             self.log.warning(f"Unknown user: {user_id}")
@@ -388,7 +389,7 @@ class BERT4Rec(BaseRecommender):
     def predict(self, user_id: Any, item_id: Any, **kwargs) -> float:
         """Predict score for a single user-item pair."""
         if not self.is_fitted:
-            raise ValueError("Model not fitted")
+            self._check_fitted()
 
         if user_id not in self.user_seqs or item_id not in self.item_to_idx:
             return 0.0

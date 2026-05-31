@@ -207,7 +207,7 @@ class LightGCN(BaseRecommender):
         ``(user_ids, item_ids)`` with an explicit ``interaction_matrix``.
         """
         from corerec.api.dataset import coerce_dataset
-        from corerec.api.exceptions import InvalidDataError
+        from corerec.api.exceptions import ModelNotFittedError,  InvalidDataError
 
         ds = coerce_dataset(user_ids)
         if ds is not None:
@@ -292,7 +292,7 @@ class LightGCN(BaseRecommender):
     def predict(self, user_id: Any, item_id: Any, **kwargs) -> float:
         """Predict score for a single user-item pair."""
         if self.user_embedding is None or self.item_embedding is None:
-            raise ValueError("Model not fitted")
+            self._check_fitted()
         if user_id not in self.user_id_map or item_id not in self.item_id_map:
             return 0.0
         uidx = self.user_id_map[user_id]
@@ -306,7 +306,7 @@ class LightGCN(BaseRecommender):
                   exclude_items: Optional[List] = None, **kwargs) -> List[Any]:
         """Generate top-K recommendations for a user."""
         if self.user_embedding is None or self.item_embedding is None:
-            raise ValueError("Model not fitted")
+            self._check_fitted()
         if user_id not in self.user_id_map:
             return []
 

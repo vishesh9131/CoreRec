@@ -371,7 +371,6 @@ class DeepFM(BaseRecommender):
             top_k=top_k,
             top_n=top_n,
             exclude_items=exclude_items,
-            exclude_seen=exclude_seen if exclude_seen is not False else False,
             **kwargs,
         )
         validate_model_fitted(self.is_fitted, self.name)

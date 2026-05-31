@@ -20,6 +20,24 @@ cd CoreRec
 pip install -e .
 ```
 
+## Optional Extras
+
+```bash
+# Serving (FastAPI REST API)
+pip install "corerec[serving]"
+
+# Tutorial datasets (cr_learn)
+pip install "corerec[datasets]"
+
+# Development + tests
+pip install "corerec[dev]"
+
+# Everything
+pip install "corerec[all]"
+```
+
+See also: {doc}`api_versioning` (API stability policy) and {doc}`torch_nn_vendored` (internal PyTorch modules).
+
 ## Install cr_learn (for tutorials)
 
 Tutorial examples use the `cr_learn` dataset package:
