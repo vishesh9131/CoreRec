@@ -28,17 +28,28 @@ from corerec import (
 )
 ```
 
-Override them when initializing a model:
+Override column names only when your DataFrame already uses those exact names:
 
 ```python
 from corerec.engines.collaborative import SAR
 
-model = SAR(
-    col_user='user_id',
-    col_item='item_id',
-    col_rating='rating',
-    col_timestamp='ts',
-)
+# DataFrame columns must match col_* exactly (defaults: userID, itemID, rating)
+interactions = pd.DataFrame({
+    'userID': [1, 1, 2],
+    'itemID': [101, 102, 101],
+    'rating': [5.0, 3.0, 4.0],
+})
+
+model = SAR()  # defaults: col_user='userID', col_item='itemID'
+model.fit(interactions)
+```
+
+If your raw CSV uses `user_id` / `item_id`, rename before `fit()`:
+
+```python
+df = df.rename(columns={'user_id': 'userID', 'movie_id': 'itemID'})
+model = SAR()
+model.fit(df)
 ```
 
 ## Supported Data Types
