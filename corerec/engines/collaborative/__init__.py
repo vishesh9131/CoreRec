@@ -30,6 +30,7 @@ _model_imports = {
     "TwoTower": ("corerec.engines.two_tower", "TwoTower"),
     "LightGCN": (".graph_based_base.lightgcn", "LightGCN"),
     "NCF": (".nn_base.ncf", "NCF"),
+    "FAST": (".fast", "FAST"),
     "FastRecommender": (".fast_recommender", "FastRecommender"),
     # legacy/deprecated
     "RBM": (".rbm", "RBM"),
@@ -130,6 +131,7 @@ __all__ = [
     "TwoTower",
     "LightGCN",
     "NCF",
+    "FAST",
     "FastRecommender",
     # Legacy
     "RBM",
@@ -146,7 +148,7 @@ __all__ = [
 def list_methods():
     """List the production-ready methods."""
     available = []
-    for name in ["SAR", "TwoTower", "LightGCN", "NCF", "FastRecommender"]:
+    for name in ["SAR", "TwoTower", "LightGCN", "NCF", "FAST", "FastRecommender"]:
         try:
             if __getattr__(name) is not None:
                 available.append(name)

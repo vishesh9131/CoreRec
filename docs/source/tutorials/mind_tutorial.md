@@ -49,39 +49,42 @@ score = σ(user_repr^T · e_target)
 
 ```python
 from corerec.engines.mind import MIND
-import cr_learn
-import numpy as np
+from cr_learn import ml_1m
+from sklearn.model_selection import train_test_split
 
-# Load dataset
-data = cr_learn.load_dataset('movielens-100k')
-print(f"Loaded {len(data.ratings)} ratings")
+data = ml_1m.load()
+ratings_df = data['ratings']
+train_df, test_df = train_test_split(ratings_df, test_size=0.2, random_state=42)
 
-# Split data
-train_data, test_data = data.train_test_split(test_size=0.2)
+train_users = train_df['user_id'].values.tolist()
+train_items = train_df['movie_id'].values.tolist()
+train_ratings = train_df['rating'].values.tolist()
+timestamps = train_df['timestamp'].values.tolist() if 'timestamp' in train_df else None
+
+print(f"Loaded {len(ratings_df)} ratings")
 ```
 
 ### Step 2: Initialize Model
 
 ```python
 model = MIND(
-    name="MIND_Model",
     embedding_dim=64,
-    epochs=20,
+    num_interests=4,
+    epochs=5,
     batch_size=256,
     learning_rate=0.001,
     verbose=True
 )
-
-print(f"Initialized {model.name}")
 ```
 
 ### Step 3: Train
 
 ```python
 model.fit(
-    user_ids=train_data.user_ids,
-    item_ids=train_data.item_ids,
-    ratings=train_data.ratings
+    user_ids=train_users,
+    item_ids=train_items,
+    ratings=train_ratings,
+    timestamps=timestamps
 )
 
 print("Training complete!")
@@ -90,28 +93,18 @@ print("Training complete!")
 ### Step 4: Predict
 
 ```python
-# Single prediction
-score = model.predict(user_id=1, item_id=100)
+sample_user = train_users[0]
+sample_item = train_items[0]
+score = model.predict(sample_user, sample_item)
 print(f"Predicted score: {score:.3f}")
-
-# Batch predictions
-pairs = [(1, 100), (2, 200), (3, 300)]
-scores = model.batch_predict(pairs)
-for (uid, iid), s in zip(pairs, scores):
-    print(f"User {uid}, Item {iid}: {s:.3f}")
 ```
 
 ### Step 5: Recommend
 
 ```python
-# Get top-10 recommendations
-recommendations = model.recommend(
-    user_id=1,
-    top_k=10,
-    exclude_items=train_data.get_user_items(1)
-)
+recommendations = model.recommend(user_id=sample_user, top_k=10)
 
-print(f"Top-10 recommendations for User 1:")
+print(f"Top-10 recommendations for User {sample_user}:")
 for rank, item_id in enumerate(recommendations, 1):
     print(f"  {rank}. Item {item_id}")
 ```
@@ -119,28 +112,25 @@ for rank, item_id in enumerate(recommendations, 1):
 ### Step 6: Evaluate
 
 ```python
-from corerec.metrics import rmse, ndcg_at_k
+from sklearn.metrics import mean_squared_error
+import numpy as np
 
-# Rating prediction
-predictions = [model.predict(u, i) for u, i, r in test_data]
-test_rmse = rmse(test_data.ratings, predictions)
-print(f"Test RMSE: {test_rmse:.4f}")
-
-# Ranking quality
-ndcg = ndcg_at_k(model, test_data, k=10)
-print(f"NDCG@10: {ndcg:.4f}")
+test_users = test_df['user_id'].values[:100]
+test_items = test_df['movie_id'].values[:100]
+test_ratings = test_df['rating'].values[:100]
+test_pred = [model.predict(u, i) for u, i in zip(test_users, test_items)]
+rmse = np.sqrt(mean_squared_error(test_ratings, test_pred))
+print(f"Sample Test RMSE: {rmse:.4f}")
 ```
 
 ### Step 7: Save & Load
 
 ```python
-# Save model
 model.save('mind_model.pkl')
 
-# Load model
 loaded = MIND.load('mind_model.pkl')
-test_score = loaded.predict(1, 100)
-print(f"Loaded model prediction: {test_score:.3f}")
+recs = loaded.recommend(sample_user, top_k=5)
+print(f"Loaded model recommendations: {recs}")
 ```
 
 ## Advanced Usage

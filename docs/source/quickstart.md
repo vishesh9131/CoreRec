@@ -6,11 +6,13 @@ Get started with CoreRec in 5 minutes!
 
 ```python
 from corerec.engines.dcn import DCN
-import cr_learn
+from cr_learn import ml_1m
+from sklearn.model_selection import train_test_split
 
-# Load data
-data = cr_learn.load_dataset('movielens-100k')
-train, test = data.train_test_split(test_size=0.2)
+# Load data (cr_learn returns dict with 'ratings' DataFrame)
+data = ml_1m.load()
+ratings_df = data['ratings']
+train_df, test_df = train_test_split(ratings_df, test_size=0.2, random_state=42)
 
 # Create model
 model = DCN(
@@ -21,9 +23,9 @@ model = DCN(
 
 # Train
 model.fit(
-    user_ids=train.user_ids,
-    item_ids=train.item_ids,
-    ratings=train.ratings
+    user_ids=train_df['user_id'].values,
+    item_ids=train_df['movie_id'].values,
+    ratings=train_df['rating'].values
 )
 
 # Predict
@@ -45,7 +47,7 @@ loaded_model = DCN.load('my_model.pkl')
 
 ### Production Models (Tested & Stable)
 
-These 13 models are fully tested, CI-enforced, and recommended for production use:
+These 14 models are fully tested, CI-enforced, and recommended for production use:
 
 - **Deep Learning**: DCN, DeepFM, GNNRec, MIND, NASRec, SASRec, TwoTower, BERT4Rec
 - **Collaborative**: SAR, NCF, FAST, FASTRecommender, LightGCN
@@ -75,8 +77,8 @@ These 13 models are fully tested, CI-enforced, and recommended for production us
 from corerec.engines.deepfm import DeepFM
 
 model = DeepFM()
-model.fit(users, items, ratings)
-score = model.predict(user_id, item_id)
+model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
+score = model.predict(user_id=user_id, item_id=item_id)
 ```
 
 ### Top-N Recommendation
@@ -84,8 +86,8 @@ score = model.predict(user_id, item_id)
 from corerec.engines.sasrec import SASRec
 
 model = SASRec()
-model.fit(users, items, ratings)
-recs = model.recommend(user_id, top_k=10)
+model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
+recs = model.recommend(user_id=user_id, top_k=10)
 ```
 
 ### Graph-Based
@@ -93,6 +95,6 @@ recs = model.recommend(user_id, top_k=10)
 from corerec.engines.gnnrec import GNNRec
 
 model = GNNRec()
-model.fit(users, items, ratings)
-recs = model.recommend(user_id, top_k=10)
+model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
+recs = model.recommend(user_id=user_id, top_k=10)
 ```

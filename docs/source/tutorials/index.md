@@ -11,7 +11,7 @@ Before diving into specific models, we recommend:
 
 ## Production Models (Tested & Stable)
 
-These models are **production-ready** — fully tested, CI-enforced, and implement the complete `BaseRecommender` interface. Start here.
+These models are **production-ready** — fully tested, CI-enforced, and implement the complete `BaseRecommender` interface. **14 production models** — start here.
 
 ### Core Engine Models
 
@@ -26,6 +26,7 @@ mind_tutorial
 nasrec_tutorial
 sasrec_tutorial
 bert4rec_tutorial
+two_tower_tutorial
 ```
 
 ### Collaborative Filtering Models
@@ -37,6 +38,8 @@ maxdepth: 1
 ncf_tutorial
 sar_tutorial
 lightgcn_tutorial
+fast_tutorial
+fast_recommender_tutorial
 ```
 
 ### Content-Based Models
