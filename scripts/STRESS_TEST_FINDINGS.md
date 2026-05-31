@@ -1,9 +1,10 @@
 # CoreRec Production Stress Test — Engineering Findings
 
-**Date:** 2026-05-31  
+**Date:** 2026-06-01  
 **Environment:** `conda activate corerec` · Python 3.10 · PyTorch 2.2.2 · CoreRec 0.5.2  
-**Method:** Production test suite + targeted probes (API, persistence, security, serving, datasets)  
-**Benchmark bar:** PyTorch / TensorFlow (ML platform maturity) · LangChain (DX + production ops)
+**Method:** Automated probes (`scripts/stress_test_production.py`) + pytest production/CI suites + manual parity checks  
+**Benchmark bar:** PyTorch / TensorFlow (ML platform maturity) · LangChain (DX + production ops)  
+**Report artifact:** `scripts/stress_test_report.json`
 
 ---
 
@@ -11,195 +12,216 @@
 
 | Dimension | Grade | vs PyTorch/TF | vs LangChain |
 |-----------|-------|---------------|--------------|
-| **Production recommender core (14 models)** | **A-** | Narrower scope (recsys only) but unified `fit/predict/recommend/save/load` | N/A — not an agent framework |
-| **API consistency** | **A** | Comparable contract discipline for model classes | Better typed errors than typical LangChain chains |
-| **Persistence / serialization** | **A-** | Safe bundle + int ID map roundtrip fixed (P0) | LangChain has similar pickle legacy issues |
-| **Testing & CI** | **A-** | 64+ production tests green; platform stage smoke in CI; 53% cov | Stronger than many OSS recsys libs |
-| **Serving & platform** | **C+** | FastAPI smoke works; retrieval/ranking/reranking largely untested | No hosted/cloud story |
-| **Documentation / DX** | **B** | Quickstart + 14 prod tutorials fixed; sandbox docs still drift | LangChain docs volume still ahead |
-| **Security / ops** | **B+** | Safe default on save; migration docs shipped; Dependabot configured | Same class of artifact-trust issues |
-| **Overall production readiness** | **A-** | Ready for **internal batch recsys**; platform layer smoke-tested | Good library, not a platform |
+| **Production recommender core (14 models)** | **A** | Narrower scope (recsys only) but unified `fit/predict/recommend/save/load` | N/A — not an agent framework |
+| **API consistency** | **A** | All 14 inherit `BaseRecommender`; `top_k` on recommend; `ModelNotFittedError` 14/14 | Better typed errors than typical LangChain chains |
+| **Persistence / serialization** | **A-** | Safe bundle default; int ID map roundtrip fixed; predict parity in CI | LangChain had similar pickle legacy issues (improving) |
+| **Testing & CI** | **A-** | **68/68** production tests green; platform smoke in CI; **57%** repo coverage | Stronger than most OSS recsys libs |
+| **Serving & platform** | **B-** | FastAPI `ModelServer` works in CI; retrieval/ranking/reranking smoke only | No hosted/cloud story |
+| **Documentation / DX** | **B** | Safe bundle docs shipped; legacy sandbox paths still drift | LangChain docs volume still ahead |
+| **Security / ops** | **B** | Safe default on save; legacy `safe=False` paths remain; 92 Dependabot alerts open | Same artifact-trust class of issues |
+| **Overall production readiness** | **A-** | Ready for **internal batch + API serving** of the 14 production models | Good library, not a platform |
+
+**Overall grade: A-** (up from B+ pre-P0). Core recsys path is production-capable; platform layer and test debt are the remaining gaps.
+
+---
+
+## Probe Results (58 checks)
+
+| Category | Pass | Warn | Fail |
+|----------|------|------|------|
+| imports | 8 | 0 | 0 |
+| api_uniformity | 14 | 0 | 0 |
+| error_handling (ModelNotFittedError) | 14 | 0 | 0 |
+| input_validation (SAR) | 3 | 0 | 0 |
+| safe_bundle (FAST/DCN map roundtrip) | 2 | 0 | 0 |
+| persistence (via pytest parity) | 1 | 0 | 0 |
+| concurrency (SAR 4×20 threads) | 1 | 0 | 0 |
+| performance (SAR p50 < 100ms) | 1 | 0 | 0 |
+| platform imports | 4 | 0 | 0 |
+| ci_contract (production pytest) | 1 | 0 | 0 |
+| security | 1 | 1 | 0 |
+| docs_accuracy | 1 | 3 | 0 |
+| serving | 0 | 0 | 1* |
+| legacy test collection | 0 | 1 | 0 |
+
+\* Stress script calls non-existent `create_app()`; real API is `ModelServer(model).app` — **CI serving smoke passes**.
 
 ---
 
 ## What Passed (Production-Grade)
 
-### 1. Contract tests — **64/64 green**
+### 1. Contract tests — **68/68 green**
+
 ```bash
 python -m pytest tests/test_all_production_models.py \
   tests/test_production_contract.py tests/test_safe_persistence.py \
-  tests/test_api_uniformity.py tests/test_serving_smoke.py -q
+  tests/test_api_uniformity.py tests/test_serving_smoke.py \
+  tests/test_platform_stages.py tests/test_pipeline_integration.py -q
 ```
+
 - All **14 production models**: import → fit → predict → recommend → save/load
+- **Predict score parity** after reload on every model (`abs(before - after) < 1e-3`)
 - All inherit `BaseRecommender`
-- `ModelNotFittedError` on unfitted `predict()` for covered models
+- `ModelNotFittedError` on unfitted `predict()` for all 14 models
 - `top_k` unified across recommend APIs
 
-### 2. Safe serialization shipped (`corerec_safe_v1`)
+### 2. Safe serialization (`corerec_safe_v1`) — P0 fixed
+
 - **Format:** `{base}.meta.json` + `.weights.pt` (torch) or `.arrays.npz` (numpy/sparse)
 - **Security:** `weights_only=True` on torch load; `allow_pickle=False` on npz
-- **Coverage gate:** 50% on production paths (40% CI minimum)
+- **Int ID maps:** DCN, FAST, FASTRecommender, DeepFM use `save_map_state()` / `load_map_state()` + `coerce_id()`
 
-### 3. Input validation (SAR exemplar)
-- Unknown users raise `RecommendationError` (not silent garbage)
-- `None` / empty user_id rejected
-
-### 4. Concurrency smoke
-- 4 threads × 20 SAR `recommend()` calls — no races observed (read-only inference path)
-
-### 5. Dataset integration
-- `cr_learn.ml_1m.load()` works when `[datasets]` extra installed (~1M ratings)
-
-### 6. Serving stack
-- `corerec[serving]` → FastAPI app constructs; JSON-safe numpy int64 in responses
-
-### 7. CI pipeline
-- Python 3.9 / 3.10 / 3.11
-- Production + contract + safe persistence + platform smoke
-- Ruff syntax gate
-
----
-
-## Critical Findings — Resolved (2026-05-31)
-
-### ✅ P0 — Safe bundle int ID maps (DCN, FAST, FASTRecommender, DeepFM)
-
-**Fix:** Models now use `save_map_state()` / `load_map_state()` with `*_pairs` lists and `coerce_id()` on restore. Covered by `test_safe_persistence.py` (FAST/DCN roundtrip) and predict-score parity in all 14 `test_save_load` tests.
-
-### ✅ P1 — Predict score parity after save/load
-
-All production model `test_save_load` methods assert `abs(predict_before - predict_after) < 1e-3`.
-
-### ✅ P1 — Safe bundle spec + legacy migration docs
-
-See `docs/source/user_guide/safe_bundle_persistence.md` and updated `model_persistence.md`.
-
-### ✅ P2 — Platform stage CI smoke
-
-`tests/test_platform_stages.py` — PopularityRetriever, PointwiseRanker, DiversityReranker.
-
-### ✅ P2 — Dependabot cleanup (config + baseline deps)
-
-`.github/dependabot.yml` (pip weekly + github-actions); `requests>=2.32.0`, `urllib3>=2.2.0` in `requirements.txt`. Remaining GitHub alert resolution follows Dependabot PRs.
-
----
-
-## Previously Critical (for reference)
-
-### P0 — Safe bundle breaks integer user/item IDs (FIXED)
-
-**Repro:**
-```python
-from corerec.engines.collaborative import FAST
-model.fit([0,0,1,1], [10,11,10,12], [5.,4.,3.,5.])
-s0 = model.predict(0, 10)          # e.g. 4.24
-loaded = FAST.load(path)           # safe bundle
-s1 = loaded.predict(0, 10)        # 0.0 — silent failure
-list(loaded.user_map.keys())       # ['0', '1'] — str keys, not int
+**Manual verification:**
+```
+FAST  predict(0,10): 4.238 → 4.238  user_map keys: int
+DCN   predict(0,10): 0.508 → 0.508  user_map keys: int
 ```
 
-Same issue on **DCN** (`user_map` / `item_map` stored as raw JSON dicts).
+### 3. Input validation (SAR)
+- Unknown users (`99999`), `None`, `""` raise errors — no silent garbage lists
 
-**Root cause:** `_jsonify()` stringifies dict keys; restore does not coerce back to int.
+### 4. Concurrency
+- 4 threads × 20 SAR `recommend()` calls — no races (read-only inference)
 
-**Impact:** Production save/load **silently breaks inference** for numeric IDs. Current unit tests only assert `is_fitted` or `user_factors is not None` — they do **not** assert score parity.
+### 5. Datasets
+- `cr_learn.ml_1m.load()` → **1,000,209** ratings when `[datasets]` extra installed
 
-**Models using safe `*_pairs` format:** SAR, GNNRec, MIND, NASRec, NCF, LightGCN, BERT4Rec, TwoTower, SASRec, TFIDF — **lower risk**.
+### 6. Serving stack
+- `ModelServer(SAR).app` + FastAPI TestClient → `/recommend` returns JSON (CI green)
+- NumPy int64 JSON-safe in responses
 
-**Models still storing raw dicts in JSON state:** DCN, DeepFM (feature maps), FAST, FASTRecommender — **high risk** for int IDs.
+### 7. Platform stage smoke (new)
+- `PopularityRetriever`, `PointwiseRanker`, `DiversityReranker` — basic retrieve → rank → rerank path
+- `RecommendationPipeline` orchestrator — mock integration test green
 
-**Fix:** Use `save_map_state()` / `pairs()` everywhere; add `test_predict_score_parity_after_load` to all production models.
+### 8. CI pipeline
+- Python 3.9 / 3.10 / 3.11 matrix
+- Production + contract + safe persistence + platform smoke
+- Ruff syntax gate (E9/F63/F7/F82)
+- Dependabot configured (pip weekly + github-actions)
 
----
-
-### P1 — Tests green but persistence not fully validated
-
-| Model | Current save/load test | Gap |
-|-------|------------------------|-----|
-| FAST / FASTRecommender | `user_factors is not None` | No predict parity |
-| DCN / DeepFM | `is_fitted` only | No recommend after load |
-| Most torch models | `is_fitted` | No score drift check |
-
-**Recommendation:** Add one assertion per model: `abs(predict_before - predict_after) < 1e-3`.
-
----
-
-### P1 — Legacy artifact paths still unsafe (by design, but document loudly)
-
-- `safe=False` → pickle / full `torch.load(weights_only=False)`
-- Untrusted artifacts = RCE risk (same as pickle-based LangChain loaders pre-2024)
-
-Safe path mitigates when used; **migration guide needed** for existing `.pkl` / `.pt` deployments.
+### 9. Performance (tiny data)
+- SAR `recommend(top_k=5)` p50 **~0.09 ms**, p95 **~0.10 ms** on 4×4 matrix
 
 ---
 
 ## Warnings (Non-Blocking but Real)
 
-### Documentation drift
-- Tutorials reference `corerec.engines.afm`, `corerec.engines.bpr` — **modules do not exist** (sandbox-only or removed)
-- 52 sandbox tutorials fixed to `corerec.sandbox.*` but AFM/BPR production paths still broken in older docs
+### P1 — Legacy artifact paths still unsafe (by design)
 
-### Sandbox / research surface
-- `corerec.sandbox` import warns: `No module named 'corerec.engines.collaborative.mf_base'`
-- Full `tests/` collection: **13 import errors** (contentFilterEngine / FM_base paths) — CI ignores `tests/unionizedFilterEngine` but other broken tests remain
+- `safe=False` → pickle / `torch.load(weights_only=False)` still supported on several models
+- Untrusted artifacts = RCE risk (same class as pre-2024 LangChain loaders)
+- **Mitigation shipped:** safe default + migration docs at `docs/source/user_guide/safe_bundle_persistence.md`
 
-### Platform modules (retrieval, ranking, reranking, pipelines)
-- Import successfully but **~0–15% test coverage**
-- `RecommendationPipeline`, vector store, ensemble retriever — **not production-proven** in CI
-- Compare to PyTorch: entire `torch.distributed` tested at scale; CoreRec platform layer is **alpha**
+### P1 — Full test suite collection broken (13 modules)
 
-### Performance characteristics (tiny-data probe)
-- SAR `recommend(top_k=5)` p50 **< 5ms** on 4×4 data — fine for small models
-- No benchmark suite for 1M-user SASRec / LightGCN training time
-- No ONNX / TorchScript export path (PyTorch/TF serving standard)
+CI step `pytest tests/ --ignore=tests/unionizedFilterEngine` **cannot collect** due to:
 
-### Dependency hygiene
-- GitHub reports **92 vulnerabilities** on default branch (4 critical)
-- `httpx` deprecation warning in FastAPI TestClient
+```
+tests/test_FM_base.py, test_FFM_base.py, test_GNN_base.py, …
+tests/contentFilterEngine/all_algorithms_test.py
+tests/test_integration.py
+```
 
-### API rough edges
-- FAST `load()` appends `.npy` when path lacks extension — conflicts mentally with safe bundle base path
-- SASRec / BERT4Rec still support legacy **pickle entire instance** fallback
-- DeepFM `recommend` historically had `top_n` param — verify deprecation shim in docs
+Root causes: missing `corerec.engines.contentFilterEngine.*`, broken sandbox imports, syntax error in `unionizedFilterEngine/nn_base_import_test.py`.
+
+**Impact:** CI “full suite” job may fail on collection even when production tests pass. Production path is isolated and green.
+
+### P1 — Documentation integrity tests
+
+- `tests/test_docs.py` fails locally without `pip install corerec[docs]` (mkdocs missing)
+- AFM/BPR modules (`corerec.engines.afm`, `corerec.engines.bpr`) **do not exist** — sandbox-only; stress probe flags as doc drift
+
+### P2 — Sandbox surface
+
+```
+Warning: Could not import some sandbox modules: No module named 'corerec.engines.collaborative.mf_base'
+```
+
+Sandbox is research/experimental — not production-proven.
+
+### P2 — Platform layer coverage still thin
+
+| Module | Coverage | CI proof |
+|--------|----------|----------|
+| retrieval (popularity) | ~20% | 1 smoke test |
+| ranking (pointwise) | ~20% | 1 smoke test |
+| reranking (diversity) | ~15% | 1 smoke test |
+| vector_store, dssm, model_retriever | **0%** | none |
+| pipelines orchestrator | partial | mock integration |
+
+Compare to PyTorch: `torch.distributed` has extensive integration tests. CoreRec platform layer is **beta**.
+
+### P2 — Dependency hygiene
+
+- GitHub reports **92 vulnerabilities** on default branch (4 critical) — Dependabot config added; resolution via PR backlog
+- `httpx` / Starlette deprecation warning in FastAPI TestClient
+
+### P2 — No export path for serving at scale
+
+- No first-class ONNX / TorchScript export for TwoTower, DCN, etc.
+- PyTorch/TF standard: Triton, TF Serving, ONNX Runtime — CoreRec stops at FastAPI wrapper
+
+### P3 — Stress script operational issues
+
+- `probe_persistence()` retrains all 14 models sequentially — **>15 min**, appears hung after NCF on some hardware
+- `probe_serving()` calls wrong API (`create_app` vs `ModelServer`) — false fail in JSON report
+- **Workaround:** rely on pytest save/load parity tests (authoritative)
+
+### P3 — API rough edges
+
+- FAST legacy `.npy` path mental model vs safe bundle base path
+- SASRec / BERT4Rec still support legacy pickle-instance fallback when safe bundle missing
+- BERT4Rec attn_mask deprecation warning from PyTorch
 
 ---
 
 ## Comparison to Industry Frameworks
 
 ### vs PyTorch / TensorFlow
+
 | Capability | PyTorch/TF | CoreRec |
 |------------|------------|---------|
 | Model zoo + training | ✅ Massive | ✅ 14 production rec models |
-| Unified save/load security | ⚠️ `weights_only` recent | ✅ Safe bundle default (with P0 bug) |
+| Unified save/load security | ✅ `weights_only` (recent) | ✅ Safe bundle default |
 | Distributed training | ✅ | ❌ Single-process only |
-| Serving (TF Serving, Triton) | ✅ | ⚠️ Basic FastAPI wrapper |
+| Serving (Triton, TF Serving) | ✅ | ⚠️ Basic FastAPI wrapper |
 | Export (ONNX, SavedModel) | ✅ | ❌ |
-| Test coverage culture | ✅ Extensive | ⚠️ 50% scoped, platform untested |
+| Test coverage culture | ✅ Extensive | ⚠️ 57% repo; platform thin |
+| Benchmark suite | ✅ | ❌ No MLPerf-style recsys bench |
 
-**Verdict:** CoreRec is a **specialized recsys layer on PyTorch**, not a full ML platform. Appropriate comparison is **Microsoft Recommenders / RecBole**, not raw PyTorch.
+**Verdict:** CoreRec is a **specialized recsys layer on PyTorch**. Compare to **Microsoft Recommenders / RecBole**, not raw PyTorch.
 
 ### vs LangChain
+
 | Capability | LangChain | CoreRec |
 |------------|-----------|---------|
 | Agent / chain abstraction | ✅ | ❌ |
 | Production observability | ⚠️ Improving | ⚠️ Basic logging |
-| Serialization safety | ⚠️ Historically pickle-heavy | ✅ Safe bundle (fix P0) |
-| Documentation volume | ✅ Huge | ⚠️ Good prod tutorials; sandbox drift |
+| Serialization safety | ⚠️ Historically pickle-heavy | ✅ Safe bundle default |
+| Documentation volume | ✅ Huge | ⚠️ Prod tutorials good; sandbox drift |
 | Error types | ⚠️ Generic | ✅ `ModelNotFittedError`, `RecommendationError` |
+| Pipeline orchestration | ✅ LCEL / Runnable | ⚠️ `RecommendationPipeline` alpha |
 
-**Verdict:** Different problem domain. CoreRec **wins on recsys API clarity**; LangChain wins on ecosystem and examples.
+**Verdict:** Different domains. CoreRec **wins on recsys API clarity and typed errors**; LangChain wins on ecosystem, examples, and observability tooling.
 
 ---
 
-## Recommended Roadmap (Production Engineer Priority)
+## Recommended Roadmap
 
-1. ~~**P0:** Fix int ID map roundtrip~~ ✅ Done  
-2. ~~**P1:** Predict-score parity in every `test_save_load`~~ ✅ Done  
-3. ~~**P1:** Document `corerec_safe_v1` + migration~~ ✅ Done  
-4. ~~**P2:** Retrieval/ranking/reranking CI smoke~~ ✅ Done  
-5. ~~**P2:** Dependabot config + baseline dep bumps~~ ✅ Done (alert backlog via Dependabot PRs)  
-6. **P3:** Benchmark suite (MovieLens-1M, latency SLA for SAR/TwoTower serving)  
-7. **P3:** Optional ONNX export for TwoTower / DCN serving
+| Priority | Item | Status |
+|----------|------|--------|
+| P0 | Int ID map roundtrip (DCN/FAST/DeepFM) | ✅ Done |
+| P1 | Predict parity in every `test_save_load` | ✅ Done |
+| P1 | Safe bundle spec + migration docs | ✅ Done |
+| P2 | Platform stage CI smoke | ✅ Done |
+| P2 | Dependabot config + baseline dep bumps | ✅ Done (alert backlog open) |
+| **P1** | Fix CI full-suite collection (ignore or repair 13 broken test modules) | 🔲 Open |
+| **P1** | Fix stress script (`ModelServer`, skip redundant persistence retrain) | 🔲 Open |
+| **P2** | Expand platform tests (vector store, ensemble retriever, DSSM) | 🔲 Open |
+| **P2** | Resolve Dependabot alert backlog (92) | 🔲 Open |
+| **P3** | Benchmark suite (MovieLens-1M train time + serving latency SLA) | 🔲 Open |
+| **P3** | ONNX export for TwoTower / DCN | 🔲 Open |
 
 ---
 
@@ -211,13 +233,15 @@ cd CoreRec
 
 # Production contract (must pass)
 python -m pytest tests/test_all_production_models.py \
-  tests/test_production_contract.py tests/test_safe_persistence.py -q
+  tests/test_production_contract.py tests/test_safe_persistence.py \
+  tests/test_api_uniformity.py tests/test_serving_smoke.py \
+  tests/test_platform_stages.py tests/test_pipeline_integration.py -q
 
-# Stress probes (updated script)
+# Automated stress probes (~40s fast path; full script can take 15+ min)
 python scripts/stress_test_production.py
 # → scripts/stress_test_report.json
 
-# Manual P0 repro
+# P0 manual spot-check
 python -c "
 from corerec.engines.collaborative import FAST
 import tempfile, os
@@ -227,13 +251,20 @@ print('before', m.predict(0,10))
 p=os.path.join(tempfile.mkdtemp(),'f'); m.save(p)
 print('after ', FAST.load(p).predict(0,10))
 "
+
+# Full repo coverage (excludes broken legacy if you add ignores)
+python -m pytest tests/ --ignore=tests/unionizedFilterEngine \
+  --cov=corerec --cov-fail-under=40 -q
 ```
 
 ---
 
 ## Bottom Line
 
-CoreRec has crossed from **research prototype → production-capable recsys library** for the **14 documented production models**, with CI, safe serialization intent, and a coherent API. It is **not yet** at PyTorch/TensorFlow platform maturity or LangChain ecosystem scale.
+CoreRec is **production-ready for the 14 documented models** in batch and lightweight API serving scenarios. The P0 safe-bundle ID map bug is **fixed and regression-tested**. CI production suite is **68/68 green** with predict parity.
 
-**Ship internally today:** All 14 production models with safe bundles (including DCN, FAST, DeepFM).  
-**Overall grade: A-** after P0–P2 fixes.
+**Ship today:** SAR, NCF, LightGCN, GNNRec, MIND, NASRec, TwoTower, BERT4Rec, SASRec, DCN, DeepFM, FAST, TFIDF — all with safe bundles.
+
+**Before FAANG-scale multi-tenant serving:** expand platform test coverage, add benchmarks, consider ONNX export, and burn down legacy test/doc debt.
+
+**Overall: A-** for recsys library production use · **B** for full-platform maturity vs PyTorch/LangChain.
