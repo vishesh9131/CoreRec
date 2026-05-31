@@ -46,10 +46,11 @@ All **production** models inherit from `BaseRecommender`, providing:
 - Consistent error handling
 
 #### Engines
-CoreRec organizes models into engines:
-- **Deep Learning Engine**: Neural network models
-- **Unionized Filter Engine**: Collaborative filtering
-- **Content Filter Engine**: Content-based methods
+CoreRec organizes models under `corerec.engines`:
+- **Top-level engines** (`corerec.engines.dcn`, `deepfm`, `sasrec`, …): **14 production models**
+- **`corerec.engines.collaborative`**: SAR, NCF, FAST, LightGCN, …
+- **`corerec.engines.content_based`**: TF-IDF and content methods
+- **`corerec.sandbox`**: ~50 experimental research models (not production-tested)
 
 #### Model Tiers
 

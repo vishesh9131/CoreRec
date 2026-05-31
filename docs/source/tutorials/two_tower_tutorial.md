@@ -83,8 +83,8 @@ print(f"Top-10 recommendations: {recs}")
 ### Step 5: Save & Load
 
 ```python
-model.save('two_tower.pt')
-loaded = TwoTower.load('two_tower.pt')
+model.save('artifacts/two_tower')
+loaded = TwoTower.load('artifacts/two_tower')
 print(loaded.recommend(sample_user, top_k=5))
 ```
 

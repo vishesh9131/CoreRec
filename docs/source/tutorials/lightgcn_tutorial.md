@@ -85,15 +85,13 @@ test_ratings = test_df['rating'].values
 
 ```python
 model = LightGCN(
-    name="LightGCN_Model",
-    embedding_dim=64,
-    num_layers=3,
-    reg_weight=1e-4,
-    negative_samples=1000,
+    n_factors=64,
+    n_layers=3,
+    regularization=1e-4,
     epochs=20,
     batch_size=256,
     learning_rate=0.001,
-    verbose=True
+    verbose=True,
 )
 
 print(f"Initialized {model.name}")
@@ -180,14 +178,12 @@ print(f"Loaded model prediction: {test_score:.3f}")
 
 ### Best Practices
 
-1. **Number of Layers**: 2-4 layers (3 often optimal)
-2. **Embedding Dimension**: 64 standard, 128-256 for large datasets
-3. **Layer Combination**: Uniform weights work well (α_k = 1/(K+1))
-4. **Negative Sampling**: Sample 1000-2000 negatives per positive (more than NCF!)
-5. **Dropout**: Not needed (architecture is simple enough)
-6. **Learning Rate**: 0.001 with decay
-7. **Batch Size**: Large (2048-8192) for stability
-8. **Regularization**: L2=1e-4 on embeddings
+1. **Number of layers**: `n_layers=2–4` (3 is a common default)
+2. **Embedding size**: `n_factors=64` standard; 128+ for large catalogs
+3. **Layer combination**: Uniform weights in LightGCN (built into the model)
+4. **Learning rate**: `0.001` with decay works well
+5. **Batch size**: 256–2048 depending on GPU memory
+6. **Regularization**: `regularization=1e-4` on embeddings (L2)
 
 ## Further Reading
 

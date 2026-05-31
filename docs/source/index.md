@@ -10,7 +10,7 @@
 <div class="stat"><span class="stat-num">57+</span><span class="stat-label">Models</span></div>
 <div class="stat"><span class="stat-num">5</span><span class="stat-label">Categories</span></div>
 <div class="stat"><span class="stat-num">3</span><span class="stat-label">Pipeline Stages</span></div>
-<div class="stat"><span class="stat-num">100%</span><span class="stat-label">Type-Hinted</span></div>
+<div class="stat"><span class="stat-num">Typed</span><span class="stat-label">Production API</span></div>
 </div>
 
 <p class="landing-section-title">Get Started</p>
