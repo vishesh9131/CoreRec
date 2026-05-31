@@ -10,6 +10,22 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import logging
 
+try:
+    import numpy as np
+except ImportError:
+    np = None
+
+
+def _to_json_safe(value: Any) -> Any:
+    """Convert numpy scalars and nested lists to JSON-serializable Python types."""
+    if np is not None and isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, list):
+        return [_to_json_safe(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _to_json_safe(v) for k, v in value.items()}
+    return value
+
 # Optional FastAPI import
 try:
     from fastapi import FastAPI, HTTPException, Request
@@ -147,8 +163,8 @@ class ModelServer:
             try:
                 score = self.model.predict(request.user_id, request.item_id)
                 return {
-                    "user_id": request.user_id,
-                    "item_id": request.item_id,
+                    "user_id": _to_json_safe(request.user_id),
+                    "item_id": _to_json_safe(request.item_id),
                     "score": float(score),
                 }
             except Exception as e:
@@ -180,8 +196,8 @@ class ModelServer:
                     top_k=request.top_k,
                     exclude_items=request.exclude_items)
                 return {
-                    "user_id": request.user_id,
-                    "recommendations": recs,
+                    "user_id": _to_json_safe(request.user_id),
+                    "recommendations": _to_json_safe(recs),
                     "top_k": request.top_k}
             except Exception as e:
                 self.logger.error(f"Recommendation error: {e}")

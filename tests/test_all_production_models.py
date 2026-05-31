@@ -247,7 +247,7 @@ class TestSASRec(unittest.TestCase):
         score = model.predict(uid, iid)
         self.assertIsInstance(score, float)
 
-        recs = model.recommend(uid, top_n=5)
+        recs = model.recommend(uid, top_k=5)
         self.assertIsInstance(recs, list)
 
     def test_save_load(self):
@@ -420,7 +420,7 @@ class TestNCF(unittest.TestCase):
         score = model.predict(uid, iid)
         self.assertIsInstance(score, float)
 
-        recs = model.recommend(uid, top_n=5)
+        recs = model.recommend(uid, top_k=5)
         self.assertIsInstance(recs, list)
 
     def test_save_load(self):
@@ -458,7 +458,7 @@ class TestFAST(unittest.TestCase):
         score = model.predict(uid, iid)
         self.assertIsInstance(score, float)
 
-        recs = model.recommend(uid, top_n=5)
+        recs = model.recommend(uid, top_k=5)
         self.assertIsInstance(recs, list)
         self.assertLessEqual(len(recs), 5)
 
@@ -498,7 +498,7 @@ class TestFASTRecommender(unittest.TestCase):
         score = model.predict(uid, iid)
         self.assertIsInstance(score, float)
 
-        recs = model.recommend(uid, top_n=5)
+        recs = model.recommend(uid, top_k=5)
         self.assertIsInstance(recs, list)
         self.assertLessEqual(len(recs), 5)
 

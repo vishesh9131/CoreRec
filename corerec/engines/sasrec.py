@@ -12,7 +12,7 @@ from pathlib import Path
 
 # Project imports (assumed present)
 from corerec.api.base_recommender import BaseRecommender
-from corerec.api.exceptions import RecommendationError
+from corerec.api.exceptions import ModelNotFittedError,  RecommendationError
 from corerec.utils.validation import (
     validate_fit_inputs,
     validate_user_id,
@@ -417,7 +417,7 @@ class SASRec(BaseRecommender):
     def predict(self, user_id: Any, item_id: Any, **kwargs) -> float:
         """Predict score for a single user-item pair (BaseRecommender interface)."""
         if not self.is_fitted or self.model is None:
-            raise ValueError("Model not fitted yet")
+            self._check_fitted()
 
         if user_id not in self.user_sequences:
             return 0.0
@@ -972,7 +972,6 @@ class SASRec(BaseRecommender):
             top_k=top_k,
             top_n=top_n,
             exclude_items=exclude_items,
-            exclude_seen=exclude_seen if exclude_seen is not False else False,
             **kwargs,
         )
         validate_model_fitted(self.is_fitted, self.name)

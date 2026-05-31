@@ -720,7 +720,7 @@ class NCF(BaseRecommender):
             Predicted rating or score
         """
         if not self.is_fitted:
-            raise ValueError("Model is not fitted yet. Call fit() first.")
+            self._check_fitted()
 
         # Check if user and item exist in training data
         if user_id not in self.user_mapping:
@@ -815,7 +815,7 @@ class NCF(BaseRecommender):
             Path to save the model
         """
         if not self.is_fitted:
-            raise ValueError("Model is not fitted yet. Call fit() first.")
+            self._check_fitted()
 
         # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else ".", exist_ok=True)

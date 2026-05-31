@@ -48,8 +48,7 @@ class TestAPIUniformity(unittest.TestCase):
     def test_recommender_dataset_triplet(self):
         ds = RecommenderDataset.from_triplet([0, 0, 1, 1], [10, 11, 10, 12], [5.0, 4.0, 3.0, 5.0])
         model = FAST(factors=4, iterations=1, batch_size=2, seed=42)
-        u, i, r = ds.as_triplet()
-        model.fit(u, i, r)
+        model.fit(ds)
         recs = model.recommend(0, top_k=2)
         self.assertIsInstance(recs, list)
 

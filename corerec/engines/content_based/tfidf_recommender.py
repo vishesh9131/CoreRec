@@ -1,5 +1,6 @@
 import numpy as np
 from corerec.api.base_recommender import BaseRecommender
+from corerec.api.exceptions import ModelNotFittedError
 from typing import Union, List, Dict, Any, Optional
 from pathlib import Path
 import pickle
@@ -124,7 +125,7 @@ class TFIDFRecommender(BaseRecommender):
             Default score of 0.5 (neutral)
         """
         if not self.is_fitted:
-            raise ValueError("Model must be fitted before prediction")
+            self._check_fitted()
         
         if item_id not in self.item_to_index:
             return 0.0
@@ -158,7 +159,7 @@ class TFIDFRecommender(BaseRecommender):
             List of recommended item IDs (new API) or numpy array of indices (old API)
         """
         if not self.is_fitted:
-            raise ValueError("Model must be fitted before recommendation")
+            self._check_fitted()
         
         # Determine which API is being used
         top_n = top_n if top_n is not None else top_k
@@ -212,7 +213,7 @@ class TFIDFRecommender(BaseRecommender):
             List of recommended item IDs sorted by relevance
         """
         if not self.is_fitted:
-            raise ValueError("Model must be fitted before recommendation")
+            self._check_fitted()
         
         if not query_text or not query_text.strip():
             return []
@@ -244,7 +245,7 @@ class TFIDFRecommender(BaseRecommender):
             **kwargs: Additional arguments (unused)
         """
         if not self.is_fitted:
-            raise ValueError("Model must be fitted before saving")
+            self._check_fitted()
         
         path_obj = Path(path)
         path_obj.parent.mkdir(parents=True, exist_ok=True)

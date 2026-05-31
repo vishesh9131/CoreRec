@@ -204,6 +204,8 @@ user_guide/model_training
 user_guide/making_predictions
 user_guide/model_persistence
 user_guide/best_practices
+api_versioning
+torch_nn_vendored
 ```
 
 ```{toctree}

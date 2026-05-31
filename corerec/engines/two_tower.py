@@ -18,6 +18,7 @@ import pickle
 import logging
 
 from corerec.api.base_recommender import BaseRecommender
+from corerec.api.exceptions import ModelNotFittedError
 from corerec.core.towers import UserTower, ItemTower
 
 
@@ -329,7 +330,7 @@ class TwoTower(BaseRecommender):
         Returns list of item IDs ranked by score.
         """
         if not self.is_fitted:
-            raise ValueError("Model not fitted yet")
+            self._check_fitted()
         
         if user_id not in self.user_map:
             self.log.warning(f"Unknown user: {user_id}")
@@ -373,7 +374,7 @@ class TwoTower(BaseRecommender):
     def predict(self, user_id: Any, item_id: Any, **kwargs) -> float:
         """Predict affinity score for a single user-item pair."""
         if not self.is_fitted:
-            raise ValueError("Model not fitted yet")
+            self._check_fitted()
 
         if user_id not in self.user_map or item_id not in self.item_map:
             return 0.0

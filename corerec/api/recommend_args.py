@@ -47,18 +47,9 @@ def normalize_recommend_kwargs(
         )
         exclude_items = _merge_exclude(exclude_items, items_to_ignore)
 
-    if exclude_seen is not None:
-        warnings.warn(
-            _DEPRECATION_MSG.format(
-                legacy="exclude_seen (pass seen items via exclude_items)",
-                replacement="exclude_items",
-            ),
-            DeprecationWarning,
-            stacklevel=3,
-        )
-        # exclude_seen=True is default behaviour for most models; False means no masking
-        if exclude_seen is False and exclude_items is None:
-            exclude_items = []
+    # exclude_seen is handled by each model locally (no deprecation noise for default=True)
+    if exclude_seen is False and exclude_items is None:
+        exclude_items = []
 
     if top_k <= 0:
         from corerec.api.exceptions import InvalidParameterError
