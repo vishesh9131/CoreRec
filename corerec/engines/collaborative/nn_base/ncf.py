@@ -11,6 +11,7 @@ from collections import defaultdict
 import pandas as pd
 
 from corerec.api.base_recommender import BaseRecommender
+from corerec.api.exceptions import ModelNotFittedError, RecommendationError, InvalidDataError
 
 
 class GMFLayer(nn.Module):
@@ -501,6 +502,7 @@ class NCF(BaseRecommender):
         self.logger.info(f"Built {self.model_type} model")
 
     def fit(self, data, validation_data=None):
+        data = self._coerce_fit_dataframe(data)
         """
         Train the NCF model
 
@@ -743,36 +745,33 @@ class NCF(BaseRecommender):
 
         return prediction.item()
 
-    def recommend(self, user_id, top_n=10, items_to_ignore=None):
-        """
-        Generate top-N recommendations for a user
+    def recommend(
+        self,
+        user_id,
+        top_k: int = 10,
+        exclude_items=None,
+        *,
+        top_n=None,
+        items_to_ignore=None,
+        **kwargs,
+    ):
+        """Generate top-K recommendations for a user."""
+        top_k, exclude_items, _ = self._normalize_recommend(
+            top_k=top_k,
+            top_n=top_n,
+            exclude_items=exclude_items,
+            items_to_ignore=items_to_ignore,
+            **kwargs,
+        )
+        self._check_fitted()
 
-        Parameters:
-        -----------
-        user_id: any
-            User ID
-        top_n: int
-            Number of recommendations
-        items_to_ignore: list, optional
-            List of items to exclude from recommendations
-
-        Returns:
-        --------
-        list
-            List of recommended item IDs
-        """
-        if not self.is_fitted:
-            raise ValueError("Model is not fitted yet. Call fit() first.")
-
-        if user_id not in self.user_mapping:
-            raise ValueError(f"Unknown user: {user_id}")
-
+        self._validate_user_in_map(user_id, self.user_mapping)
         user_idx = self.user_mapping[user_id]
 
         # Get items to ignore
         ignore_indices = set()
-        if items_to_ignore:
-            for item in items_to_ignore:
+        if exclude_items:
+            for item in exclude_items:
                 if item in self.item_mapping:
                     ignore_indices.add(self.item_mapping[item])
 
@@ -804,7 +803,7 @@ class NCF(BaseRecommender):
         item_scores.sort(key=lambda x: x[1], reverse=True)
 
         # Return top-N recommendations
-        return [item for item, _ in item_scores[:top_n]]
+        return [item for item, _ in item_scores[:top_k]]
 
     def save(self, filepath):
         """

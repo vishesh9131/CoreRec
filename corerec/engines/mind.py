@@ -227,6 +227,9 @@ class MIND(BaseRecommender):
         **kwargs,
     ) -> "MIND":
         """Train the MIND model."""
+        (user_ids, item_ids, ratings), _ = self._unpack_fit_args(
+            user_ids, item_ids, ratings, supported_modes=("triplet",)
+        )
         # Validate inputs
         validate_fit_inputs(user_ids, item_ids, ratings)
 

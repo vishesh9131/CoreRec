@@ -41,6 +41,7 @@ dependencies = [
 dev = [
     "pytest>=7.0",
     "pytest-cov>=3.0",
+    "httpx>=0.24.0",
     "black>=22.0",
     "flake8>=4.0",
     "mypy>=0.950",
@@ -54,8 +55,17 @@ docs = [
 transformers = [
     "transformers>=4.0",
 ]
+serving = [
+    "fastapi>=0.100.0,<1.0",
+    "uvicorn[standard]>=0.23.0,<1.0",
+    "pydantic>=2.0,<3.0",
+]
+datasets = [
+    "cr_learn>=0.2.0",
+    "gdown>=4.0.0,<5.0.0",
+]
 all = [
-    "corerec[dev,docs,transformers]",
+    "corerec[dev,docs,transformers,serving,datasets]",
 ]
 
 [project.scripts]
@@ -118,6 +128,7 @@ addopts = [
     "--cov=corerec",
     "--cov-report=term-missing",
     "--cov-report=html",
+    "--cov-fail-under=40",
 ]
 markers = [
     "docs_build: marks tests that run full documentation builds (deselect with '-m \"not docs_build\"')",
@@ -137,6 +148,7 @@ omit = [
 ]
 
 [tool.coverage.report]
+fail_under = 40
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",

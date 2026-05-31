@@ -156,6 +156,9 @@ class NASRec(BaseRecommender):
         self, user_ids: List[int], item_ids: List[int], ratings: List[float], **kwargs
     ) -> "NASRec":
         """Train the NASRec model."""
+        (user_ids, item_ids, ratings), _ = self._unpack_fit_args(
+            user_ids, item_ids, ratings, supported_modes=("triplet",)
+        )
         from corerec.utils.validation import validate_fit_inputs
 
         # Validate inputs

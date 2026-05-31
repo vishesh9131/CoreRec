@@ -17,7 +17,7 @@ Alternative imports:
     from corerec.content_based import TFIDFRecommender
 
 Author: Vishesh Yadav (sciencely98@gmail.com)
-License: Research purposes only
+License: MIT (see pyproject.toml)
 """
 
 __version__ = "0.5.2"

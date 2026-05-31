@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from typing import List, Dict, Optional, Tuple, Any, Union
 from corerec.api.base_recommender import BaseRecommender
-from corerec.api.exceptions import ModelNotFittedError, InvalidParameterError
+from corerec.api.exceptions import ModelNotFittedError, InvalidParameterError, RecommendationError
 from corerec.utils.validation import (
     validate_fit_inputs,
     validate_user_id,
@@ -146,6 +146,9 @@ class DeepFM(BaseRecommender):
             item_features: Dictionary of item features
             batch_size: Batch size for training (overrides init param if provided)
         """
+        (user_ids, item_ids, ratings), _ = self._unpack_fit_args(
+            user_ids, item_ids, ratings, supported_modes=("triplet",)
+        )
         # Validate inputs
         validate_fit_inputs(user_ids, item_ids, ratings)
         
@@ -356,35 +359,34 @@ class DeepFM(BaseRecommender):
     def recommend(
         self,
         user_id: Any,
-        top_n: int = 10,
+        top_k: int = 10,
+        exclude_items: Optional[List[Any]] = None,
+        *,
+        top_n: Optional[int] = None,
         exclude_seen: bool = True,
         **kwargs,
     ) -> List[Any]:
-        """
-        Recommend top-N items for a user.
-
-        Args:
-            user_id: User ID
-            top_n: Number of recommendations
-            exclude_seen: Whether to exclude items the user has already interacted with
-
-        Returns:
-            List of recommended item IDs
-        """
+        """Recommend top-K items for a user."""
+        top_k, exclude_items, _ = self._normalize_recommend(
+            top_k=top_k,
+            top_n=top_n,
+            exclude_items=exclude_items,
+            exclude_seen=exclude_seen if exclude_seen is not False else False,
+            **kwargs,
+        )
         validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.feature_map.get("user", {}))
-        validate_top_k(top_n)
+        validate_top_k(top_k)
 
-        if user_id not in self.feature_map["user"]:
-            return []
+        if user_id not in self.feature_map.get("user", {}):
+            raise RecommendationError(f"Unknown user_id: {user_id!r}")
 
-        # Get all items
-        all_items = list(self.feature_map["item"].keys())
-
-        # Get items the user has already interacted with
         seen_items = set()
         if exclude_seen and hasattr(self, "_user_item_interactions"):
             seen_items = self._user_item_interactions.get(user_id, set())
+        if exclude_items:
+            seen_items = seen_items.union(set(exclude_items))
+
+        all_items = list(self.feature_map["item"].keys())
 
         # Generate predictions for all items
         user_idx = self.feature_map["user"][user_id]
@@ -441,7 +443,7 @@ class DeepFM(BaseRecommender):
 
         # Sort predictions and get top-N
         predictions.sort(key=lambda x: x[1], reverse=True)
-        top_items = [item for item, _ in predictions[:top_n]]
+        top_items = [item for item, _ in predictions[:top_k]]
 
         return top_items
 

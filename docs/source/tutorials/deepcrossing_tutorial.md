@@ -30,7 +30,7 @@ The code examples below are **reference implementations** for learning purposes.
 ### Step 1: Import and Load Data
 
 ```python
-from corerec.engines.neural_network.deepcrossing import DeepCrossing_base
+from corerec.sandbox.collaborative_full.nn_base.DeepCrossing_base import DeepCrossing_base as DeepCrossing
 from cr_learn import ml_1m
 from sklearn.model_selection import train_test_split
 import numpy as np

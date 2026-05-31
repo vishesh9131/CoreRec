@@ -206,6 +206,20 @@ class LightGCN(BaseRecommender):
         Accepts either triplet lists ``(user_ids, item_ids, ratings)`` or
         ``(user_ids, item_ids)`` with an explicit ``interaction_matrix``.
         """
+        from corerec.api.dataset import coerce_dataset
+        from corerec.api.exceptions import InvalidDataError
+
+        ds = coerce_dataset(user_ids)
+        if ds is not None:
+            mode = ds.infer_mode()
+            if mode == "matrix":
+                user_ids, item_ids, interaction_matrix = ds.as_matrix()
+                ratings = None
+            elif mode == "triplet":
+                user_ids, item_ids, ratings = ds.as_triplet()
+            else:
+                raise InvalidDataError(f"LightGCN.fit() does not support dataset mode '{mode}'.")
+
         self._create_mappings(user_ids, item_ids)
         self._store_user_interactions(user_ids, item_ids)
         self._build_model()

@@ -62,7 +62,7 @@ The code examples below are **reference implementations** for learning purposes.
 ### Step 1: Import and Load Data
 
 ```python
-from corerec.engines.caser import Caser
+from corerec.sandbox.collaborative_full.sequential_model_base.caser_base import Caser_base as Caser
 from cr_learn import ml_1m
 from sklearn.model_selection import train_test_split
 import numpy as np

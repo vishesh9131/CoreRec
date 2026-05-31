@@ -2,6 +2,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from typing import List, Optional, Dict, Any, Tuple
 from .base_recommender import BaseRecommender
+from corerec.api.exceptions import ModelNotFittedError
 from corerec.utils.validation import (
     validate_fit_inputs,
     validate_user_id,
@@ -123,7 +124,15 @@ class FASTRecommender(BaseRecommender):
         self.user_factors[user_idx] += self.learning_rate * user_grad
         self.item_factors[item_idx] += self.learning_rate * item_grad
 
-    def fit(self, user_ids: List[int], item_ids: List[int], ratings: List[float]) -> None:
+    def fit(self, user_ids: List[int], item_ids: Optional[List[int]] = None, ratings: Optional[List[float]] = None) -> None:
+        from corerec.api.dataset import is_recommender_dataset
+
+        if is_recommender_dataset(user_ids) and item_ids is None:
+            user_ids, item_ids, ratings = user_ids.as_triplet()
+        else:
+            (user_ids, item_ids, ratings), _ = self._unpack_fit_args(
+                user_ids, item_ids, ratings, supported_modes=("triplet",)
+            )
         """
         Train the model on the given data.
 
@@ -201,55 +210,49 @@ class FASTRecommender(BaseRecommender):
         
         self.is_fitted = True
 
-    def recommend(self, user_id: int, top_n: int = 10, exclude_seen: bool = True) -> List[int]:
-        """
-        Generate top-N recommendations for a specific user.
-
-        Parameters:
-        -----------
-        user_id : int
-            ID of the user to generate recommendations for
-        top_n : int
-            Number of recommendations to generate
-        exclude_seen : bool
-            Whether to exclude items the user has already interacted with
-
-        Returns:
-        --------
-        List[int] : List of recommended item IDs
-        """
-        # Validate inputs
+    def recommend(
+        self,
+        user_id: int,
+        top_k: int = 10,
+        exclude_items: Optional[List[int]] = None,
+        *,
+        top_n: Optional[int] = None,
+        exclude_seen: bool = True,
+        **kwargs,
+    ) -> List[int]:
+        """Generate top-K recommendations for a specific user."""
+        top_k, exclude_items, _ = self._normalize_recommend(
+            top_k=top_k,
+            top_n=top_n,
+            exclude_items=exclude_items,
+            exclude_seen=exclude_seen if exclude_seen is not False else False,
+            **kwargs,
+        )
         validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, "user_map") else {})
-        validate_top_k(top_n)
+        validate_top_k(top_k)
 
         if self.user_factors is None or self.item_factors is None:
-            raise ValueError("Model has not been trained. Call fit() first.")
+            raise ModelNotFittedError("Model has not been trained. Call fit() first.")
 
-        # Map user_id to internal index
-        if user_id not in self.user_map:
-            raise ValueError(f"User ID {user_id} not found in training data")
-
+        self._validate_user_in_map(user_id, self.user_map)
         user_idx = self.user_map[user_id]
 
-        # Calculate scores for all items
         user_vector = self.user_factors[user_idx]
         scores = self.global_bias + self.user_bias[user_idx]
         scores += self.item_bias
         scores += np.dot(self.item_factors, user_vector)
 
-        # If requested, exclude items the user has already interacted with
         if exclude_seen:
             seen_items = self.user_item_matrix[user_idx].indices
             scores[seen_items] = float("-inf")
 
-        # Get top-n item indices
-        top_item_indices = np.argsort(-scores)[:top_n]
+        if exclude_items:
+            for item in exclude_items:
+                if item in self.item_map:
+                    scores[self.item_map[item]] = float("-inf")
 
-        # Map indices back to original item IDs
-        top_items = [self.reverse_item_map[idx] for idx in top_item_indices]
-
-        return top_items
+        top_item_indices = np.argsort(-scores)[:top_k]
+        return [self.reverse_item_map[idx] for idx in top_item_indices]
 
     def save_model(self, filepath: str) -> None:
         """Save the model to a file"""

@@ -31,7 +31,8 @@ _model_imports = {
     "LightGCN": (".graph_based_base.lightgcn", "LightGCN"),
     "NCF": (".nn_base.ncf", "NCF"),
     "FAST": (".fast", "FAST"),
-    "FastRecommender": (".fast_recommender", "FastRecommender"),
+    "FastRecommender": (".fast_recommender", "FASTRecommender"),
+    "FASTRecommender": (".fast_recommender", "FASTRecommender"),
     # legacy/deprecated
     "RBM": (".rbm", "RBM"),
     "GeoMLC": (".geomlc", "GeoMLC"),
@@ -40,7 +41,6 @@ _model_imports = {
 # alternate import paths for some models
 _fallback_imports = {
     "NCF": (".nn_base.ncf_base", "NCF"),
-    "FastRecommender": (".fast", "FastRecommender"),
 }
 
 
@@ -58,6 +58,9 @@ def __getattr__(name):
                 mod = importlib.import_module(mod_path, __name__)
             cls = getattr(mod, cls_name)
             globals()[name] = cls
+            # Public alias: FastRecommender -> FASTRecommender class
+            if name == "FastRecommender":
+                globals()["FASTRecommender"] = cls
             return cls
         except (ImportError, AttributeError):
             # try fallback
@@ -133,6 +136,7 @@ __all__ = [
     "NCF",
     "FAST",
     "FastRecommender",
+    "FASTRecommender",
     # Legacy
     "RBM",
     "GeoMLC",

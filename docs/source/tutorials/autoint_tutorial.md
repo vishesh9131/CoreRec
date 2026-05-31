@@ -71,7 +71,7 @@ The code examples below are **reference implementations** for learning purposes.
 ### Step 1: Import and Load Data
 
 ```python
-from corerec.engines.autoint import AutoInt
+from corerec.sandbox.collaborative_full.nn_base.AutoInt_base import AutoInt_base as AutoInt
 from cr_learn import ml_1m
 from sklearn.model_selection import train_test_split
 import numpy as np
