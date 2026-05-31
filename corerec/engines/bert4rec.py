@@ -407,36 +407,90 @@ class BERT4Rec(BaseRecommender):
         item_idx = self.item_to_idx[item_id]
         return float(scores[item_idx]) if 0 < item_idx < len(scores) else 0.0
 
-    def save(self, path: Union[str, Path], **kwargs) -> None:
+    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         """Save model to disk."""
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
+        from corerec.api.bundle_helpers import nested_lists, save_map_state
 
+        path = Path(path)
+        config = {
+            "name": self.name,
+            "hidden_dim": self.hidden_dim,
+            "num_layers": self.num_layers,
+            "num_heads": self.num_heads,
+            "max_len": self.max_len,
+            "dropout": self.dropout,
+            "mask_prob": self.mask_prob,
+            "lr": self.lr,
+            "batch_size": self.batch_size,
+            "num_epochs": self.num_epochs,
+        }
         state = {
+            "vocab_size": len(self.item_to_idx),
+            "user_seqs_pairs": nested_lists(self.user_seqs),
+            "is_fitted": self.is_fitted,
+            **save_map_state(item_to_idx=self.item_to_idx, idx_to_item=self.idx_to_item),
+        }
+
+        from corerec.api.torch_bundle import save_torch_production
+
+        if save_torch_production(self, path, config=config, state=state, safe=safe):
+            return
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        legacy = {
             "model_state_dict": self.model.state_dict() if self.model else None,
             "item_to_idx": self.item_to_idx,
             "idx_to_item": self.idx_to_item,
             "user_seqs": self.user_seqs,
-            "config": {
-                "name": self.name,
-                "hidden_dim": self.hidden_dim,
-                "num_layers": self.num_layers,
-                "num_heads": self.num_heads,
-                "max_len": self.max_len,
-                "dropout": self.dropout,
-                "mask_prob": self.mask_prob,
-                "lr": self.lr,
-                "batch_size": self.batch_size,
-                "num_epochs": self.num_epochs,
-            },
+            "config": config,
             "vocab_size": len(self.item_to_idx),
             "is_fitted": self.is_fitted,
         }
-        torch.save(state, path)
+        torch.save(legacy, path)
 
     @classmethod
     def load(cls, path: Union[str, Path]) -> "BERT4Rec":
         """Load model from disk."""
+        from corerec.api.bundle_helpers import load_map_state, nested_dict_from_lists
+        from corerec.api.torch_bundle import load_torch_production
+
+        def _restore(instance, config, state, arrays, bundle):
+            maps = load_map_state(state, "item_to_idx", "idx_to_item", int_key_names=("idx_to_item",))
+            instance.item_to_idx = maps["item_to_idx"]
+            instance.idx_to_item = maps["idx_to_item"]
+            instance.user_seqs = nested_dict_from_lists(state.get("user_seqs_pairs"))
+            instance.is_fitted = state.get("is_fitted", True)
+
+        def _build(instance, bundle):
+            if bundle.get("state_dict") is not None:
+                cfg = bundle["config"]
+                instance.model = BERT4RecModel(
+                    vocab_size=bundle["state"]["vocab_size"],
+                    hidden_dim=cfg["hidden_dim"],
+                    num_layers=cfg["num_layers"],
+                    num_heads=cfg["num_heads"],
+                    max_len=cfg["max_len"],
+                    dropout=cfg["dropout"],
+                )
+
+        def _factory(cfg):
+            return cls(
+                name=cfg["name"],
+                hidden_dim=cfg["hidden_dim"],
+                num_layers=cfg["num_layers"],
+                num_heads=cfg["num_heads"],
+                max_len=cfg["max_len"],
+                dropout=cfg["dropout"],
+                mask_prob=cfg["mask_prob"],
+                learning_rate=cfg["lr"],
+                batch_size=cfg["batch_size"],
+                num_epochs=cfg["num_epochs"],
+            )
+
+        loaded = load_torch_production(cls, path, build_model=_build, restore=_restore, factory=_factory)
+        if loaded is not None:
+            return loaded
+
         state = torch.load(path, map_location="cpu", weights_only=False)
         cfg = state["config"]
         instance = cls(

@@ -119,6 +119,28 @@ class NASRec(BaseRecommender):
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs) -> "NASRec":
         """Load model from disk."""
+        from corerec.api.bundle_helpers import load_map_state
+        from corerec.api.torch_bundle import load_torch_production
+
+        def _restore(instance, config, state, arrays, bundle):
+            maps = load_map_state(state, "user_map", "item_map")
+            instance.user_map = maps["user_map"]
+            instance.item_map = maps["item_map"]
+            bp = state["build_params"]
+            instance._num_users = bp["num_users"]
+            instance._num_items = bp["num_items"]
+            instance.is_fitted = state.get("is_fitted", True)
+
+        def _build(instance, bundle):
+            if bundle.get("state_dict") is not None:
+                instance.model = instance._build_model(instance._num_users, instance._num_items)
+
+        loaded = load_torch_production(cls, path, build_model=_build, restore=_restore)
+        if loaded is not None:
+            if loaded.verbose:
+                logger.info(f"Model loaded (safe bundle) from {path}")
+            return loaded
+
         checkpoint = torch.load(path, weights_only=False)
         cfg = checkpoint["config"]
 
@@ -300,27 +322,42 @@ class NASRec(BaseRecommender):
 
         return top_items
 
-    def save(self, path: Union[str, Path], **kwargs) -> None:
+    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         """Save model to disk."""
-        path_obj = Path(path)
-        path_obj.parent.mkdir(parents=True, exist_ok=True)
+        from corerec.api.bundle_helpers import save_map_state
 
-        checkpoint = {
-            "config": {
-                "name": self.name,
-                "embedding_dim": self.embedding_dim,
-                "hidden_dims": self.hidden_dims,
-                "num_cells": self.num_cells,
-                "learning_rate": self.learning_rate,
-                "batch_size": self.batch_size,
-                "epochs": self.epochs,
-                "verbose": self.verbose,
-                "device": self.device,
-            },
+        path_obj = Path(path)
+        config = {
+            "name": self.name,
+            "embedding_dim": self.embedding_dim,
+            "hidden_dims": self.hidden_dims,
+            "num_cells": self.num_cells,
+            "learning_rate": self.learning_rate,
+            "batch_size": self.batch_size,
+            "epochs": self.epochs,
+            "verbose": self.verbose,
+            "device": self.device,
+        }
+        state = {
             "build_params": {
                 "num_users": self._num_users,
                 "num_items": self._num_items,
             },
+            "is_fitted": self.is_fitted,
+            **save_map_state(user_map=self.user_map, item_map=self.item_map),
+        }
+
+        from corerec.api.torch_bundle import save_torch_production
+
+        if save_torch_production(self, path_obj, config=config, state=state, safe=safe):
+            if self.verbose:
+                logger.info(f"{self.name} model saved (safe bundle) to {path}")
+            return
+
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint = {
+            "config": config,
+            "build_params": state["build_params"],
             "model_state_dict": self.model.state_dict() if self.model else None,
             "user_map": self.user_map,
             "item_map": self.item_map,

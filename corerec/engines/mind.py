@@ -183,6 +183,30 @@ class MIND(BaseRecommender):
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs):
         """Load model from disk."""
+        from corerec.api.bundle_helpers import load_map_state, nested_dict_from_lists
+        from corerec.api.torch_bundle import load_torch_production
+
+        def _restore(instance, config, state, arrays, bundle):
+            maps = load_map_state(
+                state, "user_map", "item_map", "reverse_item_map", int_key_names=("reverse_item_map",)
+            )
+            instance.user_map = maps["user_map"]
+            instance.item_map = maps["item_map"]
+            instance.reverse_item_map = maps["reverse_item_map"]
+            instance.user_history = nested_dict_from_lists(state.get("user_history_pairs"))
+            instance._num_items = state["build_params"]["num_items"]
+            instance.is_fitted = state.get("is_fitted", True)
+
+        def _build(instance, bundle):
+            if bundle.get("state_dict") is not None:
+                instance.model = instance._build_model(instance._num_items)
+
+        loaded = load_torch_production(cls, path, build_model=_build, restore=_restore)
+        if loaded is not None:
+            if loaded.verbose:
+                logger.info(f"Model loaded (safe bundle) from {path}")
+            return loaded
+
         checkpoint = torch.load(path, weights_only=False)
         cfg = checkpoint["config"]
 
@@ -469,29 +493,47 @@ class MIND(BaseRecommender):
 
         return recommended_items
 
-    def save(self, path: Union[str, Path], **kwargs) -> None:
+    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         """Save model to disk."""
-        path_obj = Path(path)
-        path_obj.parent.mkdir(parents=True, exist_ok=True)
+        from corerec.api.bundle_helpers import nested_lists, save_map_state
 
+        path_obj = Path(path)
+        config = {
+            "name": self.name,
+            "embedding_dim": self.embedding_dim,
+            "num_interests": self.num_interests,
+            "hidden_dims": self.hidden_dims,
+            "dropout": self.dropout,
+            "routing_iterations": self.routing_iterations,
+            "learning_rate": self.learning_rate,
+            "batch_size": self.batch_size,
+            "epochs": self.epochs,
+            "max_seq_length": self.max_seq_length,
+            "verbose": self.verbose,
+            "device": self.device,
+        }
+        state = {
+            "build_params": {"num_items": self._num_items},
+            "user_history_pairs": nested_lists(self.user_history),
+            "is_fitted": self.is_fitted,
+            **save_map_state(
+                user_map=self.user_map,
+                item_map=self.item_map,
+                reverse_item_map=self.reverse_item_map,
+            ),
+        }
+
+        from corerec.api.torch_bundle import save_torch_production
+
+        if save_torch_production(self, path_obj, config=config, state=state, safe=safe):
+            if self.verbose:
+                logger.info(f"{self.name} model saved (safe bundle) to {path}")
+            return
+
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
         checkpoint = {
-            "config": {
-                "name": self.name,
-                "embedding_dim": self.embedding_dim,
-                "num_interests": self.num_interests,
-                "hidden_dims": self.hidden_dims,
-                "dropout": self.dropout,
-                "routing_iterations": self.routing_iterations,
-                "learning_rate": self.learning_rate,
-                "batch_size": self.batch_size,
-                "epochs": self.epochs,
-                "max_seq_length": self.max_seq_length,
-                "verbose": self.verbose,
-                "device": self.device,
-            },
-            "build_params": {
-                "num_items": self._num_items,
-            },
+            "config": config,
+            "build_params": {"num_items": self._num_items},
             "model_state_dict": self.model.state_dict() if self.model else None,
             "user_history": self.user_history,
             "user_map": self.user_map,

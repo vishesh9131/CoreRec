@@ -253,12 +253,40 @@ class FASTRecommender(BaseRecommender):
         top_item_indices = np.argsort(-scores)[:top_k]
         return [self.reverse_item_map[idx] for idx in top_item_indices]
 
-    def save_model(self, filepath: str) -> None:
-        """Save the model to a file"""
+    def save_model(self, filepath: str, safe: bool = True) -> None:
+        """Save the model to a file (safe npz bundle by default)."""
         if self.user_factors is None or self.item_factors is None:
             raise ModelNotFittedError("Model has not been trained. Call fit() first.")
 
-        # Save model data
+        config = {
+            "factors": self.factors,
+            "weight_decay": self.weight_decay,
+            "learning_rate": self.learning_rate,
+            "iterations": self.iterations,
+            "batch_size": self.batch_size,
+            "seed": self.seed,
+            "verbose": self.verbose,
+        }
+        state = {
+            "user_map": self.user_map,
+            "item_map": self.item_map,
+            "reverse_user_map": self.reverse_user_map,
+            "reverse_item_map": self.reverse_item_map,
+            "is_fitted": True,
+        }
+        arrays = {
+            "user_factors": self.user_factors,
+            "item_factors": self.item_factors,
+            "user_bias": self.user_bias,
+            "item_bias": self.item_bias,
+            "global_bias": np.array(self.global_bias),
+        }
+
+        from corerec.api.torch_bundle import save_numpy_production
+
+        if save_numpy_production(self, filepath, config=config, state=state, arrays=arrays, safe=safe):
+            return
+
         model_data = {
             "user_factors": self.user_factors,
             "item_factors": self.item_factors,
@@ -269,23 +297,43 @@ class FASTRecommender(BaseRecommender):
             "item_map": self.item_map,
             "reverse_user_map": self.reverse_user_map,
             "reverse_item_map": self.reverse_item_map,
-            "params": {
-                "factors": self.factors,
-                "weight_decay": self.weight_decay,
-                "learning_rate": self.learning_rate,
-                "iterations": self.iterations,
-                "batch_size": self.batch_size,
-                "seed": self.seed,
-            },
+            "params": config,
         }
         np.save(filepath, model_data, allow_pickle=True)
 
     @classmethod
     def load_model(cls, filepath: str) -> "FASTRecommender":
-        """Load a model from a file"""
-        model_data = np.load(filepath, allow_pickle=True).item()
+        """Load a model from a file (safe bundle or legacy npy)."""
+        from corerec.api.torch_bundle import load_numpy_production
 
-        # Create an instance with the saved parameters
+        def _restore(instance, config, state, arrays):
+            instance.user_map = state["user_map"]
+            instance.item_map = state["item_map"]
+            instance.reverse_user_map = state["reverse_user_map"]
+            instance.reverse_item_map = state["reverse_item_map"]
+            instance.user_factors = arrays["user_factors"]
+            instance.item_factors = arrays["item_factors"]
+            instance.user_bias = arrays["user_bias"]
+            instance.item_bias = arrays["item_bias"]
+            instance.global_bias = float(arrays["global_bias"])
+            instance.is_fitted = True
+
+        def _factory(cfg):
+            return cls(
+                factors=cfg["factors"],
+                weight_decay=cfg["weight_decay"],
+                learning_rate=cfg["learning_rate"],
+                iterations=cfg["iterations"],
+                batch_size=cfg["batch_size"],
+                seed=cfg.get("seed"),
+                verbose=cfg.get("verbose", False),
+            )
+
+        loaded = load_numpy_production(cls, filepath, restore=_restore, factory=_factory)
+        if loaded is not None:
+            return loaded
+
+        model_data = np.load(filepath, allow_pickle=True).item()
         instance = cls(
             factors=model_data["params"]["factors"],
             weight_decay=model_data["params"]["weight_decay"],
@@ -294,8 +342,6 @@ class FASTRecommender(BaseRecommender):
             batch_size=model_data["params"]["batch_size"],
             seed=model_data["params"]["seed"],
         )
-
-        # Restore instance variables
         instance.user_factors = model_data["user_factors"]
         instance.item_factors = model_data["item_factors"]
         instance.user_bias = model_data["user_bias"]
@@ -305,7 +351,6 @@ class FASTRecommender(BaseRecommender):
         instance.item_map = model_data["item_map"]
         instance.reverse_user_map = model_data["reverse_user_map"]
         instance.reverse_item_map = model_data["reverse_item_map"]
-
         return instance
 
     def predict(self, user_id, item_id, **kwargs) -> float:
