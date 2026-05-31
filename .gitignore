@@ -152,6 +152,7 @@ Makefile
 *.pt
 *.safetensors
 models/
+!docs/source/models/
 checkpoints/
 
 # Documentation build
