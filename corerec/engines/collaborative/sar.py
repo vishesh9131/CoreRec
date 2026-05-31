@@ -55,6 +55,27 @@ from corerec.utils.similarity import (
 logger = logging.getLogger(__name__)
 
 
+def _sar_to_dense_array(x):
+    """Convert sparse matrix to dense ndarray for safe bundle save."""
+    if x is None:
+        return None
+    if sparse.issparse(x):
+        return x.toarray()
+    return np.asarray(x)
+
+
+def _sar_to_sparse_matrix(x):
+    """Restore sparse CSR matrix from dense ndarray after safe bundle load."""
+    if x is None:
+        return None
+    if sparse.issparse(x):
+        return x
+    arr = np.asarray(x)
+    if arr.size == 0:
+        return None
+    return sparse.csr_matrix(arr)
+
+
 class SAR(BaseRecommender):
     """
     Simple Algorithm for Recommendation.
@@ -895,19 +916,58 @@ class SAR(BaseRecommender):
     # SAVE / LOAD
     # =========================================================================
     
-    def save(self, path: str, **kwargs) -> None:
+    def save(self, path: str, safe: bool = True, **kwargs) -> None:
         """
-        Save model to disk.
-        
-        Args:
-            path: file path for the saved model
+        Save model to disk (safe npz bundle by default).
         """
-        # ensure directory exists
+        self._check_fitted()
         dir_path = os.path.dirname(path)
         if dir_path:
             os.makedirs(dir_path, exist_ok=True)
-        
+
+        config = {
+            "col_user": self.col_user,
+            "col_item": self.col_item,
+            "col_rating": self.col_rating,
+            "col_timestamp": self.col_timestamp,
+            "col_prediction": self.col_prediction,
+            "similarity_type": self.similarity_type,
+            "time_decay_half_life": self.time_decay_half_life,
+            "time_decay_flag": self.time_decay_flag,
+            "time_now": self.time_now,
+            "threshold": self.threshold,
+            "normalize": self.normalize,
+        }
         state = {
+            "user2index_pairs": list(self.user2index.items()),
+            "index2user_pairs": list(self.index2user.items()),
+            "item2index_pairs": list(self.item2index.items()),
+            "index2item_pairs": list(self.index2item.items()),
+            "n_users": self.n_users,
+            "n_items": self.n_items,
+            "item_frequencies_pairs": list(self.item_frequencies.items()) if isinstance(self.item_frequencies, dict) else [],
+            "user_frequencies_pairs": list(self.user_frequencies.items()) if isinstance(self.user_frequencies, dict) else [],
+            "rating_min": self.rating_min,
+            "rating_max": self.rating_max,
+            "is_fitted": self.is_fitted,
+        }
+        arrays = {}
+        for name, value in (
+            ("user_affinity", self.user_affinity),
+            ("item_similarity", self.item_similarity),
+            ("unity_user_affinity", self.unity_user_affinity),
+        ):
+            dense = _sar_to_dense_array(value)
+            if dense is not None:
+                arrays[name] = np.asarray(dense, dtype=np.float64)
+
+        from corerec.api.torch_bundle import save_numpy_production
+
+        if save_numpy_production(self, path, config=config, state=state, arrays=arrays, safe=safe):
+            logger.info(f"Model saved (safe bundle) to {path}")
+            return
+
+        state_legacy = {
             # config
             "col_user": self.col_user,
             "col_item": self.col_item,
@@ -938,21 +998,54 @@ class SAR(BaseRecommender):
         }
         
         with open(path, "wb") as f:
-            pickle.dump(state, f, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(state_legacy, f, protocol=pickle.HIGHEST_PROTOCOL)
         
         logger.info(f"Model saved to {path}")
     
     @classmethod
     def load(cls, path: str) -> "SAR":
         """
-        Load model from disk.
-        
-        Args:
-            path: file path to load from
-        
-        Returns:
-            loaded SAR model
+        Load model from disk (safe bundle or legacy pickle).
         """
+        from corerec.api.torch_bundle import load_numpy_production
+
+        def _restore(instance, config, state, arrays):
+            instance.user2index = dict(state["user2index_pairs"])
+            instance.index2user = {int(k): v for k, v in state["index2user_pairs"]}
+            instance.item2index = dict(state["item2index_pairs"])
+            instance.index2item = {int(k): v for k, v in state["index2item_pairs"]}
+            instance.n_users = state["n_users"]
+            instance.n_items = state["n_items"]
+            instance.item_frequencies = dict(state.get("item_frequencies_pairs", []))
+            instance.user_frequencies = dict(state.get("user_frequencies_pairs", []))
+            instance.rating_min = state.get("rating_min")
+            instance.rating_max = state.get("rating_max")
+            instance.is_fitted = state.get("is_fitted", True)
+            arrays = arrays or {}
+            instance.user_affinity = _sar_to_sparse_matrix(arrays.get("user_affinity"))
+            instance.item_similarity = _sar_to_sparse_matrix(arrays.get("item_similarity"))
+            instance.unity_user_affinity = _sar_to_sparse_matrix(arrays.get("unity_user_affinity"))
+
+        def _factory(cfg):
+            return cls(
+                col_user=cfg["col_user"],
+                col_item=cfg["col_item"],
+                col_rating=cfg["col_rating"],
+                col_timestamp=cfg["col_timestamp"],
+                col_prediction=cfg["col_prediction"],
+                similarity_type=cfg["similarity_type"],
+                time_decay_coefficient=cfg["time_decay_half_life"] / (24 * 60 * 60),
+                timedecay_formula=cfg["time_decay_flag"],
+                time_now=cfg["time_now"],
+                threshold=cfg["threshold"],
+                normalize=cfg["normalize"],
+            )
+
+        loaded = load_numpy_production(cls, path, restore=_restore, factory=_factory)
+        if loaded is not None:
+            logger.info(f"Model loaded (safe bundle) from {path}")
+            return loaded
+
         with open(path, "rb") as f:
             state = pickle.load(f)
         

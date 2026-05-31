@@ -26,6 +26,19 @@ from .mixins import (
 )
 from .recommend_args import normalize_recommend_kwargs
 from .safe_persistence import save_artifact, load_artifact, COREREC_SAVE_VERSION
+from .model_bundle import (
+    artifact_base,
+    is_safe_bundle,
+    save_bundle,
+    load_bundle,
+    SAFE_FORMAT,
+)
+from .torch_bundle import (
+    save_torch_production,
+    load_torch_production,
+    save_numpy_production,
+    load_numpy_production,
+)
 from .versioning import API_VERSION, REMOVAL_VERSION, deprecated, warn_deprecated_arg
 
 __all__ = [
@@ -48,6 +61,15 @@ __all__ = [
     "save_artifact",
     "load_artifact",
     "COREREC_SAVE_VERSION",
+    "artifact_base",
+    "is_safe_bundle",
+    "save_bundle",
+    "load_bundle",
+    "SAFE_FORMAT",
+    "save_torch_production",
+    "load_torch_production",
+    "save_numpy_production",
+    "load_numpy_production",
     "API_VERSION",
     "REMOVAL_VERSION",
     "deprecated",
