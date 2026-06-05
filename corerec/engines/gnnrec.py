@@ -37,8 +37,15 @@ class GNNRec(BaseRecommender):
         trainable: bool = True,
         verbose: bool = False,
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
+        num_negatives: int = 4,
     ):
         super().__init__(name=name, trainable=trainable, verbose=verbose)
+        if num_negatives < 0:
+            raise ValueError("num_negatives must be >= 0")
+        # GNNRec trains a BCE head; observed interactions are positives and we
+        # sample unobserved negatives so ranking has signal (avoids the all-ones
+        # collapse). The bipartite graph is still built from observed edges only.
+        self.num_negatives = num_negatives
         self.embedding_dim = embedding_dim
         self.num_gnn_layers = num_gnn_layers
         self.dropout = dropout
@@ -207,10 +214,29 @@ class GNNRec(BaseRecommender):
         self.laplacian_matrix = laplacian_matrix
         self.model = self._build_model(num_users, num_items, laplacian_matrix)
 
-        # Create training data
-        train_user_indices = torch.tensor(user_indices, dtype=torch.long).to(self.device)
-        train_item_indices = torch.tensor(item_indices, dtype=torch.long).to(self.device)
-        train_labels = torch.tensor(ratings, dtype=torch.float).to(self.device)
+        # Create training data: observed interactions are positives (label 1);
+        # sample unobserved items per positive as negatives (label 0). Binarizing
+        # observed (instead of using raw ratings) avoids BCE on out-of-range
+        # targets, and the negatives give the ranking objective real signal.
+        seen = [set() for _ in range(num_users)]
+        for u, it in zip(user_indices, item_indices):
+            seen[u].add(it)
+        rng = np.random.RandomState(42)
+        ex_users, ex_items, ex_labels = [], [], []
+        for u, it in zip(user_indices, item_indices):
+            ex_users.append(u); ex_items.append(it); ex_labels.append(1.0)
+            us = seen[u]
+            for _ in range(self.num_negatives):
+                neg = rng.randint(num_items)
+                for _t in range(10):
+                    if neg not in us:
+                        break
+                    neg = rng.randint(num_items)
+                ex_users.append(u); ex_items.append(neg); ex_labels.append(0.0)
+
+        train_user_indices = torch.tensor(ex_users, dtype=torch.long).to(self.device)
+        train_item_indices = torch.tensor(ex_items, dtype=torch.long).to(self.device)
+        train_labels = torch.tensor(ex_labels, dtype=torch.float).to(self.device)
 
         # Define optimizer and loss
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
@@ -255,6 +281,18 @@ class GNNRec(BaseRecommender):
 
             if self.verbose:
                 logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {total_loss/n_batches:.4f}")
+
+        # Collapse guard: warn if scores are near-constant across items.
+        self.model.eval()
+        with torch.no_grad():
+            n_probe = min(2048, len(train_user_indices))
+            probe = self.model(train_user_indices[:n_probe], train_item_indices[:n_probe])
+            score_std = float(probe.std().item())
+        if score_std < 1e-4:
+            logger.warning(
+                "GNNRec output collapsed (score std=%.2e): predictions are nearly "
+                "constant, rankings will be meaningless.", score_std,
+            )
 
         self.is_fitted = True
         return self
