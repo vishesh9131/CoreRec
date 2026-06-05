@@ -1,0 +1,17 @@
+{
+  "framework": "cornac",
+  "model": "WMF",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5904,
+  "n_items": 3238,
+  "fit_time_s": 5.798,
+  "recommend_latency_ms_per_user": 0.1003,
+  "peak_mem_mb": 871.2,
+  "Recall@10": 0.002,
+  "NDCG@10": 0.00131,
+  "HitRate@10": 0.01,
+  "n_eval_users": 100,
+  "RMSE": null,
+  "MAE": null
+}

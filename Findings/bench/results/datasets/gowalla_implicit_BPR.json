@@ -1,0 +1,18 @@
+{
+  "framework": "implicit",
+  "model": "BPR",
+  "dataset": "gowalla",
+  "size": 1027370,
+  "n_users": 29858,
+  "n_items": 40981,
+  "device": "cpu",
+  "fit_time_s": 0.7116,
+  "recommend_latency_ms_per_user": 0.5212,
+  "peak_mem_mb": 329.6,
+  "Recall@10": 0.0073,
+  "NDCG@10": 0.01382,
+  "HitRate@10": 0.07,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

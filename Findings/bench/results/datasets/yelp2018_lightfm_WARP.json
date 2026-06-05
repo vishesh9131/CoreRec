@@ -1,0 +1,18 @@
+{
+  "framework": "lightfm",
+  "model": "WARP",
+  "dataset": "yelp2018",
+  "size": 1561406,
+  "n_users": 31668,
+  "n_items": 38048,
+  "device": "cpu",
+  "fit_time_s": 39.0568,
+  "recommend_latency_ms_per_user": 3.1109,
+  "peak_mem_mb": 426.7,
+  "Recall@10": 0.03179,
+  "NDCG@10": 0.03615,
+  "HitRate@10": 0.24667,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

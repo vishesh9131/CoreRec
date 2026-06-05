@@ -1,0 +1,15 @@
+{
+  "framework": "corerec",
+  "model": "DCN",
+  "protocol": "LOO+99neg",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5720,
+  "n_items": 3279,
+  "fit_time_s": 23.2553,
+  "peak_mem_mb": 1284.7,
+  "HR@10": 0.135,
+  "NDCG@10": 0.0652,
+  "n_eval_users": 200,
+  "device": "cuda"
+}

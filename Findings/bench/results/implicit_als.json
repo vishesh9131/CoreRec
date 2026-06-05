@@ -1,0 +1,13 @@
+{
+  "framework": "implicit",
+  "model": "ALS",
+  "fit_time_s": 1.4861,
+  "recommend_latency_ms_per_user": 0.0611,
+  "peak_mem_mb": 145.0,
+  "Recall@10": 0.23041,
+  "NDCG@10": 0.40996,
+  "HitRate@10": 0.92667,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

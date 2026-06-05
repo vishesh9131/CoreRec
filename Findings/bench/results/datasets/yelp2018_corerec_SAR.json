@@ -1,0 +1,18 @@
+{
+  "framework": "corerec",
+  "model": "SAR",
+  "dataset": "yelp2018",
+  "size": 1561406,
+  "n_users": 31668,
+  "n_items": 38048,
+  "device": "cpu",
+  "fit_time_s": 42.1777,
+  "recommend_latency_ms_per_user": 30.3648,
+  "peak_mem_mb": 35425.0,
+  "Recall@10": 0.04052,
+  "NDCG@10": 0.04604,
+  "HitRate@10": 0.26667,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

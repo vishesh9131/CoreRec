@@ -1,0 +1,15 @@
+{
+  "framework": "cornac",
+  "model": "BPR",
+  "protocol": "LOO+99neg",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5720,
+  "n_items": 3279,
+  "fit_time_s": 0.2525,
+  "peak_mem_mb": 466.4,
+  "HR@10": 0.413,
+  "NDCG@10": 0.21582,
+  "n_eval_users": 2000,
+  "device": "cpu"
+}

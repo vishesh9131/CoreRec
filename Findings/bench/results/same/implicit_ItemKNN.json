@@ -1,0 +1,18 @@
+{
+  "framework": "implicit",
+  "model": "ItemKNN",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5904,
+  "n_items": 3238,
+  "device": "cpu",
+  "fit_time_s": 0.0192,
+  "recommend_latency_ms_per_user": 0.1475,
+  "peak_mem_mb": 469.8,
+  "Recall@10": 0.005,
+  "NDCG@10": 0.00204,
+  "HitRate@10": 0.01,
+  "n_eval_users": 100,
+  "RMSE": null,
+  "MAE": null
+}

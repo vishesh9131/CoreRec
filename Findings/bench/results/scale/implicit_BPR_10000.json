@@ -1,0 +1,17 @@
+{
+  "framework": "implicit",
+  "model": "BPR",
+  "dataset": "ml1m",
+  "size": 10000,
+  "n_users": 3401,
+  "n_items": 2135,
+  "fit_time_s": 0.5362,
+  "recommend_latency_ms_per_user": 0.0645,
+  "peak_mem_mb": 467.9,
+  "Recall@10": 0.02,
+  "NDCG@10": 0.00874,
+  "HitRate@10": 0.02333,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

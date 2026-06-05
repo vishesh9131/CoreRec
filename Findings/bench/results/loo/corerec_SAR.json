@@ -1,0 +1,15 @@
+{
+  "framework": "corerec",
+  "model": "SAR",
+  "protocol": "LOO+99neg",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5720,
+  "n_items": 3279,
+  "fit_time_s": 0.4658,
+  "peak_mem_mb": 981.7,
+  "HR@10": 0.358,
+  "NDCG@10": 0.18127,
+  "n_eval_users": 2000,
+  "device": "cpu"
+}
