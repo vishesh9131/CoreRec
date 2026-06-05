@@ -604,6 +604,48 @@ class BaseRecommender(ABC):
             "num_items": self.num_items,
         }
 
+    def card(self) -> dict:
+        """A reproducibility model card: identity, hyperparameters, fitted shape
+        and the library versions used. Useful for logging, audit and comparing
+        runs across environments.
+        """
+        # hyperparameters = public, JSON-friendly scalar attributes
+        skip = {"name", "trainable", "verbose", "is_fitted"}
+        hp = {}
+        for key, val in vars(self).items():
+            if key.startswith("_") or key in skip:
+                continue
+            if isinstance(val, (int, float, str, bool, type(None))):
+                hp[key] = val
+            elif isinstance(val, (list, tuple)) and all(
+                isinstance(x, (int, float, str, bool)) for x in val
+            ):
+                hp[key] = list(val)
+
+        versions = {}
+        try:
+            import sys
+            versions["python"] = sys.version.split()[0]
+            import numpy
+            versions["numpy"] = numpy.__version__
+        except Exception:
+            pass
+        for mod in ("torch", "scipy", "pandas"):
+            try:
+                versions[mod] = __import__(mod).__version__
+            except Exception:
+                pass
+
+        return {
+            "model_type": self.__class__.__name__,
+            "name": self.name,
+            "is_fitted": self.is_fitted,
+            "num_users": getattr(self, "num_users", None),
+            "num_items": getattr(self, "num_items", None),
+            "hyperparameters": hp,
+            "versions": versions,
+        }
+
     def __repr__(self) -> str:
         """String representation."""
         return f"{self.__class__.__name__}(name='{self.name}', fitted={self.is_fitted})"
