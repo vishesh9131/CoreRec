@@ -1,0 +1,18 @@
+{
+  "framework": "corerec",
+  "model": "LightGCN",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5904,
+  "n_items": 3238,
+  "device": "cuda",
+  "fit_time_s": 14.125,
+  "recommend_latency_ms_per_user": 119.0976,
+  "peak_mem_mb": 1476.0,
+  "Recall@10": 0.08067,
+  "NDCG@10": 0.04407,
+  "HitRate@10": 0.14,
+  "n_eval_users": 100,
+  "RMSE": null,
+  "MAE": null
+}

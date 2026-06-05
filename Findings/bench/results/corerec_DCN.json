@@ -1,0 +1,13 @@
+{
+  "framework": "corerec",
+  "model": "DCN",
+  "fit_time_s": 17.5163,
+  "recommend_latency_ms_per_user": 236.1001,
+  "peak_mem_mb": 735.0,
+  "Recall@10": 0.00138,
+  "NDCG@10": 0.00484,
+  "HitRate@10": 0.04333,
+  "n_eval_users": 300,
+  "RMSE": 2.78719,
+  "MAE": 2.53796
+}

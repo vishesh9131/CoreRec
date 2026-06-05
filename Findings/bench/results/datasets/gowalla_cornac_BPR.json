@@ -1,0 +1,18 @@
+{
+  "framework": "cornac",
+  "model": "BPR",
+  "dataset": "gowalla",
+  "size": 1027370,
+  "n_users": 29858,
+  "n_items": 40981,
+  "device": "cpu",
+  "fit_time_s": 3.5464,
+  "recommend_latency_ms_per_user": 0.7573,
+  "peak_mem_mb": 704.8,
+  "Recall@10": 0.0274,
+  "NDCG@10": 0.02856,
+  "HitRate@10": 0.15667,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

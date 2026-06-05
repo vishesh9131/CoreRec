@@ -1,0 +1,13 @@
+{
+  "framework": "surprise",
+  "model": "SVD",
+  "fit_time_s": 0.191,
+  "recommend_latency_ms_per_user": 0.0703,
+  "peak_mem_mb": 150.8,
+  "Recall@10": 0.04805,
+  "NDCG@10": 0.1325,
+  "HitRate@10": 0.54667,
+  "n_eval_users": 300,
+  "RMSE": 0.9513,
+  "MAE": 0.74926
+}

@@ -1,0 +1,17 @@
+{
+  "framework": "cornac",
+  "model": "BPR",
+  "dataset": "ml1m",
+  "size": 1000000,
+  "n_users": 6040,
+  "n_items": 3687,
+  "fit_time_s": 3.0133,
+  "recommend_latency_ms_per_user": 0.1343,
+  "peak_mem_mb": 669.9,
+  "Recall@10": 0.08597,
+  "NDCG@10": 0.18501,
+  "HitRate@10": 0.61667,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

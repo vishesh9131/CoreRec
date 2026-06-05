@@ -1,0 +1,17 @@
+{
+  "framework": "surprise",
+  "model": "SVD",
+  "dataset": "ml1m",
+  "size": 1000000,
+  "n_users": 6040,
+  "n_items": 3687,
+  "fit_time_s": 6.4782,
+  "recommend_latency_ms_per_user": 0.1315,
+  "peak_mem_mb": 535.6,
+  "Recall@10": 0.03477,
+  "NDCG@10": 0.06868,
+  "HitRate@10": 0.35667,
+  "n_eval_users": 300,
+  "RMSE": 0.86986,
+  "MAE": 0.68396
+}

@@ -1,0 +1,17 @@
+{
+  "framework": "recbole",
+  "model": "LightGCN",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5904,
+  "n_items": 3238,
+  "fit_time_s": 108.0063,
+  "recommend_latency_ms_per_user": null,
+  "peak_mem_mb": 2106.4,
+  "Recall@10": 0.0377,
+  "NDCG@10": 0.0245,
+  "HitRate@10": 0.11,
+  "device": "cuda",
+  "RMSE": null,
+  "MAE": null
+}

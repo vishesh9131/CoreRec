@@ -1,0 +1,18 @@
+{
+  "framework": "corerec",
+  "model": "DeepFM",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5904,
+  "n_items": 3238,
+  "device": "cpu",
+  "fit_time_s": 306.0591,
+  "recommend_latency_ms_per_user": 912.1852,
+  "peak_mem_mb": 802.5,
+  "Recall@10": 0.03167,
+  "NDCG@10": 0.01756,
+  "HitRate@10": 0.05,
+  "n_eval_users": 100,
+  "RMSE": 3.41175,
+  "MAE": 3.22661
+}

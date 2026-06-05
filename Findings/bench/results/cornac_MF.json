@@ -1,0 +1,13 @@
+{
+  "framework": "cornac",
+  "model": "MF",
+  "fit_time_s": 0.0401,
+  "recommend_latency_ms_per_user": 0.0833,
+  "peak_mem_mb": 239.0,
+  "Recall@10": 0.0451,
+  "NDCG@10": 0.13417,
+  "HitRate@10": 0.50333,
+  "n_eval_users": 300,
+  "RMSE": 0.93405,
+  "MAE": 0.73457
+}

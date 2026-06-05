@@ -1,0 +1,18 @@
+{
+  "framework": "implicit",
+  "model": "ItemKNN",
+  "dataset": "yelp2018",
+  "size": 1561406,
+  "n_users": 31668,
+  "n_items": 38048,
+  "device": "cpu",
+  "fit_time_s": 0.285,
+  "recommend_latency_ms_per_user": 0.3707,
+  "peak_mem_mb": 446.9,
+  "Recall@10": 0.03673,
+  "NDCG@10": 0.04434,
+  "HitRate@10": 0.25333,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

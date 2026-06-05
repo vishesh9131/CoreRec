@@ -1,0 +1,17 @@
+{
+  "framework": "corerec",
+  "model": "SAR",
+  "dataset": "ml1m",
+  "size": 1000000,
+  "n_users": 6040,
+  "n_items": 3687,
+  "fit_time_s": 1.7469,
+  "recommend_latency_ms_per_user": 3.548,
+  "peak_mem_mb": 1607.5,
+  "Recall@10": 0.13895,
+  "NDCG@10": 0.21728,
+  "HitRate@10": 0.74667,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

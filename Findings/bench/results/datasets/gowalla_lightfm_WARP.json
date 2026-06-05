@@ -1,0 +1,18 @@
+{
+  "framework": "lightfm",
+  "model": "WARP",
+  "dataset": "gowalla",
+  "size": 1027370,
+  "n_users": 29858,
+  "n_items": 40981,
+  "device": "cpu",
+  "fit_time_s": 23.9474,
+  "recommend_latency_ms_per_user": 3.3811,
+  "peak_mem_mb": 333.4,
+  "Recall@10": 0.09415,
+  "NDCG@10": 0.10585,
+  "HitRate@10": 0.38667,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

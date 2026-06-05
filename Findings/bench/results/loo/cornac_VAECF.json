@@ -1,0 +1,15 @@
+{
+  "framework": "cornac",
+  "model": "VAECF",
+  "protocol": "LOO+99neg",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5720,
+  "n_items": 3279,
+  "fit_time_s": 8.0409,
+  "peak_mem_mb": 959.2,
+  "HR@10": 0.405,
+  "NDCG@10": 0.21586,
+  "n_eval_users": 2000,
+  "device": "cpu"
+}

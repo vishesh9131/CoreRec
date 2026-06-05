@@ -1,0 +1,13 @@
+{
+  "framework": "lightfm",
+  "model": "WARP",
+  "fit_time_s": 1.5314,
+  "recommend_latency_ms_per_user": 0.2354,
+  "peak_mem_mb": 138.8,
+  "Recall@10": 0.22066,
+  "NDCG@10": 0.43489,
+  "HitRate@10": 0.90667,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

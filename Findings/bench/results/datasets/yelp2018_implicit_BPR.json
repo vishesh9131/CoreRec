@@ -1,0 +1,18 @@
+{
+  "framework": "implicit",
+  "model": "BPR",
+  "dataset": "yelp2018",
+  "size": 1561406,
+  "n_users": 31668,
+  "n_items": 38048,
+  "device": "cpu",
+  "fit_time_s": 0.8093,
+  "recommend_latency_ms_per_user": 0.4378,
+  "peak_mem_mb": 415.6,
+  "Recall@10": 0.00961,
+  "NDCG@10": 0.01334,
+  "HitRate@10": 0.09667,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

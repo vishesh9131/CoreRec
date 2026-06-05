@@ -1,0 +1,13 @@
+{
+  "framework": "corerec",
+  "model": "DeepFM",
+  "fit_time_s": 78.6099,
+  "recommend_latency_ms_per_user": 466.2403,
+  "peak_mem_mb": 754.2,
+  "Recall@10": 0.00628,
+  "NDCG@10": 0.01763,
+  "HitRate@10": 0.12333,
+  "n_eval_users": 300,
+  "RMSE": 2.7872,
+  "MAE": 2.53797
+}

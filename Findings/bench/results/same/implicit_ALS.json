@@ -1,0 +1,17 @@
+{
+  "framework": "implicit",
+  "model": "ALS",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5904,
+  "n_items": 3238,
+  "fit_time_s": 0.9361,
+  "recommend_latency_ms_per_user": 0.0831,
+  "peak_mem_mb": 467.6,
+  "Recall@10": 0.05256,
+  "NDCG@10": 0.0319,
+  "HitRate@10": 0.14,
+  "n_eval_users": 100,
+  "RMSE": null,
+  "MAE": null
+}

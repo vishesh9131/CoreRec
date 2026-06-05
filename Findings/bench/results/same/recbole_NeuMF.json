@@ -1,0 +1,17 @@
+{
+  "framework": "recbole",
+  "model": "NeuMF",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5904,
+  "n_items": 3238,
+  "fit_time_s": 57.5225,
+  "recommend_latency_ms_per_user": null,
+  "peak_mem_mb": 2072.6,
+  "Recall@10": 0.0357,
+  "NDCG@10": 0.0227,
+  "HitRate@10": 0.1079,
+  "device": "cuda",
+  "RMSE": null,
+  "MAE": null
+}

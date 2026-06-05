@@ -1,0 +1,17 @@
+{
+  "framework": "cornac",
+  "model": "ItemKNN",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5904,
+  "n_items": 3238,
+  "fit_time_s": 0.2973,
+  "recommend_latency_ms_per_user": 27.0888,
+  "peak_mem_mb": 467.9,
+  "Recall@10": 0.0,
+  "NDCG@10": 0.0,
+  "HitRate@10": 0.0,
+  "n_eval_users": 100,
+  "RMSE": null,
+  "MAE": null
+}

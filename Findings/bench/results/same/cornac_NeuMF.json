@@ -1,0 +1,17 @@
+{
+  "framework": "cornac",
+  "model": "NeuMF",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5904,
+  "n_items": 3238,
+  "fit_time_s": 324.6786,
+  "recommend_latency_ms_per_user": 7.3334,
+  "peak_mem_mb": 1561.1,
+  "Recall@10": 0.02851,
+  "NDCG@10": 0.01363,
+  "HitRate@10": 0.07,
+  "n_eval_users": 100,
+  "RMSE": null,
+  "MAE": null
+}

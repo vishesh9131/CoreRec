@@ -1,0 +1,18 @@
+{
+  "framework": "implicit",
+  "model": "ALS",
+  "dataset": "gowalla",
+  "size": 1027370,
+  "n_users": 29858,
+  "n_items": 40981,
+  "device": "cpu",
+  "fit_time_s": 10.0989,
+  "recommend_latency_ms_per_user": 0.5644,
+  "peak_mem_mb": 333.1,
+  "Recall@10": 0.0828,
+  "NDCG@10": 0.09909,
+  "HitRate@10": 0.35667,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

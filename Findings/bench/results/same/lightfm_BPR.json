@@ -1,0 +1,18 @@
+{
+  "framework": "lightfm",
+  "model": "BPR",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5904,
+  "n_items": 3238,
+  "device": "cpu",
+  "fit_time_s": 1.4943,
+  "recommend_latency_ms_per_user": 0.3589,
+  "peak_mem_mb": 469.0,
+  "Recall@10": 0.02094,
+  "NDCG@10": 0.01102,
+  "HitRate@10": 0.06,
+  "n_eval_users": 100,
+  "RMSE": null,
+  "MAE": null
+}

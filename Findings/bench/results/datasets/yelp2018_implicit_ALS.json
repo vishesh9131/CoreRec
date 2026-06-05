@@ -1,0 +1,18 @@
+{
+  "framework": "implicit",
+  "model": "ALS",
+  "dataset": "yelp2018",
+  "size": 1561406,
+  "n_users": 31668,
+  "n_items": 38048,
+  "device": "cpu",
+  "fit_time_s": 9.7953,
+  "recommend_latency_ms_per_user": 0.5355,
+  "peak_mem_mb": 422.9,
+  "Recall@10": 0.02999,
+  "NDCG@10": 0.03768,
+  "HitRate@10": 0.23333,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

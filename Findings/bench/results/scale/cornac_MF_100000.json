@@ -1,0 +1,17 @@
+{
+  "framework": "cornac",
+  "model": "MF",
+  "dataset": "ml1m",
+  "size": 100000,
+  "n_users": 5904,
+  "n_items": 3238,
+  "fit_time_s": 0.0509,
+  "recommend_latency_ms_per_user": 0.0971,
+  "peak_mem_mb": 467.9,
+  "Recall@10": 0.01344,
+  "NDCG@10": 0.00684,
+  "HitRate@10": 0.02333,
+  "n_eval_users": 300,
+  "RMSE": 0.94135,
+  "MAE": 0.74535
+}
