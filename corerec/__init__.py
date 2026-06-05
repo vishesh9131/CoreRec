@@ -20,7 +20,7 @@ Author: Vishesh Yadav (sciencely98@gmail.com)
 License: MIT (see pyproject.toml)
 """
 
-__version__ = "0.5.3"
+__version__ = "0.5.4"
 __author__ = "Vishesh Yadav"
 __email__ = "sciencely98@gmail.com"
 
