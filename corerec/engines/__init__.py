@@ -26,13 +26,47 @@ Author: Vishesh Yadav (sciencely98@gmail.com)
 
 _deep_learning_models = {
     "DCN": ".dcn",
-    "DeepFM": ".deepfm", 
+    "DeepFM": ".deepfm",
     "GNNRec": ".gnnrec",
     "MIND": ".mind",
     "NASRec": ".nasrec",
     "SASRec": ".sasrec",
     "TwoTower": ".two_tower",
     "BERT4Rec": ".bert4rec",
+    # deep CTR / feature-interaction family (shared production base)
+    "FM": ".deep_ctr",
+    "AFM": ".deep_ctr",
+    "NFM": ".deep_ctr",
+    "DeepFMCTR": ".deep_ctr",
+    "DCNCTR": ".deep_ctr",
+    "AutoInt": ".deep_ctr",
+    "xDeepFM": ".deep_ctr",
+    "FiBiNet": ".deep_ctr",
+    "PNN": ".deep_ctr",
+    "WideDeep": ".deep_ctr",
+    # sequential / session-based family (shared production base)
+    "GRU4Rec": ".sequential",
+    "Caser": ".sequential",
+    "BST": ".sequential",
+    "DIN": ".sequential",
+    "DIEN": ".sequential",
+    "NARM": ".sequential",
+    # classic collaborative filtering
+    "ItemKNN": ".classic_cf",
+    "UserKNN": ".classic_cf",
+    "EASE": ".classic_cf",
+    "SLIM": ".classic_cf",
+    # auto-encoder CF
+    "MultVAE": ".vae_cf",
+    "MultiDAE": ".vae_cf",
+    # graph CF
+    "NGCF": ".graph_cf",
+    # embedding CF (native MF / skip-gram)
+    "ALS": ".matrix_factorization",
+    "Item2Vec": ".matrix_factorization",
+    # extra deep-CTR family members
+    "GMF": ".deep_ctr",
+    "MLP": ".deep_ctr",
 }
 
 _submodules = {
