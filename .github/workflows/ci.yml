@@ -45,6 +45,40 @@ jobs:
             tests/test_api_modules.py -v \
             --tb=short --strict-markers
 
+      - name: Deep-model guardrails (collapse + rating-task persistence)
+        # Fast, always-on regression guard for the sigmoid+BCE-on-all-positives
+        # collapse and the rating-task save/load round-trip. The slower NDCG-floor
+        # tests in the same file auto-skip when the ML-100K dataset is absent.
+        run: |
+          python -m pytest tests/test_benchmark_floors.py \
+            -k "collapse or rating_task or persistence" \
+            -v --tb=short --no-cov
+
+      - name: Online serving engine (ANN + freshness + cold-start)
+        # Exercises corerec.serving.OnlineRecommender: ANN recommend, graceful
+        # cold-start fallback, and incremental add/fold-in without retraining.
+        run: |
+          pip install faiss-cpu || echo "faiss-cpu unavailable; VectorIndex uses brute-force fallback"
+          python -m pytest tests/test_online_serving.py -v --tb=short --no-cov
+
+      - name: Deep CTR model family contract
+        # Every deep CTR / feature-interaction model (FM, AFM, NFM, DeepFM, DCN,
+        # AutoInt, xDeepFM, FiBiNet, PNN, WideDeep) must pass the unified contract:
+        # fit (no collapse) -> predict -> recommend(top_k) -> save/load parity.
+        run: |
+          python -m pytest tests/test_deep_ctr_models.py -v --tb=short --no-cov
+
+      - name: Sequential model family contract
+        # GRU4Rec, Caser, BST, DIN, DIEN: same unified contract on sequential data.
+        run: |
+          python -m pytest tests/test_sequential_models.py -v --tb=short --no-cov
+
+      - name: Classic / VAE / graph / MF model family contract
+        # ItemKNN, UserKNN, EASE, SLIM, MultVAE, MultiDAE, NGCF, ALS, Item2Vec.
+        run: |
+          python -m pytest tests/test_classic_vae_graph_models.py tests/test_mf_models.py \
+            -v --tb=short --no-cov
+
       - name: Run platform integration tests
         run: |
           python -m pytest tests/test_pipeline_integration.py tests/test_serving_smoke.py \
