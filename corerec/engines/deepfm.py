@@ -42,8 +42,18 @@ class DeepFM(BaseRecommender):
         trainable: bool = True,
         verbose: bool = False,
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
+        task: str = "auto",
+        num_negatives: int = 4,
     ):
         super().__init__(name=name, trainable=trainable, verbose=verbose)
+        if task not in ("auto", "implicit", "rating"):
+            raise ValueError("task must be one of {'auto', 'implicit', 'rating'}")
+        if num_negatives < 0:
+            raise ValueError("num_negatives must be >= 0")
+        # See DCN for the task contract; 'auto' -> implicit with negative sampling.
+        self.task = task
+        self.num_negatives = num_negatives
+        self._fit_task = None
         self.embedding_dim = embedding_dim
         self.hidden_layers = hidden_layers
         self.dropout = dropout
@@ -61,7 +71,7 @@ class DeepFM(BaseRecommender):
         self.user_feature_types = []
         self.item_feature_types = []
 
-    def _build_model(self, field_dims: List[int]):
+    def _build_model(self, field_dims: List[int], use_sigmoid: bool = True):
         class FMLayer(nn.Module):
             def __init__(self, field_dims, embedding_dim):
                 super().__init__()
@@ -119,11 +129,11 @@ class DeepFM(BaseRecommender):
 
                 # Combine FM and Deep
                 output = first_order + second_order + deep_output
-                return torch.sigmoid(output)
+                return torch.sigmoid(output) if self.use_sigmoid else output
 
-        return DeepFMModel(field_dims, self.embedding_dim, self.hidden_layers, self.dropout).to(
-            self.device
-        )
+        model = DeepFMModel(field_dims, self.embedding_dim, self.hidden_layers, self.dropout)
+        model.use_sigmoid = use_sigmoid
+        return model.to(self.device)
 
     def fit(
         self,
@@ -204,107 +214,122 @@ class DeepFM(BaseRecommender):
             
             self.item_feature_types = sorted(item_feature_types)
 
+        # Resolve task contract and build implicit negatives (see DCN). Training
+        # BCE on observed-only data (all labels = 1) collapses the model; for the
+        # implicit task we sample unobserved negatives so the loss has signal.
+        task = self.task if self.task != "auto" else "implicit"
+        self._fit_task = task
+        from collections import defaultdict
+
+        seen = defaultdict(set)
+        for _u, _it in zip(user_ids, item_ids):
+            seen[_u].add(_it)
+
+        if task == "rating":
+            train_users = list(user_ids)
+            train_items = list(item_ids)
+            train_labels = [float(r) for r in ratings]
+        else:
+            all_items = unique_items
+            n_it = len(all_items)
+            rng = np.random.RandomState(42)
+            train_users, train_items, train_labels = [], [], []
+            for _u, _it in zip(user_ids, item_ids):
+                train_users.append(_u); train_items.append(_it); train_labels.append(1.0)
+                us = seen[_u]
+                for _ in range(self.num_negatives):
+                    neg = all_items[rng.randint(n_it)]
+                    for _t in range(10):
+                        if neg not in us:
+                            break
+                        neg = all_items[rng.randint(n_it)]
+                    train_users.append(_u); train_items.append(neg); train_labels.append(0.0)
+
         # Build model
-        self.model = self._build_model(self.field_dims)
-        
-        # Define optimizer and loss
+        self.model = self._build_model(self.field_dims, use_sigmoid=(task != "rating"))
+
+        # Define optimizer and loss (BCE for implicit ranking, MSE for rating)
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        criterion = nn.BCELoss()
+        criterion = nn.BCELoss() if task != "rating" else nn.MSELoss()
 
-        # Create Dataset and DataLoader
-        from torch.utils.data import Dataset, DataLoader
-
-        class DeepFMDataset(Dataset):
-            def __init__(self, user_ids, item_ids, ratings, feature_map, user_features, item_features, user_feature_types, item_feature_types):
-                self.user_ids = user_ids
-                self.item_ids = item_ids
-                self.ratings = ratings
-                self.feature_map = feature_map
-                self.user_features = user_features or {}
-                self.item_features = item_features or {}
-                self.user_feature_types = user_feature_types or []
-                self.item_feature_types = item_feature_types or []
-
-            def __len__(self):
-                return len(self.user_ids)
-
-            def __getitem__(self, idx):
-                user = self.user_ids[idx]
-                item = self.item_ids[idx]
-                rating = self.ratings[idx]
-                
-                # Create feature vector
-                # Map user/item indices
-                # Note: If user/item not in map (shouldn't happen with fit data), handle carefully? 
-                # Assuming fit data is consistent with unique sets derived above.
-                x = [self.feature_map["user"][user], self.feature_map["item"][item]]
-
-                # Add user features
-                if self.user_features and user in self.user_features:
-                    for feature_type in self.user_feature_types:
-                        if feature_type in self.user_features[user]:
-                            value = self.user_features[user][feature_type]
-                            x.append(self.feature_map[f"user_{feature_type}"][value])
-                        else:
-                            x.append(0) 
-
-                # Add item features
-                if self.item_features and item in self.item_features:
-                    for feature_type in self.item_feature_types:
-                        if feature_type in self.item_features[item]:
-                            value = self.item_features[item][feature_type]
-                            x.append(self.feature_map[f"item_{feature_type}"][value])
-                        else:
-                            x.append(0)
-                
-                return torch.LongTensor(x), torch.as_tensor(1.0 if rating > 0 else 0.0, dtype=torch.float32)
-
-        dataset = DeepFMDataset(
-            user_ids, item_ids, ratings, 
-            self.feature_map, 
-            user_features, item_features,
-            self.user_feature_types, self.item_feature_types
+        # Precompute the feature matrix ONCE. The previous implementation rebuilt
+        # each row's feature vector inside Dataset.__getitem__, i.e. on every
+        # access every epoch (millions of Python calls) -- the dominant training
+        # cost. Here we build a single [N, num_fields] tensor and wrap it in a
+        # on-device tensor sliced manually (see training loop below).
+        umap = self.feature_map["user"]
+        imap = self.feature_map["item"]
+        has_feats = (self.user_feature_types or self.item_feature_types) and (
+            user_features or item_features
         )
-        
-        dataloader = DataLoader(
-            dataset, 
-            batch_size=self.batch_size, 
-            shuffle=True,
-            num_workers=0 # Avoid multiprocessing issues in some envs unless requested
-        )
+
+        if not has_feats:
+            # id-only fast path (fully vectorized)
+            X = np.empty((len(train_users), 2), dtype=np.int64)
+            X[:, 0] = [umap[u] for u in train_users]
+            X[:, 1] = [imap[it] for it in train_items]
+        else:
+            rows = []
+            for u, it in zip(train_users, train_items):
+                x = [umap[u], imap[it]]
+                if user_features and u in user_features:
+                    for ft in self.user_feature_types:
+                        x.append(self.feature_map[f"user_{ft}"].get(user_features[u].get(ft), 0)
+                                 if ft in user_features[u] else 0)
+                if item_features and it in item_features:
+                    for ft in self.item_feature_types:
+                        x.append(self.feature_map[f"item_{ft}"].get(item_features[it].get(ft), 0)
+                                 if ft in item_features[it] else 0)
+                rows.append(x)
+            X = np.asarray(rows, dtype=np.int64)
+
+        # Move the whole dataset to the device ONCE and slice manually, rather
+        # than streaming via a DataLoader that copies every batch host->device
+        # (that per-batch transfer dominated training, esp. on GPU).
+        X_t = torch.from_numpy(X).long().to(self.device)
+        y_t = torch.as_tensor(np.asarray(train_labels, dtype=np.float32)).to(self.device)
+        n_samples = X_t.shape[0]
 
         # Train the model
         self.model.train()
-        
+        bs = self.batch_size
+        n_batches = (n_samples + bs - 1) // bs
+
         for epoch in range(self.epochs):
-            total_loss = 0
-            n_batches = 0
-            
-            for batch_X, batch_y in dataloader:
-                batch_X = batch_X.to(self.device)
-                batch_y = batch_y.to(self.device)
+            total_loss = 0.0
+            perm = torch.randperm(n_samples, device=self.device)
+            for b in range(n_batches):
+                idx = perm[b * bs:(b + 1) * bs]
+                if idx.numel() < 2:
+                    continue  # BatchNorm needs >1 sample
+                batch_X = X_t[idx]
+                batch_y = y_t[idx]
 
-                # Forward pass
                 outputs = self.model(batch_X)
-
-                # Compute loss
                 loss = criterion(outputs, batch_y)
 
-                # Backward pass
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-
                 total_loss += loss.item()
-                n_batches += 1
 
             if self.verbose:
                 logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {total_loss/n_batches:.4f}")
 
+        # Collapse guard: warn if the model produces near-constant scores.
+        self.model.eval()
+        with torch.no_grad():
+            score_std = float(self.model(X_t[: min(2048, n_samples)]).std().item())
+        if score_std < 1e-4:
+            logger.warning(
+                "DeepFM output collapsed (score std=%.2e): predictions are nearly "
+                "constant. Check that labels match the task.", score_std,
+            )
+
         self.is_fitted = True
         self.user_features = user_features
         self.item_features = item_features
-        
+
         return self
 
     def predict(self, user_id: Any, item_id: Any, **kwargs) -> float:
@@ -355,6 +380,40 @@ class DeepFM(BaseRecommender):
             prediction = self.model(x_tensor).item()
 
         return float(prediction)
+
+    def _score_all_items(self, user_id) -> np.ndarray:
+        """Score every item for a user in one batched forward pass.
+
+        Builds a [num_items, num_fields] matrix (user/item ids in the first two
+        fields, remaining feature fields zero-padded). Ids-only fast path.
+        """
+        items = list(self.feature_map["item"].keys())
+        n_fields = len(self.field_dims)
+        x = np.zeros((len(items), n_fields), dtype=np.int64)
+        x[:, 0] = self.feature_map["user"][user_id]
+        x[:, 1] = [self.feature_map["item"][it] for it in items]
+        self.model.eval()
+        with torch.no_grad():
+            scores = self.model(torch.LongTensor(x).to(self.device)).detach().cpu().numpy().flatten()
+        return scores
+
+    def recommend(self, user_id, top_k: int = 10, exclude_items=None, **kwargs):
+        """Top-K recommendations via a single batched forward pass."""
+        validate_model_fitted(self.is_fitted, self.name)
+        if user_id not in self.feature_map["user"]:
+            return []
+        exclude_items = set(exclude_items or [])
+        scores = self._score_all_items(user_id)
+        items = list(self.feature_map["item"].keys())
+        out = []
+        for idx in np.argsort(-scores):
+            it = items[idx]
+            if it in exclude_items:
+                continue
+            out.append(it)
+            if len(out) >= top_k:
+                break
+        return out
 
     def recommend(
         self,
@@ -471,9 +530,12 @@ class DeepFM(BaseRecommender):
             "epochs": self.epochs,
             "verbose": self.verbose,
             "device": self.device,
+            "task": self.task,
+            "num_negatives": self.num_negatives,
         }
         state = {
             "field_dims": self.field_dims,
+            "_fit_task": self._fit_task,  # 'implicit'/'rating' -> sets the head
             "user_features": self.user_features,
             "item_features": self.item_features,
             "user_feature_types": self.user_feature_types,
@@ -521,10 +583,14 @@ class DeepFM(BaseRecommender):
             instance.user_feature_types = state.get("user_feature_types", [])
             instance.item_feature_types = state.get("item_feature_types", [])
             instance.is_fitted = state.get("is_fitted", True)
+            instance._fit_task = state.get("_fit_task", "implicit")
 
         def _build(instance, bundle):
             if bundle.get("state_dict") is not None:
-                instance.model = instance._build_model(instance.field_dims)
+                instance.model = instance._build_model(
+                    instance.field_dims,
+                    use_sigmoid=(getattr(instance, "_fit_task", "implicit") != "rating"),
+                )
 
         loaded = load_torch_production(cls, path, build_model=_build, restore=_restore)
         if loaded is not None:
@@ -549,7 +615,12 @@ class DeepFM(BaseRecommender):
             epochs=cfg.get("epochs", 20),
             verbose=cfg.get("verbose", False),
             device=cfg.get("device", "cpu"),
+            task=cfg.get("task", "auto"),
+            num_negatives=cfg.get("num_negatives", 4),
         )
+        instance._fit_task = checkpoint.get("_fit_task", cfg.get("task", "implicit"))
+        if instance._fit_task == "auto":
+            instance._fit_task = "implicit"
 
         instance.feature_map = checkpoint["feature_map"]
         instance.field_dims = checkpoint["field_dims"]
@@ -558,7 +629,8 @@ class DeepFM(BaseRecommender):
         instance.user_feature_types = checkpoint.get("user_feature_types", [])
         instance.item_feature_types = checkpoint.get("item_feature_types", [])
 
-        instance.model = instance._build_model(instance.field_dims)
+        instance.model = instance._build_model(
+            instance.field_dims, use_sigmoid=(instance._fit_task != "rating"))
         instance.model.load_state_dict(checkpoint["model_state_dict"])
         instance.model.eval()
 

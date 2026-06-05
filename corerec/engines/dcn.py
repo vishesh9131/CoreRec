@@ -69,6 +69,8 @@ class DCN(BaseRecommender):
         trainable: bool = True,
         verbose: bool = False,
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
+        task: str = "auto",
+        num_negatives: int = 4,
     ):
         super().__init__(name=name, trainable=trainable, verbose=verbose)
 
@@ -97,6 +99,20 @@ class DCN(BaseRecommender):
         if epochs < 1:
             raise InvalidParameterError("epochs must be at least 1")
 
+        if task not in ("auto", "implicit", "rating"):
+            raise InvalidParameterError("task must be one of {'auto', 'implicit', 'rating'}")
+
+        if num_negatives < 0:
+            raise InvalidParameterError("num_negatives must be >= 0")
+
+        # task contract:
+        #   implicit -> binary relevance + negative sampling, sigmoid + BCE (ranking)
+        #   rating   -> regress the supplied rating, linear head + MSE
+        #   auto     -> implicit (top-K recommendation is the primary path)
+        self.task = task
+        self.num_negatives = num_negatives
+        self._fit_task = None  # resolved task after fit
+
         self.embedding_dim = embedding_dim
         self.num_cross_layers = num_cross_layers
         self.deep_layers = deep_layers
@@ -117,7 +133,7 @@ class DCN(BaseRecommender):
         self.item_features = {}
         self.model = None
 
-    def _build_model(self, num_features: int, max_features: int = 2):
+    def _build_model(self, num_features: int, max_features: int = 2, use_sigmoid: bool = True):
         class CrossLayer(nn.Module):
             def __init__(self, input_dim: int):
                 super().__init__()
@@ -182,16 +198,20 @@ class DCN(BaseRecommender):
                 combined = torch.cat([cross_output, deep_output], dim=1)
                 output = self.combination(combined)
 
-                return torch.sigmoid(output).squeeze(1)
+                output = output.squeeze(1)
+                # sigmoid only for the implicit (BCE) head; rating head is linear
+                return torch.sigmoid(output) if self.use_sigmoid else output
 
-        return DeepCrossNetworkModel(
+        model = DeepCrossNetworkModel(
             num_features,
             self.embedding_dim,
             self.num_cross_layers,
             self.deep_layers,
             self.dropout,
             max_features,
-        ).to(self.device)
+        )
+        model.use_sigmoid = use_sigmoid
+        return model.to(self.device)
 
     def fit(
         self,
@@ -258,37 +278,59 @@ class DCN(BaseRecommender):
                         )
                     feature_values.add(self.feature_map[feature_key])
 
+        # Resolve the task contract. 'auto' -> implicit, because top-K
+        # recommendation is the primary path and implicit training (positives
+        # plus sampled negatives) is what makes ranking work. Training BCE on
+        # observed-only data (all labels = 1) collapses the model to a constant.
+        task = self.task if self.task != "auto" else "implicit"
+        self._fit_task = task
+
+        # Per-user seen items for negative sampling
+        from collections import defaultdict
+
+        seen = defaultdict(set)
+        for u, it in zip(user_ids, item_ids):
+            seen[u].add(it)
+        all_item_ids = list(unique_items)
+        n_items_total = len(all_item_ids)
+        rng = np.random.RandomState(42)
+
+        def build_feat(uid, iid):
+            fi = [self.user_map[uid], self.item_map[iid]]
+            if user_features and uid in user_features:
+                for feature, value in user_features[uid].items():
+                    fk = f"user_{feature}_{value}"
+                    if fk in self.feature_map:
+                        fi.append(self.feature_map[fk])
+            if item_features and iid in item_features:
+                for feature, value in item_features[iid].items():
+                    fk = f"item_{feature}_{value}"
+                    if fk in self.feature_map:
+                        fi.append(self.feature_map[fk])
+            return fi
+
         # Create training data first to determine max_features
         train_features = []
         train_labels = []
 
         for user_id, item_id, rating in zip(user_ids, item_ids, ratings):
-            # Get user and item indices
-            user_idx = self.user_map[user_id]
-            item_idx = self.item_map[item_id]
-
-            # Get feature indices
-            feature_indices = [user_idx, item_idx]
-
-            # Add user features
-            if user_features and user_id in user_features:
-                for feature, value in user_features[user_id].items():
-                    feature_key = f"user_{feature}_{value}"
-                    if feature_key in self.feature_map:
-                        feature_indices.append(self.feature_map[feature_key])
-
-            # Add item features
-            if item_features and item_id in item_features:
-                for feature, value in item_features[item_id].items():
-                    feature_key = f"item_{feature}_{value}"
-                    if feature_key in self.feature_map:
-                        feature_indices.append(self.feature_map[feature_key])
-
-            # Add to training data
-            train_features.append(feature_indices)
-            train_labels.append(
-                1.0 if rating > 0 else 0.0
-            )  # Convert to binary for implicit feedback
+            if task == "rating":
+                train_features.append(build_feat(user_id, item_id))
+                train_labels.append(float(rating))
+                continue
+            # implicit: observed interaction is a positive ...
+            train_features.append(build_feat(user_id, item_id))
+            train_labels.append(1.0)
+            # ... plus sampled unobserved negatives so BCE has real signal
+            user_seen = seen[user_id]
+            for _ in range(self.num_negatives):
+                neg = all_item_ids[rng.randint(n_items_total)]
+                for _try in range(10):
+                    if neg not in user_seen:
+                        break
+                    neg = all_item_ids[rng.randint(n_items_total)]
+                train_features.append(build_feat(user_id, neg))
+                train_labels.append(0.0)
 
         # Pad feature lists to the same length
         max_features = max(len(features) for features in train_features) if train_features else 2
@@ -300,15 +342,15 @@ class DCN(BaseRecommender):
         num_features = len(feature_values) + 1  # +1 for padding/unknown
         self._num_features = num_features
         self._max_features = max_features
-        self.model = self._build_model(num_features, max_features)
+        self.model = self._build_model(num_features, max_features, use_sigmoid=(task != "rating"))
 
         # Convert to tensors
         train_features = torch.LongTensor(train_features).to(self.device)
         train_labels = torch.FloatTensor(train_labels).to(self.device)
 
-        # Define optimizer and loss
+        # Define optimizer and loss (BCE for implicit ranking, MSE for rating)
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        criterion = nn.BCELoss()
+        criterion = nn.BCELoss() if task != "rating" else nn.MSELoss()
 
         # Train the model
         self.model.train()
@@ -346,6 +388,21 @@ class DCN(BaseRecommender):
 
             if self.verbose:
                 logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {total_loss/n_batches:.4f}")
+
+        # Collapse guard: a healthy model produces varied scores across items.
+        # If every score is (near) identical the model has degenerated (e.g. bad
+        # label scale) and any ranking from it is meaningless.
+        self.model.eval()
+        with torch.no_grad():
+            probe = self.model(train_features[: min(2048, len(train_features))])
+            score_std = float(probe.std().item())
+        if score_std < 1e-4:
+            logger.warning(
+                "DCN output collapsed (score std=%.2e): predictions are nearly "
+                "constant, so rankings will be meaningless. Check that labels match "
+                "the task ('implicit' expects relevance, 'rating' expects scores).",
+                score_std,
+            )
 
         self.is_fitted = True
         return self
@@ -400,23 +457,45 @@ class DCN(BaseRecommender):
         if user_id not in self.user_map:
             return []
 
-        exclude_items = exclude_items or []
-        exclude_seen = kwargs.get("exclude_seen", True)
+        exclude_items = set(exclude_items or [])
 
-        # Get all items
+        # Vectorized full ranking: score every item in ONE batched forward pass
+        # instead of a Python loop of per-item predict() calls. This is the
+        # production-critical path (turns ~hundreds of ms/user into a few ms).
+        scores = self._score_all_items(user_id)  # np.ndarray over item ids
         all_items = list(self.item_map.keys())
-
-        # Generate predictions
-        predictions = []
-        for item_id in all_items:
+        order = np.argsort(-scores)
+        out = []
+        for idx in order:
+            item_id = all_items[idx]
             if item_id in exclude_items:
                 continue
-            score = self.predict(user_id, item_id)
-            predictions.append((item_id, score))
+            out.append(item_id)
+            if len(out) >= top_k:
+                break
+        return out
 
-        # Sort and return top-K
-        predictions.sort(key=lambda x: x[1], reverse=True)
-        return [item_id for item_id, _ in predictions[:top_k]]
+    def _score_all_items(self, user_id) -> np.ndarray:
+        """Score every known item for a user in a single batched forward pass.
+
+        Returns scores aligned with ``list(self.item_map.keys())`` order.
+        """
+        all_items = list(self.item_map.keys())
+        max_len = self.model.input_dim // self.embedding_dim
+        user_idx = self.user_map[user_id]
+
+        # Build a [num_items, max_len] feature matrix: column 0 = user, column 1
+        # = item, remaining columns padded. Per-item side features are omitted on
+        # this fast path (ids only), matching the dominant id-based usage.
+        feats = np.zeros((len(all_items), max_len), dtype=np.int64)
+        feats[:, 0] = user_idx
+        feats[:, 1] = [self.item_map[it] for it in all_items]
+
+        self.model.eval()
+        with torch.no_grad():
+            t = torch.LongTensor(feats).to(self.device)
+            scores = self.model(t).detach().cpu().numpy()
+        return scores
 
     def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         """Save model to disk (safe bundle by default; legacy full checkpoint if safe=False)."""
@@ -437,10 +516,13 @@ class DCN(BaseRecommender):
             "checkpoint_dir": self.checkpoint_dir,
             "verbose": self.verbose,
             "device": self.device,
+            "task": self.task,
+            "num_negatives": self.num_negatives,
         }
         state = {
             "_num_features": self._num_features,
             "_max_features": self._max_features,
+            "_fit_task": self._fit_task,  # 'implicit'/'rating' -> sets the head
             "feature_map_pairs": pairs(self.feature_map),
             "user_features": self.user_features,
             "item_features": self.item_features,
@@ -508,11 +590,13 @@ class DCN(BaseRecommender):
             instance.user_features = state.get("user_features")
             instance.item_features = state.get("item_features")
             instance.is_fitted = state.get("is_fitted", True)
+            instance._fit_task = state.get("_fit_task", "implicit")
 
         def _build(instance, bundle):
             if bundle.get("state_dict") is not None:
                 instance.model = instance._build_model(
-                    instance._num_features, instance._max_features
+                    instance._num_features, instance._max_features,
+                    use_sigmoid=(getattr(instance, "_fit_task", "implicit") != "rating"),
                 )
 
         loaded = load_torch_production(cls, path, build_model=_build, restore=_restore)
@@ -537,7 +621,12 @@ class DCN(BaseRecommender):
             checkpoint_dir=cfg["checkpoint_dir"],
             verbose=cfg["verbose"],
             device=cfg["device"],
+            task=cfg.get("task", "auto"),
+            num_negatives=cfg.get("num_negatives", 4),
         )
+        instance._fit_task = checkpoint.get("_fit_task", cfg.get("task", "implicit"))
+        if instance._fit_task == "auto":
+            instance._fit_task = "implicit"
 
         instance.user_map = checkpoint["user_map"]
         instance.item_map = checkpoint["item_map"]
@@ -553,7 +642,10 @@ class DCN(BaseRecommender):
         instance._max_features = bp["max_features"]
 
         if checkpoint["model_state_dict"] is not None:
-            instance.model = instance._build_model(bp["num_features"], bp["max_features"])
+            instance.model = instance._build_model(
+                bp["num_features"], bp["max_features"],
+                use_sigmoid=(instance._fit_task != "rating"),
+            )
             instance.model.load_state_dict(checkpoint["model_state_dict"])
             instance.model.eval()
 
