@@ -49,6 +49,13 @@ pip install cr_learn          # dataset companion (optional but recommended)
 - PyTorch ≥ 1.9
 - NumPy, Pandas, SciPy
 
+Some models (TwoTower, multimodal fusion, and other encoder-based engines) depend on Hugging
+Face `transformers`. Install the extra to use them:
+
+```bash
+pip install "corerec[transformers]"
+```
+
 ---
 
 ## Quickstart in 60 seconds
@@ -74,7 +81,10 @@ recs = model.recommend(user_id=1, top_k=10)
 print(recs)
 ```
 
-That's it. The same three lines — `fit`, `recommend`, `predict` — work for every model in CoreRec.
+That's it. The same three calls — `fit`, `recommend`, `predict` — are shared by every model
+in CoreRec. A few models expect their input in a model-specific shape (e.g. SASRec takes a
+user×item interaction matrix, GNNRec needs ratings binarized to `[0, 1]`); see each model's
+section below and the [QuickStart](https://corerec.online/docs/quickstart.html) for those cases.
 
 ---
 
@@ -87,9 +97,13 @@ model.fit(user_ids, item_ids, ratings)          # train
 model.predict(user_id, item_id)                 # → float score
 model.recommend(user_id, top_k=10)              # → list of item IDs
 model.batch_predict([(uid, iid), ...])          # → list of floats
-model.save('model.pkl')                         # persist
-model = ModelClass.load('model.pkl')            # restore
+model.save('artifacts/my_model')                # persist (safe bundle: base path, no extension)
+model = ModelClass.load('artifacts/my_model')   # restore
 ```
+
+> **Persistence note**: `save` writes a *safe bundle* — pass a base path (not a `.pkl`
+> file). It produces `<base>.meta.json` + `<base>.weights.pt`; `load` takes the same base
+> path. See [Safe Bundle Persistence](docs/source/user_guide/safe_bundle_persistence.md).
 
 ---
 
@@ -140,6 +154,8 @@ print(f"Score: {score:.3f}  |  Top-10: {recs}")
 ```
 
 #### TwoTower (retrieval at scale)
+
+> Requires the `transformers` extra: `pip install "corerec[transformers]"`.
 
 ```python
 from corerec.engines import TwoTower
@@ -203,11 +219,18 @@ recs  = model.recommend_by_text(query_text="action thriller", top_n=5)
 
 ### Graph-Based
 
+GNNRec trains with BCE loss, so ratings must be in `[0, 1]` (implicit feedback or
+normalized explicit ratings). Binarize raw ratings before calling `fit`:
+
 ```python
+import numpy as np
 from corerec.engines import GNNRec
 
+# Raw explicit ratings (e.g. 1-5) -> implicit signal in [0, 1]
+binary_ratings = (ratings >= 1.0).astype(np.float32)
+
 model = GNNRec(embedding_dim=64, epochs=20)
-model.fit(user_ids, item_ids, ratings)
+model.fit(user_ids, item_ids, binary_ratings)
 recs = model.recommend(user_id=1, top_k=10)
 ```
 
@@ -278,7 +301,7 @@ data = ml_1m.load()
 
 print(data['ratings'].head())
 #    user_id  movie_id  rating  timestamp
-# 0        1      1193     5.0  978300760
+# 0        1      1193       5  978300760
 # ...
 
 # Ready-to-use training data
@@ -414,22 +437,24 @@ examples/          Runnable .py scripts for every engine
 
 ## VishGraphs
 
-CoreRec ships with **VishGraphs**, a companion library for graph visualization and analysis:
+**VishGraphs** is CoreRec's built-in module for graph visualization and analysis.
+It ships inside CoreRec — no extra install, import it from `corerec`:
 
 ```python
-import vish_graphs as vg
+from corerec import vish_graphs as vg
 
 # Generate a random graph and save to CSV
 graph_file = vg.generate_random_graph(num_people=100, file_path="graph.csv")
 
-# Load as adjacency matrix and visualize
+# Load as adjacency matrix
 adj_matrix = vg.bipartite_matrix_maker(graph_file)
-nodes      = list(range(len(adj_matrix)))
-top_nodes  = [0, 1, 2]
 
-vg.draw_graph(adj_matrix, nodes, top_nodes)         # 2D
-vg.draw_graph_3d(adj_matrix, nodes, top_nodes)      # 3D
-vg.show_bipartite_relationship(adj_matrix)          # bipartite view
+# Highlight the most-connected nodes
+top_nodes = vg.find_top_nodes(adj_matrix, num_nodes=3)
+
+vg.draw_graph(adj_matrix, top_nodes=top_nodes)          # 2D
+vg.draw_graph_3d(adj_matrix, top_nodes=top_nodes)       # 3D
+vg.show_bipartite_relationship(adj_matrix)              # bipartite view
 ```
 
 **API summary:**
