@@ -6,7 +6,6 @@ This module provides utilities for setting random seeds for reproducibility.
 
 import random
 import numpy as np
-import torch
 import os
 
 
@@ -16,7 +15,7 @@ def set_seed(seed: int):
     This function sets the random seed for:
     - Python's random module
     - NumPy
-    - PyTorch (CPU and CUDA)
+    - PyTorch (CPU and CUDA), if installed
     - CUDNN
 
     Args:
@@ -24,19 +23,23 @@ def set_seed(seed: int):
     """
     random.seed(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-
-    # Set CUDA seeds if available
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-
-        # Make CUDNN deterministic
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
-
-    # Set environment variables for additional libraries
     os.environ["PYTHONHASHSEED"] = str(seed)
+
+    # PyTorch is imported lazily so that importing this module (and therefore
+    # corerec.utils) does not drag torch (~500 MB) into lightweight CF-only
+    # usage such as SAR.
+    try:
+        import torch
+    except ImportError:
+        torch = None
+
+    if torch is not None:
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
 
     # TensorFlow seed (if available)
     try:

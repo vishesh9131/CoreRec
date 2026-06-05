@@ -21,17 +21,22 @@ import matplotlib.pyplot as plt
 import time
 from sklearn.metrics.pairwise import cosine_similarity
 from networkx.algorithms.community import greedy_modularity_communities
-import corerec.core_rec as cs
 from scipy.sparse import csr_matrix
 from tqdm import tqdm
 import time
 from scipy.sparse import lil_matrix
 import scipy.sparse as sp
-from memory_profiler import profile
 from scipy.sparse import dok_matrix
 import multiprocessing
 from functools import partial
-from corerec.optimal_path.optimal_path import *
+
+# memory_profiler is an optional profiling aid; fall back to a no-op decorator
+# so the module imports on a base install without it.
+try:
+    from memory_profiler import profile
+except ImportError:
+    def profile(func):
+        return func
 
 
 def generate_random_graph(
@@ -447,13 +452,9 @@ def bipartite_matrix_maker(csv_path):
         for row in csv_reader:
             values = [float(value) for value in row]
             adj_matrix.append(values)
-    return adj_matrix
-
-    # Convert to a sparse CSR matrix if not already in that format
-    if not isinstance(adj_matrix, csr_matrix):
-        sparse_adj_matrix = csr_matrix(adj_matrix)
-    else:
-        sparse_adj_matrix = adj_matrix
+    # Return an ndarray so downstream helpers (find_top_nodes, draw_graph, ...)
+    # can index it with matrix[i, j] and read matrix.shape.
+    return np.array(adj_matrix)
 
     # Initialize the graph from the sparse matrix
     G = nx.convert_matrix.from_scipy_sparse_array(sparse_adj_matrix)
