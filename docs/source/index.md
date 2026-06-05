@@ -203,6 +203,7 @@ caption: User Guide
 user_guide/data_preparation
 user_guide/model_training
 user_guide/making_predictions
+user_guide/online_serving
 user_guide/model_persistence
 user_guide/safe_bundle_persistence
 user_guide/best_practices

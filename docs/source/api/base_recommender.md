@@ -15,6 +15,16 @@ All recommendation models in CoreRec inherit from `BaseRecommender`, which enfor
 - Generating recommendations (`recommend`)
 - Saving and loading models (`save`, `load`)
 - Batch operations (`batch_predict`, `batch_recommend`)
+- Reproducibility metadata (`card`)
+
+Every model exposes `card()`, returning a reproducibility/audit record — model
+type, hyperparameters, fitted shape, and the library versions used:
+
+```python
+model.card()
+# {'model_type': 'DCN', 'is_fitted': True, 'num_users': ..., 'num_items': ...,
+#  'hyperparameters': {...}, 'versions': {'python': ..., 'torch': ..., ...}}
+```
 
 ## Class Definition
 

@@ -27,6 +27,45 @@ model = DeepFM(
 model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
 ```
 
+## Choosing the task: implicit ranking vs. rating prediction
+
+The deep CTR/graph models (`DCN`, `DeepFM`, `GNNRec`) accept a `task` argument that
+controls how labels are interpreted and how the model is trained:
+
+```python
+from corerec.engines import DCN
+
+# top-K recommendation (default): observed interactions are positives and the
+# model is trained with negative sampling -> use this for ranking.
+model = DCN(task="auto", num_negatives=4)        # 'auto' == 'implicit'
+
+# rating prediction: regress the supplied rating with a linear head + MSE.
+model = DCN(task="rating")
+```
+
+```{important}
+Train these models with `task="implicit"` (the default) for recommendation. Passing
+raw 1–5 ratings to an implicit model without negatives is the classic mistake that
+makes the output collapse to a constant; CoreRec now handles this for you via
+negative sampling and warns if a trained model's scores have (near-)zero variance.
+Use `task="rating"` only when you genuinely want to predict the rating value.
+```
+
+## Training strong models for large-scale ranking
+
+For million-scale implicit-feedback ranking, CoreRec ships native, GPU, sparse
+trainers that produce strong embeddings and feed straight into the online serving
+engine:
+
+```python
+from corerec.serving import OnlineRecommender
+
+# trains a sparse LightGCN (SOTA-class on graph benchmarks) and builds the index
+rec = OnlineRecommender.from_interactions(df, model="lightgcn", device="cuda")
+```
+
+See the [Online Serving guide](online_serving.md) for the full train-and-serve path.
+
 ## Callbacks
 
 CoreRec provides training callbacks for monitoring and control:
