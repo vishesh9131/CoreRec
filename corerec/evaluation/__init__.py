@@ -8,6 +8,7 @@ Author: Vishesh Yadav (mail: sciencely98@gmail.com)
 
 from corerec.evaluation.metrics import RankingMetrics, ClassificationMetrics, DiversityMetrics
 from corerec.evaluation.evaluator import Evaluator, CrossValidator
+from corerec.evaluation.evaluate import evaluate
 
 __all__ = [
     "RankingMetrics",
@@ -15,4 +16,5 @@ __all__ = [
     "DiversityMetrics",
     "Evaluator",
     "CrossValidator",
+    "evaluate",
 ]
