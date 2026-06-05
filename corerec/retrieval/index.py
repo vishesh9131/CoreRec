@@ -129,7 +129,14 @@ class VectorIndex(BaseRetriever):
             self._index.nprobe = self.nprobe
         
         elif self.index_type == "hnsw":
-            self._index = faiss.IndexHNSWFlat(d, 32)
+            # respect the metric: inner-product HNSW for dot-product models
+            # (e.g. MF/ALS), where normalizing to cosine would discard the
+            # vector norms that carry the ranking signal. Cosine is handled by
+            # L2 over the already-normalized vectors above.
+            if self.metric == "ip":
+                self._index = faiss.IndexHNSWFlat(d, 32, faiss.METRIC_INNER_PRODUCT)
+            else:
+                self._index = faiss.IndexHNSWFlat(d, 32)
         
         else:
             raise ValueError(f"Unknown index_type: {self.index_type}")
