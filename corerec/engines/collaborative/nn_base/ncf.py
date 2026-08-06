@@ -733,6 +733,51 @@ class NCF(BaseRecommender):
 
         return prediction.item()
 
+    def batch_predict(self, pairs, **kwargs):
+        """Score many (user_id, item_id) pairs in a single forward pass.
+
+        BaseRecommender.batch_predict falls back to a list comprehension over
+        predict(), which for a torch model means one forward pass per pair.
+        Scoring a 1650-item catalogue for one user therefore took ~262ms --
+        roughly 4 QPS, and 2300x the per-user latency of implicit's ALS on the
+        same data. Batching the whole request into one forward pass is the
+        difference between a serving path that works and one that does not.
+
+        Unknown users/items score 0.0 rather than raising, so one bad ID in a
+        large request does not lose the whole batch.
+        """
+        if not self.is_fitted:
+            self._check_fitted()
+        if not pairs:
+            return []
+
+        known, user_idx, item_idx = [], [], []
+        for pos, (user_id, item_id) in enumerate(pairs):
+            u = self.user_mapping.get(user_id)
+            i = self.item_mapping.get(item_id)
+            if u is None or i is None:
+                continue
+            known.append(pos)
+            user_idx.append(u)
+            item_idx.append(i)
+
+        scores = [0.0] * len(pairs)
+        if not known:
+            return scores
+
+        self.model.eval()
+        with torch.no_grad():
+            user_tensor = torch.LongTensor(user_idx).to(self.device)
+            item_tensor = torch.LongTensor(item_idx).to(self.device)
+            preds = self.model(user_tensor, item_tensor)
+            if self.loss_type == "bce":
+                preds = torch.sigmoid(preds)
+            preds = preds.reshape(-1).cpu().numpy()
+
+        for pos, value in zip(known, preds):
+            scores[pos] = float(value)
+        return scores
+
     def recommend(
         self,
         user_id,

@@ -1,11 +1,19 @@
-"""Collect results/*.json into a CSV + a markdown table for the manuscript."""
+"""Collect results/*.json into a CSV + a markdown table for the manuscript.
+
+Pass a directory to aggregate a specific run:  python aggregate.py results/fresh
+Defaults to results/ for backwards compatibility. Keeping runs in their own
+directory matters because results/ still holds older numbers whose peak_mem_mb
+came from the pre-fix ru_maxrss unit bug; mixing them produces a table where
+the memory column means different things on different rows.
+"""
 import csv
 import glob
 import json
 import os
+import sys
 
 HERE = os.path.dirname(__file__)
-RES = os.path.join(HERE, "results")
+RES = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.join(HERE, "results")
 
 COLS = ["framework", "model", "fit_time_s", "recommend_latency_ms_per_user",
         "peak_mem_mb", "Recall@10", "NDCG@10", "HitRate@10", "RMSE", "MAE",

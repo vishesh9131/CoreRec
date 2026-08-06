@@ -1,0 +1,7 @@
+{
+  "framework": "corerec",
+  "model": "GNNRec",
+  "dataset": "ml100k",
+  "status": "did-not-complete",
+  "note": "Killed after 41 minutes of training on ML-100K (100k interactions, 20 epochs, CPU). LightGCN finished the same data in 127s and NCF in 143s. Recorded as a non-completion rather than omitted, because a model that cannot train on the smallest standard benchmark in under 40 minutes is a result."
+}

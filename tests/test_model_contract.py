@@ -145,3 +145,39 @@ def test_save_load_preserves_recommendations(model_id, module_path, cls_name, kw
     assert reloaded.recommend(users[0], top_k=5) == before, (
         f"{cls_name} recommends differently after save/load"
     )
+
+
+@pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS,
+                         ids=[m[0] for m in MODELS])
+def test_batch_predict_matches_predict(model_id, module_path, cls_name, kwargs, data):
+    """batch_predict must agree with predict, pair for pair.
+
+    BaseRecommender.batch_predict defaults to a list comprehension over
+    predict(), which for a torch model is one forward pass per pair. NCF
+    overrides it to score a whole request in a single pass -- 262ms/user down to
+    single digits on ML-100K. This checks the override stays correct; the point
+    of batching is lost if it quietly returns different numbers.
+    """
+    users, items, ratings = data
+    model = _build(module_path, cls_name, kwargs)
+    if model_id in KNOWN_DIVERGENT:
+        import pandas as pd
+        model.fit(pd.DataFrame({"user_id": users, "item_id": items, "rating": ratings}))
+    else:
+        model.fit(users, items, ratings)
+
+    if not hasattr(model, "predict"):
+        pytest.skip(f"{cls_name} has no predict()")
+
+    pairs = [(users[0], i) for i in sorted(set(items))[:10]]
+    try:
+        batched = model.batch_predict(pairs)
+        one_at_a_time = [model.predict(u, i) for u, i in pairs]
+    except (NotImplementedError, ValueError) as exc:
+        pytest.skip(f"{cls_name} cannot score these pairs: {exc}")
+
+    assert len(batched) == len(pairs)
+    for got, want in zip(batched, one_at_a_time):
+        assert got == pytest.approx(want, abs=1e-5), (
+            f"{cls_name}.batch_predict disagrees with predict: {batched} vs {one_at_a_time}"
+        )

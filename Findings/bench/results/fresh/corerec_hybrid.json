@@ -1,0 +1,18 @@
+{
+  "framework": "corerec_hybrid",
+  "model": "ALS_SAR_RRF",
+  "dataset": "ml100k",
+  "size": 99968,
+  "n_users": 943,
+  "n_items": 1650,
+  "device": "cpu",
+  "fit_time_s": 9.2743,
+  "recommend_latency_ms_per_user": 2.5634,
+  "peak_mem_mb": 294.8,
+  "Recall@10": 0.23823,
+  "NDCG@10": 0.44877,
+  "HitRate@10": 0.93333,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

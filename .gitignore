@@ -269,6 +269,8 @@ admin
 !sample_data/**/*.csv
 !tests/**/*.csv
 !datasets/**/*.csv
+# Benchmark results are small published artifacts, not datasets.
+!Findings/bench/results/**/*.csv
 
 # Coverage / build artifacts
 htmlcov/

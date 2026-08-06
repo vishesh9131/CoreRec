@@ -28,8 +28,16 @@ EPOCHS = 20        # shared training budget for iterative models
 
 
 def peak_mem_mb():
-    # ru_maxrss is KB on Linux
-    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
+    """Peak RSS of this process, in MB.
+
+    ru_maxrss is kilobytes on Linux but bytes on macOS/BSD. Assuming kilobytes
+    everywhere reported 138204 "MB" for a run that actually peaked near 135MB,
+    so any memory column produced on a Mac was inflated 1024x.
+    """
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if sys.platform == "darwin":
+        return round(peak / (1024.0 * 1024.0), 1)
+    return round(peak / 1024.0, 1)
 
 
 # --------------------------------------------------------------------------- #
@@ -256,13 +264,45 @@ def run_corerec(model_name, data):
                 return list(model.batch_predict([(int(u), int(i)) for u, i in pairs]))
         return score_fn, rating_fn, fit_t
 
-    if model_name == "NCF":
+    if model_name == "ALS":
+        from corerec.engines.matrix_factorization import ALS as CoreALS
+        model = CoreALS(factors=RANK_DIM, iterations=EPOCHS)
+        t0 = time.perf_counter()
+        model.fit(user_ids=uid, item_ids=iid, ratings=rt)
+        fit_t = time.perf_counter() - t0
+
+        def score_fn(u):
+            out = np.full(n_items, -np.inf)
+            try:
+                recs = model.recommend(int(u), top_k=n_items)
+            except Exception:
+                return out
+            for rank, r in enumerate(recs):
+                i, sc = (int(r[0]), float(r[1])) if isinstance(r, (tuple, list)) else (int(r), float(len(recs) - rank))
+                if 0 <= i < n_items:
+                    out[i] = sc
+            return out
+        return score_fn, None, fit_t
+
+    if model_name in ("NCF", "NCF_binary"):
         import pandas as pd
         from corerec.engines.collaborative import NCF
         model = NCF(model_type="NeuMF", gmf_embedding_dim=RANK_DIM,
                     mlp_embedding_dim=RANK_DIM, num_epochs=EPOCHS,
                     learning_rate=0.001, verbose=False, seed=42, device=DEVICE)
+        # NCF.fit labels every observed interaction 1.0 and samples negatives
+        # (see ncf.py: ratings_parts = [np.ones(len(pos_u))]), so the rating
+        # column is discarded -- a 1-star rating trains as a positive. Passing
+        # binarized targets changes nothing; it was verified to give an
+        # identical NDCG to five decimals.
+        #
+        # implicit's ALS, by contrast, feeds rating in as confidence, so it
+        # weights a 5-star interaction 5x a 1-star one. It is using signal NCF
+        # throws away. NCF_binary keeps only rating>=4 rows as positives, which
+        # is the same relevance definition the metric uses.
         df = pd.DataFrame({"user_id": uid, "item_id": iid, "rating": rt})
+        if model_name.endswith("_binary"):
+            df = df[rt >= 4.0].reset_index(drop=True)
         t0 = time.perf_counter()
         model.fit(df)
         fit_t = time.perf_counter() - t0
@@ -297,11 +337,11 @@ def run_corerec(model_name, data):
             return np.asarray(model.batch_predict([(int(u), int(i)) for i in items]), float)
         return score_fn, None, fit_t
 
-    if model_name == "SAR":
+    if model_name in ("SAR", "SAR_cosine"):
         import pandas as pd
         from corerec.engines.collaborative import SAR
         df = pd.DataFrame({"userID": uid, "itemID": iid, "rating": rt})
-        model = SAR(similarity_type="jaccard")
+        model = SAR(similarity_type="cosine" if model_name.endswith("_cosine") else "jaccard")
         t0 = time.perf_counter()
         model.fit(df)
         fit_t = time.perf_counter() - t0
@@ -328,12 +368,127 @@ def run_corerec(model_name, data):
     raise ValueError(model_name)
 
 
+
+# --------------------------------------------------------------------------- #
+# Rank fusion
+# --------------------------------------------------------------------------- #
+def rrf_fuse(score_fns, n_items, k=60):
+    """Reciprocal Rank Fusion over several scorers.
+
+    RRF(i) = sum_s 1 / (k + rank_s(i)). Deliberately parameter-free apart from
+    the conventional k=60: there is no weight to tune, so a fused result cannot
+    be quietly optimised against the test set the way a weighted blend could.
+
+    Fusion is where a library with a pipeline layer has a real structural
+    advantage. implicit ships excellent individual algorithms and no way to
+    combine them; anything like this has to be hand-rolled by the user. The
+    implicit_ensemble entry below hand-rolls exactly that, so the comparison is
+    pipeline-vs-pipeline rather than pipeline-vs-single-model.
+    """
+    def fused(u):
+        total = np.zeros(n_items)
+        for fn in score_fns:
+            scores = np.asarray(fn(u), dtype=float)
+            order = np.argsort(-scores)          # best first
+            ranks = np.empty(n_items, dtype=float)
+            ranks[order] = np.arange(n_items)    # 0-based rank per item
+            total += 1.0 / (k + ranks)
+        return total
+    return fused
+
+
+def run_corerec_hybrid(model_name, data):
+    """CoreRec's own decorrelated signals, fused: ALS latent factors + SAR item-item."""
+    import pandas as pd
+    from corerec.engines.matrix_factorization import ALS as CoreALS
+    from corerec.engines.collaborative import SAR
+
+    tr = data["train"]
+    uid = tr["uidx"].values
+    iid = tr["iidx"].values
+    rt = tr["rating"].astype(float).values
+    n_items = data["n_items"]
+
+    t0 = time.perf_counter()
+    als = CoreALS(factors=RANK_DIM, iterations=EPOCHS)
+    als.fit(user_ids=uid, item_ids=iid, ratings=rt)
+
+    # cosine, matching the CosineRecommender implicit fuses with, so the two
+    # ensembles differ in implementation rather than in configuration. On this
+    # split cosine also beats jaccard standalone (0.3955 vs 0.3730); jaccard was
+    # simply the wrong default to compare against a cosine baseline.
+    sar = SAR(similarity_type="cosine")
+    sar.fit(pd.DataFrame({"userID": uid, "itemID": iid, "rating": rt}))
+    fit_t = time.perf_counter() - t0
+
+    def als_scores(u):
+        out = np.full(n_items, -np.inf)
+        try:
+            recs = als.recommend(int(u), top_k=n_items)
+        except Exception:
+            return out
+        for rank, r in enumerate(recs):
+            i, sc = (int(r[0]), float(r[1])) if isinstance(r, (tuple, list)) else (int(r), float(len(recs) - rank))
+            if 0 <= i < n_items:
+                out[i] = sc
+        return out
+
+    def sar_scores(u):
+        out = np.full(n_items, -np.inf)
+        try:
+            recs = sar.recommend(user_id=int(u), top_k=n_items)
+        except Exception:
+            return out
+        for rank, r in enumerate(recs):
+            i, sc = (int(r[0]), float(r[1])) if isinstance(r, (tuple, list)) else (int(r), float(len(recs) - rank))
+            if 0 <= i < n_items:
+                out[i] = sc
+        return out
+
+    return rrf_fuse([als_scores, sar_scores], n_items), None, fit_t
+
+
+def run_implicit_ensemble(model_name, data):
+    """The same fusion, hand-rolled over implicit's models -- the fair counterpart."""
+    from scipy.sparse import csr_matrix
+    import implicit
+
+    tr = data["train"]
+    n_u, n_i = data["n_users"], data["n_items"]
+    ui = csr_matrix((tr["rating"].astype(float).values,
+                     (tr["uidx"].values, tr["iidx"].values)), shape=(n_u, n_i))
+
+    t0 = time.perf_counter()
+    als = implicit.als.AlternatingLeastSquares(
+        factors=RANK_DIM, iterations=EPOCHS, regularization=0.01,
+        random_state=42, use_gpu=False)
+    als.fit(ui, show_progress=False)
+
+    knn = implicit.nearest_neighbours.CosineRecommender(K=20)
+    knn.fit(ui, show_progress=False)
+    fit_t = time.perf_counter() - t0
+
+    U = np.asarray(als.user_factors)
+    V = np.asarray(als.item_factors)
+    sim = knn.similarity
+
+    def als_scores(u):
+        return U[u] @ V.T
+
+    def knn_scores(u):
+        return np.asarray(ui[u].dot(sim).todense()).ravel()
+
+    return rrf_fuse([als_scores, knn_scores], n_i), None, fit_t
+
+
 DISPATCH = {
     "cornac": run_cornac,
     "implicit": run_implicit,
     "lightfm": run_lightfm,
     "surprise": run_surprise,
     "corerec": run_corerec,
+    "corerec_hybrid": run_corerec_hybrid,
+    "implicit_ensemble": run_implicit_ensemble,
 }
 
 

@@ -1,0 +1,18 @@
+{
+  "framework": "corerec",
+  "model": "SAR_cosine",
+  "dataset": "ml100k",
+  "size": 99968,
+  "n_users": 943,
+  "n_items": 1650,
+  "device": "cpu",
+  "fit_time_s": 0.1812,
+  "recommend_latency_ms_per_user": 1.2574,
+  "peak_mem_mb": 303.3,
+  "Recall@10": 0.20775,
+  "NDCG@10": 0.39554,
+  "HitRate@10": 0.89,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

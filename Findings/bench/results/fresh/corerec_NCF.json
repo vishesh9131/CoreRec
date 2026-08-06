@@ -1,0 +1,18 @@
+{
+  "framework": "corerec",
+  "model": "NCF",
+  "dataset": "ml100k",
+  "size": 99968,
+  "n_users": 943,
+  "n_items": 1650,
+  "device": "cpu",
+  "fit_time_s": 308.0597,
+  "recommend_latency_ms_per_user": 6.8279,
+  "peak_mem_mb": 388.0,
+  "Recall@10": 0.17748,
+  "NDCG@10": 0.33429,
+  "HitRate@10": 0.87667,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}
