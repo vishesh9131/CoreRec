@@ -1,9 +1,8 @@
 """Regression tests for defects found while writing BENCHMARKS.md.
 
 Each test pins down one bug that was silent before: SAR's unbounded similarity
-types scoring near-random with no warning, and GNNRec redoing dense O(N^2)
-graph convolution on every mini-batch instead of caching the (fixed) graph
-structure once. See BENCHMARKS.md and the commit that introduced this file for
+types scoring near-random with no warning, and GNNRec rebuilding the (fixed)
+graph structure on every mini-batch instead of caching it once. See BENCHMARKS.md and the commit that introduced this file for
 the measurements that motivated each fix.
 """
 
@@ -12,6 +11,7 @@ import warnings
 
 import numpy as np
 import pytest
+import torch
 
 from corerec.engines.collaborative import SAR
 
@@ -61,19 +61,21 @@ def test_sar_no_warning_for_bounded_similarity(similarity_type):
 
 
 # --------------------------------------------------------------------------- #
-# GNNRec: graph propagation must use the cached sparse Laplacian, not rebuild
-# a dense (N+M)x(N+M) matrix (plus a fresh identity matrix) on every call.
+# GNNRec: graph propagation must reuse a cached L / L+I rather than
+# reconstructing the identity matrix on every call.
 # --------------------------------------------------------------------------- #
 
 
-def test_gnnrec_laplacian_is_cached_sparse():
-    """The propagation layers must reuse one sparse L / L+I, not rebuild per call.
+def test_gnnrec_caches_laplacian_and_identity():
+    """L and L+I must be built once per model, not rebuilt inside forward().
 
-    Previously EmbeddingPropagationLayer.forward did `L + torch.eye(...)` and two
-    dense (N+M)x(N+M) @ (N+M)xd matmuls on every call -- every mini-batch, not
-    once per epoch. On ML-100K (2593 nodes, ~2.4% graph density) with this
-    class's defaults that was ~7,800 calls redoing ~40 TFLOPs of work over a
-    graph that's 97.6% zeros, and GNNRec had to be killed after 41+ minutes.
+    EmbeddingPropagationLayer.forward used to do `L + torch.eye(...)` on every
+    call -- every mini-batch, ~7,800 times over a 20-epoch ML-100K run. Both are
+    fixed for the life of the model, so both are cached at build time.
+
+    Deliberately does NOT assert sparsity: sparse was measured at 14.3s against
+    8.1s dense for a 3-epoch fit, so the dense form is the correct one here.
+    See the comment in GNNModel.__init__.
     """
     from corerec.engines.gnnrec import GNNRec
 
@@ -85,14 +87,16 @@ def test_gnnrec_laplacian_is_cached_sparse():
     model = GNNRec(embedding_dim=16, num_gnn_layers=2, epochs=1, batch_size=64, verbose=False)
     model.fit(user_ids=u, item_ids=i, ratings=r)
 
-    assert model.model.laplacian.is_sparse, "L should be cached as a sparse tensor"
-    assert model.model.laplacian_plus_i.is_sparse, "L+I should be cached as a sparse tensor"
-    # Identity is only ever added once, at build time -- not reconstructed per call.
-    assert model.model.laplacian_plus_i is model.model.laplacian_plus_i
+    assert model.model.laplacian is not None
+    assert model.model.laplacian_plus_i is not None
+    # L+I must actually be L plus an identity, computed once.
+    n = model.model.laplacian.size(0)
+    expected = model.model.laplacian + torch.eye(n, device=model.model.laplacian.device)
+    assert torch.allclose(model.model.laplacian_plus_i, expected)
 
 
-def test_gnnrec_recommendations_are_sane_after_sparse_fix():
-    """Switching dense matmul for sparse must not change what the model predicts."""
+def test_gnnrec_recommendations_are_sane():
+    """Caching the graph must not change what the model predicts."""
     from corerec.engines.gnnrec import GNNRec
 
     rng = np.random.default_rng(1)
@@ -109,9 +113,9 @@ def test_gnnrec_recommendations_are_sane_after_sparse_fix():
     assert len(set(recs)) == 5, f"duplicate recommendations: {recs}"
 
 
-def test_gnnrec_save_load_preserves_sparse_laplacian():
+def test_gnnrec_save_load_preserves_laplacian():
     """_build_model runs on both the fit() and load() paths; both must produce
-    a working sparse L/L+I, and a reloaded model must recommend what the
+    a working cached L/L+I, and a reloaded model must recommend what the
     original did."""
     import os
     import tempfile
@@ -132,11 +136,11 @@ def test_gnnrec_save_load_preserves_sparse_laplacian():
         model.save(path)
         reloaded = GNNRec.load(path)
 
-    assert reloaded.model.laplacian.is_sparse
+    assert reloaded.model.laplacian is not None
     assert reloaded.recommend(u[0], top_k=5) == before
 
 
-def test_gnnrec_forward_is_fast_relative_to_a_dense_baseline():
+def test_gnnrec_forward_is_fast():
     """One epoch on a small synthetic graph should complete well under a second.
 
     Not a tight perf assertion (CI hardware varies) -- just a floor that would
@@ -157,6 +161,6 @@ def test_gnnrec_forward_is_fast_relative_to_a_dense_baseline():
 
     assert elapsed < 10.0, (
         f"one epoch on {len(set(u))} users x {len(set(i))} items took {elapsed:.1f}s; "
-        "expected well under a second with cached sparse propagation -- check "
+        "expected well under a second with cached propagation -- check "
         "whether GNNModel is rebuilding L/L+I per forward() call again"
     )
