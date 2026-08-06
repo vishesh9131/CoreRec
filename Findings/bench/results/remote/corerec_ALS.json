@@ -1,0 +1,18 @@
+{
+  "framework": "corerec",
+  "model": "ALS",
+  "dataset": "ml100k",
+  "size": 99968,
+  "n_users": 943,
+  "n_items": 1650,
+  "device": "cpu",
+  "fit_time_s": 5.1251,
+  "recommend_latency_ms_per_user": 1.3203,
+  "peak_mem_mb": 150.3,
+  "Recall@10": 0.23451,
+  "NDCG@10": 0.41681,
+  "HitRate@10": 0.93,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

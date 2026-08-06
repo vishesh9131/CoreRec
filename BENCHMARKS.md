@@ -50,8 +50,14 @@ Sorted by NDCG@10. Fusion rows combine two models with Reciprocal Rank Fusion
 | corerec | NCF † | 0.3359 | 0.1766 | 162.10 | 4.46 |
 | corerec | NCF_binary † | 0.3236 | 0.1606 | 83.50 | 3.91 |
 | implicit | BPR † | 0.3069 | 0.1360 | 1.48 | 0.07 |
+| corerec | GNNRec | *did not complete* | — | >3720 | — |
 
 † Not reproducible run-to-run — see "Which of these numbers are stable" below.
+
+GNNRec was stopped after 62 minutes on one BLAS thread, where LightGCN finishes
+the same data in 151s and NCF in 162s. It is listed rather than dropped: a model
+that cannot train on the smallest standard benchmark within an hour is a result.
+Under looser conditions it has scored 0.334 — below a 0.08-second ItemKNN.
 
 ## Which of these numbers are stable
 

@@ -1,0 +1,13 @@
+{
+  "framework": "corerec",
+  "model": "GNNRec",
+  "dataset": "ml100k",
+  "status": "did-not-complete",
+  "wall_clock_limit_s": 3720,
+  "threads": 1,
+  "note": "Stopped after 62 minutes on ML-100K (100k interactions, 20 epochs, one BLAS thread) running the shipped dense+cached propagation. Under identical conditions LightGCN finishes the same data in 151s and NCF in 162s. An earlier attempt on a laptop was killed at 41 minutes. Recorded as a non-completion rather than omitted from the table: a model that cannot finish the smallest standard benchmark within an hour is itself a result. When it has finished under looser conditions it scored NDCG@10 0.334, below implicit's ItemKNN at 0.386, which trains in 0.08s.",
+  "NDCG@10": null,
+  "Recall@10": null,
+  "fit_time_s": null,
+  "recommend_latency_ms_per_user": null
+}
