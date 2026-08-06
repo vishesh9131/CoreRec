@@ -15,6 +15,9 @@ networkx>=2.5.0,<4.0.0
 # Utilities
 tqdm>=4.62.0,<5.0.0
 argcomplete>=3.0.0,<4.0.0
+# corerec/utils/__init__.py -> .config -> import yaml, so this is needed for any
+# `from corerec.utils...` import, not just for reading config files.
+pyyaml>=5.4
 
 # Optional but commonly used
 gdown>=4.0.0,<5.0.0  # For dataset downloads

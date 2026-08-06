@@ -80,7 +80,7 @@ model.fit(user_ids=user_ids, item_ids=item_ids, ratings=r)
 recs = model.recommend(user_id=1, top_k=10)
 print(recs)
 
-# 4. Serve it over HTTP
+# 4. Serve it over HTTP   (needs: pip install corerec[serving])
 from corerec.serving import ModelServer
 ModelServer(model).start()   # POST /recommend on :8000
 ```
