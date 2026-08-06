@@ -76,10 +76,6 @@ def __getattr__(name):
             globals()[name] = None
             return None
     
-    if name == "sandbox":
-        globals()["sandbox"] = SandboxAccess()
-        return globals()["sandbox"]
-    
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -87,41 +83,6 @@ def __dir__():
     return list(__all__)
 
 
-# ============================================================================
-# Sandbox Access
-# ============================================================================
-
-class SandboxAccess:
-    """Gateway to experimental methods under development."""
-    
-    @staticmethod
-    def list_available():
-        """List all sandbox methods."""
-        return [
-            "Matrix Factorization: SVD, ALS, NMF, PMF, BPR",
-            "Neural Networks: DeepFM, DCN, AutoInt, PNN, xDeepFM",
-            "Sequential: GRU, LSTM, Caser, SASRec, NextItNet",
-            "Attention: Transformer-based, DIEN, DIN, BST",
-            "Graph: DeepWalk, GNN variants",
-            "Variational: VAE, BiVAE, CVAE",
-            "Bayesian: Bayesian MF, MCMC methods",
-            "Others: RLRMC, SLI, SUM, etc.",
-            "",
-            "Total: 45+ methods in sandbox",
-            "Import from: corerec.sandbox.collaborative"
-        ]
-    
-    @staticmethod
-    def get_info(method_name):
-        """Get info about a sandbox method."""
-        info_map = {
-            "DeepFM": "Deep Factorization Machine - combines FM with deep learning",
-            "DCN": "Deep & Cross Network - explicit feature crossing",
-            "SASRec": "Self-Attentive Sequential Rec - transformer for sequences",
-            "GRU": "GRU-based sequential recommendation",
-            "DeepWalk": "Random walk based graph embeddings",
-        }
-        return info_map.get(method_name, "No info available. Check sandbox docs.")
 
 
 # ============================================================================
@@ -140,8 +101,6 @@ __all__ = [
     # Legacy
     "RBM",
     "GeoMLC",
-    # Sandbox
-    "sandbox",
 ]
 
 

@@ -38,58 +38,17 @@ jobs:
           pip install -e ".[dev,serving]"
           pip install pytest pytest-cov
 
-      - name: Run production model tests
-        run: |
-          python -m pytest tests/test_all_production_models.py tests/test_api_uniformity.py \
-            tests/test_production_contract.py tests/test_safe_persistence.py \
-            tests/test_api_modules.py -v \
-            --tb=short --strict-markers
+      - name: Install faiss (serving tests fall back to brute force without it)
+        run: pip install faiss-cpu || echo "faiss-cpu unavailable; VectorIndex uses brute-force fallback"
 
-      - name: Deep-model guardrails (collapse + rating-task persistence)
-        # Fast, always-on regression guard for the sigmoid+BCE-on-all-positives
-        # collapse and the rating-task save/load round-trip. The slower NDCG-floor
-        # tests in the same file auto-skip when the ML-100K dataset is absent.
+      # One run over the whole suite. Previously this was eight overlapping steps
+      # ending in a full run that --ignore'd tests/unionizedFilterEngine, which is
+      # where 20 tests importing non-existent modules were hiding. No ignores now:
+      # if a test is here, it runs, and a red build means something is actually broken.
+      - name: Run test suite
         run: |
-          python -m pytest tests/test_benchmark_floors.py \
-            -k "collapse or rating_task or persistence" \
-            -v --tb=short --no-cov
-
-      - name: Online serving engine (ANN + freshness + cold-start)
-        # Exercises corerec.serving.OnlineRecommender: ANN recommend, graceful
-        # cold-start fallback, and incremental add/fold-in without retraining.
-        run: |
-          pip install faiss-cpu || echo "faiss-cpu unavailable; VectorIndex uses brute-force fallback"
-          python -m pytest tests/test_online_serving.py -v --tb=short --no-cov
-
-      - name: Deep CTR model family contract
-        # Every deep CTR / feature-interaction model (FM, AFM, NFM, DeepFM, DCN,
-        # AutoInt, xDeepFM, FiBiNet, PNN, WideDeep) must pass the unified contract:
-        # fit (no collapse) -> predict -> recommend(top_k) -> save/load parity.
-        run: |
-          python -m pytest tests/test_deep_ctr_models.py -v --tb=short --no-cov
-
-      - name: Sequential model family contract
-        # GRU4Rec, Caser, BST, DIN, DIEN: same unified contract on sequential data.
-        run: |
-          python -m pytest tests/test_sequential_models.py -v --tb=short --no-cov
-
-      - name: Classic / VAE / graph / MF model family contract
-        # ItemKNN, UserKNN, EASE, SLIM, MultVAE, MultiDAE, NGCF, ALS, Item2Vec.
-        run: |
-          python -m pytest tests/test_classic_vae_graph_models.py tests/test_mf_models.py \
-            -v --tb=short --no-cov
-
-      - name: Run platform integration tests
-        run: |
-          python -m pytest tests/test_pipeline_integration.py tests/test_serving_smoke.py \
-            tests/test_platform_stages.py -v --tb=short
-
-      - name: Run full test suite
-        run: |
-          python -m pytest tests/ -v --tb=short \
-            --ignore=tests/unionizedFilterEngine \
-            --cov=corerec --cov-fail-under=40 \
-            -q
+          python -m pytest tests/ -v --tb=short --strict-markers \
+            --cov=corerec --cov-fail-under=40
 
   # ------------------------------------------------------------------ #
   # Lint – fast feedback on code quality                                #

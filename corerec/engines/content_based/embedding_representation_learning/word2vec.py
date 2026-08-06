@@ -1,9 +1,7 @@
 # corerec/engines/content_based/embedding_representation_learning/word2vec.py
 
 import torch
-
-# import torch.nn as nn
-import corerec.torch_nn as nn
+import torch.nn as nn
 import torch.optim as optim
 from typing import List, Dict, Any
 import logging

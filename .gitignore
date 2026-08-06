@@ -252,3 +252,27 @@ docs/images/.DS_Store
 /image
 docs/images/.DS_Store
 admin
+
+# Phase 0: model checkpoints and datasets never belong in the repo.
+# Examples download their data at runtime instead.
+*.pt
+*.pth
+*.pkl
+*.npz
+*.npy
+*.h5
+*.ckpt
+*.safetensors
+# Datasets: small test fixtures under sample_data/ and tests/ are kept (see negations).
+*.csv
+*.dat
+!sample_data/**/*.csv
+!tests/**/*.csv
+!datasets/**/*.csv
+
+# Coverage / build artifacts
+htmlcov/
+.coverage
+dist/
+build/
+*.egg-info/

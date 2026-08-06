@@ -31,40 +31,31 @@ from corerec.async_ddp import setup, cleanup
 # Models
 from corerec.Tmodel import GraphTransformerV2
 
-# Graph convolutions
-from corerec.cr_pkg.gat_conv import GATConv
-from corerec.cr_pkg.gcn_conv import GCNConv
-from corerec.cr_pkg.han_conv import HANConv
-from corerec.cr_pkg.sage_conv import SAGEConv
+# Graph convolutions: import from torch_geometric directly if you need them.
+# corerec used to ship copies of these layers, which pulled in an undeclared
+# torch_geometric dependency and broke `import corerec.core_rec` on a clean install.
 
 # Training and prediction
 from corerec.train import train_model
 from corerec.predict import predict, explainable_predict
 from corerec.metrics import jaccard_similarity, adamic_adar_index, aaj_accuracy
 
-# Data utilities
-from corerec.cr_utility.dataloader import DataLoader
+# Dataset/DataLoader come from torch.utils.data (imported above).
 
-# Note: GraphDataset may need to be imported differently depending on
-# implementation
-try:
-    from corerec.cr_utility.dataset import GraphDataset
-except ImportError:
-    # GraphDataset might be defined elsewhere or needs custom implementation
-    GraphDataset = None
-
-# Optimizers (Boosters)
-from corerec.cr_boosters.adam import Adam
-from corerec.cr_boosters.nadam import NAdam
-from corerec.cr_boosters.adamax import Adamax
-from corerec.cr_boosters.optimizer import Optimizer
-from corerec.cr_boosters.adadelta import Adadelta
-from corerec.cr_boosters.adagrad import Adagrad
-from corerec.cr_boosters.asgd import ASGD
-from corerec.cr_boosters.lbfgs import LBFGS
-from corerec.cr_boosters.rmsprop import RMSprop
-from corerec.cr_boosters.sgd import SGD
-from corerec.cr_boosters.sparse_adam import SparseAdam
+# Optimizers: re-exported from torch.optim.
+from torch.optim import (
+    ASGD,
+    LBFGS,
+    SGD,
+    Adadelta,
+    Adagrad,
+    Adam,
+    Adamax,
+    NAdam,
+    Optimizer,
+    RMSprop,
+    SparseAdam,
+)
 
 
 # __all__ export list for clean imports
@@ -79,14 +70,8 @@ __all__ = [
     # Data utilities
     "Dataset",
     "DataLoader",
-    "GraphDataset",
     # Models
     "GraphTransformerV2",
-    # Graph convolutions
-    "GATConv",
-    "GCNConv",
-    "HANConv",
-    "SAGEConv",
     # Training
     "train_model",
     # Prediction

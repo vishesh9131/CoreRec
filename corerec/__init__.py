@@ -64,7 +64,6 @@ def __getattr__(name):
         "multimodal",
         "embeddings",
         "explanation",
-        "sandbox",
         "api",
         "hybrid",
         "serving",
@@ -183,10 +182,14 @@ def __getattr__(name):
             val = getattr(mod, attr_name)
             globals()[name] = val
             return val
-        except (ImportError, AttributeError):
-            globals()[name] = None
-            return None
-    
+        except (ImportError, AttributeError) as exc:
+            # Previously this cached None and returned it, so `corerec.ColdStart`
+            # handed back None and blew up somewhere else with a confusing
+            # AttributeError on NoneType. Fail here, where the cause is visible.
+            raise AttributeError(
+                f"{__name__}.{name} is unavailable: importing {mod_path} failed ({exc})"
+            ) from exc
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -225,58 +228,15 @@ __all__ = [
     "multimodal",
     "embeddings",
     "explanation",
-    "sandbox",
     "hybrid",
     "serving",
     # Base classes
     "BaseRecommender",
     "BaseCorerec",
-    # Learning Paradigms
-    "TransferLearning",
-    "ZeroShot",
-    "MetaLearning",
-    # Multi-modal and Cross-domain
-    "MultiModal",
-    "CrossDomain",
-    "CrossLingual",
-    # Other Approaches
-    "RuleBased",
-    "SentimentAnalysis",
-    "OntologyBased",
-    # Miscellaneous
-    "FeatureSelection",
-    "NoiseHandling",
-    "ColdStart",
-    # CNN
-    "CNN",
-    # Performance
-    "ScalableAlgorithms",
-    "FeatureExtraction",
-    "LoadBalancing",
-    # Context
-    "ContextAware",
-    "UserProfiling",
-    "ItemProfiling",
-    # Probabilistic
-    "LSA",
-    # Special
-    "InteractiveFiltering",
-    "DynamicFiltering",
-    # Fairness
-    "Explainable",
-    "FairnessAware",
-    "PrivacyPreserving",
-    # UPPERCASE aliases
-    "LEA_META_LEARNING",
-    "MUL_MULTI_MODAL",
-    "MUL_CROSS_DOMAIN",
-    "MUL_CROSS_LINGUAL",
-    "OTH_RULE_BASED",
-    "OTH_SENTIMENT_ANALYSIS",
-    "OTH_ONTOLOGY_BASED",
-    "MIS_FEATURE_SELECTION",
-    "MIS_NOISE_HANDLING",
-    "MIS_COLD_START",
+    # NOTE: 35 names were removed here (TransferLearning, ZeroShot, MetaLearning,
+    # MultiModal, CrossDomain, ColdStart, FairnessAware, the LEA_/MUL_/OTH_/MIS_
+    # aliases, ...). Every one of them resolved to None: the modules behind them
+    # do not exist. They are gone from __all__ rather than re-listed as broken.
     # Constants
     "DEFAULT_USER_COL",
     "DEFAULT_ITEM_COL",
