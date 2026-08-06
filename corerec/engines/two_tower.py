@@ -17,7 +17,7 @@ from pathlib import Path
 import pickle
 import logging
 
-from corerec.api.base_recommender import BaseRecommender
+from corerec.api.base_recommender import BaseRecommender, normalize_interactions
 from corerec.api.exceptions import ModelNotFittedError
 from corerec.core.towers import UserTower, ItemTower
 
@@ -163,28 +163,41 @@ class TwoTower(BaseRecommender):
         self.item_map = {}
         self.reverse_item_map = {}
         self.item_embeddings_cache = None  # for fast retrieval
+        self._seen_by_user = {}  # user_id -> set of item indices seen during fit
         self.is_fitted = False
     
-    def fit(self, user_ids: List, item_ids: List, interactions: np.ndarray, 
+    def fit(self, user_ids: List, item_ids: List, interactions: Optional[np.ndarray] = None,
             user_features: Optional[np.ndarray] = None,
             item_features: Optional[np.ndarray] = None,
             validation_split: float = 0.1):
         """
         Train the two-tower model.
-        
-        user_ids: list of user identifiers
-        item_ids: list of item identifiers
-        interactions: matrix [n_users, n_items] with ratings/clicks
+
+        Accepts either:
+          fit(user_ids, item_ids, interactions)  # [n_users, n_items] matrix
+          fit(user_ids, item_ids, ratings)       # one entry per interaction
+
         user_features: optional [n_users, user_dim] feature matrix
         item_features: optional [n_items, item_dim] feature matrix
         """
-        
+
         self.log.info(f"Fitting {self.name} model...")
-        
+
+        user_ids, item_ids, interactions = normalize_interactions(
+            user_ids, item_ids, interactions
+        )
+
         # build mappings
         self.user_map = {uid: idx for idx, uid in enumerate(user_ids)}
         self.item_map = {iid: idx for idx, iid in enumerate(item_ids)}
         self.reverse_item_map = {idx: iid for iid, idx in self.item_map.items()}
+
+        # What each user interacted with, by item index, so recommend(exclude_seen=True)
+        # has something to exclude.
+        rows, cols = np.nonzero(np.asarray(interactions) > 0)
+        self._seen_by_user = {}
+        for r, c in zip(rows, cols):
+            self._seen_by_user.setdefault(user_ids[r], set()).add(int(c))
         
         n_users = len(user_ids)
         n_items = len(item_ids)
@@ -323,21 +336,26 @@ class TwoTower(BaseRecommender):
             pairs.append((u, i))
         return pairs
     
-    def recommend(self, user_id: Any, top_k: int = 10, exclude_seen: bool = True) -> List[Any]:
+    def recommend(self, user_id: Any, top_k: int = 10,
+                  exclude_items: Optional[List[Any]] = None,
+                  exclude_seen: bool = True, **kwargs) -> List[Any]:
         """
         Generate recommendations for a user.
-        
+
+        exclude_items: item IDs to keep out of the results
+        exclude_seen: also drop items this user interacted with during fit
+
         Returns list of item IDs ranked by score.
         """
         if not self.is_fitted:
             self._check_fitted()
-        
+
         if user_id not in self.user_map:
             self.log.warning(f"Unknown user: {user_id}")
             return []
-        
+
         user_idx = self.user_map[user_id]
-        
+
         # encode user
         # (in practice, you'd pass actual features here)
         user_feat = torch.zeros(1, self.user_input_dim, device=self.device)
@@ -349,11 +367,27 @@ class TwoTower(BaseRecommender):
 
         # score all items via cached embeddings
         scores = np.dot(user_emb, self.item_embeddings_cache.T).flatten()
-        
-        # get top k
-        top_indices = np.argsort(scores)[::-1][:top_k]
-        recommendations = [self.reverse_item_map[idx] for idx in top_indices if idx in self.reverse_item_map]
-        
+
+        # Build the set of item *indices* to drop. Both exclusions were
+        # previously ignored: exclude_seen was accepted and never read, and
+        # exclude_items was missing entirely even though BaseRecommender
+        # declares it -- so ModelServer's /recommend route raised TypeError
+        # against this model.
+        blocked = set()
+        if exclude_items:
+            blocked.update(self.item_map[i] for i in exclude_items if i in self.item_map)
+        if exclude_seen:
+            blocked.update(self._seen_by_user.get(user_id, ()))
+
+        ranked = np.argsort(scores)[::-1]
+        recommendations = []
+        for idx in ranked:
+            if len(recommendations) == top_k:
+                break
+            if idx in blocked or idx not in self.reverse_item_map:
+                continue
+            recommendations.append(self.reverse_item_map[idx])
+
         return recommendations
     
     def get_user_embedding(self, user_id: Any) -> np.ndarray:
@@ -412,6 +446,12 @@ class TwoTower(BaseRecommender):
         }
         state = {
             "is_fitted": self.is_fitted,
+            # Stored as [user_id, [item_idx, ...]] pairs rather than a dict so the
+            # user IDs survive a JSON round-trip without being coerced to strings.
+            # Without this, exclude_seen=True silently stops excluding after load.
+            "seen_by_user": [
+                [u, sorted(int(i) for i in idxs)] for u, idxs in self._seen_by_user.items()
+            ],
             **save_map_state(
                 user_map=self.user_map,
                 item_map=self.item_map,
@@ -436,6 +476,7 @@ class TwoTower(BaseRecommender):
             "item_embeddings_cache": self.item_embeddings_cache,
             "config": config,
             "is_fitted": self.is_fitted,
+            "seen_by_user": self._seen_by_user,
         }
         torch.save(legacy, path)
 
@@ -453,6 +494,9 @@ class TwoTower(BaseRecommender):
             instance.item_map = maps["item_map"]
             instance.reverse_item_map = maps["reverse_item_map"]
             instance.is_fitted = state.get("is_fitted", True)
+            instance._seen_by_user = {
+                u: {int(i) for i in idxs} for u, idxs in state.get("seen_by_user", [])
+            }
             if arrays and arrays.get("item_embeddings_cache") is not None:
                 instance.item_embeddings_cache = arrays["item_embeddings_cache"]
 
@@ -504,6 +548,7 @@ class TwoTower(BaseRecommender):
         instance.reverse_item_map = state["reverse_item_map"]
         instance.item_embeddings_cache = state["item_embeddings_cache"]
         instance.is_fitted = state["is_fitted"]
+        instance._seen_by_user = state.get("seen_by_user", {})
 
         if state["model_state_dict"] is not None:
             instance.model = TwoTowerModel(

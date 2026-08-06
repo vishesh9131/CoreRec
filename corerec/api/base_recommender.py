@@ -649,3 +649,46 @@ class BaseRecommender(ABC):
     def __repr__(self) -> str:
         """String representation."""
         return f"{self.__class__.__name__}(name='{self.name}', fitted={self.is_fitted})"
+
+
+def normalize_interactions(user_ids, item_ids, interactions):
+    """Accept either fit() calling convention and return (users, items, matrix).
+
+    Some models (two-tower, BERT4Rec) were written against a dense
+    [n_users, n_items] matrix, while the rest of the zoo and the README's Core
+    API section use the triple fit(user_ids, item_ids, ratings) with one entry
+    per interaction. Models that call this support both.
+
+    Returns unique user/item ID lists alongside the pivoted matrix.
+    """
+    users, items = list(user_ids), list(item_ids)
+    arr = None if interactions is None else np.asarray(interactions)
+
+    # Matrix form: one row per user, one column per item.
+    if arr is not None and arr.ndim == 2 and arr.shape == (len(users), len(items)):
+        return users, items, arr
+
+    # Triple form: user_ids/item_ids are parallel, one entry per interaction.
+    if len(users) != len(items):
+        raise ValueError(
+            "fit expects either a [n_users, n_items] interaction matrix, or "
+            "parallel user_ids/item_ids with one entry per interaction; got "
+            f"{len(users)} user_ids and {len(items)} item_ids."
+        )
+    if arr is None:
+        ratings = np.ones(len(users), dtype=np.float32)  # implicit feedback
+    else:
+        ratings = arr.astype(np.float32).ravel()
+        if len(ratings) != len(users):
+            raise ValueError(
+                f"Got {len(ratings)} ratings for {len(users)} interactions."
+            )
+
+    uniq_users = list(dict.fromkeys(users))
+    uniq_items = list(dict.fromkeys(items))
+    u_pos = {u: i for i, u in enumerate(uniq_users)}
+    i_pos = {v: i for i, v in enumerate(uniq_items)}
+    matrix = np.zeros((len(uniq_users), len(uniq_items)), dtype=np.float32)
+    for u, it, r in zip(users, items, ratings):
+        matrix[u_pos[u], i_pos[it]] = r
+    return uniq_users, uniq_items, matrix

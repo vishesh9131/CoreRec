@@ -79,12 +79,28 @@ model.fit(user_ids=user_ids, item_ids=item_ids, ratings=r)
 # 3. Recommend
 recs = model.recommend(user_id=1, top_k=10)
 print(recs)
+
+# 4. Serve it over HTTP
+from corerec.serving import ModelServer
+ModelServer(model).start()   # POST /recommend on :8000
 ```
 
-That's it. The same three calls — `fit`, `recommend`, `predict` — are shared by every model
-in CoreRec. A few models expect their input in a model-specific shape (e.g. SASRec takes a
-user×item interaction matrix, GNNRec needs ratings binarized to `[0, 1]`); see each model's
-section below and the [QuickStart](https://corerec.online/docs/quickstart.html) for those cases.
+```bash
+curl -X POST localhost:8000/recommend \
+     -H 'Content-Type: application/json' \
+     -d '{"user_id": 1, "top_k": 5}'
+```
+
+Training to a live endpoint is one import, and it is the same object either way — no
+export step, no separate serving format, no rewrite. `examples/train_and_serve.py` is
+that whole path in one runnable file, and `tests/test_train_and_serve.py` runs it on
+every commit, so it cannot drift from what this README claims.
+
+The same three calls — `fit`, `recommend`, `predict` — are shared by every model.
+`tests/test_model_contract.py` enforces that across the zoo; the two models that
+still diverge (`SAR` and `NCF` take a DataFrame, with `fit_from_lists` /
+`fit_from_dataset` as their triple-shaped entry points) are listed there explicitly
+rather than left for you to discover.
 
 ---
 

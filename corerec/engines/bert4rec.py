@@ -17,7 +17,7 @@ from pathlib import Path
 import math
 import logging
 
-from corerec.api.base_recommender import BaseRecommender
+from corerec.api.base_recommender import BaseRecommender, normalize_interactions
 from corerec.api.exceptions import ModelNotFittedError
 
 
@@ -199,16 +199,20 @@ class BERT4Rec(BaseRecommender):
         self.user_seqs = {}
         self.is_fitted = False
     
-    def fit(self, user_ids: List, item_ids: List, interactions: np.ndarray):
+    def fit(self, user_ids: List, item_ids: List, interactions: Optional[np.ndarray] = None):
         """
         Train BERT4Rec model.
-        
-        user_ids: list of user IDs
-        item_ids: list of item IDs
-        interactions: [n_users, n_items] binary matrix
+
+        Accepts either:
+          fit(user_ids, item_ids, interactions)  # [n_users, n_items] matrix
+          fit(user_ids, item_ids, ratings)       # one entry per interaction
         """
         self.log.info(f"Training {self.name}...")
-        
+
+        user_ids, item_ids, interactions = normalize_interactions(
+            user_ids, item_ids, interactions
+        )
+
         # build item vocab
         self.item_to_idx = {iid: idx+1 for idx, iid in enumerate(item_ids)}  # 0 reserved for padding
         self.idx_to_item = {idx: iid for iid, idx in self.item_to_idx.items()}
@@ -347,9 +351,14 @@ class BERT4Rec(BaseRecommender):
         
         return input_seqs, target_seqs, mask_positions
     
-    def recommend(self, user_id: Any, top_k: int = 10, exclude_seen: bool = True) -> List[Any]:
+    def recommend(self, user_id: Any, top_k: int = 10,
+                  exclude_items: Optional[List[Any]] = None,
+                  exclude_seen: bool = True, **kwargs) -> List[Any]:
         """
         Generate recommendations by appending mask token and predicting.
+
+        exclude_items: item IDs to keep out of the results (BaseRecommender
+        declares this; without it ModelServer's /recommend raised TypeError).
         """
         if not self.is_fitted:
             self._check_fitted()
@@ -379,7 +388,13 @@ class BERT4Rec(BaseRecommender):
             for idx in seq:
                 if 0 < idx < len(scores):
                     scores[idx] = -np.inf
-        
+
+        # exclude caller-specified items
+        for item in (exclude_items or ()):
+            idx = self.item_to_idx.get(item)
+            if idx is not None and idx < len(scores):
+                scores[idx] = -np.inf
+
         # top k
         top_indices = np.argsort(scores)[::-1][:top_k]
         recommendations = [self.idx_to_item.get(idx) for idx in top_indices if idx in self.idx_to_item]
