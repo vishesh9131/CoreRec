@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BENCH = os.path.join(REPO, "corerec", "Findings", "bench")
+BENCH = os.path.join(REPO, "Findings", "bench")
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")  # deterministic CPU for CI
 
 

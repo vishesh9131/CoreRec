@@ -52,7 +52,9 @@ class TestUnionizedAlgorithms(unittest.TestCase):
         except Exception as e:
             self.skipTest(f"SAR import failed: {e}")
         model = SAR()
-        model.fit(self.users, self.items, self.ratings)
+        # SAR.fit takes a DataFrame, unlike the other models here which take
+        # three lists. fit_from_lists is the list-shaped entry point.
+        model.fit_from_lists(self.users, self.items, self.ratings)
         recs = model.recommend(1, top_n=3)
         self.assertIsInstance(recs, list)
 

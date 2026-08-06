@@ -3,7 +3,6 @@ Content-Based Filtering Engine (Refactored)
 ============================================
 
 This engine provides the TOP 5 most useful content-based methods.
-All other methods are available in the sandbox for development.
 
 Top 5 Production-Ready Methods:
 --------------------------------
@@ -13,7 +12,6 @@ Top 5 Production-Ready Methods:
 4. BERT4Rec - Sequential transformer-based
 5. Word2VecRecommender - Embedding-based, versatile
 
-Other 35+ algorithms moved to sandbox for refinement.
 
 Usage:
 ------
@@ -33,11 +31,6 @@ Usage:
     
     # Embedding-based
     model = content.Word2VecRecommender(vector_size=100)
-
-Sandbox Access:
----------------
-    # For experimental methods
-    from corerec.sandbox.content_based import Transformer, CNN, etc.
 
 Author: Vishesh Yadav
 """
@@ -94,52 +87,6 @@ except ImportError:
 
 
 # ============================================================================
-# Sandbox Access (Development/Experimental)
-# ============================================================================
-
-class SandboxAccess:
-    """
-    Gateway to experimental content-based methods.
-    
-    These are functional but under active development.
-    Use for research/experimentation.
-    """
-    
-    @staticmethod
-    def list_available():
-        """List all sandbox methods."""
-        return [
-            "Traditional ML: SVM, LightGBM, Decision Trees",
-            "Neural Networks: CNN, RNN, Transformer, VAE, Autoencoder",
-            "Graph-Based: GNN, Semantic Models",
-            "Hybrid: Ensemble methods, Attention mechanisms",
-            "Context-Aware: User profiling, Item profiling",
-            "Fairness: Fair ranking, Explainable AI",
-            "Learning: Transfer learning, Meta-learning, Few-shot",
-            "Multi-Modal: Text+Image+Audio fusion",
-            "Others: Doc2Vec, TDM, MIND, AITM",
-            "",
-            "Total: 35+ methods in sandbox",
-            "Import from: corerec.sandbox.content_based"
-        ]
-    
-    @staticmethod
-    def get_info(method_name):
-        """Get info about a sandbox method."""
-        info_map = {
-            "CNN": "Convolutional Neural Network for item features",
-            "Transformer": "Transformer architecture for content understanding",
-            "VAE": "Variational Autoencoder for content representation",
-            "Doc2Vec": "Document embeddings for text-based items",
-            "MIND": "Multi-Interest Network with Dynamic routing",
-        }
-        return info_map.get(method_name, "No info available. Check sandbox docs.")
-
-
-sandbox = SandboxAccess()
-
-
-# ============================================================================
 # __all__ - Export List (ONLY Top 5)
 # ============================================================================
 
@@ -154,9 +101,6 @@ __all__ = [
     # Backward compat (deprecated)
     "AttentionMechanisms",
     "EnsembleRecommender",
-    
-    # Sandbox gateway
-    "sandbox",
 ]
 
 
@@ -212,20 +156,6 @@ def get_recommendation():
     - Embedding-based approach
     - Medium-sized catalog
     
-    For other methods, check sandbox.list_available()
     """
 
 
-def migrate_to_sandbox_notice():
-    """Information about the refactoring."""
-    return """
-    ⚠️  REFACTORING NOTICE
-    
-    35+ methods have been moved to sandbox for quality refinement:
-    - All methods still accessible
-    - Import from: corerec.sandbox.content_based
-    - Top 5 methods remain in main engine
-    - Sandbox methods will graduate when production-ready
-    
-    This ensures clean, battle-tested main engine.
-    """

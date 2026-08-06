@@ -8,8 +8,9 @@ import os
 import numpy as np
 import pandas as pd
 
+# This file lives at <repo>/Findings/bench/, so the repo root is two levels up.
 ML100K_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "..", "..",
+    os.path.dirname(__file__), "..", "..",
     "cr_learn_setup", "cr_learn", "CRDS", "ml_100k",
 )
 COLS = ["user", "item", "rating", "ts"]
