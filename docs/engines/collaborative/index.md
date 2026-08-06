@@ -120,7 +120,7 @@ Generative models for recommendations.
 ### Example: Matrix Factorization
 
 ```python
-from corerec.engines.unionizedFilterEngine.mf_base.SVD_base import SVD
+from corerec.engines.collaborative.mf_base.SVD_base import SVD
 
 # Initialize SVD model
 model = SVD(
@@ -145,7 +145,7 @@ print(f"Predicted rating: {score:.2f}")
 ### Example: Neural Collaborative Filtering
 
 ```python
-from corerec.engines.unionizedFilterEngine.nn_base.NCF_base import NCF
+from corerec.engines.collaborative import NCF
 
 # Initialize NCF model
 model = NCF(
@@ -166,7 +166,7 @@ recommendations = model.recommend(user_id=123, top_k=10)
 ### Example: Graph-Based (LightGCN)
 
 ```python
-from corerec.engines.unionizedFilterEngine.graph_based_base.lightgcn import LightGCN
+from corerec.engines.collaborative.graph_based_base.lightgcn import LightGCN
 
 # Initialize LightGCN model
 model = LightGCN(
@@ -190,7 +190,7 @@ recommendations = model.recommend(user_id=123, top_k=10)
 CoreRec provides a FastAI-style fast recommender for quick prototyping:
 
 ```python
-from corerec.engines.unionizedFilterEngine.fast import FastRecommender
+from corerec.engines.collaborative.fast import FastRecommender
 
 model = FastRecommender(
     n_factors=50,
@@ -207,7 +207,7 @@ recs = model.recommend(user_id=123, top_k=10)
 Microsoft's SAR algorithm for item-to-item similarity:
 
 ```python
-from corerec.engines.unionizedFilterEngine.sar import SAR
+from corerec.engines.collaborative.sar import SAR
 
 model = SAR(
     similarity_type='jaccard',
@@ -224,7 +224,7 @@ recs = model.recommend(user_id=123, top_k=10)
 Energy-based collaborative filtering:
 
 ```python
-from corerec.engines.unionizedFilterEngine.rbm import RBM
+from corerec.engines.collaborative import RBM
 
 model = RBM(
     n_hidden=100,
@@ -241,7 +241,7 @@ recs = model.recommend(user_id=123, top_k=10)
 Geometric approach to matrix completion:
 
 ```python
-from corerec.engines.unionizedFilterEngine.rlrmc import RLRMC
+from corerec.engines.collaborative.rlrmc import RLRMC
 
 model = RLRMC(
     rank=20,
@@ -256,7 +256,7 @@ recs = model.recommend(user_id=123, top_k=10)
 ### GeoMLC (Geometric Matrix Learning and Completion)
 
 ```python
-from corerec.engines.unionizedFilterEngine.geomlc import GeoMLC
+from corerec.engines.collaborative import GeoMLC
 
 model = GeoMLC(
     embedding_dim=50,
@@ -272,7 +272,7 @@ recs = model.recommend(user_id=123, top_k=10)
 Use the factory to create models from configuration:
 
 ```python
-from corerec.engines.unionizedFilterEngine.cr_unionizedFactory import UnionizedRecommenderFactory
+from corerec.engines.collaborative.cr_unionizedFactory import UnionizedRecommenderFactory
 
 config = {
     'method': 'matrix_factorization',

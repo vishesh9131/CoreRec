@@ -98,7 +98,7 @@ Test individual components and methods:
 ```python
 # tests/test_SVD_base.py
 import pytest
-from corerec.engines.unionizedFilterEngine.mf_base.SVD_base import SVD
+from corerec.engines.collaborative.mf_base.SVD_base import SVD
 
 def test_svd_initialization():
     """Test SVD model initialization"""
@@ -243,21 +243,21 @@ Verify all imports work:
 
 def test_svd_import():
     try:
-        from corerec.engines.unionizedFilterEngine.mf_base.SVD_base import SVD
+        from corerec.engines.collaborative.mf_base.SVD_base import SVD
         print("✓ SVD import successful")
     except ImportError as e:
         print(f"✗ SVD import failed: {e}")
 
 def test_als_import():
     try:
-        from corerec.engines.unionizedFilterEngine.mf_base.ALS_base import ALS
+        from corerec.engines import ALS
         print("✓ ALS import successful")
     except ImportError as e:
         print(f"✗ ALS import failed: {e}")
 
 def test_nmf_import():
     try:
-        from corerec.engines.unionizedFilterEngine.mf_base.nmf_base import NMF
+        from corerec.engines.collaborative.mf_base.nmf_base import NMF
         print("✓ NMF import successful")
     except ImportError as e:
         print(f"✗ NMF import failed: {e}")
@@ -370,7 +370,7 @@ import pytest
 ])
 def test_svd_with_different_params(n_factors, n_epochs):
     """Test SVD with different hyperparameters"""
-    from corerec.engines.unionizedFilterEngine.mf_base.SVD_base import SVD
+    from corerec.engines.collaborative.mf_base.SVD_base import SVD
     
     model = SVD(n_factors=n_factors, n_epochs=n_epochs)
     user_ids = [1, 1, 2, 2, 3]

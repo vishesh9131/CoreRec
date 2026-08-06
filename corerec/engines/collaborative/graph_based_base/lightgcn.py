@@ -87,6 +87,7 @@ class LightGCN(BaseRecommender):
         dropout: float = 0.0,
         early_stopping_patience: int = 10,
         verbose: bool = True,
+        seed: Optional[int] = 42,
     ):
         super().__init__()
         self.name = "LightGCN"
@@ -100,6 +101,17 @@ class LightGCN(BaseRecommender):
         self.dropout = dropout
         self.early_stopping_patience = early_stopping_patience
         self.verbose = verbose
+
+        # Negative sampling and epoch shuffling previously used the *global*
+        # numpy RNG with nothing ever seeding it, so two runs of the same code
+        # on the same data gave different models. Benchmarked across two
+        # machines that showed up as a 2.5% NDCG@10 swing. A private Generator
+        # keeps this model's randomness reproducible and stops it perturbing
+        # (or being perturbed by) anything else that draws from numpy.
+        self.seed = seed
+        self._rng = np.random.default_rng(seed)
+        if seed is not None:
+            torch.manual_seed(seed)
 
         self.n_users = None
         self.n_items = None
@@ -177,7 +189,7 @@ class LightGCN(BaseRecommender):
     def _sample_negative(self, user_idx: int) -> int:
         pos = self.user_interactions.get(user_idx, set())
         while True:
-            neg = np.random.randint(0, self.n_items)
+            neg = int(self._rng.integers(0, self.n_items))
             if neg not in pos:
                 return neg
 
@@ -252,7 +264,7 @@ class LightGCN(BaseRecommender):
                 break
 
             indices = np.arange(len(users))
-            np.random.shuffle(indices)
+            self._rng.shuffle(indices)
             total_loss = 0.0
             n_batches = 0
 
@@ -344,6 +356,7 @@ class LightGCN(BaseRecommender):
             "dropout": self.dropout,
             "early_stopping_patience": self.early_stopping_patience,
             "verbose": self.verbose,
+            "seed": self.seed,
         }
         state = {
             "n_users": self.n_users,

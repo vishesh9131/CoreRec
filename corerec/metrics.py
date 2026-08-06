@@ -72,3 +72,8 @@ def aaj_accuracy(graph, node_index, recommended_indices):
     avg_adamic_adar = np.mean(adamic_adar_scores) if adamic_adar_scores else 0
 
     return avg_jaccard, avg_adamic_adar
+
+
+# Without this, `import corerec.metrics` also exposed numpy and networkx as
+# public attributes of the module.
+__all__ = ["aaj_accuracy", "adamic_adar_index", "jaccard_similarity"]

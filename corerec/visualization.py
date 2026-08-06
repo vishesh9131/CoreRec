@@ -46,3 +46,8 @@ def draw_graph(adj_matrix, top_nodes, recommended_nodes=None):
 
     plt.title("Recommended Nodes Highlighted in Blue and Top Nodes in Red")
     plt.show()
+
+
+# Without this, `from corerec.visualization import *` pulled numpy, pandas,
+# matplotlib and torch into the caller's namespace.
+__all__ = ["draw_graph"]

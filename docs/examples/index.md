@@ -112,7 +112,7 @@ recommendations = model.recommend(user_id=789, top_n=20)
 ### News Articles
 
 ```python
-from corerec.engines.contentFilterEngine.tfidf_recommender import TFIDFRecommender
+from corerec.engines.content_based.tfidf_recommender import TFIDFRecommender
 import pandas as pd
 
 # Content-based news recommendations

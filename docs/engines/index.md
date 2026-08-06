@@ -60,7 +60,7 @@ Decompose user-item matrix into latent factors:
 - **WNMF** (Weighted NMF)
 
 ```python
-from corerec.engines.unionizedFilterEngine.mf_base.SVD_base import SVD
+from corerec.engines.collaborative.mf_base.SVD_base import SVD
 
 model = SVD(n_factors=50, n_epochs=20)
 model.fit(user_ids, item_ids, ratings)
@@ -79,7 +79,7 @@ Deep learning for collaborative filtering:
 - **DIEN** (Deep Interest Evolution Network)
 
 ```python
-from corerec.engines.unionizedFilterEngine.nn_base.NCF_base import NCF
+from corerec.engines.collaborative import NCF
 
 model = NCF(embedding_dim=64, layers=[128, 64, 32])
 model.fit(user_ids, item_ids, ratings)
@@ -94,7 +94,7 @@ Leverage graph structure for recommendations:
 - **GeoimC** (Geometric Matrix Completion)
 
 ```python
-from corerec.engines.unionizedFilterEngine.graph_based_base.lightgcn import LightGCN
+from corerec.engines.collaborative.graph_based_base.lightgcn import LightGCN
 
 model = LightGCN(embedding_dim=64, num_layers=3)
 model.fit(user_ids, item_ids, ratings)
@@ -108,7 +108,7 @@ Attention-based recommendations:
 - **A2SVD** (Attentive Collaborative Filtering)
 
 ```python
-from corerec.engines.unionizedFilterEngine.attention_mechanism_base.sasrec import SASRec
+from corerec.engines import SASRec
 
 model = SASRec(hidden_units=64, num_blocks=2, num_heads=4)
 model.fit(user_ids, item_ids, timestamps)
@@ -159,7 +159,7 @@ Classical machine learning algorithms:
 - **Vowpal Wabbit**
 
 ```python
-from corerec.engines.contentFilterEngine.tfidf_recommender import TFIDFRecommender
+from corerec.engines.content_based.tfidf_recommender import TFIDFRecommender
 
 model = TFIDFRecommender(feature_column='description')
 model.fit(items_df)
@@ -177,7 +177,7 @@ Deep learning for content-based filtering:
 - **Autoencoders**, **VAE**
 
 ```python
-from corerec.engines.contentFilterEngine.nn_based_algorithms.DSSM import DSSM
+from corerec.engines.content_based.nn_based_algorithms.DSSM import DSSM
 
 model = DSSM(embedding_dim=128, hidden_layers=[256, 128])
 model.fit(user_features, item_features, interactions)
@@ -198,7 +198,7 @@ Learn feature embeddings:
 - **Personalized Embeddings**
 
 ```python
-from corerec.engines.contentFilterEngine.embedding_representation_learning.word2vec import Word2VecRecommender
+from corerec.engines.content_based.embedding_representation_learning.word2vec import Word2VecRecommender
 
 model = Word2VecRecommender(vector_size=100)
 model.fit(item_descriptions)

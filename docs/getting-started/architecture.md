@@ -319,7 +319,7 @@ import corerec.vish_graphs as vg
 from corerec.config import ConfigManager
 
 # Device management
-from corerec.engines.unionizedFilterEngine.device_manager import DeviceManager
+from corerec.engines.collaborative.device_manager import DeviceManager
 ```
 
 ## Data Flow

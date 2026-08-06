@@ -554,33 +554,50 @@ def scale_and_save_matrices(input_file, output_dir, num_matrices):
             fmt="%d")
 
 
-# List of possible misspellings
-possible_misspellings = [
-    "scale_and_save_matrix",
-    "scale_n_save_matrices",
-    "scal_and_save_matrices",
-    "scale_and_save_matrces",
-    "scale_and_sav_matrices",
-    "scale_n_save_matrix",
-    "scaleandsavematrices",
-    "scaleandsave_matrix",
-    "scale_n_save_matricies",
-    "scaling_and_saving_matrices",
-    "scale_and_save_matricies",
-    "scale_save_matrices",
-    "scale_save_matrix",
-    "scale_save_matricies",
-    "scal_save_matrices",
-    "scaling_save_matrices",
-    "scaling_save_matrix",
-    "scale_saving_matrices",
-    "scale_and_saving_matrices",
-    "scale_saving_matrix",
+# Twenty misspelled aliases of scale_and_save_matrices used to be injected into
+# this module's globals() here ("scal_save_matrices", "scaleandsavematrices",
+# "scaling_save_matrix", ...). They made a single helper account for nearly half
+# of this module's public surface, and every one of them was a name a user could
+# come to depend on, so none could be removed later without breaking someone.
+#
+# Typos are better answered by an AttributeError naming the right function than
+# by silently accepting whatever was typed, which is what __getattr__ below does.
+# Without __all__ this module also exported everything it imported -- csv,
+# multiprocessing, numpy, networkx, matplotlib, scipy, time -- as public API.
+__all__ = [
+    "bipartite_matrix_maker",
+    "draw_graph",
+    "draw_graph_3d",
+    "export_graph_data_to_csv",
+    "find_top_nodes",
+    "generate_connections",
+    "generate_large_random_graph",
+    "generate_random_graph",
+    "generate_weight_matrix",
+    "run_optimal_path",
+    "scale_and_save_matrices",
+    "show_bipartite_relationship",
+    "show_bipartite_relationship_with_cosine",
 ]
 
-# Creating aliases for the function
-for misspelling in possible_misspellings:
-    globals()[misspelling] = scale_and_save_matrices
+_RENAMED = {
+    "scale_and_save_matrix", "scale_n_save_matrices", "scal_and_save_matrices",
+    "scale_and_save_matrces", "scale_and_sav_matrices", "scale_n_save_matrix",
+    "scaleandsavematrices", "scaleandsave_matrix", "scale_n_save_matricies",
+    "scaling_and_saving_matrices", "scale_and_save_matricies",
+    "scale_save_matrices", "scale_save_matrix", "scale_save_matricies",
+    "scal_save_matrices", "scaling_save_matrices", "scaling_save_matrix",
+    "scale_saving_matrices", "scale_and_saving_matrices", "scale_saving_matrix",
+}
+
+
+def __getattr__(name):
+    if name in _RENAMED:
+        raise AttributeError(
+            f"{__name__}.{name} was an alias for scale_and_save_matrices and has "
+            "been removed. Use scale_and_save_matrices."
+        )
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 # Example usage

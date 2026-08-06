@@ -337,7 +337,7 @@ Handle CPU/GPU devices efficiently.
 ### Basic Device Management
 
 ```python
-from corerec.engines.unionizedFilterEngine.device_manager import DeviceManager
+from corerec.engines.collaborative.device_manager import DeviceManager
 
 # Initialize device manager
 device_manager = DeviceManager()

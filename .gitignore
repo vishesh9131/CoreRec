@@ -278,3 +278,6 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+# Sphinx HTML output (113MB, never deployed - only mkdocs gh-deploy publishes)
+docs/build/
