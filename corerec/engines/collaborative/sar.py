@@ -18,6 +18,7 @@ Reference: Microsoft Recommenders SAR implementation
 import numpy as np
 import pandas as pd
 import logging
+import warnings
 from typing import Optional, List, Dict, Any, Union
 from scipy import sparse
 import os
@@ -53,6 +54,19 @@ from corerec.utils.similarity import (
 )
 
 logger = logging.getLogger(__name__)
+
+# lift, inclusion_index and mutual_information all divide by C_ii*C_jj (or
+# min(C_ii, C_jj)) with no compensating frequency term, so a single pair of
+# items that happen to share exactly one rare co-rater gets a similarity score
+# on par with, or larger than, genuinely popular item pairs. Measured on
+# ML-100K at the class's own threshold=1 default: lift NDCG@10 0.0007, mutual_
+# information 0.0015, inclusion_index 0.0541 -- against jaccard's 0.3730 and
+# cosine's 0.3955 on the same data. jaccard/cosine/cooccurrence are bounded and
+# don't need this; lexicographers_mi multiplies by joint probability, which
+# already down-weights rare pairs (0.3540), so it's excluded too.
+_UNBOUNDED_SIMILARITY_TYPES = frozenset(
+    {SIM_LIFT, SIM_INCLUSION_INDEX, SIM_MUTUAL_INFORMATION}
+)
 
 
 def _sar_to_dense_array(x):
@@ -126,7 +140,14 @@ class SAR(BaseRecommender):
             col_timestamp: name of timestamp column (needed if timedecay_formula=True)
             col_prediction: name for prediction column in output
             similarity_type: one of 'cooccurrence', 'cosine', 'jaccard', 'lift',
-                           'inclusion_index', 'mutual_information', 'lexicographers_mi'
+                           'inclusion_index', 'mutual_information', 'lexicographers_mi'.
+                           'lift', 'inclusion_index' and 'mutual_information' need a
+                           meaningfully raised `threshold` to be usable -- at the
+                           default threshold=1 they are dominated by coincidental
+                           co-occurrences between rare items and score close to
+                           random. 'jaccard' and 'cosine' are bounded and don't
+                           have this failure mode; prefer them unless you have a
+                           specific reason to want lift's or PMI's semantics.
             time_decay_coefficient: half-life in days for time decay (default 30 days)
             time_now: reference time for decay calc (defaults to max timestamp in data)
             timedecay_formula: whether to apply time decay weighting
@@ -158,6 +179,20 @@ class SAR(BaseRecommender):
         if threshold < 1:
             raise ValueError("threshold must be >= 1")
         self.threshold = threshold
+
+        if similarity_type in _UNBOUNDED_SIMILARITY_TYPES and threshold == 1:
+            warnings.warn(
+                f"SAR(similarity_type='{similarity_type}') at the default threshold=1 "
+                "is numerically unstable: two items that happen to share exactly one "
+                "rare co-rater score as similar as, or more similar than, genuinely "
+                "popular pairs, which dominates every user's top-k. On ML-100K this "
+                "similarity type scores near-random (NDCG@10 well under 0.01) at "
+                "threshold=1 and only becomes usable somewhere around threshold=50-80 "
+                "for a dataset that size -- pass an explicit threshold based on your "
+                "own data, or use similarity_type='jaccard' or 'cosine', which are "
+                "bounded and don't need one.",
+                stacklevel=2,
+            )
         
         # normalization
         self.normalize = normalize
@@ -323,10 +358,11 @@ class SAR(BaseRecommender):
         Different metrics capture different notions of relatedness:
         - jaccard: good general purpose, handles popularity bias
         - cosine: classic, assumes items are vectors
-        - lift: probabilistic, good for market basket
+        - lift: probabilistic, good for market basket -- needs threshold >> 1,
+          see the warning raised in __init__ when it's left at the default
         - cooccurrence: raw counts, biased toward popular items
-        - inclusion_index: asymmetric, finds subsets
-        - mutual_information: information theoretic
+        - inclusion_index: asymmetric, finds subsets -- same threshold caveat as lift
+        - mutual_information: information theoretic -- same threshold caveat as lift
         """
         logger.info(f"Computing {self.similarity_type} similarity")
         

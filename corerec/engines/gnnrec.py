@@ -68,17 +68,16 @@ class GNNRec(BaseRecommender):
                 self.W1 = nn.Linear(in_dim, out_dim)
                 self.W2 = nn.Linear(in_dim, out_dim)
 
-            def forward(self, E, L):
+            def forward(self, E, L, L_plus_I):
                 # Message construction and aggregation
                 # E: (N+M, d) embeddings
-                # L: (N+M, N+M) Laplacian matrix
+                # L, L_plus_I: (N+M, N+M) Laplacian, sparse -- both fixed for the
+                # life of the model, passed in rather than rebuilt here (see the
+                # note in GNNModel.__init__ on why that used to be the bottleneck).
                 # Equation (7) from NGCF paper: E^(l) = LeakyReLU((L+I)E^(l-1)W1 + L(E^(l-1) ⊙ E^(l-1))W2)
-                L_plus_I = L + torch.eye(L.size(0), device=L.device)
-                # (L+I) @ E @ W1
-                term1 = (L_plus_I @ E) @ self.W1.weight.t() + (self.W1.bias if self.W1.bias is not None else 0)
-                # L @ (E ⊙ E) @ W2
+                term1 = torch.sparse.mm(L_plus_I, E) @ self.W1.weight.t() + (self.W1.bias if self.W1.bias is not None else 0)
                 E_interaction = E * E  # Element-wise product
-                term2 = (L @ E_interaction) @ self.W2.weight.t() + (self.W2.bias if self.W2.bias is not None else 0)
+                term2 = torch.sparse.mm(L, E_interaction) @ self.W2.weight.t() + (self.W2.bias if self.W2.bias is not None else 0)
                 E_new = F.leaky_relu(term1 + term2)
                 return E_new
 
@@ -90,7 +89,29 @@ class GNNRec(BaseRecommender):
                 self.embedding_dim = embedding_dim
                 self.num_layers = num_layers
                 self.dropout = dropout
-                self.laplacian = laplacian
+
+                # The graph structure (and therefore L and L+I) is fixed for the
+                # life of the model -- only the embeddings and layer weights are
+                # trained. The previous version rebuilt a dense (N+M)x(N+M)
+                # identity matrix and ran two dense (N+M)x(N+M) @ (N+M)xd matmuls
+                # per layer on every forward() call, i.e. every mini-batch rather
+                # than once. On ML-100K (943 users + 1650 items = 2593 nodes,
+                # ~2.4% graph density) with this class's own defaults
+                # (batch_size=1024, num_negatives=4, epochs=20) that is ~7,800
+                # forward calls each redoing ~1.7 GFLOPs of matmul over a graph
+                # that's 97.6% zeros -- about 40 TFLOPs total, which is what took
+                # 41+ minutes on a CPU where LightGCN, using sparse ops for the
+                # same kind of propagation, took 127s. L and L+I are precomputed
+                # once here, as sparse tensors, and reused across every call.
+                self.laplacian = laplacian.to_sparse().coalesce()
+                n = laplacian.size(0)
+                eye_idx = torch.arange(n, device=laplacian.device)
+                eye = torch.sparse_coo_tensor(
+                    torch.stack([eye_idx, eye_idx]),
+                    torch.ones(n, device=laplacian.device),
+                    (n, n),
+                )
+                self.laplacian_plus_i = (self.laplacian + eye).coalesce()
 
                 # Initial embeddings (E^(0))
                 self.user_embedding = nn.Embedding(num_users, embedding_dim)
@@ -126,7 +147,7 @@ class GNNRec(BaseRecommender):
 
                 # Propagate through layers
                 for layer in self.prop_layers:
-                    E = layer(E, self.laplacian)
+                    E = layer(E, self.laplacian, self.laplacian_plus_i)
                     E = F.dropout(E, p=self.dropout, training=self.training)
                     embeddings_list.append(E)
 
