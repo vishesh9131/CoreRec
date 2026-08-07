@@ -46,7 +46,7 @@ graph TD
 
 ## 📦 Key Features
 
-*   **Collaborative Filtering (Unionized)**: Proven algorithms like **ALS**, **LightGCN**, and **SVD** for robust baselines.
+*   **Collaborative Filtering (Unionized)**: Proven algorithms like **ALS**, **LightGCN**, and **SAR** for robust baselines.
 *   **Content-Based**: Leverage item metadata with **TF-IDF**, **Word2Vec**, and **Text Vectors**.
 *   **Deep Learning (SOTA)**: Implementation of cutting-edge papers including **SASRec**, **MIND** (Multi-Interest), and **DCN** (Deep & Cross Network).
 *   **Serving Ready**: Built-in model serving capabilities for real-time inference.
