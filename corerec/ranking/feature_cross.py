@@ -125,7 +125,7 @@ class FeatureCrossRanker(BaseRanker):
             
             # score
             if self.model is not None:
-                score = self._score_with_model(features)
+                score = self._score_with_model(features, c.item_id, context)
             else:
                 score = self._score_with_weights(features)
             
@@ -192,8 +192,17 @@ class FeatureCrossRanker(BaseRanker):
         
         return score
     
-    def _score_with_model(self, features: Dict[str, Any]) -> float:
-        """Score using trained model."""
+    def _score_with_model(self, features: Dict[str, Any],
+                          item_id: Any = None,
+                          context: Optional[Dict[str, Any]] = None) -> float:
+        """Score using trained model.
+
+        CoreRec recommenders take predict(user_id, item_id); sklearn estimators
+        take predict(X). Handle the recommender case before the estimator one.
+        """
+        if self._is_recommender(self.model):
+            return self._score_recommender(self.model, item_id, context or {})
+
         if hasattr(self.model, 'predict_proba'):
             X = self._features_to_array(features)
             proba = self.model.predict_proba(X)

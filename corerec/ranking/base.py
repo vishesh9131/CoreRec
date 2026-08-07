@@ -158,6 +158,40 @@ class BaseRanker(ABC):
             raise RuntimeError(
                 f"{self.name} must be fitted before ranking. Call fit() first."
             )
+
+    @staticmethod
+    def _is_recommender(model: Any) -> bool:
+        """Is this a CoreRec recommender rather than an sklearn-style estimator?
+
+        The two use incompatible predict() conventions -- a recommender takes
+        predict(user_id, item_id), an estimator takes predict(X) -- and the
+        rankers were written for the estimator one only, so passing a CoreRec
+        model to a ranker raised TypeError. Dispatch on the type instead.
+        """
+        from corerec.api.base_recommender import BaseRecommender
+
+        return isinstance(model, BaseRecommender)
+
+    def _score_recommender(self, model: Any, item_id: Any,
+                           context: Dict[str, Any]) -> float:
+        """Score one item with a CoreRec recommender.
+
+        Needs the user, which lives in the ranking context rather than in the
+        feature dict -- pass context={"user_id": ...} to rank().
+        """
+        user_id = (context or {}).get("user_id")
+        if user_id is None:
+            raise ValueError(
+                f"{self.name} was given a CoreRec model, which scores a "
+                "(user, item) pair, but no user was supplied. Call "
+                'rank(candidates, context={"user_id": ...}).'
+            )
+        try:
+            return float(model.predict(user_id, item_id))
+        except Exception:
+            # Unknown user or item: fall back to the retrieval score's ordering
+            # rather than failing the whole request over one candidate.
+            return 0.0
     
     def __repr__(self) -> str:
         status = "fitted" if self._is_fitted else "not fitted"

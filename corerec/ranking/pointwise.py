@@ -109,13 +109,16 @@ class PointwiseRanker(BaseRanker):
                 features = self.feature_extractor(c.item_id, context)
             else:
                 features = {'retrieval_score': c.score}
-            
+
             # add retrieval score to features
             features['retrieval_score'] = c.score
-            
+            # the item is what is being scored, so a score_fn should always be
+            # able to see it without having to supply a feature_extractor
+            features.setdefault('item_id', c.item_id)
+
             # compute score
             if self.model is not None:
-                score = self._score_with_model(features)
+                score = self._score_with_model(features, c.item_id, context)
             else:
                 score = self.score_fn(features)
             
@@ -142,8 +145,19 @@ class PointwiseRanker(BaseRanker):
             timing_ms=elapsed,
         )
     
-    def _score_with_model(self, features: Dict[str, Any]) -> float:
-        """Score using the ML model."""
+    def _score_with_model(self, features: Dict[str, Any],
+                          item_id: Any = None,
+                          context: Optional[Dict[str, Any]] = None) -> float:
+        """Score using the ML model.
+
+        A CoreRec recommender and an sklearn estimator both expose predict(),
+        with incompatible signatures: predict(user_id, item_id) against
+        predict(X). Passing a CoreRec model here used to raise TypeError, so the
+        recommender case is handled first.
+        """
+        if self._is_recommender(self.model):
+            return self._score_recommender(self.model, item_id, context or {})
+
         # convert features to format model expects
         if hasattr(self.model, 'predict_proba'):
             # classifier - use probability
