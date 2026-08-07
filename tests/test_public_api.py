@@ -28,6 +28,11 @@ REMOVED_MISSPELLINGS = [
 ]
 
 
+# Submodules that legitimately require an optional extra. They stay in __all__
+# because they are part of the package; they just need `pip install corerec[x]`.
+OPTIONAL_SUBMODULES = {"serving": "serving", "multimodal": "transformers"}
+
+
 def test_every_advertised_name_resolves():
     """Nothing in corerec.__all__ may be missing or None."""
     broken = []
@@ -36,8 +41,26 @@ def test_every_advertised_name_resolves():
             if getattr(corerec, name) is None:
                 broken.append(f"{name} (None)")
         except AttributeError as exc:
+            if name in OPTIONAL_SUBMODULES:
+                continue  # covered by test_optional_submodule_names_its_extra
             broken.append(f"{name} ({exc})")
     assert not broken, f"corerec.__all__ advertises unusable names: {broken}"
+
+
+@pytest.mark.parametrize("name,extra", sorted(OPTIONAL_SUBMODULES.items()))
+def test_optional_submodule_names_its_extra(name, extra):
+    """A missing extra must say which one, not just 'no attribute'.
+
+    In a base install `corerec.serving` raised
+    "module 'corerec' has no attribute 'serving'", which reads like the feature
+    does not exist rather than like fastapi/pydantic are not installed.
+    """
+    try:
+        getattr(corerec, name)
+    except AttributeError as exc:
+        assert f"corerec[{extra}]" in str(exc), (
+            f"corerec.{name} failed without naming its extra: {exc}"
+        )
 
 
 @pytest.mark.parametrize("alias", REMOVED_MISSPELLINGS)

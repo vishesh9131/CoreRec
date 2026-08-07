@@ -69,13 +69,28 @@ def __getattr__(name):
         "serving",
     }
     
+    # Submodules whose dependencies live behind an optional extra, so the
+    # failure can be explained instead of looking like the module is missing.
+    _extras = {
+        "serving": "serving",
+        "multimodal": "transformers",
+    }
+
     if name in _submodules:
         try:
             module = importlib.import_module(f".{name}", __name__)
             globals()[name] = module
             return module
-        except ImportError:
-            raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+        except ImportError as exc:
+            extra = _extras.get(name)
+            if extra:
+                raise AttributeError(
+                    f"corerec.{name} needs its optional dependencies: "
+                    f"pip install corerec[{extra}]  ({exc})"
+                ) from exc
+            raise AttributeError(
+                f"module {__name__!r} has no attribute {name!r} ({exc})"
+            ) from exc
     
     # constants - these are lightweight, load directly
     _constants = {
