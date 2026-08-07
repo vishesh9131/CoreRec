@@ -120,14 +120,14 @@ Generative models for recommendations.
 ### Example: Matrix Factorization
 
 ```python
-from corerec.engines.matrix_factorization import ALS
+from corerec.engines.unionizedFilterEngine.mf_base.SVD_base import SVD
 
-# Initialize ALS model
-model = ALS(
-    factors=50,
-    iterations=20,
-    reg=10.0,
-    alpha=1.0
+# Initialize SVD model
+model = SVD(
+    n_factors=50,
+    n_epochs=20,
+    learning_rate=0.01,
+    regularization=0.02
 )
 
 # Train model
@@ -145,7 +145,7 @@ print(f"Predicted rating: {score:.2f}")
 ### Example: Neural Collaborative Filtering
 
 ```python
-from corerec.engines.collaborative import NCF
+from corerec.engines.unionizedFilterEngine.nn_base.NCF_base import NCF
 
 # Initialize NCF model
 model = NCF(
@@ -166,7 +166,7 @@ recommendations = model.recommend(user_id=123, top_k=10)
 ### Example: Graph-Based (LightGCN)
 
 ```python
-from corerec.engines.collaborative.graph_based_base.lightgcn import LightGCN
+from corerec.engines.unionizedFilterEngine.graph_based_base.lightgcn import LightGCN
 
 # Initialize LightGCN model
 model = LightGCN(
@@ -190,7 +190,7 @@ recommendations = model.recommend(user_id=123, top_k=10)
 CoreRec provides a FastAI-style fast recommender for quick prototyping:
 
 ```python
-from corerec.engines.collaborative.fast import FastRecommender
+from corerec.engines.unionizedFilterEngine.fast import FastRecommender
 
 model = FastRecommender(
     n_factors=50,
@@ -207,7 +207,7 @@ recs = model.recommend(user_id=123, top_k=10)
 Microsoft's SAR algorithm for item-to-item similarity:
 
 ```python
-from corerec.engines.collaborative.sar import SAR
+from corerec.engines.unionizedFilterEngine.sar import SAR
 
 model = SAR(
     similarity_type='jaccard',
@@ -224,7 +224,7 @@ recs = model.recommend(user_id=123, top_k=10)
 Energy-based collaborative filtering:
 
 ```python
-from corerec.engines.collaborative import RBM
+from corerec.engines.unionizedFilterEngine.rbm import RBM
 
 model = RBM(
     n_hidden=100,
@@ -236,17 +236,17 @@ model.fit(user_ids, item_ids, ratings)
 recs = model.recommend(user_id=123, top_k=10)
 ```
 
-### Item2Vec (Embedding-Based)
+### RLRMC (Riemannian Low-Rank Matrix Completion)
 
-Skip-gram embeddings over interaction sequences:
+Geometric approach to matrix completion:
 
 ```python
-from corerec.engines.matrix_factorization import Item2Vec
+from corerec.engines.unionizedFilterEngine.rlrmc import RLRMC
 
-model = Item2Vec(
-    factors=50,
-    iterations=20,
-    num_negatives=5
+model = RLRMC(
+    rank=20,
+    max_iter=100,
+    tol=1e-4
 )
 
 model.fit(user_ids, item_ids, ratings)
@@ -256,7 +256,7 @@ recs = model.recommend(user_id=123, top_k=10)
 ### GeoMLC (Geometric Matrix Learning and Completion)
 
 ```python
-from corerec.engines.collaborative import GeoMLC
+from corerec.engines.unionizedFilterEngine.geomlc import GeoMLC
 
 model = GeoMLC(
     embedding_dim=50,
@@ -267,20 +267,23 @@ model.fit(user_ids, item_ids, ratings)
 recs = model.recommend(user_id=123, top_k=10)
 ```
 
-## Building From Configuration
+## Factory Pattern
 
-There is no factory class; construct the model you want directly, or map a
-config to a class yourself:
+Use the factory to create models from configuration:
 
 ```python
-from corerec.engines.collaborative import LightGCN, NCF, SAR
-from corerec.engines.matrix_factorization import ALS
+from corerec.engines.unionizedFilterEngine.cr_unionizedFactory import UnionizedRecommenderFactory
 
-MODELS = {"als": ALS, "lightgcn": LightGCN, "ncf": NCF, "sar": SAR}
+config = {
+    'method': 'matrix_factorization',
+    'params': {
+        'n_factors': 50,
+        'n_epochs': 20,
+        'learning_rate': 0.01
+    }
+}
 
-config = {"method": "als", "params": {"factors": 50, "iterations": 20}}
-
-model = MODELS[config["method"]](**config["params"])
+model = UnionizedRecommenderFactory.get_recommender(config)
 model.fit(user_ids, item_ids, ratings)
 ```
 

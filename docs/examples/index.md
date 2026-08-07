@@ -112,7 +112,7 @@ recommendations = model.recommend(user_id=789, top_n=20)
 ### News Articles
 
 ```python
-from corerec.engines.content_based.tfidf_recommender import TFIDFRecommender
+from corerec.engines.contentFilterEngine.tfidf_recommender import TFIDFRecommender
 import pandas as pd
 
 # Content-based news recommendations
@@ -333,22 +333,14 @@ ratings = np.random.uniform(1, 5, num_interactions).tolist()
 ### Example: Using Sample Data
 
 ```python
-# The runnable example generates its own interactions; copy this for
-# quick experiments without downloading anything.
-from examples.train_and_serve import build_interactions
+from corerec.utils.example_data import get_sample_data
 
-user_ids, item_ids, ratings, _, _ = build_interactions(seed=0)
-```
+# Load built-in sample data
+data = get_sample_data('netflix')
 
-For a real dataset, install `corerec[datasets]`:
-
-```python
-from cr_learn import ml_1m
-
-ratings_df = ml_1m.load()["ratings"]
-user_ids = ratings_df["user_id"].values
-item_ids = ratings_df["movie_id"].values
-ratings = ratings_df["rating"].values
+user_ids = data['user_ids']
+item_ids = data['item_ids']
+ratings = data['ratings']
 ```
 
 ## Evaluation Examples

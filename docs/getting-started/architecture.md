@@ -179,7 +179,12 @@ Types of towers:
 Feature encoding and transformation:
 
 ```python
-from corerec.core import AbstractEncoder, TextEncoder, VisionEncoder
+from corerec.core.encoders import (
+    CategoricalEncoder,
+    NumericalEncoder,
+    SequenceEncoder,
+    MultiModalEncoder
+)
 ```
 
 #### Embedding Tables
@@ -313,8 +318,8 @@ import corerec.vish_graphs as vg
 # Configuration
 from corerec.config import ConfigManager
 
-# Device selection is plain torch
-import torch
+# Device management
+from corerec.engines.unionizedFilterEngine.device_manager import DeviceManager
 ```
 
 ## Data Flow
