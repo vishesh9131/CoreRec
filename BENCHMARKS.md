@@ -46,13 +46,19 @@ Sorted by NDCG@10. Fusion rows combine two models with Reciprocal Rank Fusion
 | **corerec** | **SAR (cosine)** | **0.3955** | 0.2077 | 0.35 | 1.93 |
 | implicit | ItemKNN (cosine) | 0.3858 | 0.2069 | 0.08 | 0.27 |
 | corerec | SAR (jaccard) | 0.3730 | 0.1990 | 0.54 | 3.73 |
-| corerec | LightGCN † | 0.3444 | 0.1739 | 150.97 | 12.57 |
-| corerec | NCF † | 0.3359 | 0.1766 | 162.10 | 4.46 |
-| corerec | NCF_binary † | 0.3236 | 0.1606 | 83.50 | 3.91 |
-| implicit | BPR † | 0.3069 | 0.1360 | 1.48 | 0.07 |
+| corerec | LightGCN † | 0.3360 ± 0.0077 | 0.1739 | 150.97 | 12.57 |
+| corerec | NCF ‡ | 0.3359 | 0.1766 | 162.10 | 4.46 |
+| corerec | NCF_binary † | 0.3091 ± 0.0178 | 0.1606 | 83.50 | 3.91 |
+| implicit | BPR † | 0.3204 ± 0.0069 | 0.1360 | 1.48 | 0.07 |
 | corerec | GNNRec | *did not complete* | — | >3720 | — |
 
-† Not reproducible run-to-run — see "Which of these numbers are stable" below.
+† Sampled-negative model: mean ± std over 5 seeds, because a single run of these
+lands up to 13% away from the mean. Deterministic rows are single runs that
+reproduce exactly. See "Which of these numbers are stable".
+
+‡ Also samples negatives, but only a single run was done; treat it the same way
+as the † rows and expect a comparable spread. NCF_binary, which differs only in
+its positive set, has a std of 0.0178.
 
 GNNRec was stopped after 62 minutes on one BLAS thread, where LightGCN finishes
 the same data in 151s and NCF in 162s. It is listed rather than dropped: a model
@@ -61,12 +67,11 @@ Under looser conditions it has scored 0.334 — below a 0.08-second ItemKNN.
 
 ## Which of these numbers are stable
 
-The whole table was run twice on deliberately different machines — an M-series
-macOS laptop (Python 3.12, torch 2.2, numpy 1.x) and a 96-core Ubuntu box
-(Python 3.10, torch 2.10, numpy 2.2). Different OS, interpreter, BLAS and
-library versions.
+Two checks, because a benchmark nobody can reproduce is a press release.
 
-Every deterministic model reproduced **exactly**:
+**Across machines.** The whole table was run on an M-series macOS laptop
+(Python 3.12, torch 2.2, numpy 1.x) and a 96-core Ubuntu box (Python 3.10,
+torch 2.10, numpy 2.2). Every deterministic model reproduced exactly:
 
 | Model | laptop | 96-core box |
 |---|---:|---:|
@@ -76,24 +81,36 @@ Every deterministic model reproduced **exactly**:
 | corerec SAR (jaccard) | 0.3730 | 0.3730 |
 | implicit ALS | 0.4099 | 0.4100 |
 
-The models trained with sampled negatives did not:
+**Across seeds.** Five seeds each, evaluation cohort held fixed so only the
+model's own randomness moves:
 
-| Model | laptop | 96-core box | swing |
-|---|---:|---:|---:|
-| implicit BPR | 0.3239 | 0.3069 | **−5.2%** |
-| corerec NCF_binary | 0.3349 | 0.3236 | −3.4% |
-| corerec LightGCN | 0.3361 | 0.3444 | +2.5% |
+| Framework | Model | mean NDCG@10 | std | spread |
+|---|---|---:|---:|---:|
+| implicit | ItemKNN | 0.3858 | **0.0000** | 0.0% |
+| implicit | ALS | 0.4061 | 0.0048 | 2.4% |
+| corerec | LightGCN | 0.3360 | 0.0077 | 6.0% |
+| implicit | BPR | 0.3204 | 0.0069 | 5.1% |
+| corerec | NCF_binary | 0.3091 | **0.0178** | **13.1%** |
 
-implicit's BPR is the least stable entry in the table despite being constructed
-with `random_state=42`, so this is a property of negative sampling, not a
-CoreRec defect. It has a concrete consequence: **for those three rows, a single
-run is not meaningful at four decimal places, and small differences between
-them should not be read as real.** Ranking among the classical models is
-unaffected — the gaps there are far larger than the drift, and those models are
-deterministic anyway.
+ItemKNN has no randomness anywhere and lands on 0.0000 std across all five
+runs, which is what makes the rest of the column trustworthy: the spread on the
+others is the models, not the harness.
 
-Reporting mean ± std over several seeds is the correct fix and has not been
-done here. Until it is, treat the † rows as approximate.
+Three consequences, and they cut against the single-run table above:
+
+- **NCF_binary's 0.3236 and LightGCN's 0.3444 were lucky draws.** Their means
+  are 0.3091 and 0.3360. Any single run of a sampled-negative model can land
+  most of a standard deviation from where it belongs.
+- **A gap smaller than the relevant std is not a result.** NCF at 0.3359 and
+  NCF_binary at 0.3236 differ by less than NCF_binary's own std, so the
+  binarisation experiment proved nothing either way.
+- **Even ALS is seed-sensitive at 2.4%,** so the 1.7% quality margin CoreRec's
+  ALS holds over implicit's is inside the noise of a single run. It survived
+  because it reproduced exactly on two machines at a fixed seed, not because
+  0.4168 beats 0.4100 once.
+
+Reproduce with `Findings/bench/run_seeds.sh` (`SEEDS="1 2 3 4 5"`); every run's
+JSON records the seed it used.
 
 ## What this says
 

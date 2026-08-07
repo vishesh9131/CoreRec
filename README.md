@@ -8,7 +8,7 @@
 <div align="center">
   <img src="docs/images/coreRec.svg" width="80" height="80" style="margin-bottom: 16px;" /><br/>
   <h1>CoreRec</h1>
-  <p><strong>Production-grade recommendation systems framework.<br/>57+ models · Unified API · Multi-stage pipelines · Research to deployment.</strong></p>
+  <p><strong>Production-grade recommendation systems framework.<br/>34 models · Unified API · Multi-stage pipelines · Research to deployment.</strong></p>
   <br/>
   <code>pip install corerec</code> &nbsp;&nbsp; <code>pip install cr_learn</code>
   <br/><br/>
@@ -25,7 +25,7 @@
 CoreRec is a modern recommendation engine built for the deep learning era. It implements industry-standard architectures — Two-Tower retrieval, Transformers, Graph Neural Networks — following the multi-stage pipeline approach used at Netflix, YouTube, and major e-commerce platforms.
 
 - **Unified API**: every model shares `fit`, `predict`, `recommend`, `save`, `load`
-- **57+ algorithms**: deep learning, collaborative filtering, graph-based, sequential, Bayesian
+- **34 models**: deep learning, collaborative filtering, graph-based, sequential, matrix factorization
 - **Multi-stage pipeline**: Retrieval → Ranking → Reranking in a single orchestrated system
 - **cr_learn**: companion dataset library for fast prototyping on real-world data
 
@@ -33,7 +33,7 @@ CoreRec is a modern recommendation engine built for the deep learning era. It im
 
 <img src="docs/images/g1.png" width="400" height="400" />
 
-> Last updated: 2024-11-20
+> Chart is a historical snapshot; see [PyPI](https://pypi.org/project/corerec/) for current figures.
 
 ---
 
@@ -104,6 +104,31 @@ rather than left for you to discover.
 
 ---
 
+## How it compares
+
+Measured against [`implicit`](https://github.com/benfred/implicit) on MovieLens-100K,
+same split, same budget (`RANK_DIM=32`, `EPOCHS=20`), CPU only. Full method,
+caveats and raw JSON in **[BENCHMARKS.md](BENCHMARKS.md)**.
+
+| Model | NDCG@10 | Fit (s) | |
+|---|---:|---:|---|
+| **corerec ALS** | **0.4168** | 5.13 | beats implicit's ALS on quality |
+| implicit ALS | 0.4100 | 0.56 | ~9x faster to fit |
+| **corerec SAR (cosine)** | **0.3955** | 0.35 | beats implicit's cosine ItemKNN |
+| implicit ItemKNN | 0.3858 | 0.08 | |
+
+CoreRec wins the like-for-like model comparisons and **loses on speed by roughly
+9x** — implicit is years of tuned Cython over BLAS, and on data 100x this size
+that ratio is the deciding factor. Fusing two models with reciprocal rank fusion,
+implicit's ensemble still edges CoreRec's (0.4547 vs 0.4493).
+
+The benchmark also found seven bugs in CoreRec itself, including a `batch_predict`
+that never batched (262ms → 6.8ms per user once fixed) and a graph model that
+cannot finish training on the smallest standard dataset within an hour. Those are
+documented rather than omitted.
+
+---
+
 ## Core API
 
 Every model in CoreRec inherits from `BaseRecommender` and exposes the same interface:
@@ -125,7 +150,7 @@ model = ModelClass.load('artifacts/my_model')   # restore
 
 ## Model Families
 
-### <img src="docs/images/feature.png" width="20" height="20" style="vertical-align:middle"/> Deep Learning (29 models)
+### <img src="docs/images/feature.png" width="20" height="20" style="vertical-align:middle"/> Deep Learning
 
 Best for feature-rich data with complex interaction patterns.
 
@@ -139,7 +164,8 @@ Best for feature-rich data with complex interaction patterns.
 | **NASRec** | Neural Architecture Search for RecSys | `from corerec.engines import NASRec` |
 | **BERT4Rec** | Bidirectional Transformer for sequences | `from corerec.engines.content_based import BERT4Rec` |
 | **TwoTower** | Dual-encoder retrieval (YouTube-style) | `from corerec.engines import TwoTower` |
-| AFM, AutoInt, DIN, DIEN, DLRM, PNN, NCF, NFM, FIBINet, xDeepFM, Wide&Deep, YouTubeDNN, ESMM, MMoE, PLE, FGCNN, Monolith … | | see `corerec.engines` |
+| **NCF** | Neural Collaborative Filtering | `from corerec.engines.collaborative import NCF` |
+| AFM, AutoInt, DIN, DIEN, NFM, PNN, FiBiNet, xDeepFM, WideDeep, Caser, MultVAE, MultiDAE | lazily exported | `from corerec.engines import AutoInt` |
 
 #### DCN example
 
@@ -342,18 +368,17 @@ All example scripts try `cr_learn` first and fall back to the bundled `sample_da
 
 ---
 
-## Optimizers / Boosters
+## Optimizers
 
-CoreRec ships its own optimizer suite (compatible with `torch.optim` API):
+CoreRec uses `torch.optim` directly. It used to ship `corerec.cr_boosters`, a
+copy of PyTorch's optimizers; that was removed in 0.6.0 along with ~159k lines
+of other vendored PyTorch source, so use the originals:
 
 ```python
-from corerec.cr_boosters.adam   import Adam
-from corerec.cr_boosters.nadam  import NAdam
+from torch.optim import Adam, NAdam
 
 optimizer = Adam(model.parameters(), lr=0.001)
 ```
-
-Available: **Adam · NAdam · Adamax · Adadelta · Adagrad · ASGD · LBFGS · RMSprop · SGD · SparseAdam**
 
 ---
 

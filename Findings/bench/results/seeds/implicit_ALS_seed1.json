@@ -1,0 +1,19 @@
+{
+  "framework": "implicit",
+  "model": "ALS",
+  "seed": 1,
+  "dataset": "ml100k",
+  "size": 99968,
+  "n_users": 943,
+  "n_items": 1650,
+  "device": "cpu",
+  "fit_time_s": 0.3726,
+  "recommend_latency_ms_per_user": 0.0614,
+  "peak_mem_mb": 274.9,
+  "Recall@10": 0.22225,
+  "NDCG@10": 0.40051,
+  "HitRate@10": 0.90667,
+  "n_eval_users": 300,
+  "RMSE": null,
+  "MAE": null
+}

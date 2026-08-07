@@ -14,13 +14,8 @@ Decompose the user-item interaction matrix into latent factors.
 
 **Available Algorithms:**
 
-- **SVD** (Singular Value Decomposition)
 - **ALS** (Alternating Least Squares)
-- **NMF** (Non-negative Matrix Factorization)
-- **PMF** (Probabilistic Matrix Factorization)
-- **WNMF** (Weighted NMF)
-- **SVD++** (Extended SVD)
-- **RSVD** (Regularized SVD)
+- **Item2Vec** (skip-gram embeddings over interaction sequences)
 
 [**→ Matrix Factorization Documentation**](matrix-factorization.md)
 
@@ -32,14 +27,15 @@ Deep learning approaches to collaborative filtering.
 
 - **NCF** (Neural Collaborative Filtering)
 - **DeepFM** (Deep Factorization Machines)
-- **AutoInt** (Automatic Feature Interaction)
 - **DCN** (Deep & Cross Network)
+- **AutoInt** (Automatic Feature Interaction)
 - **AFM** (Attentional Factorization Machines)
 - **DIN** (Deep Interest Network)
 - **DIEN** (Deep Interest Evolution Network)
 - **NFM** (Neural Factorization Machines)
-- **Wide & Deep**
 - **PNN** (Product-based Neural Networks)
+- **WideDeep**, **xDeepFM**, **FiBiNet**
+- **TwoTower** (retrieval)
 
 [**→ Neural Network Documentation**](neural-network.md)
 
@@ -50,12 +46,10 @@ Leverage graph structure in recommendation.
 **Available Algorithms:**
 
 - **LightGCN** (Light Graph Convolutional Network)
-- **DeepWalk** (Random walk embeddings)
-- **GNN** (Graph Neural Networks)
-- **GeoimC** (Geometric Matrix Completion)
-- **Edge-Aware Filtering**
-- **Multi-Relational GNN**
-- **Heterogeneous Network Embedding**
+- **NGCF** (Neural Graph Collaborative Filtering)
+- **GNNRec** (graph neural recommender). Check BENCHMARKS.md before using this
+  one: it does not finish training on MovieLens-100K within an hour on a single
+  core, where LightGCN takes 151s.
 
 [**→ Graph-Based Documentation**](graph-based.md)
 
@@ -66,8 +60,7 @@ Attention-based collaborative filtering.
 **Available Algorithms:**
 
 - **SASRec** (Self-Attentive Sequential Recommendation)
-- **Transformer-based Recommenders**
-- **A2SVD** (Attentive Collaborative Filtering)
+- **BERT4Rec** (bidirectional transformer)
 - **Attention-based Sequential Models**
 
 [**→ Attention Mechanisms Documentation**](attention-mechanisms.md)
@@ -78,11 +71,8 @@ Probabilistic approaches to recommendation.
 
 **Available Algorithms:**
 
-- **BPR** (Bayesian Personalized Ranking)
-- **BPRMF** (BPR Matrix Factorization)
 - **Bayesian MF** (Bayesian Matrix Factorization)
-- **VMF** (von Mises-Fisher)
-- **Multinomial VAE**
+- **MultVAE** / **MultiDAE** (multinomial variational autoencoders)
 - **Probabilistic Graphical Models**
 
 [**→ Bayesian Methods Documentation**](bayesian-methods.md)
@@ -96,8 +86,6 @@ Time-aware and sequence-aware recommendations.
 - **LSTM-based Recommenders**
 - **GRU-based Recommenders**
 - **Caser** (Convolutional Sequence Embedding)
-- **NextItNet** (Next Item Network)
-- **DIEN** (Deep Interest Evolution)
 
 [**→ Sequential Models Documentation**](sequential-models.md)
 
@@ -107,11 +95,8 @@ Generative models for recommendations.
 
 **Available Algorithms:**
 
-- **VAE** (Variational Autoencoder)
-- **CVAE** (Conditional VAE)
-- **Beta-VAE**
-- **Mult-VAE** (Multinomial VAE)
-- **RecVAE**
+- **MultVAE** (Multinomial VAE)
+- **MultiDAE** (Denoising autoencoder)
 
 [**→ Variational Encoders Documentation**](variational-encoders.md)
 
@@ -305,11 +290,11 @@ model.fit(user_ids, item_ids, ratings)
 ## Performance Tips
 
 1. **Choose the right algorithm:**
-   - Small data: SVD, ALS
+   - Small data: ALS, ItemKNN, EASE
    - Medium data: NCF, DeepFM
    - Large data: LightGCN, GNN
    - Sequential: SASRec, LSTM
-   - Sparse data: VAE, RBM
+   - Sparse data: MultVAE, SLIM
 
 2. **Optimize hyperparameters:**
    ```python
@@ -339,13 +324,13 @@ model.fit(user_ids, item_ids, ratings)
 
 | Algorithm | Training Speed | Accuracy | Scalability | Best For |
 |-----------|---------------|----------|-------------|----------|
-| SVD | ⚡⚡⚡ | ⭐⭐⭐ | ⭐⭐⭐ | General purpose |
+| ALS | ⚡⚡⚡ | ⭐⭐⭐ | ⭐⭐⭐ | General purpose |
 | ALS | ⚡⚡⚡ | ⭐⭐⭐ | ⭐⭐⭐⭐ | Implicit feedback |
 | NCF | ⚡⚡ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | Deep learning |
 | LightGCN | ⚡⚡ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | Graph structure |
 | SASRec | ⚡ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | Sequential data |
 | BPR | ⚡⚡⚡ | ⭐⭐⭐⭐ | ⭐⭐⭐ | Implicit feedback |
-| VAE | ⚡⚡ | ⭐⭐⭐⭐ | ⭐⭐⭐ | Sparse data |
+| MultVAE | ⚡⚡ | ⭐⭐⭐⭐ | ⭐⭐⭐ | Sparse data |
 
 ## See Also
 

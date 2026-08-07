@@ -25,6 +25,8 @@ import metrics as M
 K = 10
 RANK_DIM = 32      # latent dim shared by MF-class models
 EPOCHS = 20        # shared training budget for iterative models
+SEED = 42          # set from --seed; models that sample negatives need several
+                   # runs before a single number means anything (see BENCHMARKS)
 
 
 def peak_mem_mb():
@@ -57,27 +59,27 @@ def run_cornac(model_name, data):
     cm = cornac.models
     if model_name == "BPR":
         model = cm.BPR(k=RANK_DIM, max_iter=EPOCHS, learning_rate=0.01,
-                       lambda_reg=0.001, seed=42, verbose=False)
+                       lambda_reg=0.001, seed=SEED, verbose=False)
     elif model_name == "MF":
         model = cm.MF(k=RANK_DIM, max_iter=EPOCHS, learning_rate=0.01,
-                      lambda_reg=0.02, use_bias=True, seed=42, verbose=False)
+                      lambda_reg=0.02, use_bias=True, seed=SEED, verbose=False)
     elif model_name == "NeuMF":
         model = cm.NeuMF(num_factors=RANK_DIM, layers=[64, 32, 16], num_epochs=EPOCHS,
-                         batch_size=256, lr=0.001, seed=42, verbose=False)
+                         batch_size=256, lr=0.001, seed=SEED, verbose=False)
     elif model_name == "GMF":
         model = cm.GMF(num_factors=RANK_DIM, num_epochs=EPOCHS, batch_size=256,
-                       lr=0.001, seed=42, verbose=False)
+                       lr=0.001, seed=SEED, verbose=False)
     elif model_name == "LightGCN":
         model = cm.LightGCN(emb_size=RANK_DIM, num_epochs=EPOCHS, num_layers=3,
-                            batch_size=1024, learning_rate=0.001, seed=42, verbose=False)
+                            batch_size=1024, learning_rate=0.001, seed=SEED, verbose=False)
     elif model_name == "NGCF":
         model = cm.NGCF(emb_size=RANK_DIM, num_epochs=EPOCHS, batch_size=1024,
-                        learning_rate=0.001, seed=42, verbose=False)
+                        learning_rate=0.001, seed=SEED, verbose=False)
     elif model_name == "VAECF":
         model = cm.VAECF(k=RANK_DIM, n_epochs=EPOCHS, batch_size=256,
-                         learning_rate=0.001, seed=42, verbose=False)
+                         learning_rate=0.001, seed=SEED, verbose=False)
     elif model_name == "WMF":
-        model = cm.WMF(k=RANK_DIM, max_iter=EPOCHS, learning_rate=0.001, seed=42, verbose=False)
+        model = cm.WMF(k=RANK_DIM, max_iter=EPOCHS, learning_rate=0.001, seed=SEED, verbose=False)
     elif model_name == "ItemKNN":
         model = cm.ItemKNN(k=20, similarity="cosine", verbose=False)
     elif model_name == "UserKNN":
@@ -147,11 +149,11 @@ def run_implicit(model_name, data):
     if model_name == "ALS":
         model = implicit.als.AlternatingLeastSquares(
             factors=RANK_DIM, iterations=EPOCHS, regularization=0.01,
-            random_state=42, use_gpu=False)
+            random_state=SEED, use_gpu=False)
     elif model_name == "BPR":
         model = implicit.bpr.BayesianPersonalizedRanking(
             factors=RANK_DIM, iterations=EPOCHS, learning_rate=0.01,
-            regularization=0.01, random_state=42, use_gpu=False)
+            regularization=0.01, random_state=SEED, use_gpu=False)
     else:
         raise ValueError(model_name)
 
@@ -178,7 +180,7 @@ def run_lightfm(model_name, data):
                       (tr["uidx"].values, tr["iidx"].values)), shape=(n_u, n_i))
     loss = "warp" if model_name == "WARP" else "bpr"
     model = LightFM(no_components=RANK_DIM, loss=loss, learning_rate=0.05,
-                    random_state=42)
+                    random_state=SEED)
     t0 = time.perf_counter()
     model.fit(mat, epochs=EPOCHS, num_threads=1)
     fit_t = time.perf_counter() - t0
@@ -197,7 +199,7 @@ def run_surprise(model_name, data):
     ds = Dataset.load_from_df(tr[["uidx", "iidx", "rating"]], reader)
     trainset = ds.build_full_trainset()
     algo = SVD(n_factors=RANK_DIM, n_epochs=EPOCHS, lr_all=0.005, reg_all=0.02,
-               random_state=42)
+               random_state=SEED)
     t0 = time.perf_counter()
     algo.fit(trainset)
     fit_t = time.perf_counter() - t0
@@ -289,7 +291,7 @@ def run_corerec(model_name, data):
         from corerec.engines.collaborative import NCF
         model = NCF(model_type="NeuMF", gmf_embedding_dim=RANK_DIM,
                     mlp_embedding_dim=RANK_DIM, num_epochs=EPOCHS,
-                    learning_rate=0.001, verbose=False, seed=42, device=DEVICE)
+                    learning_rate=0.001, verbose=False, seed=SEED, device=DEVICE)
         # NCF.fit labels every observed interaction 1.0 and samples negatives
         # (see ncf.py: ratings_parts = [np.ones(len(pos_u))]), so the rating
         # column is discarded -- a 1-star rating trains as a positive. Passing
@@ -315,7 +317,8 @@ def run_corerec(model_name, data):
     if model_name == "LightGCN":
         from corerec.engines.collaborative import LightGCN
         model = LightGCN(n_factors=RANK_DIM, n_layers=3, epochs=EPOCHS,
-                         learning_rate=0.001, verbose=False, device=DEVICE)
+                         learning_rate=0.001, verbose=False, device=DEVICE,
+                         seed=SEED)
         t0 = time.perf_counter()
         model.fit(user_ids=uid, item_ids=iid, ratings=(rt >= 4).astype(float))
         fit_t = time.perf_counter() - t0
@@ -461,7 +464,7 @@ def run_implicit_ensemble(model_name, data):
     t0 = time.perf_counter()
     als = implicit.als.AlternatingLeastSquares(
         factors=RANK_DIM, iterations=EPOCHS, regularization=0.01,
-        random_state=42, use_gpu=False)
+        random_state=SEED, use_gpu=False)
     als.fit(ui, show_progress=False)
 
     knn = implicit.nearest_neighbours.CosineRecommender(K=20)
@@ -502,8 +505,19 @@ def main():
                     help="subsample to N interactions (ml1m only)")
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--eval_users", type=int, default=300)
+    ap.add_argument("--seed", type=int, default=42,
+                    help="model seed; the evaluation cohort stays fixed regardless")
     args = ap.parse_args()
     global DEVICE
+    global SEED
+    SEED = args.seed
+    np.random.seed(SEED)          # models that use the global RNG
+    try:
+        import torch
+        torch.manual_seed(SEED)
+    except ImportError:
+        pass
+
     DEVICE = args.device
     if args.device == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -511,7 +525,7 @@ def main():
     data = datautil.load_dataset(args.dataset, n_interactions=args.size)
     seen = datautil.train_seen(data)
     rel = datautil.test_relevant(data)
-    eu = datautil.eval_users(data, n=args.eval_users, seed=42)
+    eu = datautil.eval_users(data, n=args.eval_users, seed=42)  # fixed cohort across seeds
 
     score_fn, rating_fn, fit_t = DISPATCH[args.framework](args.model, data)
 
@@ -524,6 +538,7 @@ def main():
     out = {
         "framework": args.framework,
         "model": args.model,
+        "seed": args.seed,
         "dataset": args.dataset,
         "size": args.size if args.size is not None else len(data["train"]) + len(data["test"]),
         "n_users": data["n_users"],

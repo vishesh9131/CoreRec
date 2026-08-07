@@ -53,11 +53,8 @@ The Unionized Filter Engine specializes in collaborative filtering approaches th
 #### Matrix Factorization
 Decompose user-item matrix into latent factors:
 
-- **SVD** (Singular Value Decomposition)
 - **ALS** (Alternating Least Squares)
-- **NMF** (Non-negative Matrix Factorization)
-- **PMF** (Probabilistic Matrix Factorization)
-- **WNMF** (Weighted NMF)
+- **Item2Vec** (skip-gram embeddings over interaction sequences)
 
 ```python
 from corerec.engines.unionizedFilterEngine.mf_base.SVD_base import SVD
@@ -89,9 +86,7 @@ model.fit(user_ids, item_ids, ratings)
 Leverage graph structure for recommendations:
 
 - **LightGCN** (Light Graph Convolutional Network)
-- **DeepWalk** (Random walk embeddings)
 - **GNN** (Graph Neural Networks)
-- **GeoimC** (Geometric Matrix Completion)
 
 ```python
 from corerec.engines.unionizedFilterEngine.graph_based_base.lightgcn import LightGCN
@@ -105,7 +100,6 @@ Attention-based recommendations:
 
 - **SASRec** (Self-Attentive Sequential Recommendation)
 - **Transformer** (Transformer-based recommenders)
-- **A2SVD** (Attentive Collaborative Filtering)
 
 ```python
 from corerec.engines.unionizedFilterEngine.attention_mechanism_base.sasrec import SASRec
@@ -117,24 +111,16 @@ model.fit(user_ids, item_ids, timestamps)
 #### Bayesian Methods
 Probabilistic approaches:
 
-- **BPR** (Bayesian Personalized Ranking)
 - **Bayesian MF** (Bayesian Matrix Factorization)
-- **VMF** (von Mises-Fisher)
 
 #### Sequential Models
 Time-aware recommendations:
 
-- **LSTM** (Long Short-Term Memory)
-- **GRU** (Gated Recurrent Unit)
 - **Caser** (Convolutional Sequence Embedding)
-- **NextItNet** (Next Item Network)
 
 #### Variational Encoders
 Generative models:
 
-- **VAE** (Variational Autoencoder)
-- **CVAE** (Conditional VAE)
-- **Beta-VAE**
 
 [**→ Learn more about Unionized Filter Engine**](unionized-filter/index.md)
 
@@ -152,9 +138,7 @@ The Content Filter Engine focuses on item and user features for recommendations.
 Classical machine learning algorithms:
 
 - **TF-IDF** (Term Frequency-Inverse Document Frequency)
-- **SVM** (Support Vector Machines)
 - **Decision Trees**
-- **LightGBM** (Gradient Boosting)
 - **Logistic Regression**
 - **Vowpal Wabbit**
 
@@ -171,7 +155,6 @@ Deep learning for content-based filtering:
 
 - **DSSM** (Deep Structured Semantic Model)
 - **MIND** (Multi-Interest Network)
-- **TDM** (Tree-based Deep Model)
 - **YouTube DNN**
 - **CNN**, **RNN**, **Transformers**
 - **Autoencoders**, **VAE**
@@ -194,7 +177,6 @@ Graph neural networks for content:
 Learn feature embeddings:
 
 - **Word2Vec**
-- **Doc2Vec**
 - **Personalized Embeddings**
 
 ```python
