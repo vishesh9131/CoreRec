@@ -82,30 +82,36 @@ Transform raw features into model-ready representations.
 
 **Available Encoders:**
 
-- **CategoricalEncoder**: Encode categorical features
-- **NumericalEncoder**: Normalize numerical features
-- **SequenceEncoder**: Encode sequential data
-- **MultiModalEncoder**: Handle multiple modalities
+- **AbstractEncoder**: Base class to subclass for your own modality
+- **TextEncoder**: Encode text features
+- **VisionEncoder**: Encode image features
 
 ```python
-from corerec.core.encoders import CategoricalEncoder, NumericalEncoder
+from corerec.core import AbstractEncoder, TextEncoder, VisionEncoder
 
-# Categorical encoder
-cat_encoder = CategoricalEncoder(
-    vocab_size=10000,
-    embedding_dim=64
-)
+text_encoder = TextEncoder()
+vision_encoder = VisionEncoder()
 
-# Numerical encoder
-num_encoder = NumericalEncoder(
-    input_dim=50,
-    output_dim=64,
-    normalization='batch'
-)
+text_embeddings = text_encoder(text_features)
+image_embeddings = vision_encoder(image_features)
+```
 
-# Encode features
-cat_embeddings = cat_encoder(categorical_features)
-num_embeddings = num_encoder(numerical_features)
+For categorical and numerical features, use `torch.nn.Embedding` and
+`torch.nn.Linear` directly, or subclass `AbstractEncoder`:
+
+```python
+import torch.nn as nn
+
+from corerec.core import AbstractEncoder
+
+
+class CategoricalEncoder(AbstractEncoder):
+    def __init__(self, vocab_size, embedding_dim):
+        super().__init__()
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+
+    def forward(self, x):
+        return self.embedding(x)
 ```
 
 [**→ Learn more about Encoders**](encoders.md)
@@ -251,7 +257,7 @@ class TwoTowerRecommender(BaseRecommender):
 
 ```python
 from corerec.core.towers import MLPTower, CNNTower, FusionTower
-from corerec.core.encoders import MultiModalEncoder
+from corerec.core import VisionEncoder, TextEncoder
 
 class MultiModalRecommender(BaseRecommender):
     """Multi-modal recommendation model"""
@@ -303,7 +309,7 @@ class MultiModalRecommender(BaseRecommender):
 
 ```python
 from corerec.core.towers import TransformerTower
-from corerec.core.encoders import SequenceEncoder
+from corerec.core import AbstractEncoder
 
 class AttentionRecommender(BaseRecommender):
     """Attention-based sequential recommender"""

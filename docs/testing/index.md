@@ -10,7 +10,6 @@ CoreRec's tests are organized by engine and component:
 tests/
 ├── unionizedFilterEngine/          # Collaborative filtering tests
 │   ├── algorithms_smoke_test.py    # Quick smoke tests
-│   ├── mf_base_import_test.py      # Matrix factorization tests
 │   ├── nn_base_import_test.py      # Neural network tests
 │   ├── graph_based_base_import_test.py
 │   ├── attention_mechanism_base_import_test.py
@@ -96,19 +95,19 @@ python tests/engines_models_smoke_test.py
 Test individual components and methods:
 
 ```python
-# tests/test_SVD_base.py
+# tests/test_als.py
 import pytest
-from corerec.engines.collaborative.mf_base.SVD_base import SVD
+from corerec.engines.matrix_factorization import ALS
 
-def test_svd_initialization():
-    """Test SVD model initialization"""
-    model = SVD(n_factors=20, n_epochs=10)
-    assert model.n_factors == 20
-    assert model.n_epochs == 10
+def test_als_initialization():
+    """Test ALS model initialization"""
+    model = ALS(factors=20, iterations=10)
+    assert model.factors == 20
+    assert model.iterations == 10
 
-def test_svd_fit():
-    """Test SVD training"""
-    model = SVD(n_factors=10, n_epochs=5)
+def test_als_fit():
+    """Test ALS training"""
+    model = ALS(factors=10, iterations=5)
     user_ids = [1, 1, 2, 2, 3]
     item_ids = [1, 2, 1, 3, 2]
     ratings = [5.0, 4.0, 4.0, 5.0, 3.0]
@@ -116,9 +115,9 @@ def test_svd_fit():
     model.fit(user_ids, item_ids, ratings)
     assert model.is_fitted
 
-def test_svd_predict():
-    """Test SVD prediction"""
-    model = SVD(n_factors=10, n_epochs=5)
+def test_als_predict():
+    """Test ALS prediction"""
+    model = ALS(factors=10, iterations=5)
     user_ids = [1, 1, 2, 2, 3]
     item_ids = [1, 2, 1, 3, 2]
     ratings = [5.0, 4.0, 4.0, 5.0, 3.0]
@@ -238,29 +237,21 @@ def test_deepfm_smoke():
 Verify all imports work:
 
 ```python
-# tests/unionizedFilterEngine/mf_base_import_test.py
-"""Test imports for matrix factorization algorithms"""
+# tests/test_imports.py
+"""Every advertised model must actually import."""
+import pytest
 
-def test_svd_import():
-    try:
-        from corerec.engines.collaborative.mf_base.SVD_base import SVD
-        print("✓ SVD import successful")
-    except ImportError as e:
-        print(f"✗ SVD import failed: {e}")
 
-def test_als_import():
-    try:
-        from corerec.engines import ALS
-        print("✓ ALS import successful")
-    except ImportError as e:
-        print(f"✗ ALS import failed: {e}")
-
-def test_nmf_import():
-    try:
-        from corerec.engines.collaborative.mf_base.nmf_base import NMF
-        print("✓ NMF import successful")
-    except ImportError as e:
-        print(f"✗ NMF import failed: {e}")
+@pytest.mark.parametrize("module_path,name", [
+    ("corerec.engines.matrix_factorization", "ALS"),
+    ("corerec.engines.matrix_factorization", "Item2Vec"),
+    ("corerec.engines.collaborative", "LightGCN"),
+    ("corerec.engines.collaborative", "SAR"),
+])
+def test_model_imports(module_path, name):
+    import importlib
+    module = importlib.import_module(module_path)
+    assert hasattr(module, name), f"{module_path} does not export {name}"
 ```
 
 ## Writing Tests
@@ -368,11 +359,11 @@ import pytest
     (20, 10),
     (50, 20)
 ])
-def test_svd_with_different_params(n_factors, n_epochs):
-    """Test SVD with different hyperparameters"""
-    from corerec.engines.collaborative.mf_base.SVD_base import SVD
-    
-    model = SVD(n_factors=n_factors, n_epochs=n_epochs)
+def test_als_with_different_params(n_factors, n_epochs):
+    """Test ALS with different hyperparameters"""
+    from corerec.engines.matrix_factorization import ALS
+
+    model = ALS(factors=n_factors, iterations=n_epochs)
     user_ids = [1, 1, 2, 2, 3]
     item_ids = [1, 2, 1, 3, 2]
     ratings = [5.0, 4.0, 4.0, 5.0, 3.0]

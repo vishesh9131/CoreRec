@@ -12,9 +12,9 @@ second, Sphinx-shaped tree that the docs workflow builds but never deploys
 (only ``mkdocs gh-deploy`` publishes), so its ~54 stale pages are a separate
 cleanup and are not gated here.
 
-KNOWN_STALE records pages that still reference removed APIs. It exists so the
-backlog is visible and cannot grow, not to excuse it -- deleting entries as the
-pages are rewritten is the point.
+KNOWN_STALE is the escape hatch for pages that still reference removed APIs.
+It is currently empty, which is the point: every published page imports things
+that exist, and a new broken reference fails the build rather than accumulating.
 """
 
 import importlib
@@ -37,19 +37,16 @@ IMPORT_RE = re.compile(
 # Placeholders that are meant to be filled in by the reader, not imported.
 PLACEHOLDERS = {"corerec.engines.your_model"}
 
-# page -> the removed APIs it still documents. Every symbol in these has been
-# confirmed to have no home anywhere in the package: SVD, NMF, DeviceManager,
-# the corerec.core.encoders classes, and the corerec.utils logger/profiler/
-# example_data helpers were all removed without the docs following.
-KNOWN_STALE = {
-    "core/index.md",
-    "engines/collaborative/index.md",
-    "engines/index.md",
-    "examples/index.md",
-    "getting-started/architecture.md",
-    "testing/index.md",
-    "utilities/index.md",
-}
+# Pages that still reference removed APIs. Empty: every published page now
+# imports things that exist. SVD, NMF, RLRMC, DeviceManager, the
+# corerec.core.encoders classes and the corerec.utils logger/profiler/
+# example_data helpers were all deleted from the package without the docs
+# following; those sections now use the real replacements (ALS, Item2Vec,
+# AbstractEncoder/TextEncoder/VisionEncoder, corerec.utils.get_logger, plain
+# torch device handling, cProfile).
+#
+# Add a page here only as a deliberate, temporary exception.
+KNOWN_STALE: set = set()
 
 _cache: dict = {}
 

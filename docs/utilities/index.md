@@ -332,84 +332,55 @@ os.environ['COREREC_MODEL_EMBEDDING_DIM'] = '128'
 
 ## Device Management
 
-Handle CPU/GPU devices efficiently.
-
-### Basic Device Management
+Models take a `device` argument and otherwise follow normal PyTorch conventions;
+CoreRec has no device-manager abstraction of its own.
 
 ```python
-from corerec.engines.collaborative.device_manager import DeviceManager
+import torch
 
-# Initialize device manager
-device_manager = DeviceManager()
-
-# Get available device
-device = device_manager.get_device()
+device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {device}")
 
-# Check CUDA availability
-if device_manager.is_cuda_available():
-    print("CUDA is available")
-    print(f"Number of GPUs: {device_manager.get_num_gpus()}")
-
-# Move model to device
-model = model.to(device)
+model = TwoTower(embedding_dim=64, device=device)
+model.fit(user_ids, item_ids, ratings)
 ```
 
-### Multi-GPU Support
+### Multiple GPUs
 
 ```python
-# Use specific GPU
-device_manager = DeviceManager(gpu_id=0)
-
-# Use multiple GPUs
-device_manager = DeviceManager(gpu_ids=[0, 1, 2])
-
-# Distribute model across GPUs
-model = torch.nn.DataParallel(model, device_ids=[0, 1, 2])
+if torch.cuda.device_count() > 1:
+    print(f"{torch.cuda.device_count()} GPUs available")
+    model.model = torch.nn.DataParallel(model.model)
 ```
 
-### Memory Management
+### Memory
 
 ```python
-# Monitor GPU memory
-memory_used = device_manager.get_memory_usage()
-print(f"GPU Memory Used: {memory_used:.2f} GB")
-
-# Clear cache
-device_manager.clear_cache()
-
-# Set memory limit
-device_manager.set_memory_limit(max_memory_gb=8)
+if torch.cuda.is_available():
+    print(f"allocated: {torch.cuda.memory_allocated() / 1e9:.2f} GB")
+    torch.cuda.empty_cache()
 ```
-
-[**→ Learn more about Device Management**](device-management.md)
 
 ## Example Data
 
-Generate sample data for testing.
+CoreRec does not bundle a sample-data helper. The example script generates its
+own interactions, which is the pattern to copy for quick experiments:
 
 ```python
-from corerec.utils.example_data import (
-    get_sample_data,
-    generate_synthetic_data
-)
+from examples.train_and_serve import build_interactions
 
-# Get built-in sample data
-netflix_data = get_sample_data('netflix')
-spotify_data = get_sample_data('spotify')
-youtube_data = get_sample_data('youtube')
+users, items, ratings, _, _ = build_interactions(seed=0)
+```
 
-# Generate synthetic data
-synthetic_data = generate_synthetic_data(
-    num_users=1000,
-    num_items=500,
-    num_interactions=10000,
-    rating_range=(1, 5)
-)
+For a real dataset, `corerec[datasets]` provides MovieLens via `cr_learn`:
 
-user_ids = synthetic_data['user_ids']
-item_ids = synthetic_data['item_ids']
-ratings = synthetic_data['ratings']
+```python
+from cr_learn import ml_1m          # pip install corerec[datasets]
+
+ratings_df = ml_1m.load()["ratings"]
+user_ids = ratings_df["user_id"].values
+item_ids = ratings_df["movie_id"].values
+ratings = ratings_df["rating"].values
 ```
 
 ## Logging and Debugging
@@ -418,13 +389,13 @@ ratings = synthetic_data['ratings']
 
 ```python
 import logging
-from corerec.utils.logger import setup_logger
+from corerec.utils import get_logger
 
 # Setup logger
-logger = setup_logger(
+logger = get_logger(
     name='corerec',
+    log_file='corerec.log',
     level=logging.INFO,
-    log_file='corerec.log'
 )
 
 # Use logger
@@ -449,41 +420,38 @@ model = DCN(verbose=True, debug=True)
 
 ## Performance Profiling
 
-### Profile Training
+CoreRec does not ship its own profiler. Use the standard library and the
+existing Python tooling, which is better maintained than anything a
+recommender library should be writing:
 
 ```python
-from corerec.utils.profiler import Profiler
+import cProfile
+import pstats
 
-# Create profiler
-profiler = Profiler()
+from corerec.utils import print_system_info
 
-# Start profiling
-profiler.start()
+print_system_info()   # CPU / BLAS / torch build, useful when comparing timings
 
-# Train model
+profiler = cProfile.Profile()
+profiler.enable()
 model.fit(user_ids, item_ids, ratings)
+profiler.disable()
 
-# Stop profiling
-stats = profiler.stop()
-
-# Print statistics
-print(stats.summary())
-
-# Save profile
-stats.save('profile.txt')
+pstats.Stats(profiler).sort_stats("cumtime").print_stats(20)
 ```
 
 ### Memory Profiling
 
-```python
-from corerec.utils.memory_profiler import memory_profile
+`pip install memory-profiler`, then:
 
-@memory_profile
+```python
+from memory_profiler import profile
+
+@profile
 def train_model():
     model = DCN(embedding_dim=64)
     model.fit(user_ids, item_ids, ratings)
 
-# This will print memory usage
 train_model()
 ```
 

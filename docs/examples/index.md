@@ -333,14 +333,22 @@ ratings = np.random.uniform(1, 5, num_interactions).tolist()
 ### Example: Using Sample Data
 
 ```python
-from corerec.utils.example_data import get_sample_data
+# The runnable example generates its own interactions; copy this for
+# quick experiments without downloading anything.
+from examples.train_and_serve import build_interactions
 
-# Load built-in sample data
-data = get_sample_data('netflix')
+user_ids, item_ids, ratings, _, _ = build_interactions(seed=0)
+```
 
-user_ids = data['user_ids']
-item_ids = data['item_ids']
-ratings = data['ratings']
+For a real dataset, install `corerec[datasets]`:
+
+```python
+from cr_learn import ml_1m
+
+ratings_df = ml_1m.load()["ratings"]
+user_ids = ratings_df["user_id"].values
+item_ids = ratings_df["movie_id"].values
+ratings = ratings_df["rating"].values
 ```
 
 ## Evaluation Examples

@@ -53,16 +53,13 @@ The Unionized Filter Engine specializes in collaborative filtering approaches th
 #### Matrix Factorization
 Decompose user-item matrix into latent factors:
 
-- **SVD** (Singular Value Decomposition)
 - **ALS** (Alternating Least Squares)
-- **NMF** (Non-negative Matrix Factorization)
-- **PMF** (Probabilistic Matrix Factorization)
-- **WNMF** (Weighted NMF)
+- **Item2Vec** (skip-gram embeddings over interaction sequences)
 
 ```python
-from corerec.engines.collaborative.mf_base.SVD_base import SVD
+from corerec.engines.matrix_factorization import ALS
 
-model = SVD(n_factors=50, n_epochs=20)
+model = ALS(factors=50, iterations=20)
 model.fit(user_ids, item_ids, ratings)
 recs = model.recommend(user_id=123, top_k=10)
 ```

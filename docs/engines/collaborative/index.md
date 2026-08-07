@@ -120,14 +120,14 @@ Generative models for recommendations.
 ### Example: Matrix Factorization
 
 ```python
-from corerec.engines.collaborative.mf_base.SVD_base import SVD
+from corerec.engines.matrix_factorization import ALS
 
-# Initialize SVD model
-model = SVD(
-    n_factors=50,
-    n_epochs=20,
-    learning_rate=0.01,
-    regularization=0.02
+# Initialize ALS model
+model = ALS(
+    factors=50,
+    iterations=20,
+    reg=10.0,
+    alpha=1.0
 )
 
 # Train model
@@ -236,17 +236,17 @@ model.fit(user_ids, item_ids, ratings)
 recs = model.recommend(user_id=123, top_k=10)
 ```
 
-### RLRMC (Riemannian Low-Rank Matrix Completion)
+### Item2Vec (Embedding-Based)
 
-Geometric approach to matrix completion:
+Skip-gram embeddings over interaction sequences:
 
 ```python
-from corerec.engines.collaborative.rlrmc import RLRMC
+from corerec.engines.matrix_factorization import Item2Vec
 
-model = RLRMC(
-    rank=20,
-    max_iter=100,
-    tol=1e-4
+model = Item2Vec(
+    factors=50,
+    iterations=20,
+    num_negatives=5
 )
 
 model.fit(user_ids, item_ids, ratings)
@@ -267,23 +267,20 @@ model.fit(user_ids, item_ids, ratings)
 recs = model.recommend(user_id=123, top_k=10)
 ```
 
-## Factory Pattern
+## Building From Configuration
 
-Use the factory to create models from configuration:
+There is no factory class; construct the model you want directly, or map a
+config to a class yourself:
 
 ```python
-from corerec.engines.collaborative.cr_unionizedFactory import UnionizedRecommenderFactory
+from corerec.engines.collaborative import LightGCN, NCF, SAR
+from corerec.engines.matrix_factorization import ALS
 
-config = {
-    'method': 'matrix_factorization',
-    'params': {
-        'n_factors': 50,
-        'n_epochs': 20,
-        'learning_rate': 0.01
-    }
-}
+MODELS = {"als": ALS, "lightgcn": LightGCN, "ncf": NCF, "sar": SAR}
 
-model = UnionizedRecommenderFactory.get_recommender(config)
+config = {"method": "als", "params": {"factors": 50, "iterations": 20}}
+
+model = MODELS[config["method"]](**config["params"])
 model.fit(user_ids, item_ids, ratings)
 ```
 
