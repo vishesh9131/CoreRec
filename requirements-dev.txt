@@ -27,7 +27,7 @@ bandit>=1.7.0,<2.0.0  # Security linter
 safety>=2.0.0,<4.0.0  # Dependency vulnerability scanner
 
 # Build tools
-build>=0.8.0,<2.0.0
+build>=1.4.4,<2.0.0
 twine>=4.0.0,<6.0.0  # For PyPI uploads
 wheel>=0.37.0,<1.0.0
 
