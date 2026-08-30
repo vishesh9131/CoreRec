@@ -71,7 +71,7 @@ serving = [
 ]
 datasets = [
     "cr_learn>=0.2.0",
-    "gdown>=4.0.0,<5.0.0",
+    "gdown>=4.0.0,<6.0.0",
 ]
 all = [
     "corerec[dev,docs,transformers,serving,datasets]",
