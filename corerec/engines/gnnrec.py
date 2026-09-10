@@ -242,12 +242,19 @@ class GNNRec(BaseRecommender):
         for u, it in zip(user_indices, item_indices):
             ex_users.append(u); ex_items.append(it); ex_labels.append(1.0)
             us = seen[u]
+            # if the user already touched every item theres nowhere honest to
+            # sample a negative from -- skip rather than slap a positive with
+            # label 0 (that used to happen after the 10-try retry gave up).
+            if len(us) >= num_items:
+                continue
             for _ in range(self.num_negatives):
-                neg = rng.randint(num_items)
+                neg = int(rng.randint(0, num_items))
                 for _t in range(10):
                     if neg not in us:
                         break
-                    neg = rng.randint(num_items)
+                    neg = int(rng.randint(0, num_items))
+                if neg in us:
+                    continue
                 ex_users.append(u); ex_items.append(neg); ex_labels.append(0.0)
 
         train_user_indices = torch.tensor(ex_users, dtype=torch.long).to(self.device)
@@ -340,13 +347,13 @@ class GNNRec(BaseRecommender):
 
     def recommend(self, user_id: int, top_k: int = 10, **kwargs) -> List[int]:
         """Generate top-K recommendations for a user."""
-        from corerec.utils.validation import validate_model_fitted, validate_user_id, validate_top_k
+        from corerec.utils.validation import validate_model_fitted, validate_top_k
 
-        # Validate inputs
         validate_model_fitted(self.is_fitted, self.name)
-        validate_user_id(user_id, self.user_map if hasattr(self, "user_map") else {})
         validate_top_k(top_k)
 
+        # Cold users used to blow up in validate_user_id before we ever hit the
+        # empty-list branch below. Match LightGCN/NGCF: unknown -> [].
         if user_id not in self.user_map:
             return []
 
