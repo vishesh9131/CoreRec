@@ -82,7 +82,7 @@ corerec = "corerec.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/vishesh9131/CoreRec"
-Documentation = "https://vishesh9131.github.io/CoreRec/"
+Documentation = "https://corerec.online/docs/"
 Repository = "https://github.com/vishesh9131/CoreRec"
 "Bug Tracker" = "https://github.com/vishesh9131/CoreRec/issues"
 
