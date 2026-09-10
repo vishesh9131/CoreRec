@@ -11,7 +11,7 @@ import logging
 from pathlib import Path
 
 # Project imports (assumed present)
-from corerec.api.base_recommender import BaseRecommender
+from corerec.api.base_recommender import BaseRecommender, normalize_interactions
 from corerec.api.exceptions import ModelNotFittedError,  RecommendationError
 from corerec.utils.validation import (
     validate_fit_inputs,
@@ -543,69 +543,108 @@ class SASRec(BaseRecommender):
 
     def fit(
         self,
-        arg1: Union[List[Any], np.ndarray, Any],
+        arg1: Union[List[Any], np.ndarray, Any] = None,
         arg2: Optional[Union[List[Any], np.ndarray]] = None,
         arg3: Optional[Union[List[Any], np.ndarray]] = None,
         validation_data: Optional[Dict[Any, Tuple[List[int], List[int]]]] = None,
         item_embedding_init: Optional[np.ndarray] = None,
         user_item_timestamps: Optional[Dict[Any, List[Tuple[Any, Any]]]] = None,
+        user_ids: Optional[List[Any]] = None,
+        item_ids: Optional[List[Any]] = None,
+        ratings: Optional[Union[List[Any], np.ndarray]] = None,
+        interactions: Optional[Union[List[Any], np.ndarray]] = None,
+        interaction_matrix: Optional[Union[List[Any], np.ndarray]] = None,
         **kwargs
     ):
         """
         Fit SASRec model.
 
-        Supports two calling conventions:
-        1. fit(interaction_matrix, user_ids, item_ids, ...)  # Legacy
-        2. fit(user_ids, item_ids, interaction_matrix, ...)  # Standard
+        Calling conventions (same as the rest of the zoo where possible):
+        1. fit(interaction_matrix, user_ids, item_ids)   # legacy matrix-first
+        2. fit(user_ids, item_ids, interaction_matrix)   # dense [n_users, n_items]
+        3. fit(user_ids, item_ids, ratings)              # one row per event
+        4. fit(user_ids=..., item_ids=..., ratings=...)  # keyword form
 
-        user_ids: list of user identifiers (len = n_users)
-        item_ids: list of item identifiers (len = n_items)
-        interaction_matrix: 2D binary or counts matrix shape [n_users, n_items]
-        validation_data: optional dict {user_id: (input_seq, ground_truth_list)}
+        `interactions=` / `interaction_matrix=` also accepted as aliases for
+        the third slot / matrix form.
         """
         from corerec.api.dataset import coerce_dataset
         from corerec.api.exceptions import InvalidDataError
-
-        ds = coerce_dataset(arg1)
-        if ds is not None:
-            if ds.infer_mode() != "matrix":
-                raise InvalidDataError("SASRec.fit() expects a matrix RecommenderDataset.")
-            arg1, arg2, arg3 = ds.user_ids, ds.item_ids, ds.interaction_matrix
-
-        # Handle both calling conventions by checking first argument type
         import scipy.sparse as sp
-        
-        # Check if first arg is a matrix (numpy array or sparse matrix)
-        is_matrix = (isinstance(arg1, (np.ndarray, sp.spmatrix)) or 
-                    (hasattr(arg1, 'toarray') and hasattr(arg1, 'shape')))
-        
-        if is_matrix and arg2 is not None and isinstance(arg2, list) and arg3 is not None and isinstance(arg3, list):
-            # Legacy: fit(interaction_matrix, user_ids, item_ids)
-            interaction_matrix = arg1
-            user_ids = arg2
-            item_ids = arg3
-        elif isinstance(arg1, list) and arg2 is not None and isinstance(arg2, list):
-            # Standard: fit(user_ids, item_ids, interaction_matrix)
-            user_ids = arg1
-            item_ids = arg2
-            interaction_matrix = arg3
-            if interaction_matrix is None:
-                raise ValueError("interaction_matrix must be provided as third argument")
+
+        # keyword path — rest of the zoo documents this form
+        if user_ids is not None and item_ids is not None:
+            third = ratings if ratings is not None else (
+                interactions if interactions is not None else interaction_matrix
+            )
+            user_ids, item_ids, interaction_matrix = normalize_interactions(
+                user_ids, item_ids, third
+            )
         else:
-            raise ValueError("Invalid arguments. Use either fit(interaction_matrix, user_ids, item_ids) or fit(user_ids, item_ids, interaction_matrix)")
-        
+            if arg1 is None:
+                raise TypeError(
+                    "SASRec.fit() requires positional args or "
+                    "user_ids=/item_ids= keywords"
+                )
+            ds = coerce_dataset(arg1)
+            if ds is not None:
+                if ds.infer_mode() != "matrix":
+                    # event-style dataset: flatten via normalize_interactions
+                    if getattr(ds, "ratings", None) is not None:
+                        user_ids, item_ids, interaction_matrix = normalize_interactions(
+                            ds.user_ids, ds.item_ids, ds.ratings
+                        )
+                    else:
+                        raise InvalidDataError(
+                            "SASRec.fit() expects a matrix RecommenderDataset "
+                            "or event triples."
+                        )
+                else:
+                    arg1, arg2, arg3 = ds.user_ids, ds.item_ids, ds.interaction_matrix
+
+            if user_ids is None:
+                # positional parsing
+                is_matrix = (
+                    isinstance(arg1, (np.ndarray, sp.spmatrix))
+                    or (hasattr(arg1, 'toarray') and hasattr(arg1, 'shape')
+                        and not isinstance(arg1, list))
+                )
+
+                if (
+                    is_matrix
+                    and arg2 is not None
+                    and isinstance(arg2, list)
+                    and arg3 is not None
+                    and isinstance(arg3, list)
+                ):
+                    # Legacy: fit(interaction_matrix, user_ids, item_ids)
+                    interaction_matrix = arg1
+                    user_ids = arg2
+                    item_ids = arg3
+                elif isinstance(arg1, list) and arg2 is not None and isinstance(arg2, list):
+                    # fit(user_ids, item_ids, third) — matrix OR event ratings
+                    user_ids, item_ids, interaction_matrix = normalize_interactions(
+                        arg1, arg2, arg3
+                    )
+                else:
+                    raise ValueError(
+                        "Invalid arguments. Use fit(user_ids, item_ids, ratings), "
+                        "fit(user_ids, item_ids, matrix), or the legacy "
+                        "fit(matrix, user_ids, item_ids)."
+                    )
+
         # Custom validation for matrix format
         if not isinstance(user_ids, list) or len(user_ids) == 0:
             raise ValueError("user_ids must be a non-empty list")
         if not isinstance(item_ids, list) or len(item_ids) == 0:
             raise ValueError("item_ids must be a non-empty list")
-        
+
         # Handle sparse matrices (scipy.sparse)
         if hasattr(interaction_matrix, 'toarray'):
             interaction_matrix = interaction_matrix.toarray()
         elif not isinstance(interaction_matrix, np.ndarray):
             interaction_matrix = np.array(interaction_matrix)
-        
+
         if interaction_matrix.ndim != 2:
             raise ValueError("interaction_matrix must be 2D")
         if interaction_matrix.shape[0] != len(user_ids):

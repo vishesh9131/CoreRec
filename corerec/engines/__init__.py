@@ -126,7 +126,7 @@ def __dir__():
 # ============================================================================
 
 __all__ = [
-    # Deep Learning Models
+    # Deep Learning Models (SoT: _deep_learning_models, keep in sync)
     "DCN",
     "DeepFM",
     "GNNRec",
@@ -135,6 +135,33 @@ __all__ = [
     "SASRec",
     "TwoTower",
     "BERT4Rec",
+    "FM",
+    "AFM",
+    "NFM",
+    "DeepFMCTR",
+    "DCNCTR",
+    "AutoInt",
+    "xDeepFM",
+    "FiBiNet",
+    "PNN",
+    "WideDeep",
+    "GRU4Rec",
+    "Caser",
+    "BST",
+    "DIN",
+    "DIEN",
+    "NARM",
+    "ItemKNN",
+    "UserKNN",
+    "EASE",
+    "SLIM",
+    "MultVAE",
+    "MultiDAE",
+    "NGCF",
+    "ALS",
+    "Item2Vec",
+    "GMF",
+    "MLP",
     # Engine Namespaces
     "unionized",
     "content",
@@ -143,6 +170,9 @@ __all__ = [
     # Legacy aliases
     "UF_Engine",
     "CF_Engine",
+    # Helpers
+    "list_deep_learning_models",
+    "get_engine_info",
 ]
 
 
