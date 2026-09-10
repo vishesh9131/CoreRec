@@ -8,7 +8,7 @@
 <div align="center">
   <img src="docs/images/coreRec.svg" width="80" height="80" style="margin-bottom: 16px;" /><br/>
   <h1>CoreRec</h1>
-  <p><strong>Production-grade recommendation systems framework.<br/>35 models · Unified API · Multi-stage pipelines · Research to deployment.</strong></p>
+  <p><strong>Production-grade recommendation systems framework.<br/>35 deep-learning models · Unified API · Multi-stage pipelines · Research to deployment.</strong></p>
   <br/>
   <code>pip install corerec</code> &nbsp;&nbsp; <code>pip install cr_learn</code>
   <br/><br/>
@@ -25,7 +25,7 @@
 CoreRec is a modern recommendation engine built for the deep learning era. It implements industry-standard architectures — Two-Tower retrieval, Transformers, Graph Neural Networks — following the multi-stage pipeline approach used at Netflix, YouTube, and major e-commerce platforms.
 
 - **Unified API**: every model shares `fit`, `predict`, `recommend`, `save`, `load`
-- **35 models**: deep learning, collaborative filtering, graph-based, sequential, matrix factorization
+- **35 deep-learning models**: deep learning, collaborative filtering, graph-based, sequential, matrix factorization
 - **Multi-stage pipeline**: Retrieval → Ranking → Reranking in a single orchestrated system
 - **cr_learn**: companion dataset library for fast prototyping on real-world data
 
