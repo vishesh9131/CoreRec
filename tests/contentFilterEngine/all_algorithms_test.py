@@ -51,8 +51,8 @@ class TestAllContentFilterAlgorithms(unittest.TestCase):
                     # Likely missing optional dependency; mark as skipped
                     skipped.append((file_path, f"ImportError: {e}"))
                     self.skipTest(
-                        f"Optional dep missing for {
-                            file_path.name}: {e}")
+                        f"Optional dep missing for {file_path.name}: {e}"
+                    )
                 except Exception as e:
                     failures.append((file_path, str(e)))
                     self.fail(f"Failed importing {file_path}: {e}")
@@ -60,10 +60,9 @@ class TestAllContentFilterAlgorithms(unittest.TestCase):
         # Summary for logs (unittest will reflect individual subTest outcomes)
         # These prints help in CI logs; not assertions
         print(
-            f"\n[ContentFilterEngine Import Summary] Passed: {
-                len(passed)}, Skipped: {
-                len(skipped)}, Failures: {
-                len(failures)}")
+            "\n[ContentFilterEngine Import Summary] Passed: {}, Skipped: {}, "
+            "Failures: {}".format(len(passed), len(skipped), len(failures))
+        )
         if skipped:
             for p, r in skipped[:5]:
                 print(f"  - SKIP {p.name}: {r}")

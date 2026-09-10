@@ -41,12 +41,15 @@ def test_ncf():
         {"user_id": user_ids, "item_id": item_ids, "rating": ratings})
 
     print(
-        f"Dataset: {
-            len(data)} interactions, {
-            data['user_id'].nunique()} users, {
-                data['item_id'].nunique()} items")
+        "Dataset: {} interactions, {} users, {} items".format(
+            len(data),
+            data["user_id"].nunique(),
+            data["item_id"].nunique(),
+        )
+    )
     print(
-        f"Positive ratings: {sum(data['rating'])}/{len(data)} ({sum(data['rating']) / len(data) * 100:.1f}%)"
+        f"Positive ratings: {sum(data['rating'])}/{len(data)} "
+        f"({sum(data['rating']) / len(data) * 100:.1f}%)"
     )
 
     # Train NCF model
@@ -76,9 +79,10 @@ def test_ncf():
     try:
         prediction = model.predict(test_user, test_item)
         print(
-            f"Prediction for user {test_user}, item {test_item}: {
-                prediction:.4f}")
-        print("✓ Prediction successful")
+            f"Prediction for user {test_user}, item {test_item}: "
+            f"{prediction:.4f}"
+        )
+        print("Prediction successful")
     except Exception as e:
         print(f"✗ Prediction failed: {e}")
         return False

@@ -3,6 +3,7 @@
 Asynchronous Distributed Data Parallel utilities for CoreRec.
 """
 
+import os
 import torch.distributed as dist
 from torch.multiprocessing import Process
 import numpy as np

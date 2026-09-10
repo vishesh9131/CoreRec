@@ -39,8 +39,8 @@ class TestNNBaseImports(unittest.TestCase):
                     self.skipTest(f"Skip {f.name}: {e}")
                 except Exception as e:
                     self.skipTest(
-                        f"Skip {
-                            f.name} due to heavy deps or runtime error: {e}")
+                        f"Skip {f.name} due to heavy deps or runtime error: {e}"
+                    )
 
 
 if __name__ == "__main__":
