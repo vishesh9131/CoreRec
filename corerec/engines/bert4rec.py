@@ -199,14 +199,23 @@ class BERT4Rec(BaseRecommender):
         self.user_seqs = {}
         self.is_fitted = False
     
-    def fit(self, user_ids: List, item_ids: List, interactions: Optional[np.ndarray] = None):
+    def fit(self, user_ids: List, item_ids: List,
+            interactions: Optional[np.ndarray] = None,
+            ratings: Optional[np.ndarray] = None):
         """
         Train BERT4Rec model.
 
         Accepts either:
           fit(user_ids, item_ids, interactions)  # [n_users, n_items] matrix
           fit(user_ids, item_ids, ratings)       # one entry per interaction
+
+        ratings= aliases the third arg so keyword callers match the rest of the zoo.
         """
+        if ratings is not None:
+            if interactions is not None:
+                raise TypeError("pass ratings= or interactions=, not both")
+            interactions = ratings
+
         self.log.info(f"Training {self.name}...")
 
         user_ids, item_ids, interactions = normalize_interactions(
