@@ -61,19 +61,35 @@ def loo_metrics(score_fn, candidates, k=10, user_subset=None):
 def ranking_metrics(score_fn, n_items, seen, relevant, k=10, user_subset=None):
     """score_fn(uidx) -> np.ndarray[n_items] of recommendation scores (higher=better).
 
+    Train items are masked to -inf before top-K. Relevant labels that also appear
+    in the user's train history are dropped here too -- belt and braces with
+    datautil's train/test overlap filter, so a caller that forgets to clean the
+    split can't accidentally credit a leaked hit.
+
     Returns dict of mean Recall@K, NDCG@K, HitRate@K over evaluated users.
     """
     users = list(relevant.keys()) if user_subset is None else user_subset
     recalls, ndcgs, hrs = [], [], []
     for u in users:
-        rel = relevant.get(u)
+        train_items = seen.get(u) or seen.get(int(u), ())
+        raw_rel = relevant.get(u) or relevant.get(int(u))
+        if not raw_rel:
+            continue
+        # never score a train item as a true positive
+        rel = raw_rel - set(train_items) if train_items else set(raw_rel)
         if not rel:
             continue
+
         scores = np.asarray(score_fn(u), dtype=float).copy()
         if scores.shape[0] != n_items:
             raise ValueError(f"score_fn returned {scores.shape[0]} != {n_items}")
-        for i in seen.get(u, ()):  # mask training items
-            scores[i] = -np.inf
+        if train_items:
+            idx = np.fromiter(train_items, dtype=np.intp, count=len(train_items))
+            # guard against a stale id that somehow sits outside the catalogue
+            idx = idx[(idx >= 0) & (idx < n_items)]
+            if len(idx):
+                scores[idx] = -np.inf
+
         topk = np.argpartition(-scores, min(k, n_items - 1))[:k]
         topk = topk[np.argsort(-scores[topk])]
         hits = np.array([1.0 if i in rel else 0.0 for i in topk])

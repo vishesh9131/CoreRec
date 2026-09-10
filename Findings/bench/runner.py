@@ -17,8 +17,9 @@ import time
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
-# repo root (…/github) so `import corerec` resolves in this subprocess
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
+# Findings/bench -> repo root (two ups). Three ups used to land above the
+# checkout, which only "worked" when PYTHONPATH already had corerec.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 import datautil
 import metrics as M
 
