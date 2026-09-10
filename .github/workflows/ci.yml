@@ -45,9 +45,12 @@ jobs:
       # ending in a full run that --ignore'd tests/unionizedFilterEngine, which is
       # where 20 tests importing non-existent modules were hiding. No ignores now:
       # if a test is here, it runs, and a red build means something is actually broken.
+      # docs_build needs mkdocs/sphinx; Documentation workflow covers those. Skip
+      # here so model-tests dont fail for missing doc tooling.
       - name: Run test suite
         run: |
           python -m pytest tests/ -v --tb=short --strict-markers \
+            -m "not docs_build" \
             --cov=corerec --cov-fail-under=40
 
   # ------------------------------------------------------------------ #

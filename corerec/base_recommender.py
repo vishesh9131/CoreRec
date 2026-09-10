@@ -7,6 +7,7 @@ import copy
 import inspect
 import warnings
 import numpy as np
+import scipy
 from datetime import datetime
 from glob import glob
 

@@ -98,9 +98,11 @@ class judge:
         float
             F1-Score@K score.
         """
-        precision = EvaluationMetrics.precision_at_k(
+        # class used to be named EvaluationMetrics; left the calls as
+        # self-refs on judge so f1 doesnt need a separate helper
+        precision = judge.precision_at_k(
             recommended_items, relevant_items, k)
-        recall = EvaluationMetrics.recall_at_k(
+        recall = judge.recall_at_k(
             recommended_items, relevant_items, k)
         if precision + recall == 0:
             return 0.0

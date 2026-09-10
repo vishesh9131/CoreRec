@@ -8,7 +8,7 @@ Author: Vishesh Yadav (mail: sciencely98@gmail.com)
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Union, Optional, Tuple
+from typing import TYPE_CHECKING, List, Dict, Any, Union, Optional, Tuple
 import pandas as pd
 from pathlib import Path
 import pickle
@@ -28,6 +28,9 @@ from corerec.api.exceptions import (
     RecommendationError,
 )
 from corerec.api.recommend_args import normalize_recommend_kwargs
+
+if TYPE_CHECKING:
+    from corerec.api.dataset import RecommenderDataset
 
 
 class BaseRecommender(ABC):

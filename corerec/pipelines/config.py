@@ -5,8 +5,11 @@ Load pipeline configurations from YAML or dict.
 Enables config-driven pipeline construction.
 """
 
-from typing import Any, Dict, Optional, Union
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+
+if TYPE_CHECKING:
+    from .orchestrator import RecommendationPipeline
 
 
 def load_pipeline_config(
