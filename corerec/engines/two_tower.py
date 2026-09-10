@@ -169,7 +169,8 @@ class TwoTower(BaseRecommender):
     def fit(self, user_ids: List, item_ids: List, interactions: Optional[np.ndarray] = None,
             user_features: Optional[np.ndarray] = None,
             item_features: Optional[np.ndarray] = None,
-            validation_split: float = 0.1):
+            validation_split: float = 0.1,
+            ratings: Optional[np.ndarray] = None):
         """
         Train the two-tower model.
 
@@ -177,9 +178,16 @@ class TwoTower(BaseRecommender):
           fit(user_ids, item_ids, interactions)  # [n_users, n_items] matrix
           fit(user_ids, item_ids, ratings)       # one entry per interaction
 
+        `ratings=` is an alias for the third arg — rest of the zoo uses that name
+        and callers building kwargs were dying on TypeError before.
+
         user_features: optional [n_users, user_dim] feature matrix
         item_features: optional [n_items, item_dim] feature matrix
         """
+        if ratings is not None:
+            if interactions is not None:
+                raise TypeError("pass ratings= or interactions=, not both")
+            interactions = ratings
 
         self.log.info(f"Fitting {self.name} model...")
 

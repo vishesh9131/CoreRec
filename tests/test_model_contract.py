@@ -20,6 +20,9 @@ MODELS = [
     ("two_tower", "corerec.engines.two_tower", "TwoTower",
      {"embedding_dim": 16, "num_epochs": 3, "verbose": False}),
     ("bert4rec", "corerec.engines.bert4rec", "BERT4Rec", {}),
+    ("sasrec", "corerec.engines.sasrec", "SASRec",
+     {"hidden_units": 16, "num_blocks": 1, "num_epochs": 1,
+      "batch_size": 32, "max_seq_length": 20, "verbose": False}),
     ("dcn", "corerec.engines.dcn", "DCN", {"embedding_dim": 16, "epochs": 2}),
     ("deepfm", "corerec.engines.deepfm", "DeepFM", {"embedding_dim": 16, "epochs": 2}),
     ("ncf", "corerec.engines.collaborative.nn_base.ncf", "NCF", {}),
@@ -77,6 +80,18 @@ def test_fit_accepts_the_triple(model_id, module_path, cls_name, kwargs, data):
     users, items, ratings = data
     model = _build(module_path, cls_name, kwargs)
     model.fit(users, items, ratings)
+    assert getattr(model, "is_fitted", True), f"{cls_name}.fit left is_fitted False"
+
+
+@pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS,
+                         ids=[m[0] for m in MODELS])
+def test_fit_accepts_ratings_keyword(model_id, module_path, cls_name, kwargs, data):
+    """fit(user_ids=..., item_ids=..., ratings=...) — kwargs form callers use."""
+    if model_id in KNOWN_DIVERGENT:
+        pytest.xfail(KNOWN_DIVERGENT[model_id])
+    users, items, ratings = data
+    model = _build(module_path, cls_name, kwargs)
+    model.fit(user_ids=users, item_ids=items, ratings=ratings)
     assert getattr(model, "is_fitted", True), f"{cls_name}.fit left is_fitted False"
 
 

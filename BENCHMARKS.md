@@ -210,10 +210,12 @@ Running the comparison was worth more than the table.
    on a Mac before this fix is unusable, which is why results predating it are
    kept in a separate directory.
 
-5. **The benchmark's own data paths were broken.** `BENCH` pointed at
+5. **The benchmark's own data paths were broken (fixed).** `BENCH` pointed at
    `corerec/Findings/bench` (no such directory) and `datautil.ML100K_DIR` had one
-   `..` too many. The five NDCG floor tests in `tests/test_benchmark_floors.py`
-   had therefore never executed.
+   `..` too many, so the five NDCG floor tests never ran. Both are corrected;
+   `Findings/bench/runner.py` also had the same extra `..` on `sys.path` (fixed).
+   Floor tests still **skip** when `u1.base`/`u1.test` are absent — that is
+   intentional, not a path bug.
 
 ## Reproducing
 
@@ -232,7 +234,29 @@ python runner.py --framework implicit_ensemble --model ALS_KNN_RRF --dataset ml1
 python aggregate.py results/fresh
 ```
 
-ML-100K is not tracked in this repo; the runner skips cleanly when it is absent.
+### MovieLens-100K for floors / local runs
+
+ML-100K is **not** tracked in this repo (GroupLens license / size). Without it:
+
+- `tests/test_benchmark_floors.py::test_ndcg_floor_ml100k` skips with the resolved
+  path in the skip reason
+- `python Findings/bench/runner.py --dataset ml100k ...` raises `FileNotFoundError`
+
+Obtain the official split and point the harness at it:
+
+```bash
+curl -L -o /tmp/ml-100k.zip https://files.grouplens.org/datasets/movielens/ml-100k.zip
+unzip -q /tmp/ml-100k.zip -d /tmp
+# either the historical default layout:
+mkdir -p cr_learn_setup/cr_learn/CRDS
+mv /tmp/ml-100k cr_learn_setup/cr_learn/CRDS/ml_100k
+# or any directory via env (handy in CI):
+# export COREC_ML100K_DIR=/tmp/ml-100k
+pytest tests/test_benchmark_floors.py -k ndcg_floor
+```
+
+CI does not download ML-100K today; leakage/path guards in
+`tests/test_bench_leakage.py` cover the harness without the dataset.
 
 To reproduce the whole table in parallel (each job single-threaded so the timings
 stay meaningful):
