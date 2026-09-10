@@ -8,7 +8,7 @@
 <div align="center">
   <img src="docs/images/coreRec.svg" width="80" height="80" style="margin-bottom: 16px;" /><br/>
   <h1>CoreRec</h1>
-  <p><strong>Production-grade recommendation systems framework.<br/>34 models · Unified API · Multi-stage pipelines · Research to deployment.</strong></p>
+  <p><strong>Production-grade recommendation systems framework.<br/>35 models · Unified API · Multi-stage pipelines · Research to deployment.</strong></p>
   <br/>
   <code>pip install corerec</code> &nbsp;&nbsp; <code>pip install cr_learn</code>
   <br/><br/>
@@ -25,7 +25,7 @@
 CoreRec is a modern recommendation engine built for the deep learning era. It implements industry-standard architectures — Two-Tower retrieval, Transformers, Graph Neural Networks — following the multi-stage pipeline approach used at Netflix, YouTube, and major e-commerce platforms.
 
 - **Unified API**: every model shares `fit`, `predict`, `recommend`, `save`, `load`
-- **34 models**: deep learning, collaborative filtering, graph-based, sequential, matrix factorization
+- **35 models**: deep learning, collaborative filtering, graph-based, sequential, matrix factorization
 - **Multi-stage pipeline**: Retrieval → Ranking → Reranking in a single orchestrated system
 - **cr_learn**: companion dataset library for fast prototyping on real-world data
 
@@ -464,7 +464,7 @@ cr_learn_setup/cr_learn/
 </pre></td></tr>
 <tr><td><strong>Docs & Examples</strong></td><td><pre>
 docs/source/
-├── tutorials/     57 model tutorials (DCN, DeepFM, SASRec …)
+├── tutorials/     model zoo tutorials (DCN, DeepFM, SASRec …)
 ├── api/           Full API reference
 ├── user_guide/    Data prep, training, persistence, best practices
 └── examples/      Basic, advanced, production deployment
@@ -513,7 +513,7 @@ vg.show_bipartite_relationship(adj_matrix)              # bipartite view
 
 ## Documentation
 
-Full documentation is available at **[vishesh9131.github.io/CoreRec](https://vishesh9131.github.io/CoreRec/)**.
+Full documentation is available at **[corerec.online/docs](https://corerec.online/docs/)**.
 
 Build locally:
 
@@ -524,11 +524,11 @@ open docs/build/html/index.html
 ```
 
 **Key sections:**
-- [Installation](https://vishesh9131.github.io/CoreRec/installation.html)
-- [QuickStart](https://vishesh9131.github.io/CoreRec/quickstart.html)
-- [57 Model Tutorials](https://vishesh9131.github.io/CoreRec/tutorials/index.html)
-- [API Reference](https://vishesh9131.github.io/CoreRec/api/engines.html)
-- [Production Deployment](https://vishesh9131.github.io/CoreRec/examples/production_deployment.html)
+- [Installation](https://corerec.online/docs/installation.html)
+- [QuickStart](https://corerec.online/docs/quickstart.html)
+- [Model Tutorials](https://corerec.online/docs/tutorials/index.html)
+- [API Reference](https://corerec.online/docs/api/engines.html)
+- [Production Deployment](https://corerec.online/docs/examples/production_deployment.html)
 
 ---
 
@@ -564,7 +564,7 @@ pip install torch torchvision torchaudio --extra-index-url https://download.pyto
 Examples fall back to `sample_data/` CSVs bundled in this repo automatically. No action needed.
 </details>
 
-For anything else: [open an issue](https://github.com/vishesh9131/CoreRec/issues) or check the [FAQ](https://vishesh9131.github.io/CoreRec/about/faq.html).
+For anything else: [open an issue](https://github.com/vishesh9131/CoreRec/issues) or check the [docs](https://corerec.online/docs/).
 
 ---
 
@@ -577,7 +577,7 @@ We welcome bug fixes, new features, docs improvements, and new models.
 3. Make your changes following the existing code style
 4. Open a pull request with a clear description
 
-See [CONTRIBUTING.md](https://vishesh9131.github.io/CoreRec/contributing.html) for the full guide.
+See [CONTRIBUTING.md](https://corerec.online/docs/contributing.html) for the full guide.
 
 ---
 
