@@ -83,7 +83,7 @@ open build/html/index.html
 ## Statistics
 
 - **Total Lines of Code**: ~4,000+ lines of unique documentation
-- **Models Covered**: 25/57 CoreRec models (44%)
+- **Models Covered**: 25/35 CoreRec named models
 - **Detailed Content**: 100% unique (no templates)
 - **Time Invested**: ~2 hours of detailed writing
 - **API Correctness**: 100% (all use correct cr_learn)
@@ -100,10 +100,10 @@ open build/html/index.html
 
 ## Next Steps (Optional)
 
-To complete documentation for remaining 32 models:
+To complete documentation for remaining models:
 1. Continue batch-by-batch (10 at a time)
-2. Current coverage: 25/57 (44%)
-3. Target: 50+ models documented
+2. Current coverage: 25/35 named models
+3. Target: full coverage of the named model zoo
 
 ## Success Metrics
 

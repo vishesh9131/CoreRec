@@ -131,7 +131,7 @@ cat > about/release-notes.md << 'EOF'
 **Release Date:** 2024-01-01
 
 **Features:**
-- 100+ recommendation algorithms
+- 35 named recommendation models
 - Unified API across all models
 - GPU acceleration
 - Distributed training support
@@ -173,7 +173,7 @@ cat > about/faq.md << 'EOF'
 ## General
 
 **Q: What is CoreRec?**
-A: CoreRec is a comprehensive recommendation systems library with 100+ state-of-the-art algorithms.
+A: CoreRec is a recommendation systems library with 35 named models under a unified API.
 
 **Q: Is CoreRec free?**
 A: Yes, CoreRec is available for research purposes.

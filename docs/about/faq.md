@@ -3,7 +3,7 @@
 ## General
 
 **Q: What is CoreRec?**
-A: CoreRec is a comprehensive recommendation systems library with 100+ state-of-the-art algorithms.
+A: CoreRec is a recommendation systems library with 35 named models under a unified API.
 
 **Q: Is CoreRec free?**
 A: Yes, CoreRec is available for research purposes.

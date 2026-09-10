@@ -37,7 +37,7 @@ Your job is to find more of these.
 2. Pick ONE untried combination that crosses layers. The layers are:
 
      models     corerec.engines / .collaborative / .content_based /
-                .matrix_factorization  (34 importable models)
+                .matrix_factorization  (35 named models)
      data       corerec.data  (11 dataset classes)
      pipeline   corerec.retrieval -> corerec.ranking -> corerec.reranking
      serving    corerec.serving  (ModelServer, OnlineRecommender,
