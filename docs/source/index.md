@@ -2,12 +2,12 @@
 
 <div class="hero-banner">
 <h1>CoreRec</h1>
-<p class="tagline">Production-grade recommendation systems framework. 57+ models, unified API, multi-stage pipelines -- from research to deployment.</p>
+<p class="tagline">Production-grade recommendation systems framework. 35 named models, unified API, multi-stage pipelines -- from research to deployment.</p>
 <code class="install-cmd">pip install corerec</code>
 </div>
 
 <div class="stats-row">
-<div class="stat"><span class="stat-num">57+</span><span class="stat-label">Models</span></div>
+<div class="stat"><span class="stat-num">35</span><span class="stat-label">Named Models</span></div>
 <div class="stat"><span class="stat-num">5</span><span class="stat-label">Categories</span></div>
 <div class="stat"><span class="stat-num">3</span><span class="stat-label">Pipeline Stages</span></div>
 <div class="stat"><span class="stat-num">Typed</span><span class="stat-label">Production API</span></div>
@@ -160,7 +160,7 @@ model.save('artifacts/dcn')
 :link: tutorials/index
 :link-type: doc
 
-Step-by-step tutorials for every model -- DCN, DeepFM, SASRec, LightGCN, and 50+ more.
+Step-by-step tutorials across the named model zoo -- DCN, DeepFM, SASRec, LightGCN, and more.
 :::
 
 :::{grid-item-card} User Guide

@@ -39,7 +39,7 @@ Import location matters and is not always where the name suggests:
 `PNN`, `FiBiNet`, `xDeepFM`, `WideDeep`, `Caser`, `MultVAE`, `MultiDAE`. They do
 not appear in `dir()` because of the lazy `__getattr__`, but they import.
 
-34 models are importable in total.
+35 named models are importable in total.
 
 ### The six calls
 

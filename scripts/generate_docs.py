@@ -2,7 +2,7 @@
 """
 Automated Documentation Generator for Core Rec Models
 
-Generates comprehensive Sphinx documentation for all 57 models including:
+Generates comprehensive Sphinx documentation for all 35 named models including:
 - Detailed model documentation
 - cr_learn tutorials
 - API references  
@@ -345,7 +345,7 @@ def generate_all_documentation():
     # Create directories
     tutorials_dir.mkdir(parents=True, exist_ok=True)
 
-    print("Generating documentation for all 57 models...")
+    print("Generating documentation for all 35 named models...")
     print("=" * 70)
 
     total_generated = 0

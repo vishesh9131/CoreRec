@@ -40,7 +40,7 @@ graph TB
 |--------|----------|------------|---------------|
 | **Unionized Filter** | User-item interactions | 50+ algorithms | Interaction matrix |
 | **Content Filter** | Feature-rich data | 40+ algorithms | Item/user features |
-| **Deep Learning** | Large-scale data | 6 SOTA models | Interaction + features |
+| **Deep Learning** | Large-scale data | 35 named models | Interaction + features |
 
 ## 1. Unionized Filter Engine
 

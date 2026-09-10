@@ -7,7 +7,7 @@
 **Release Date:** 2024-01-01
 
 **Features:**
-- 100+ recommendation algorithms
+- 35 named recommendation models
 - Unified API across all models
 - GPU acceleration
 - Distributed training support
