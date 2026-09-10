@@ -107,16 +107,31 @@ _FLOORS = {  # NDCG@10 floors; the collapsed models used to score < 0.02
 }
 
 
+def _bench_datautil():
+    if BENCH not in sys.path:
+        sys.path.insert(0, BENCH)
+    import datautil
+    return datautil
+
+
 def _ml100k_available():
-    return os.path.isfile(os.path.join(
-        REPO, "cr_learn_setup", "cr_learn", "CRDS", "ml_100k", "u1.base"))
+    # same resolver the runner uses (incl. COREC_ML100K_DIR)
+    return _bench_datautil().ml100k_available()
 
 
-@pytest.mark.skipif(not _ml100k_available(), reason="ML-100K data not present")
+def _ml100k_skip_reason():
+    dutil = _bench_datautil()
+    return (
+        "ML-100K u1.base/u1.test not present at %s "
+        "(set COREC_ML100K_DIR or unpack GroupLens ml-100k; see BENCHMARKS.md)"
+        % dutil.ml100k_dir()
+    )
+
+
+@pytest.mark.skipif(not _ml100k_available(), reason=_ml100k_skip_reason())
 @pytest.mark.parametrize("framework,model", list(_FLOORS.keys()))
 def test_ndcg_floor_ml100k(framework, model):
-    sys.path.insert(0, BENCH)
-    import datautil
+    datautil = _bench_datautil()
     import metrics as M
     import runner as R
 
