@@ -155,28 +155,33 @@ class LightGCN(BaseRecommender):
         )
 
     def _create_adjacency_matrix(self, interaction_matrix: csr_matrix) -> torch.Tensor:
+        # Build D^{-1/2} A D^{-1/2} on the edge list itself. Multiplying through
+        # a dense diag() used to densify the whole bipartite graph (fine on
+        # toy sets, ugly once n_users+n_items gets large). Same operator as the
+        # serving LightGCN path, just starting from a csr interaction matrix.
         rows, cols = interaction_matrix.nonzero()
-        user_indices = torch.LongTensor(rows)
-        item_indices = torch.LongTensor(cols)
+        if len(rows) == 0:
+            size = self.n_users + self.n_items
+            idx = torch.zeros((2, 0), dtype=torch.long)
+            return torch.sparse_coo_tensor(
+                idx, torch.zeros(0), torch.Size([size, size])
+            ).coalesce().to(self.device)
 
-        edge_index = torch.stack([
-            torch.cat([user_indices, item_indices + self.n_users]),
-            torch.cat([item_indices + self.n_users, user_indices]),
-        ])
-
+        user_indices = torch.as_tensor(rows, dtype=torch.long)
+        item_indices = torch.as_tensor(cols, dtype=torch.long) + self.n_users
+        # undirected bipartite edges
+        src = torch.cat([user_indices, item_indices])
+        dst = torch.cat([item_indices, user_indices])
         size = self.n_users + self.n_items
+        deg = torch.zeros(size)
+        deg.index_add_(0, src, torch.ones(src.shape[0]))
+        d_inv_sqrt = torch.pow(deg.clamp(min=1.0), -0.5)
+        # zero-degree nodes stay zero after clamp-on-build; leave them alone
+        vals = d_inv_sqrt[src] * d_inv_sqrt[dst]
         adj = torch.sparse_coo_tensor(
-            edge_index,
-            torch.ones(edge_index.size(1)),
-            torch.Size([size, size]),
-        ).to(self.device)
-
-        rowsum = torch.sparse.sum(adj, dim=1).to_dense()
-        d_inv_sqrt = torch.pow(rowsum, -0.5)
-        d_inv_sqrt[torch.isinf(d_inv_sqrt)] = 0.0
-        d_mat = torch.diag(d_inv_sqrt)
-        norm_adj = torch.sparse.mm(torch.sparse.mm(d_mat, adj), d_mat)
-        return norm_adj
+            torch.stack([src, dst]), vals, torch.Size([size, size])
+        ).coalesce()
+        return adj.to(self.device)
 
     def _store_user_interactions(self, user_ids: List, item_ids: List) -> None:
         self.user_interactions = {}
@@ -186,12 +191,30 @@ class LightGCN(BaseRecommender):
             if uidx is not None and iidx is not None:
                 self.user_interactions.setdefault(uidx, set()).add(iidx)
 
-    def _sample_negative(self, user_idx: int) -> int:
+    def _sample_negative(self, user_idx: int) -> Optional[int]:
+        # Rejection sampling is fine when the pos set is small. Once a user has
+        # touched (almost) everything it used to spin forever -- saw that hang
+        # on a 1-item catalog and on "user saw all items" fixtures.
         pos = self.user_interactions.get(user_idx, set())
-        while True:
-            neg = int(self._rng.integers(0, self.n_items))
+        n_items = self.n_items or 0
+        if n_items <= 0 or len(pos) >= n_items:
+            return None
+
+        if len(pos) * 2 > n_items:
+            # denser histories: just draw from the complement once
+            remaining = [i for i in range(n_items) if i not in pos]
+            if not remaining:
+                return None
+            return int(self._rng.choice(remaining))
+
+        for _ in range(64):
+            neg = int(self._rng.integers(0, n_items))
             if neg not in pos:
                 return neg
+        for neg in range(n_items):
+            if neg not in pos:
+                return neg
+        return None
 
     def _bpr_loss(self, users, pos_items, neg_items):
         user_emb, item_emb = self.model()
@@ -256,9 +279,13 @@ class LightGCN(BaseRecommender):
             users, pos_items, neg_items = [], [], []
             for uidx, items in self.user_interactions.items():
                 for pidx in items:
+                    neg = self._sample_negative(uidx)
+                    if neg is None:
+                        # no unobserved item left for this user -- skip the pair
+                        continue
                     users.append(uidx)
                     pos_items.append(pidx)
-                    neg_items.append(self._sample_negative(uidx))
+                    neg_items.append(neg)
 
             if len(users) == 0:
                 break
@@ -337,9 +364,19 @@ class LightGCN(BaseRecommender):
                 if it in self.item_id_map:
                     scores[self.item_id_map[it]] = -np.inf
 
-        top_indices = np.argsort(scores)[::-1][:top_k]
-        return [self.reverse_item_map[int(i)] for i in top_indices
-                if int(i) in self.reverse_item_map]
+        # argsort alone used to pad with -inf entries when top_k was bigger
+        # than the unseen pool, so trained-on items leaked back into recs.
+        order = np.argsort(-scores)
+        out = []
+        for i in order:
+            if not np.isfinite(scores[i]):
+                continue
+            iid = int(i)
+            if iid in self.reverse_item_map:
+                out.append(self.reverse_item_map[iid])
+            if len(out) >= top_k:
+                break
+        return out
 
     def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         """Save model to disk."""
