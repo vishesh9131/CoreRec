@@ -32,66 +32,6 @@ Report only. Fixes happen in a separate session where they can be reviewed.
 
 ## Open
 
-### 1. `fit(..., ratings=...)` raises TypeError on TwoTower and BERT4Rec
-
-**Layers:** models × (any caller using the documented API)
-**Severity:** breaks-on-use
-**Found:** 2026-08-08
-
-The README and `docs/` document one calling convention:
-
-```python
-model.fit(user_ids, item_ids, ratings)
-```
-
-It works positionally on every model. **By keyword it fails on two of them**,
-because the third parameter is named differently:
-
-| Model | third parameter |
-|---|---|
-| `ALS`, `LightGCN`, `NCF`, `DCN`, `DeepFM` | `ratings` |
-| `TwoTower`, `BERT4Rec` | `interactions` |
-
-Reproduce:
-
-```python
-import numpy as np
-from corerec.engines import TwoTower
-
-rng = np.random.default_rng(0)
-U = rng.integers(0, 40, 300).tolist()
-I = rng.integers(0, 60, 300).tolist()
-R = rng.uniform(1, 5, 300).tolist()
-
-TwoTower(embedding_dim=16, num_epochs=3, verbose=False).fit(
-    user_ids=U, item_ids=I, ratings=R
-)
-# TypeError: TwoTower.fit() got an unexpected keyword argument 'ratings'
-```
-
-**Expected:** the documented keyword form works on every model, as the
-positional form already does.
-**Actual:** `TypeError` on `TwoTower` and `BERT4Rec`.
-
-**Root cause:** `corerec/engines/two_tower.py` and `corerec/engines/bert4rec.py`
-name the third parameter `interactions`. Both were changed to accept the triple
-*positionally* via `normalize_interactions()`, but the parameter kept its
-original name, so keyword callers still hit the old signature.
-
-**Why no test caught it:** `tests/test_model_contract.py` calls
-`model.fit(users, items, ratings)` positionally, which passes. The contract test
-should exercise the keyword form too, since that is what the documentation shows
-and what a caller building kwargs will use.
-
-**Suspected blast radius:** anything that builds `fit` arguments as a dict —
-config-driven training, hyperparameter sweeps, `fit(**params)` — breaks on these
-two models while working on the rest. A caller cannot write one code path over
-the model zoo.
-
-**Suggested fix:** accept `ratings` as an alias on both, keeping `interactions`
-working, and add a keyword-form case to the contract test.
-
----
 
 ### 2. Constructor training-length kwarg is three different names across the zoo
 
@@ -142,55 +82,6 @@ until `__init__(**params)` is too.
 **Suggested fix:** pick one name (`epochs` is the plurality) and accept the
 other two as deprecated aliases on the minority classes; extend the contract
 test to construct every registered model from `{"epochs": 2}`.
-
----
-
-### 3. `SASRec.fit(user_ids, item_ids, ratings)` rejects the documented triple
-
-**Layers:** models × (any caller using the documented `fit` triple)
-**Severity:** breaks-on-use
-**Found:** 2026-08-08
-
-Every model in the zoo documents `model.fit(user_ids, item_ids, ratings)` with
-three 1-D sequences of the same length (README lines 76, 183, 274; quickstart;
-per-model docs). SASRec accepts the call but interprets the third argument as
-a **2-D dense interaction matrix** and raises when it isn't:
-
-```python
-import numpy as np
-from corerec.engines import SASRec
-
-rng = np.random.default_rng(0)
-U = rng.integers(0, 40, 300).tolist()
-I = rng.integers(0, 60, 300).tolist()
-R = rng.uniform(1, 5, 300).tolist()
-
-SASRec(num_epochs=1, verbose=False).fit(U, I, R)
-# ValueError: interaction_matrix must be 2D
-```
-
-**Expected:** the same triple works on SASRec as it does on every other model.
-**Actual:** `ValueError: interaction_matrix must be 2D`. The message names the
-internal variable, not the API mismatch, so a user has no hint that SASRec
-wants `fit(users, items, csr_matrix)` in a completely different shape.
-
-**Root cause:** `corerec/engines/sasrec.py:582-610`. `fit()` has two branches
-— legacy `(interaction_matrix, users, items)` and "standard" `(users, items,
-interaction_matrix)` — but both name the third argument `interaction_matrix`
-and require it to be 2D. The zoo-standard triple (three 1-D sequences) is not
-handled at all; the parameter renamed to `ratings` on the docs never got
-plumbed through here. `tests/engines_models_smoke_test.py:184` uses the legacy
-matrix form so the standard form is untested.
-
-**Suspected blast radius:** anything iterating models with a shared call —
-benchmarks, hyperparameter sweeps, the same "one factory over the zoo" pattern
-that #1 and #2 already block. Compounds with bug #1 (TwoTower/BERT4Rec's
-`interactions` kwarg): a config-driven caller now needs three special cases
-for one API.
-
-**Suggested fix:** detect 1-D `arg3` and either build the interaction matrix
-via `normalize_interactions()` (as TwoTower/BERT4Rec do) or emit an error that
-names the expected shape. Add a triple-form case to the smoke test.
 
 ---
 
@@ -755,6 +646,120 @@ every `recommend*` in the codebase.
 
 
 ## Fixed
+
+### 1. `fit(..., ratings=...)` raises TypeError on TwoTower and BERT4Rec
+
+**Layers:** models × (any caller using the documented API)
+**Severity:** breaks-on-use
+**Found:** 2026-08-08
+
+The README and `docs/` document one calling convention:
+
+```python
+model.fit(user_ids, item_ids, ratings)
+```
+
+It works positionally on every model. **By keyword it fails on two of them**,
+because the third parameter is named differently:
+
+| Model | third parameter |
+|---|---|
+| `ALS`, `LightGCN`, `NCF`, `DCN`, `DeepFM` | `ratings` |
+| `TwoTower`, `BERT4Rec` | `interactions` |
+
+Reproduce:
+
+```python
+import numpy as np
+from corerec.engines import TwoTower
+
+rng = np.random.default_rng(0)
+U = rng.integers(0, 40, 300).tolist()
+I = rng.integers(0, 60, 300).tolist()
+R = rng.uniform(1, 5, 300).tolist()
+
+TwoTower(embedding_dim=16, num_epochs=3, verbose=False).fit(
+    user_ids=U, item_ids=I, ratings=R
+)
+# TypeError: TwoTower.fit() got an unexpected keyword argument 'ratings'
+```
+
+**Expected:** the documented keyword form works on every model, as the
+positional form already does.
+**Actual:** `TypeError` on `TwoTower` and `BERT4Rec`.
+
+**Root cause:** `corerec/engines/two_tower.py` and `corerec/engines/bert4rec.py`
+name the third parameter `interactions`. Both were changed to accept the triple
+*positionally* via `normalize_interactions()`, but the parameter kept its
+original name, so keyword callers still hit the old signature.
+
+**Why no test caught it:** `tests/test_model_contract.py` calls
+`model.fit(users, items, ratings)` positionally, which passes. The contract test
+should exercise the keyword form too, since that is what the documentation shows
+and what a caller building kwargs will use.
+
+**Suspected blast radius:** anything that builds `fit` arguments as a dict —
+config-driven training, hyperparameter sweeps, `fit(**params)` — breaks on these
+two models while working on the rest. A caller cannot write one code path over
+the model zoo.
+
+**Suggested fix:** accept `ratings` as an alias on both, keeping `interactions`
+working, and add a keyword-form case to the contract test.
+
+**Status:** fixed upstream in 33911a3 (zoo API parity, #29); verified `fit(user_ids=, item_ids=, ratings=)` on TwoTower, BERT4Rec, SASRec.
+
+---
+
+### 3. `SASRec.fit(user_ids, item_ids, ratings)` rejects the documented triple
+
+**Layers:** models × (any caller using the documented `fit` triple)
+**Severity:** breaks-on-use
+**Found:** 2026-08-08
+
+Every model in the zoo documents `model.fit(user_ids, item_ids, ratings)` with
+three 1-D sequences of the same length (README lines 76, 183, 274; quickstart;
+per-model docs). SASRec accepts the call but interprets the third argument as
+a **2-D dense interaction matrix** and raises when it isn't:
+
+```python
+import numpy as np
+from corerec.engines import SASRec
+
+rng = np.random.default_rng(0)
+U = rng.integers(0, 40, 300).tolist()
+I = rng.integers(0, 60, 300).tolist()
+R = rng.uniform(1, 5, 300).tolist()
+
+SASRec(num_epochs=1, verbose=False).fit(U, I, R)
+# ValueError: interaction_matrix must be 2D
+```
+
+**Expected:** the same triple works on SASRec as it does on every other model.
+**Actual:** `ValueError: interaction_matrix must be 2D`. The message names the
+internal variable, not the API mismatch, so a user has no hint that SASRec
+wants `fit(users, items, csr_matrix)` in a completely different shape.
+
+**Root cause:** `corerec/engines/sasrec.py:582-610`. `fit()` has two branches
+— legacy `(interaction_matrix, users, items)` and "standard" `(users, items,
+interaction_matrix)` — but both name the third argument `interaction_matrix`
+and require it to be 2D. The zoo-standard triple (three 1-D sequences) is not
+handled at all; the parameter renamed to `ratings` on the docs never got
+plumbed through here. `tests/engines_models_smoke_test.py:184` uses the legacy
+matrix form so the standard form is untested.
+
+**Suspected blast radius:** anything iterating models with a shared call —
+benchmarks, hyperparameter sweeps, the same "one factory over the zoo" pattern
+that #1 and #2 already block. Compounds with bug #1 (TwoTower/BERT4Rec's
+`interactions` kwarg): a config-driven caller now needs three special cases
+for one API.
+
+**Suggested fix:** detect 1-D `arg3` and either build the interaction matrix
+via `normalize_interactions()` (as TwoTower/BERT4Rec do) or emit an error that
+names the expected shape. Add a triple-form case to the smoke test.
+
+**Status:** fixed upstream in 33911a3 (zoo API parity, #29); verified `fit(user_ids=, item_ids=, ratings=)` on TwoTower, BERT4Rec, SASRec.
+
+---
 
 ### 4. `BusinessRulesReranker.rerank(top_k=N)` silently ignores `top_k`
 
