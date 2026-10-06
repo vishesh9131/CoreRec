@@ -2,28 +2,16 @@
 """
 CoreRec Command Line Interface
 """
-from typing import List, Dict
 import argparse
 import warnings
 import os
 import sys
 
-# Suppress all warnings at environment level
-os.environ["MKL_THREADING_LAYER"] = "GNU"
-os.environ["MKL_SERVICE_FORCE_INTEL"] = "1"
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-os.environ["PYTHONWARNINGS"] = "ignore"
-
-# Redirect stderr to suppress MKL and other system warnings
-
+# Quiet the MKL threading notices and library warnings. stderr itself stays
+# open: `corerec train` and `corerec serve` must be able to report errors.
+os.environ.setdefault("MKL_THREADING_LAYER", "GNU")
+os.environ.setdefault("MKL_SERVICE_FORCE_INTEL", "1")
 warnings.filterwarnings("ignore")
-
-# Save original stderr and redirect to /dev/null
-_original_stderr = sys.stderr
-try:
-    sys.stderr = open(os.devnull, "w")
-except BaseException:
-    pass
 
 
 # Try importing argcomplete for tab completion
@@ -180,6 +168,8 @@ def show_help(args):
 Available Commands:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  train         Train on an interactions file and save an artifact
+  serve         Serve recommendations over HTTP (from a file or artifact)
   version       Show CoreRec version information
   engines       List all available recommendation engines
   models        List available models (optionally by family)  
@@ -190,6 +180,8 @@ Available Commands:
 Usage Examples:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  corerec serve events.csv     # Train on a CSV and serve it on :8000
+  corerec train events.csv -o artifacts/m
   corerec version              # Show version info
   corerec engines              # List all engines
   corerec models               # List all models
@@ -201,6 +193,64 @@ For more information, visit:
 https://github.com/vishesh9131/CoreRec
     """
     )
+
+
+def _add_training_args(p):
+    p.add_argument("--model", default="ALS",
+                   help="model to train (default: ALS; `corerec models` lists all)")
+    p.add_argument("--param", action="append", default=[], metavar="KEY=VALUE",
+                   help="model constructor argument, repeatable (e.g. --param factors=128)")
+    p.add_argument("--user-col", help="user column (default: detected)")
+    p.add_argument("--item-col", help="item column (default: detected)")
+    p.add_argument("--rating-col", help="rating/weight column (default: detected, else 1 per row)")
+    p.add_argument("--timestamp-col", help="timestamp column (default: detected)")
+    p.add_argument("--test-fraction", type=float, default=0.2,
+                   help="share of each user's interactions held out for evaluation (default 0.2)")
+    p.add_argument("--k", type=int, default=10, help="cutoff for NDCG@k / Recall@k (default 10)")
+    p.add_argument("--no-eval", action="store_true", help="skip the holdout evaluation")
+    p.add_argument("--seed", type=int, default=42)
+
+
+def _train(args):
+    from corerec.serving.from_csv import parse_params, train_from_csv
+
+    print(f"Reading {args.data}")
+    result = train_from_csv(
+        args.data, model=args.model, params=parse_params(args.param),
+        evaluate=not args.no_eval, test_fraction=args.test_fraction, k=args.k, seed=args.seed,
+        user=args.user_col, item=args.item_col, rating=args.rating_col,
+        timestamp=args.timestamp_col,
+    )
+    print(result.report())
+    return result
+
+
+def train_command(args):
+    """corerec train FILE -o DIR"""
+    from corerec.serving.from_csv import save_artifact
+
+    result = _train(args)
+    out = save_artifact(result, args.output)
+    print(f"Saved     {out}/  (serve it with: corerec serve {out})")
+
+
+def serve_command(args):
+    """corerec serve FILE|ARTIFACT"""
+    from corerec.serving.from_csv import build_server, is_artifact, load_artifact, save_artifact
+
+    if is_artifact(args.data):
+        model, manifest = load_artifact(args.data)
+        print(f"Loaded    {manifest['model']} from {args.data}")
+    else:
+        result = _train(args)
+        manifest = result.manifest()
+        model = result.model
+        if args.save:
+            print(f"Saved     {save_artifact(result, args.save)}/")
+    server = build_server(model, manifest, host=args.host, port=args.port)
+    print(f"Serving   http://{args.host}:{args.port}  (docs at /docs, Ctrl-C to stop)")
+    print(f"""Try       curl -X POST localhost:{args.port}/recommend -H 'Content-Type: application/json' -d '{{"user_id": "<a user>", "top_k": 5}}'""")
+    server.start()
 
 
 def main():
@@ -234,6 +284,28 @@ def main():
         help="Model family to list",
     )
     models_parser.set_defaults(func=list_models)
+
+    # Train command
+    train_parser = subparsers.add_parser(
+        "train", help="Train a model on an interactions file and save it",
+        description="Train on a CSV/TSV/Parquet of interactions, report holdout "
+                    "NDCG/Recall against a most-popular baseline, and save an artifact.")
+    train_parser.add_argument("data", help="interactions file (one row per user-item event)")
+    train_parser.add_argument("-o", "--output", required=True, help="artifact directory to write")
+    _add_training_args(train_parser)
+    train_parser.set_defaults(func=train_command)
+
+    # Serve command
+    serve_parser = subparsers.add_parser(
+        "serve", help="Serve recommendations over HTTP from a file or a saved artifact",
+        description="Given an interactions file: train, report, then serve. Given a "
+                    "directory written by `corerec train`: load and serve it.")
+    serve_parser.add_argument("data", help="interactions file, or artifact directory")
+    serve_parser.add_argument("--host", default="0.0.0.0")
+    serve_parser.add_argument("--port", type=int, default=8000)
+    serve_parser.add_argument("--save", metavar="DIR", help="also save the trained artifact here")
+    _add_training_args(serve_parser)
+    serve_parser.set_defaults(func=serve_command)
 
     # Info command
     info_parser = subparsers.add_parser("info", help="Show installation info")

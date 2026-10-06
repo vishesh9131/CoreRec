@@ -81,9 +81,9 @@ class ModelServer:
 
     Example:
         from corerec.serving import ModelServer
-        from corerec.engines.collaborative.nn_base.ncf import NCF
+        from corerec.engines import DCN
 
-        model = NCF.load('models/ncf_model.pkl')
+        model = DCN.load('artifacts/dcn')
         server = ModelServer(model, host="0.0.0.0", port=8000)
         server.start()  # Server starts at http://0.0.0.0:8000
 
@@ -103,7 +103,9 @@ class ModelServer:
             model,
             host: str = "0.0.0.0",
             port: int = 8000,
-            enable_docs: bool = True):
+            enable_docs: bool = True,
+            metadata: Optional[Dict[str, Any]] = None,
+            fallback_items: Optional[List[Any]] = None):
         """
         Initialize model server.
 
@@ -112,6 +114,11 @@ class ModelServer:
             host: Server host address
             port: Server port
             enable_docs: Whether to enable API documentation
+            metadata: Extra fields reported by GET /info under "artifact"
+                (for example the training manifest)
+            fallback_items: Items, best first, returned to users the model
+                cannot answer (unknown users, empty results). Responses say
+                which path answered in their "source" field.
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
@@ -122,6 +129,8 @@ class ModelServer:
         self.model = model
         self.host = host
         self.port = port
+        self.metadata = metadata
+        self.fallback_items = list(fallback_items) if fallback_items else None
 
         # Create FastAPI app
         self.app = FastAPI(
@@ -137,6 +146,22 @@ class ModelServer:
 
         # Setup routes
         self._setup_routes()
+
+    def _recommend(self, user_id: Any, top_k: int, exclude_items: List[Any]):
+        """Return (items, source); source is "model" or "fallback"."""
+        from corerec.api.exceptions import RecommendationError
+
+        try:
+            recs = self.model.recommend(user_id, top_k=top_k, exclude_items=exclude_items)
+        except RecommendationError:
+            # Raised for users the model never saw; anything else is a real error.
+            if self.fallback_items is None:
+                raise
+            recs = []
+        if recs or self.fallback_items is None:
+            return recs, "model"
+        excluded = set(exclude_items or ())
+        return [i for i in self.fallback_items if i not in excluded][:top_k], "fallback"
 
     def _setup_routes(self):
         """Setup API routes."""
@@ -191,14 +216,13 @@ class ModelServer:
                 }
             """
             try:
-                recs = self.model.recommend(
-                    request.user_id,
-                    top_k=request.top_k,
-                    exclude_items=request.exclude_items)
+                recs, source = self._recommend(
+                    request.user_id, request.top_k, request.exclude_items)
                 return {
                     "user_id": _to_json_safe(request.user_id),
                     "recommendations": _to_json_safe(recs),
-                    "top_k": request.top_k}
+                    "top_k": request.top_k,
+                    "source": source}
             except Exception as e:
                 self.logger.error(f"Recommendation error: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
@@ -232,8 +256,8 @@ class ModelServer:
                         request.user_ids, request.top_k)
                 else:
                     recs = {
-                        uid: self.model.recommend(
-                            uid, request.top_k) for uid in request.user_ids}
+                        uid: self._recommend(uid, request.top_k, [])[0]
+                        for uid in request.user_ids}
 
                 return {"recommendations": recs}
             except Exception as e:
@@ -254,12 +278,15 @@ class ModelServer:
             """Get model information."""
             try:
                 if hasattr(self.model, "get_model_info"):
-                    return self.model.get_model_info()
+                    info = dict(self.model.get_model_info())
                 else:
-                    return {
+                    info = {
                         "model_type": self.model.__class__.__name__,
                         "model_name": getattr(self.model, "name", "Unknown"),
                     }
+                if self.metadata is not None:
+                    info["artifact"] = self.metadata
+                return _to_json_safe(info)
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 

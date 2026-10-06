@@ -20,9 +20,55 @@
 
 ---
 
+## From a CSV to a recommendation API in one command
+
+```bash
+pip install "corerec[serving]"
+corerec serve events.csv
+```
+
+```text
+Data      33,406 interactions, 2,000 users, 600 items (user=user_id, item=item_id, rating=rating, timestamp=timestamp)
+Model     ALS
+Trained   in 5.9s
+Holdout   5,897 interactions from 2,000 users
+                           NDCG@10  Recall@10
+          ALS               0.2172     0.2981
+          most popular      0.0988     0.1425
+Serving   http://0.0.0.0:8000  (docs at /docs, Ctrl-C to stop)
+```
+
+```bash
+curl -X POST localhost:8000/recommend -H 'Content-Type: application/json' \
+     -d '{"user_id": "u0042", "top_k": 5}'
+# {"user_id":"u0042","recommendations":["i219","i444","i409","i275","i498"],"top_k":5,"source":"model"}
+```
+
+That is the whole path. CoreRec finds the user, item, rating and timestamp
+columns, holds out each user's most recent interactions, and reports how the
+model does on them **next to recommending the most popular items**, the bar any
+model has to clear (it warns you when it doesn't). Then it retrains on
+everything and serves it. Users it has never seen get the popular items, marked
+`"source": "fallback"`, instead of an error.
+
+- `corerec serve events.csv --model EASE` picks a different model; `corerec models` lists all 15.
+- `corerec train events.csv -o artifacts/m` saves the model and its report; `corerec serve artifacts/m` serves it later.
+- `docker build -t corerec . && docker run -p 8000:8000 -v "$PWD:/data" corerec /data/events.csv` does the same in a container.
+
+The output above is real: `sample_data/events.csv` ships with the repo, so
+`corerec serve sample_data/events.csv` reproduces it.
+
+> `corerec train` / `corerec serve` are new and not on PyPI yet (0.6.0 does not
+> have them). Until the next release, install from a clone:
+> `pip install -e ".[serving]"`.
+
+---
+
 ## What is CoreRec?
 
-CoreRec is a modern recommendation engine built for the deep learning era. It implements industry-standard architectures — Two-Tower retrieval, Transformers, Graph Neural Networks — following the multi-stage pipeline approach used at Netflix, YouTube, and major e-commerce platforms.
+CoreRec is a PyTorch library of recommendation models that share one API, from
+fast classic baselines to two-tower retrieval, graph and sequential models, plus
+the pieces to evaluate and serve them.
 
 - **Unified API**: every model shares `fit`, `predict`, `recommend`, `save`, `load`
 - **15 models**: classic CF (ALS, SAR, ItemKNN, EASE, SLIM), retrieval (TwoTower), graph (LightGCN), ranking (DCN, DeepFM), sequential (SASRec), autoencoders (MultVAE) and content (TF-IDF). `corerec models` lists them.
@@ -122,6 +168,25 @@ CoreRec wins the like-for-like model comparisons and **loses on speed by roughly
 9x** — implicit is years of tuned Cython over BLAS, and on data 100x this size
 that ratio is the deciding factor. Fusing two models with reciprocal rank fusion,
 implicit's ensemble still edges CoreRec's (0.4547 vs 0.4493).
+
+### At million-interaction scale
+
+On the two standard graph benchmarks, CoreRec's LightGCN (the native trainer
+behind `corerec.serving.OnlineRecommender`) ranks first against `implicit`,
+LightFM and Cornac. It is also the slowest model in the table to train, and on
+the denser MovieLens-1M it comes third. Single runs; raw JSON in
+[`Findings/bench/results/`](Findings/bench/results/).
+
+| Dataset | Interactions | CoreRec LightGCN NDCG@20 | Best other library | Fit time (CoreRec vs best other) |
+|---|---:|---:|---|---:|
+| Gowalla | ~1.0M | **0.1451** | 0.1171 (LightFM WARP) | 335s vs 23s |
+| Yelp2018 | ~1.6M | **0.0460** | 0.0448 (implicit ALS) | 714s vs 10s |
+| MovieLens-1M | 1.0M | 0.3115 | **0.3600** (implicit ALS) | 270s vs 1.3s |
+
+Read it as: a clear win on Gowalla (+24%), a tie on Yelp2018 (+2.7% from one
+run, inside the seed-to-seed spread measured for LightGCN), and a loss on
+MovieLens-1M. RecBole's LightGCN, the strongest reference implementation, is not
+in this table yet.
 
 The benchmark also found seven bugs in CoreRec itself, including a `batch_predict`
 that never batched (262ms → 6.8ms per user once fixed) and a graph model (GNNRec,

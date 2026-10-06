@@ -1,0 +1,11 @@
+.git
+**/__pycache__
+*.pyc
+docs
+tests
+examples
+Findings
+datasets
+artifacts
+site
+*.egg-info
