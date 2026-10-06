@@ -18,6 +18,10 @@
   <a href="https://github.com/vishesh9131/CoreRec/blob/main/MODERN_RECSYS_GUIDE.md">Modern Guide</a>
 </div>
 
+<p align="center">
+  <img src="docs/images/corerec-demo.gif" width="860" alt="corerec serve events.csv: trains, reports NDCG against a popularity baseline, and serves recommendations over HTTP" />
+</p>
+
 ---
 
 ## From a CSV to a recommendation API in one command
