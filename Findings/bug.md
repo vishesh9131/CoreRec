@@ -194,60 +194,6 @@ names the expected shape. Add a triple-form case to the smoke test.
 
 ---
 
-### 4. `BusinessRulesReranker.rerank(top_k=N)` silently ignores `top_k`
-
-**Layers:** pipeline (reranking) — cross-reranker consistency
-**Severity:** silent-wrong-result
-**Found:** 2026-08-08
-
-The other two rerankers accept `top_k` and truncate to that many items:
-
-```
-DiversityReranker.rerank(ranked, context=None, top_k=None, **kwargs)
-FairnessReranker.rerank (ranked, context=None, top_k=None, **kwargs)
-BusinessRulesReranker.rerank(ranked, context=None,          **kwargs)  # no top_k
-```
-
-Because `BusinessRulesReranker.rerank` accepts `**kwargs`, `top_k` is
-swallowed without error and the full ranked list is returned.
-
-Reproduce:
-
-```python
-from corerec.ranking.base import RankedCandidate, RankingResult
-from corerec.reranking import BusinessRulesReranker, DiversityReranker
-
-ranked = RankingResult(
-    candidates=[RankedCandidate(item_id=i, score=1.0/(i+1)) for i in range(20)],
-    ranker_name="test",
-)
-
-d = DiversityReranker(lambda_=1.0).rerank(ranked, top_k=5)
-b = BusinessRulesReranker().rerank(ranked, top_k=5)
-
-print(len(d.candidates), len(b.candidates))  # 5 20
-```
-
-**Expected:** `top_k=5` returns 5 items regardless of which reranker
-implementation is used — the docstring of `BaseReranker.rerank` says
-"reranker-specific parameters" go through `**kwargs`, but a caller wiring the
-reranking stage generically has every reason to assume `top_k` is honored
-uniformly.
-**Actual:** `BusinessRulesReranker` returns the full list; `DiversityReranker`
-returns 5. Swapping rerankers silently changes the response size.
-
-**Root cause:** `corerec/reranking/business.py:96-101` — `rerank()` never
-reads `top_k` and never truncates. The other two rerankers implement it.
-
-**Suspected blast radius:** any pipeline that alternates rerankers via
-config, A/B tests one against another, or feeds the reranked list into a
-paginated response — the pagination cursor and the response size will
-disagree when the business-rules variant is active.
-
-**Suggested fix:** accept `top_k: Optional[int] = None` and truncate `result`
-before returning; add a contract test that asserts every reranker honors it.
-
----
 
 ### 5. `Evaluator.evaluate` reports 0.0 for a totally broken model
 
@@ -807,6 +753,66 @@ every `recommend*` in the codebase.
 
 ---
 
+
+## Fixed
+
+### 4. `BusinessRulesReranker.rerank(top_k=N)` silently ignores `top_k`
+
+**Layers:** pipeline (reranking) — cross-reranker consistency
+**Severity:** silent-wrong-result
+**Found:** 2026-08-08
+
+The other two rerankers accept `top_k` and truncate to that many items:
+
+```
+DiversityReranker.rerank(ranked, context=None, top_k=None, **kwargs)
+FairnessReranker.rerank (ranked, context=None, top_k=None, **kwargs)
+BusinessRulesReranker.rerank(ranked, context=None,          **kwargs)  # no top_k
+```
+
+Because `BusinessRulesReranker.rerank` accepts `**kwargs`, `top_k` is
+swallowed without error and the full ranked list is returned.
+
+Reproduce:
+
+```python
+from corerec.ranking.base import RankedCandidate, RankingResult
+from corerec.reranking import BusinessRulesReranker, DiversityReranker
+
+ranked = RankingResult(
+    candidates=[RankedCandidate(item_id=i, score=1.0/(i+1)) for i in range(20)],
+    ranker_name="test",
+)
+
+d = DiversityReranker(lambda_=1.0).rerank(ranked, top_k=5)
+b = BusinessRulesReranker().rerank(ranked, top_k=5)
+
+print(len(d.candidates), len(b.candidates))  # 5 20
+```
+
+**Expected:** `top_k=5` returns 5 items regardless of which reranker
+implementation is used — the docstring of `BaseReranker.rerank` says
+"reranker-specific parameters" go through `**kwargs`, but a caller wiring the
+reranking stage generically has every reason to assume `top_k` is honored
+uniformly.
+**Actual:** `BusinessRulesReranker` returns the full list; `DiversityReranker`
+returns 5. Swapping rerankers silently changes the response size.
+
+**Root cause:** `corerec/reranking/business.py:96-101` — `rerank()` never
+reads `top_k` and never truncates. The other two rerankers implement it.
+
+**Suspected blast radius:** any pipeline that alternates rerankers via
+config, A/B tests one against another, or feeds the reranked list into a
+paginated response — the pagination cursor and the response size will
+disagree when the business-rules variant is active.
+
+**Suggested fix:** accept `top_k: Optional[int] = None` and truncate `result`
+before returning; add a contract test that asserts every reranker honors it.
+
+**Status:** fixed 2026-10-06 in `corerec/reranking/business.py`; covered by `tests/test_reranker_chaining.py`.
+
+---
+
 ### 13. Rerankers don't chain — a follow-up reranker undoes the previous one
 
 **Layers:** pipeline (reranking) — cross-reranker composition
@@ -885,8 +891,18 @@ promised.
 - Add a chain-invariance test: for any pair `(A, B)`, if `B` has no
   configured rules that reorder, `B(A(x))` must equal `A(x)`.
 
+**Status:** fixed 2026-10-06 in `corerec/reranking/business.py`; covered by `tests/test_reranker_chaining.py`.
+
+How: unboosted items now keep exactly the order the previous stage produced; each boosted item is reinserted ahead of the first item its boosted score beats. On relevance-ordered input that is identical to the old sort, so single-stage behaviour is unchanged.
+
 ---
 
-## Fixed
+### 13b. `BusinessRulesReranker` mutated its input when boosting
 
-_(nothing yet — entries move here with the commit that fixes them)_
+Found while fixing #13. Boosts were applied as `c.score *= multiplier` on the
+caller's own `RankedCandidate` objects, so reranking the same result twice
+compounded the boost: an item at 0.25 with a 10x boost read 250.0 after three
+calls. Boosted and unboosted candidates are now copied with
+`dataclasses.replace` before anything is changed.
+
+**Status:** fixed 2026-10-06 alongside #13; `test_rerank_does_not_mutate_its_input`.

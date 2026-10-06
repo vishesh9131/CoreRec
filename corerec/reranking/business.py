@@ -6,6 +6,7 @@ This is where domain-specific rules live.
 """
 
 import time
+from dataclasses import replace
 from typing import Any, Callable, Dict, List, Optional, Set, Union
 
 from corerec.ranking.base import RankedCandidate, RankingResult
@@ -97,10 +98,21 @@ class BusinessRulesReranker(BaseReranker):
         self,
         ranked: Union[List[RankedCandidate], RankingResult],
         context: Optional[Dict[str, Any]] = None,
+        top_k: Optional[int] = None,
         **kwargs
     ) -> RankingResult:
         """
         Apply business rules and rerank.
+
+        The incoming order is treated as the answer from the previous stage and
+        kept as-is unless a rule here actually changes something. Before, this
+        always re-sorted by `.score`, which is the original relevance score, so
+        running it after DiversityReranker or FairnessReranker quietly put the
+        list back in relevance order and threw their work away -- even with no
+        rules configured at all.
+
+        top_k truncates the output, same as the other rerankers. It used to be
+        swallowed by **kwargs and ignored.
         """
         start = time.perf_counter()
         
@@ -119,14 +131,28 @@ class BusinessRulesReranker(BaseReranker):
             
             filtered.append(c)
         
-        # step 2: apply boosts
+        # step 2: apply boosts, on copies -- multiplying c.score in place edited
+        # the caller's candidates, so calling rerank() twice on the same input
+        # compounded the boost (0.25 -> 250.0 after three calls)
+        #
+        # step 3: move only the boosted items. Unboosted items stay exactly in
+        # the order the previous stage produced; each boosted item is pulled out
+        # and reinserted ahead of the first item its boosted score beats. A full
+        # re-sort here put everything back in relevance order, which undid
+        # DiversityReranker/FairnessReranker whenever they ran first -- the exact
+        # chain examples/pipeline_example.py builds.
+        kept, moved = [], []
         for c in filtered:
             if c.item_id in self._boosts:
-                c.score *= self._boosts[c.item_id]
-        
-        # step 3: sort by (potentially boosted) score
-        filtered.sort(key=lambda x: x.score, reverse=True)
-        
+                moved.append(replace(c, score=c.score * self._boosts[c.item_id]))
+            else:
+                kept.append(replace(c))
+        moved.sort(key=lambda x: x.score, reverse=True)
+        for b in moved:
+            pos = next((i for i, c in enumerate(kept) if b.score > c.score), len(kept))
+            kept.insert(pos, b)
+        filtered = kept
+
         # step 4: apply pins
         # extract pinned items from the list
         pinned_items = {}
@@ -150,6 +176,9 @@ class BusinessRulesReranker(BaseReranker):
                 except StopIteration:
                     break
         
+        if top_k is not None:
+            result = result[:top_k]
+
         # step 5: update ranks
         for i, rc in enumerate(result):
             rc.rank = i + 1
