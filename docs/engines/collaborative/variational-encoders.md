@@ -11,7 +11,7 @@ Effective for implicit feedback and typically trained by maximizing the Evidence
 ### Multi-VAE
 Multinomial Variational Autoencoder.
 
-::: corerec.engines.collaborative.variational_encoder_base.multivae.MultiVAE
+::: corerec.engines.vae_cf.MultVAE
     options:
       show_root_heading: true
       show_source: true

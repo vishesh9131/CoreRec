@@ -7,9 +7,6 @@ Classic and neural collaborative filtering models that learn user/item represent
 | Model | Type | Import | Tutorial |
 |-------|------|--------|----------|
 | **SAR** | Item similarity / co-occurrence | `from corerec.engines.collaborative import SAR` | [SAR](../tutorials/sar_tutorial.md) |
-| **NCF** | Neural CF (GMF + MLP) | `from corerec.engines.collaborative import NCF` | [NCF](../tutorials/ncf_tutorial.md) |
-| **FAST** | Fast similarity CF | `from corerec.engines.collaborative import FAST` | [FAST](../tutorials/fast_tutorial.md) |
-| **FASTRecommender** | Extended FAST | `from corerec.engines.collaborative import FASTRecommender` | [FASTRecommender](../tutorials/fast_recommender_tutorial.md) |
 
 ### SAR (DataFrame API)
 

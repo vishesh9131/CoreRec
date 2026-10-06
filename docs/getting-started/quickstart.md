@@ -66,5 +66,5 @@ model = SASRec(
 ## Next Steps
 
 Now that you have your first model running:
-*   Explore the [**User Guide**](../user-guide/index.md) for more complex pipelines.
-*   Learn how to [**Visualize Your Graph**](../utilities/visualization.md) with VishGraphs.
+*   Browse the [**Engines**](../engines/index.md) section for the other models.
+*   See the [**API Reference**](../api/index.md) for the shared `fit` / `recommend` interface.

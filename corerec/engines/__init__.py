@@ -2,71 +2,51 @@
 CoreRec Engines
 ===============
 
-Three main recommendation engines with organized access:
-
-1. Deep Learning Models (DCN, DeepFM, GNNRec, MIND, NASRec, SASRec)
-2. Unionized Filter Engine (Collaborative filtering algorithms)
-3. Content Filter Engine (Content-based filtering algorithms)
+Every model CoreRec ships, behind one registry (``MODELS``). The CLI, the
+docs counts and the contract tests all read from it, so there is exactly one
+place that says what the zoo contains.
 
 Usage:
 ------
-    from corerec.engines.collaborative import SAR
-    model = SAR(similarity_type='jaccard')
-    
-    # or for deep learning
-    from corerec import engines
-    model = engines.DCN(embedding_dim=64)
+    from corerec.engines import ALS, SASRec, TwoTower
+    model = ALS(factors=64)
+    model.fit(user_ids, item_ids, ratings)
+    model.recommend(user_id=1, top_k=10)
+
+Models removed in 0.7.0 (GNNRec, MIND, NASRec, BERT4Rec, NCF, NGCF, the deep
+CTR family and the GRU4Rec/Caser/BST/DIN/DIEN/NARM sequential family) live in
+the git history at commit 33911a3.
 
 Author: Vishesh Yadav (sciencely98@gmail.com)
 """
 
 # ============================================================================
-# LAZY IMPORTS - heavy modules only loaded when accessed
+# REGISTRY - the single source of truth for the model zoo
 # ============================================================================
 
-_deep_learning_models = {
-    "DCN": ".dcn",
-    "DeepFM": ".deepfm",
-    "GNNRec": ".gnnrec",
-    "MIND": ".mind",
-    "NASRec": ".nasrec",
-    "SASRec": ".sasrec",
-    "TwoTower": ".two_tower",
-    "BERT4Rec": ".bert4rec",
-    # deep CTR / feature-interaction family (shared production base)
-    "FM": ".deep_ctr",
-    "AFM": ".deep_ctr",
-    "NFM": ".deep_ctr",
-    "DeepFMCTR": ".deep_ctr",
-    "DCNCTR": ".deep_ctr",
-    "AutoInt": ".deep_ctr",
-    "xDeepFM": ".deep_ctr",
-    "FiBiNet": ".deep_ctr",
-    "PNN": ".deep_ctr",
-    "WideDeep": ".deep_ctr",
-    # sequential / session-based family (shared production base)
-    "GRU4Rec": ".sequential",
-    "Caser": ".sequential",
-    "BST": ".sequential",
-    "DIN": ".sequential",
-    "DIEN": ".sequential",
-    "NARM": ".sequential",
-    # classic collaborative filtering
-    "ItemKNN": ".classic_cf",
-    "UserKNN": ".classic_cf",
-    "EASE": ".classic_cf",
-    "SLIM": ".classic_cf",
-    # auto-encoder CF
-    "MultVAE": ".vae_cf",
-    "MultiDAE": ".vae_cf",
-    # graph CF
-    "NGCF": ".graph_cf",
-    # embedding CF (native MF / skip-gram)
-    "ALS": ".matrix_factorization",
-    "Item2Vec": ".matrix_factorization",
-    # extra deep-CTR family members
-    "GMF": ".deep_ctr",
-    "MLP": ".deep_ctr",
+# name -> (module, family, one-line summary). Modules are imported lazily.
+MODELS = {
+    # classic collaborative filtering: fast, CPU-only, strong baselines
+    "ALS": (".matrix_factorization", "classic", "Alternating least squares matrix factorization"),
+    "SAR": (".collaborative.sar", "classic", "Simple Algorithm for Recommendation (item co-occurrence)"),
+    "ItemKNN": (".classic_cf", "classic", "Item-based nearest neighbours"),
+    "UserKNN": (".classic_cf", "classic", "User-based nearest neighbours"),
+    "EASE": (".classic_cf", "classic", "Embarrassingly shallow autoencoder (closed form)"),
+    "SLIM": (".classic_cf", "classic", "Sparse linear item-item model"),
+    "Item2Vec": (".matrix_factorization", "classic", "Skip-gram item embeddings"),
+    # retrieval and graph
+    "TwoTower": (".two_tower", "retrieval", "Dual-encoder candidate retrieval"),
+    "LightGCN": (".collaborative.graph_based_base.lightgcn", "graph", "Simplified graph convolution CF"),
+    # ranking
+    "DCN": (".dcn", "ranking", "Deep & Cross Network"),
+    "DeepFM": (".deepfm", "ranking", "Factorization machine + deep network"),
+    # sequential
+    "SASRec": (".sasrec", "sequential", "Self-attentive next-item prediction"),
+    # autoencoders
+    "MultVAE": (".vae_cf", "autoencoder", "Variational autoencoder for implicit feedback"),
+    "MultiDAE": (".vae_cf", "autoencoder", "Denoising autoencoder for implicit feedback"),
+    # content-based
+    "TFIDFRecommender": (".content_based.tfidf_recommender", "content", "TF-IDF text similarity"),
 }
 
 _submodules = {
@@ -80,40 +60,32 @@ _submodules = {
 def __getattr__(name):
     """Lazy import handler."""
     import importlib
-    
-    # deep learning models
-    if name in _deep_learning_models:
-        mod_name = _deep_learning_models[name]
+
+    if name in MODELS:
+        mod_name = MODELS[name][0]
         try:
             mod = importlib.import_module(mod_name, __name__)
             cls = getattr(mod, name)
-            globals()[name] = cls
-            return cls
-        except (ImportError, AttributeError):
-            globals()[name] = None
-            return None
-    
-    # submodules
-    if name == "unionized" or name == "collaborative":
+        except (ImportError, AttributeError) as exc:
+            # Fail where the cause is visible instead of handing back None.
+            raise AttributeError(
+                f"{__name__}.{name} is unavailable: importing {mod_name} failed ({exc})"
+            ) from exc
+        globals()[name] = cls
+        return cls
+
+    if name in ("unionized", "collaborative"):
         mod = importlib.import_module(".collaborative", __name__)
         globals()["collaborative"] = mod
         globals()["unionized"] = mod
-        globals()["UF_Engine"] = mod  # legacy alias
         return mod
-    
-    if name == "content" or name == "content_based":
+
+    if name in ("content", "content_based"):
         mod = importlib.import_module(".content_based", __name__)
         globals()["content_based"] = mod
         globals()["content"] = mod
-        globals()["CF_Engine"] = mod  # legacy alias
         return mod
-    
-    # legacy aliases
-    if name == "UF_Engine":
-        return __getattr__("unionized")
-    if name == "CF_Engine":
-        return __getattr__("content")
-    
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -126,52 +98,15 @@ def __dir__():
 # ============================================================================
 
 __all__ = [
-    # Deep Learning Models (SoT: _deep_learning_models, keep in sync)
-    "DCN",
-    "DeepFM",
-    "GNNRec",
-    "MIND",
-    "NASRec",
-    "SASRec",
-    "TwoTower",
-    "BERT4Rec",
-    "FM",
-    "AFM",
-    "NFM",
-    "DeepFMCTR",
-    "DCNCTR",
-    "AutoInt",
-    "xDeepFM",
-    "FiBiNet",
-    "PNN",
-    "WideDeep",
-    "GRU4Rec",
-    "Caser",
-    "BST",
-    "DIN",
-    "DIEN",
-    "NARM",
-    "ItemKNN",
-    "UserKNN",
-    "EASE",
-    "SLIM",
-    "MultVAE",
-    "MultiDAE",
-    "NGCF",
-    "ALS",
-    "Item2Vec",
-    "GMF",
-    "MLP",
-    # Engine Namespaces
+    *MODELS,
+    # Engine namespaces
     "unionized",
     "content",
     "collaborative",
     "content_based",
-    # Legacy aliases
-    "UF_Engine",
-    "CF_Engine",
-    # Helpers
-    "list_deep_learning_models",
+    # Registry and helpers
+    "MODELS",
+    "list_models",
     "get_engine_info",
 ]
 
@@ -180,22 +115,14 @@ __all__ = [
 # Helper Functions
 # ============================================================================
 
-def list_deep_learning_models():
-    """List all available deep learning models."""
-    available = []
-    for name in _deep_learning_models:
-        try:
-            if __getattr__(name) is not None:
-                available.append(name)
-        except (ImportError, AttributeError):
-            pass
-    return available
+def list_models(family=None):
+    """Names of the shipped models, optionally filtered by family."""
+    return [n for n, (_, fam, _) in MODELS.items() if family is None or fam == family]
 
 
 def get_engine_info():
-    """Get information about available engines."""
-    return {
-        "deep_learning": list(_deep_learning_models.keys()),
-        "unionized_filter": "engines.unionized or engines.collaborative",
-        "content_filter": "engines.content or engines.content_based",
-    }
+    """Models grouped by family, with their one-line summaries."""
+    info = {}
+    for name, (_, family, summary) in MODELS.items():
+        info.setdefault(family, {})[name] = summary
+    return info

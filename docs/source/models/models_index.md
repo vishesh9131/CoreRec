@@ -2,24 +2,27 @@
 
 Alphabetical reference for all documented CoreRec models. See [Model Tiers](index.md#model-tiers) for production vs sandbox policy.
 
-## Production models (14)
+## Production models (15)
+
+The list is `corerec.engines.MODELS`; `corerec models` prints it.
 
 | Model | Category | Import | Tutorial |
 |-------|----------|--------|----------|
-| BERT4Rec | Sequential | `from corerec.engines.bert4rec import BERT4Rec` | [Tutorial](../tutorials/bert4rec_tutorial.md) |
-| DCN | Deep Learning | `from corerec.engines.dcn import DCN` | [Tutorial](../tutorials/dcn_tutorial.md) |
-| DeepFM | Deep Learning | `from corerec.engines.deepfm import DeepFM` | [Tutorial](../tutorials/deepfm_tutorial.md) |
-| FAST | Collaborative | `from corerec.engines.collaborative import FAST` | [Tutorial](../tutorials/fast_tutorial.md) |
-| FASTRecommender | Collaborative | `from corerec.engines.collaborative import FASTRecommender` | [Tutorial](../tutorials/fast_recommender_tutorial.md) |
-| GNNRec | Graph | `from corerec.engines.gnnrec import GNNRec` | [Tutorial](../tutorials/gnnrec_tutorial.md) |
-| LightGCN | Graph | `from corerec.engines.collaborative import LightGCN` | [Tutorial](../tutorials/lightgcn_tutorial.md) |
-| MIND | Sequential / Multi-interest | `from corerec.engines.mind import MIND` | [Tutorial](../tutorials/mind_tutorial.md) |
-| NASRec | Deep Learning | `from corerec.engines.nasrec import NASRec` | [Tutorial](../tutorials/nasrec_tutorial.md) |
-| NCF | Collaborative | `from corerec.engines.collaborative import NCF` | [Tutorial](../tutorials/ncf_tutorial.md) |
-| SAR | Collaborative | `from corerec.engines.collaborative import SAR` | [Tutorial](../tutorials/sar_tutorial.md) |
-| SASRec | Sequential | `from corerec.engines.sasrec import SASRec` | [Tutorial](../tutorials/sasrec_tutorial.md) |
-| TFIDFRecommender | Content | `from corerec.engines.content_based import TFIDFRecommender` | [Tutorial](../tutorials/tfidf_tutorial.md) |
-| TwoTower | Deep Learning / Retrieval | `from corerec.engines.two_tower import TwoTower` | [Tutorial](../tutorials/two_tower_tutorial.md) |
+| ALS | Classic CF | `from corerec.engines import ALS` | - |
+| DCN | Ranking | `from corerec.engines import DCN` | [Tutorial](../tutorials/dcn_tutorial.md) |
+| DeepFM | Ranking | `from corerec.engines import DeepFM` | [Tutorial](../tutorials/deepfm_tutorial.md) |
+| EASE | Classic CF | `from corerec.engines import EASE` | - |
+| Item2Vec | Classic CF | `from corerec.engines import Item2Vec` | - |
+| ItemKNN | Classic CF | `from corerec.engines import ItemKNN` | - |
+| LightGCN | Graph | `from corerec.engines import LightGCN` | [Tutorial](../tutorials/lightgcn_tutorial.md) |
+| MultiDAE | Autoencoder | `from corerec.engines import MultiDAE` | - |
+| MultVAE | Autoencoder | `from corerec.engines import MultVAE` | - |
+| SAR | Classic CF | `from corerec.engines import SAR` | [Tutorial](../tutorials/sar_tutorial.md) |
+| SASRec | Sequential | `from corerec.engines import SASRec` | [Tutorial](../tutorials/sasrec_tutorial.md) |
+| SLIM | Classic CF | `from corerec.engines import SLIM` | - |
+| TFIDFRecommender | Content | `from corerec.engines import TFIDFRecommender` | [Tutorial](../tutorials/tfidf_tutorial.md) |
+| TwoTower | Retrieval | `from corerec.engines import TwoTower` | [Tutorial](../tutorials/two_tower_tutorial.md) |
+| UserKNN | Classic CF | `from corerec.engines import UserKNN` | - |
 
 All production models implement: `fit()`, `predict()`, `recommend(top_k=)`, `save()`, `load()` via `BaseRecommender`.
 

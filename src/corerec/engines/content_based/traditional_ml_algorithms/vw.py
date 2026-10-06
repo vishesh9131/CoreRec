@@ -1,2 +1,0 @@
-# vw implementation
-pass

@@ -37,8 +37,8 @@ class BaseRecommender(ABC):
     """
     Unified base class for ALL recommendation models in CoreRec.
 
-    This is the single source of truth for the recommendation API, replacing
-    the deprecated BaseCorerec class. All models should inherit from this class.
+    This is the single source of truth for the recommendation API. All models
+    inherit from this class.
 
     This enforces consistent API across:
     - Collaborative filtering models
@@ -219,7 +219,7 @@ class BaseRecommender(ABC):
             init_params[name] = new_params.get(name, copy.deepcopy(getattr(self, name, None)))
         return self.__class__(**init_params)
 
-    # Backward compatibility methods from BaseCorerec
+    # Index helpers
 
     def knows_user(self, user_idx: int) -> bool:
         """

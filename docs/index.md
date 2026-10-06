@@ -61,5 +61,4 @@ We believe in **"Glass-Box" machine learning**. You should be able to see *why* 
 ## 🔗 Next Steps
 
 *   [**Quick Start**](getting-started/quickstart.md): Build your first recommender in 5 minutes.
-*   [**User Guide**](user-guide/index.md): detailed walkthroughs of common tasks.
 *   [**API Reference**](api/index.md): comprehensive documentation of every class and function.

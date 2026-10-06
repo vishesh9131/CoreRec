@@ -6,7 +6,6 @@ Models that treat users and items as nodes in a bipartite interaction graph.
 
 | Model | Import | Tutorial |
 |-------|--------|----------|
-| **GNNRec** | `from corerec.engines.gnnrec import GNNRec` | [GNNRec](../tutorials/gnnrec_tutorial.md) |
 | **LightGCN** | `from corerec.engines.collaborative import LightGCN` | [LightGCN](../tutorials/lightgcn_tutorial.md) |
 
 ### GNNRec

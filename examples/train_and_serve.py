@@ -62,7 +62,7 @@ def build_interactions(seed: int = 0):
 def main(serve: bool = False):
     users, items, ratings, user_group, item_group = build_interactions()
 
-    model = TwoTower(embedding_dim=32, num_epochs=15, verbose=False)
+    model = TwoTower(embedding_dim=32, epochs=15, verbose=False)
     model.fit(users, items, ratings)
 
     server = ModelServer(model)

@@ -108,7 +108,6 @@ cat_embeddings = cat_encoder(categorical_features)
 num_embeddings = num_encoder(numerical_features)
 ```
 
-[**→ Learn more about Encoders**](encoders.md)
 
 ### 3. Embedding Tables
 
@@ -136,7 +135,6 @@ embeddings = embedding_table(ids)  # [batch_size, embedding_dim]
 - Initialization strategies
 - Regularization support
 
-[**→ Learn more about Embedding Tables**](embedding-tables.md)
 
 ### 4. Loss Functions
 
@@ -163,7 +161,6 @@ mse_loss = MSELoss()
 loss = mse_loss(predictions, targets)
 ```
 
-[**→ Learn more about Losses**](losses.md)
 
 ### 5. Base Model
 
@@ -192,7 +189,6 @@ class MyRecommender(BaseModel):
         return score
 ```
 
-[**→ Learn more about Base Model**](base-model.md)
 
 ## Building Custom Models
 
@@ -491,9 +487,6 @@ with autocast():
 ## Next Steps
 
 - Explore [Towers](towers/index.md) for encoding architectures
-- Learn about [Encoders](encoders.md) for feature transformation
-- Understand [Losses](losses.md) for training objectives
 - See [Examples](../examples/index.md) for complete implementations
-- Read [Best Practices](../user-guide/best-practices.md) for optimization tips
 
 

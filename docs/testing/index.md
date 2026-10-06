@@ -505,10 +505,5 @@ python corerec/run_algo_tests.py
 
 ## Next Steps
 
-- Learn about [Unit Tests](unit-tests.md) in detail
-- Explore [Integration Tests](integration-tests.md)
-- Understand [Smoke Tests](smoke-tests.md)
-- See [Running Tests](running-tests.md) for advanced options
-- Check [Contributing Guidelines](../contributing/testing-guidelines.md) for test requirements
 
 

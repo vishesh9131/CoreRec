@@ -29,7 +29,6 @@ Multi-layer perceptron tower for dense features.
 - Batch/Layer normalization
 - Dropout regularization
 
-[**→ MLP Tower Documentation**](mlp-tower.md)
 
 ### 2. CNNTower
 
@@ -41,7 +40,6 @@ Convolutional neural network tower for image or sequential data.
 - Batch normalization
 - Residual connections
 
-[**→ CNN Tower Documentation**](cnn-tower.md)
 
 ### 3. TransformerTower
 
@@ -53,7 +51,6 @@ Self-attention based tower for sequential data.
 - Layer normalization
 - Feed-forward networks
 
-[**→ Transformer Tower Documentation**](transformer-tower.md)
 
 ### 4. FusionTower
 
@@ -64,7 +61,6 @@ Multi-modal fusion tower for combining different feature types.
 - Cross-modal interactions
 - Dynamic weighting
 
-[**→ Fusion Tower Documentation**](fusion-tower.md)
 
 ## Quick Start
 
@@ -198,45 +194,6 @@ config = {
     'residual': False,                  # Use residual connections
     'attention': False,                 # Use attention mechanism
 }
-```
-
-### Loading from YAML
-
-```yaml
-# tower_config.yaml
-user_tower:
-  type: mlp
-  input_dim: 100
-  output_dim: 64
-  config:
-    hidden_dims: [128, 64]
-    dropout: 0.2
-    activation: relu
-    norm: batch
-
-item_tower:
-  type: mlp
-  input_dim: 200
-  output_dim: 64
-  config:
-    hidden_dims: [256, 128, 64]
-    dropout: 0.3
-    activation: relu
-```
-
-```python
-from corerec.config import ConfigManager
-
-# Load config
-config = ConfigManager.from_yaml('tower_config.yaml')
-
-# Create towers
-user_tower = TowerFactory.create_tower(
-    tower_type=config.user_tower.type,
-    input_dim=config.user_tower.input_dim,
-    output_dim=config.user_tower.output_dim,
-    config=config.user_tower.config
-)
 ```
 
 ## Tower Patterns
@@ -528,12 +485,6 @@ class TwoTowerModel(BaseRecommender):
 ## Next Steps
 
 - Learn about specific tower types:
-  - [MLP Tower](mlp-tower.md)
-  - [CNN Tower](cnn-tower.md)
-  - [Transformer Tower](transformer-tower.md)
-  - [Fusion Tower](fusion-tower.md)
-- Explore [Encoders](../encoders.md) for feature transformation
 - See [Examples](../../examples/index.md) for complete implementations
-- Read [Best Practices](../../user-guide/best-practices.md) for optimization tips
 
 

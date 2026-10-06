@@ -34,6 +34,10 @@ python aggregate.py results/fresh          # -> all_results.csv + table.md
 
 ## Results
 
+The `NCF`, `NCF_binary` and `GNNRec` rows were measured on 0.6.0. Both models
+were removed in 0.7.0 (see CHANGELOG.md), partly because of these numbers; the
+rows stay as the record of why, and the harness no longer runs them.
+
 Sorted by NDCG@10. Fusion rows combine two models with Reciprocal Rank Fusion
 (k=60) and are marked — they are **not** comparable to single-model rows.
 

@@ -10,11 +10,6 @@ CoreRec reference documentation is organized by functional module.
     *   `corerec.engines.content_based`
     *   `corerec.engines` (Deep Learning models)
 
-## Utilities
-
-*   [**VishGraphs**](../utilities/visualization.md): Graph generation and plotting.
-*   [**Metrics**](../utilities/evaluation-metrics.md): `aaj_accuracy`, `precision_at_k`, etc.
-
 ## Model Interface
 
 All models in CoreRec follow a standard interface:

@@ -262,7 +262,7 @@ next_items = model.recommend(user_id=1, top_k=10)
 | Large catalog (>100K items) | Two-Tower + FAISS |
 | Feature-rich data | DCN, DeepFM |
 | Sequential / session data | SASRec, BERT4Rec |
-| Graph / social data | GNNRec, LightGCN |
+| Graph / social data | LightGCN |
 | Multi-modal (text + image) | MultiModalFusion + SemanticRetriever |
 | Production at scale | Pipeline (Retrieval → Ranking → Reranking) |
 

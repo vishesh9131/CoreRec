@@ -19,6 +19,7 @@ import logging
 
 from corerec.api.base_recommender import BaseRecommender, normalize_interactions
 from corerec.api.exceptions import ModelNotFittedError
+from corerec.api.versioning import warn_deprecated_arg
 from corerec.core.towers import UserTower, ItemTower
 
 
@@ -130,12 +131,16 @@ class TwoTower(BaseRecommender):
                  loss_type: str = "bce",  # bce | bpr | infonce
                  learning_rate: float = 1e-3,
                  batch_size: int = 256,
-                 num_epochs: int = 10,
+                 epochs: int = 10,
                  device: Optional[torch.device] = None,
                  negative_samples: int = 4,
                  temperature: float = 0.07,  # for InfoNCE
-                 verbose: bool = True):
+                 verbose: bool = True,
+                 num_epochs: Optional[int] = None):
         super().__init__()
+        if num_epochs is not None:
+            warn_deprecated_arg("num_epochs", "epochs")
+            epochs = num_epochs
         
         self.name = name
         self.user_input_dim = user_input_dim
@@ -146,7 +151,7 @@ class TwoTower(BaseRecommender):
         self.loss_type = loss_type.lower()
         self.lr = learning_rate
         self.batch_size = batch_size
-        self.num_epochs = num_epochs
+        self.epochs = epochs
         self.device = device or (torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
         self.neg_samples = negative_samples
         self.temp = temperature
@@ -243,7 +248,7 @@ class TwoTower(BaseRecommender):
             return self
         
         # training loop
-        for epoch in range(self.num_epochs):
+        for epoch in range(self.epochs):
             self.model.train()
             
             np.random.shuffle(train_data)
@@ -324,8 +329,8 @@ class TwoTower(BaseRecommender):
             
             avg_loss = epoch_loss / n_batches if n_batches > 0 else 0
             
-            if self.verbose and (epoch + 1) % max(1, self.num_epochs // 10) == 0:
-                self.log.info(f"Epoch {epoch+1}/{self.num_epochs}, Loss: {avg_loss:.4f}")
+            if self.verbose and (epoch + 1) % max(1, self.epochs // 10) == 0:
+                self.log.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
         
         # cache item embeddings for fast retrieval
         self.model.eval()
@@ -450,7 +455,7 @@ class TwoTower(BaseRecommender):
             "loss_type": self.loss_type,
             "lr": self.lr,
             "batch_size": self.batch_size,
-            "num_epochs": self.num_epochs,
+            "epochs": self.epochs,
         }
         state = {
             "is_fitted": self.is_fitted,
@@ -530,7 +535,7 @@ class TwoTower(BaseRecommender):
                 loss_type=cfg["loss_type"],
                 learning_rate=cfg["lr"],
                 batch_size=cfg["batch_size"],
-                num_epochs=cfg["num_epochs"],
+                epochs=cfg.get("epochs", cfg.get("num_epochs", 10)),
             )
 
         loaded = load_torch_production(cls, path, build_model=_build, restore=_restore, factory=_factory)
@@ -549,7 +554,7 @@ class TwoTower(BaseRecommender):
             loss_type=cfg["loss_type"],
             learning_rate=cfg["lr"],
             batch_size=cfg["batch_size"],
-            num_epochs=cfg["num_epochs"],
+            epochs=cfg.get("epochs", cfg.get("num_epochs", 10)),
         )
         instance.user_map = state["user_map"]
         instance.item_map = state["item_map"]

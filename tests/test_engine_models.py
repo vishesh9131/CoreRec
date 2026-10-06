@@ -1,7 +1,7 @@
 """
 Integration tests for migrated engine models.
 
-Tests that migrated models (DCN, DeepFM, GNNRec, NASRec) work correctly
+Tests that migrated models (DCN, DeepFM) work correctly
 with the new Base Recommender API.
 
 Author: Vishesh Yadav
@@ -68,45 +68,12 @@ class TestMigratedModels(unittest.TestCase):
         self.assertEqual(model.name, "DeepFM")
         self.assertFalse(model.is_fitted)
 
-    def test_gnnrec_integration(self):
-        """Test GNNRec model end-to-end."""
-        from corerec.engines.gnnrec import GNNRec
-        from corerec.api.base_recommender import BaseRecommender
-
-        # Test inheritance
-        self.assertTrue(issubclass(GNNRec, BaseRecommender))
-
-        # Test initialization
-        model = GNNRec(
-            epochs=1,
-            verbose=False,
-            batch_size=64,
-            num_gnn_layers=2)
-        self.assertEqual(model.name, "GNNRec")
-        self.assertFalse(model.is_fitted)
-
-    def test_nasrec_integration(self):
-        """Test NASRec model end-to-end."""
-        from corerec.engines.nasrec import NASRec
-        from corerec.api.base_recommender import BaseRecommender
-
-        # Test inheritance
-        self.assertTrue(issubclass(NASRec, BaseRecommender))
-
-        # Test initialization
-        model = NASRec(epochs=1, verbose=False, batch_size=64)
-        self.assertEqual(model.name, "NASRec")
-        self.assertFalse(model.is_fitted)
-
     def test_all_models_have_required_methods(self):
         """Test that all migrated models have required BaseRecommender methods."""
         from corerec.engines.dcn import DCN
         from corerec.engines.deepfm import DeepFM
-        from corerec.engines.gnnrec import GNNRec
-        from corerec.engines.nasrec import NASRec
 
-        models = [DCN(epochs=1), DeepFM(epochs=1),
-                  GNNRec(epochs=1), NASRec(epochs=1)]
+        models = [DCN(epochs=1), DeepFM(epochs=1)]
 
         required_methods = ["fit", "predict",
                             "recommend"]  # save/load to be added

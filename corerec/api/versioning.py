@@ -1,7 +1,7 @@
 """
 CoreRec API versioning and deprecation policy helpers.
 
-See ``docs/source/api_versioning.md`` for the full policy.
+Deprecated arguments keep working, with a DeprecationWarning, until REMOVAL_VERSION.
 """
 
 from __future__ import annotations

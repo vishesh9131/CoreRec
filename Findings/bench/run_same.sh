@@ -32,9 +32,7 @@ run lightfm  WARP     cpu
 run surprise SVD      cpu
 
 # neural (GPU)
-run corerec  NCF       cuda
 run corerec  LightGCN  cuda
-run corerec  GNNRec    cuda
 run corerec  DCN       cuda
 run corerec  DeepFM    cuda
 run cornac   NeuMF     cuda

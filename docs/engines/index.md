@@ -122,7 +122,6 @@ Time-aware recommendations:
 Generative models:
 
 
-[**→ Learn more about Unionized Filter Engine**](unionized-filter/index.md)
 
 ---
 
@@ -208,7 +207,6 @@ Advanced learning techniques:
 - **Few-shot Learning**
 - **Zero-shot Learning**
 
-[**→ Learn more about Content Filter Engine**](content-filter/index.md)
 
 ---
 
@@ -235,7 +233,6 @@ model = DCN(
 model.fit(user_ids, item_ids, ratings)
 ```
 
-[**→ DCN Documentation**](deep-learning/dcn.md)
 
 #### DeepFM (Deep Factorization Machines)
 Combines factorization machines with deep learning:
@@ -251,7 +248,6 @@ model = DeepFM(
 model.fit(user_ids, item_ids, ratings)
 ```
 
-[**→ DeepFM Documentation**](deep-learning/deepfm.md)
 
 #### GNNRec (Graph Neural Network Recommender)
 Graph neural networks for recommendations:
@@ -267,7 +263,6 @@ model = GNNRec(
 model.fit(user_ids, item_ids, ratings)
 ```
 
-[**→ GNNRec Documentation**](deep-learning/gnnrec.md)
 
 #### MIND (Multi-Interest Network)
 Capture diverse user interests:
@@ -283,7 +278,6 @@ model = MIND(
 model.fit(user_ids, item_ids, timestamps)
 ```
 
-[**→ MIND Documentation**](deep-learning/mind.md)
 
 #### NASRec (Neural Architecture Search)
 Automatically discover optimal architectures:
@@ -299,7 +293,6 @@ model = NASRec(
 model.fit(user_ids, item_ids, ratings)
 ```
 
-[**→ NASRec Documentation**](deep-learning/nasrec.md)
 
 #### SASRec (Self-Attentive Sequential)
 Self-attention for sequential recommendations:
@@ -311,7 +304,7 @@ model = SASRec(
     hidden_units=64,
     num_blocks=2,
     num_heads=4,
-    num_epochs=20
+    epochs=20
 )
 model.fit(interaction_matrix, user_ids, item_ids)
 ```
@@ -378,11 +371,8 @@ graph TD
 ## Next Steps
 
 - Explore specific engine documentation:
-  - [Unionized Filter Engine](unionized-filter/index.md)
-  - [Content Filter Engine](content-filter/index.md)
   - [Deep Learning Models](deep-learning/index.md)
 - Check out [Examples](../examples/index.md) for usage patterns
 - See [Core Components](../core/index.md) for building blocks
-- Read [Best Practices](../user-guide/best-practices.md) for optimization tips
 
 

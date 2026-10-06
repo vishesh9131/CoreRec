@@ -2,56 +2,7 @@
 
 This section provides comprehensive examples for using CoreRec in various scenarios. All examples are runnable and include complete code.
 
-## Quick Start Examples
-
-Perfect for getting started quickly:
-
-- **[Engines Quickstart](quickstart/engines-quickstart.md)** - Quick start with deep learning engines
-- **[Unionized Filter Quickstart](quickstart/unionized-quickstart.md)** - Collaborative filtering examples
-- **[Content Filter Quickstart](quickstart/content-filter-quickstart.md)** - Content-based filtering examples
-
-## Engine-Specific Examples
-
-### Deep Learning Models
-
-Production-ready deep learning models:
-
-- **[DCN Example](engines/dcn-example.md)** - Deep & Cross Network for feature interactions
-- **[DeepFM Example](engines/deepfm-example.md)** - Deep Factorization Machines
-- **[GNNRec Example](engines/gnnrec-example.md)** - Graph Neural Networks
-- **[MIND Example](engines/mind-example.md)** - Multi-Interest Network with Dynamic Routing
-- **[NASRec Example](engines/nasrec-example.md)** - Neural Architecture Search
-- **[SASRec Example](engines/sasrec-example.md)** - Self-Attentive Sequential Recommendations
-
-### Unionized Filter Engine
-
-Collaborative filtering algorithms:
-
-- **[FastRecommender Example](unionized/fast-example.md)** - FastAI-style embedding recommender
-- **[SAR Example](unionized/sar-example.md)** - Smart Adaptive Recommendations
-- **[RBM Example](unionized/rbm-example.md)** - Restricted Boltzmann Machines
-- **[RLRMC Example](unionized/rlrmc-example.md)** - Riemannian Low-Rank Matrix Completion
-- **[GeoMLC Example](unionized/geomlc-example.md)** - Geometric Matrix Learning
-
-### Content Filter Engine
-
-Content-based filtering:
-
-- **[TF-IDF Example](content-filter/tfidf-example.md)** - Text-based recommendations
-
-## Advanced Examples
-
-Real-world use cases and complex scenarios:
-
-- **[Instagram Reels Recommendation](advanced/instagram-reels.md)** - Build an Instagram Reels-style recommendation system
-- **[YouTube MoE](advanced/youtube-moe.md)** - Mixture of Experts for video recommendations
-- **[DIEN Example](advanced/dien-example.md)** - Deep Interest Evolution Network
-
-## Demo Frontends
-
-Interactive web interfaces:
-
-- **[ImShow Connector](frontends/imshow-connector.md)** - Plug-and-play web interface for recommendations
+Runnable scripts live in the repository's [`examples/`](https://github.com/vishesh9131/CoreRec/tree/main/examples) folder.
 
 ## By Use Case
 
@@ -79,7 +30,7 @@ model = SASRec(
     hidden_units=64,
     num_blocks=2,
     num_heads=4,
-    num_epochs=50,
+    epochs=50,
     max_seq_length=20
 )
 
@@ -272,7 +223,7 @@ model = SASRec(
     hidden_units=64,
     num_blocks=2,
     num_heads=4,
-    num_epochs=50,
+    epochs=50,
     batch_size=128,
     max_seq_length=20
 )
@@ -437,7 +388,6 @@ examples/notebooks/collaborative_filtering.ipynb
 ## Next Steps
 
 - Explore [Engine Documentation](../engines/index.md) for algorithm details
-- Read [User Guide](../user-guide/index.md) for best practices
 - Check [API Reference](../api/index.md) for method signatures
 - See [Testing](../testing/index.md) for testing your implementations
 

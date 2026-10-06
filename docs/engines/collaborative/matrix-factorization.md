@@ -4,24 +4,12 @@ Matrix Factorization (MF) techniques are the cornerstone of collaborative filter
 
 ## Algorithms
 
-### 1. Fast Matrix Factorization (SVD-like)
-`MatrixFactorizationRecommender` is a standard implementation of matrix factorization using Gradient Descent. It learns user and item embeddings to minimize the reconstruction error of the ratings.
-
-**Best for**: Explicit feedback datasets (e.g., star ratings 1-5).
-
-::: corerec.engines.collaborative.mf_base.matrix_factorization_recommender.MatrixFactorizationRecommender
-    options:
-      show_root_heading: true
-      show_source: true
-
----
-
-### 2. Alternating Least Squares (ALS)
-`ALSRecommender` uses the Alternating Least Squares optimization method. It is particularly effective for large-scale implicit feedback datasets (e.g., clicks, views) because it can parallelize computation and handle unobserved data efficiently.
+### Alternating Least Squares (ALS)
+`ALS` uses the Alternating Least Squares optimization method. It is particularly effective for large-scale implicit feedback datasets (e.g., clicks, views) because it can parallelize computation and handle unobserved data efficiently.
 
 **Best for**: Implicit feedback, large-scale data.
 
-::: corerec.engines.collaborative.mf_base.als_recommender.ALSRecommender
+::: corerec.engines.matrix_factorization.ALS
     options:
       show_root_heading: true
       show_source: true

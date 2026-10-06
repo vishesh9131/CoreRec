@@ -65,92 +65,28 @@ Mail : sciencely98@gmail.com
 
 
 def list_engines(args):
-    """List all available recommendation engines."""
-    print(
-        """
-╔══════════════════════════════════════════════╗
-║        Available CoreRec Engines             ║
-╚══════════════════════════════════════════════╝
+    """List every shipped model, grouped by family."""
+    from corerec.engines import get_engine_info
 
-Deep Learning Engines:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  • DCN          - Deep & Cross Network
-  • DeepFM       - Factorization Machine with Deep Learning
-  • GNNRec       - Graph Neural Network Recommender
-  • MIND         - Multi-Interest Network with Dynamic routing
-  • NASRec       - Neural Architecture Search for RecSys
-  • SASRec       - Self-Attentive Sequential Recommendation
-  • DIEN         - Deep Interest Evolution Network
-
-Unionized Filter Engine (Collaborative):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  • FastRecommender    - Fast matrix factorization
-  • GeoMLC            - Geographic Multi-Level Collaborative
-  • RBM               - Restricted Boltzmann Machine
-  • RLRMC             - Robust Low-Rank Matrix Completion
-  • SAR               - Smart Adaptive Recommendations
-
-Content Filter Engine:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  • TFIDFRecommender  - TF-IDF based content filtering
-  • Word2Vec          - Word embeddings for content
-  • Doc2Vec           - Document embeddings
-  • BERT              - Transformer-based content understanding
-
-Hybrid Engines:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  • HybridRecommender - Combines multiple approaches
-
-Usage:
-  from corerec import engines
-  model = engines.DCN(embedding_dim=64)
-    """
-    )
+    print("\nCoreRec models (corerec.engines):")
+    for family, models in get_engine_info().items():
+        print(f"\n{family.upper()}:")
+        for name, summary in models.items():
+            print(f"  - {name:<18} {summary}")
+    print("\nUsage:\n  from corerec.engines import ALS\n  model = ALS(factors=64)")
 
 
 def list_models(args):
-    """List available models in a specific category."""
-    category = args.category if hasattr(args, "category") else "all"
-
-    models = {
-        "deep": [
-            "DCN",
-            "DeepFM",
-            "GNNRec",
-            "MIND",
-            "NASRec",
-            "SASRec",
-            "DIEN"],
-        "collaborative": [
-            "FastRecommender",
-            "GeoMLC",
-            "RBM",
-            "RLRMC",
-            "SAR"],
-        "content": [
-            "TFIDFRecommender",
-            "Word2Vec",
-            "Doc2Vec",
-            "BERT"],
-        "hybrid": ["HybridRecommender"],
-    }
+    """List available models, optionally for one family."""
+    category = getattr(args, "category", "all")
+    from corerec.engines import list_models as names
 
     if category == "all":
-        print("\n╔══════════════════════════════════════════════╗")
-        print("║         All Available Models                 ║")
-        print("╚══════════════════════════════════════════════╝\n")
-        for cat, model_list in models.items():
-            print(f"\n{cat.upper()}:")
-            for model in model_list:
-                print(f"  • {model}")
-    else:
-        if category in models:
-            print(f"\n{category.upper()} Models:")
-            for model in models[category]:
-                print(f"  • {model}")
-        else:
-            print(f"Unknown category: {category}")
-            print(f"Available categories: {', '.join(models.keys())}")
+        list_engines(args)
+        return
+    print(f"\n{category.upper()} models:")
+    for name in names(category):
+        print(f"  - {name}")
 
 
 def show_info(args):
@@ -195,40 +131,36 @@ def show_examples(args):
 ║          CoreRec Quick Examples              ║
 ╚══════════════════════════════════════════════╝
 
-1. Deep Learning Model (DCN):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-from corerec.engines import DCN
+1. Matrix factorization (ALS):
+from corerec.engines import ALS
 
-model = DCN(embedding_dim=64, hidden_dims=[128, 64])
-model.fit(user_ids, item_ids, ratings, epochs=10)
+model = ALS(factors=64, iterations=15)
+model.fit(user_ids, item_ids, ratings)
 recommendations = model.recommend(user_id=123, top_k=10)
 
 
-2. Collaborative Filtering (Fast):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-from corerec.engines.unionized import FastRecommender
+2. Ranking (DCN):
+from corerec.engines import DCN
 
-model = FastRecommender(n_factors=50)
-model.fit(user_item_matrix)
-recommendations = model.recommend(user_id=123)
-
-
-3. Content-Based (TF-IDF):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-from corerec.engines.content import TFIDFRecommender
-
-model = TFIDFRecommender()
-model.fit(item_descriptions)
-similar_items = model.recommend(item_id='movie_123')
+model = DCN(embedding_dim=64, epochs=10)
+model.fit(user_ids, item_ids, ratings)
+recommendations = model.recommend(user_id=123, top_k=10)
 
 
-4. Sequential Recommendation (SASRec):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. Sequential (SASRec):
 from corerec.engines import SASRec
 
-model = SASRec(max_len=50, embedding_dim=64)
-model.fit(user_sequences)
-next_items = model.recommend(user_sequence=[1, 5, 10, 23])
+model = SASRec(hidden_units=64, epochs=10)
+model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
+next_items = model.recommend(user_id=123, top_k=10)
+
+
+4. Content-based (TF-IDF):
+from corerec.engines import TFIDFRecommender
+
+model = TFIDFRecommender()
+model.fit(items=[101, 102], docs={101: "action film", 102: "romantic comedy"})
+similar_items = model.recommend_by_text(query_text="action", top_n=5)
 
 
 For more examples, visit:
@@ -250,7 +182,7 @@ Available Commands:
 
   version       Show CoreRec version information
   engines       List all available recommendation engines
-  models        List available models (optionally by category)
+  models        List available models (optionally by family)  
   info          Show installation and dependency info
   examples      Show quick usage examples
   help          Show this help message
@@ -261,7 +193,7 @@ Usage Examples:
   corerec version              # Show version info
   corerec engines              # List all engines
   corerec models               # List all models
-  corerec models deep          # List deep learning models
+  corerec models ranking       # List one model family    
   corerec info                 # Show installation info
   corerec examples             # Show code examples
 
@@ -297,8 +229,9 @@ def main():
         "category",
         nargs="?",
         default="all",
-        choices=["all", "deep", "collaborative", "content", "hybrid"],
-        help="Model category to list",
+        choices=["all", "classic", "retrieval", "graph", "ranking", "sequential",
+                 "autoencoder", "content"],
+        help="Model family to list",
     )
     models_parser.set_defaults(func=list_models)
 

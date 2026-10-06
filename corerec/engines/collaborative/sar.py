@@ -397,7 +397,6 @@ class SAR(BaseRecommender):
     # =========================================================================
     
     def fit(self, df: pd.DataFrame) -> "SAR":
-        df = self._coerce_fit_dataframe(df, sar_format=True)
         """
         Train the SAR model on interaction data.
         
@@ -412,6 +411,12 @@ class SAR(BaseRecommender):
         Raises:
             InvalidDataError: if input has issues
         """
+        # A DataFrame that already uses this model's column names is taken as
+        # is. Coercing it would rename the columns to SAR's defaults and then
+        # fail to find the custom col_user/col_item the caller configured.
+        already_named = isinstance(df, pd.DataFrame) and {self.col_user, self.col_item} <= set(df.columns)
+        if not already_named:
+            df = self._coerce_fit_dataframe(df, sar_format=True)
         # figure out which cols we need
         required_cols = [self.col_user, self.col_item, self.col_rating]
         if self.time_decay_flag:

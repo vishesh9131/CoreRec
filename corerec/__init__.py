@@ -52,8 +52,6 @@ def __getattr__(name):
         "utils",
         "metrics",
         "evaluation",
-        "vish_graphs",
-        "visualization",
         "data",
         "training",
         "trainer",
@@ -121,90 +119,6 @@ def __getattr__(name):
         globals()["BaseRecommender"] = BaseRecommender
         return BaseRecommender
     
-    if name == "BaseCorerec":
-        from .base_recommender import BaseCorerec
-        globals()["BaseCorerec"] = BaseCorerec
-        return BaseCorerec
-    
-    # model aliases - only load when explicitly requested
-    _model_aliases = {
-        # learning paradigms
-        "LEA_TRANSFER_LEARNING": (".engines.content_based.learning_paradigms", "LEA_TRANSFER_LEARNING"),
-        "LEA_ZERO_SHOT": (".engines.content_based.learning_paradigms", "LEA_ZERO_SHOT"),
-        "LEA_META_LEARNING": (".engines.content_based.learning_paradigms", "LEA_META_LEARNING"),
-        "TransferLearning": (".engines.content_based.learning_paradigms", "LEA_TRANSFER_LEARNING"),
-        "ZeroShot": (".engines.content_based.learning_paradigms", "LEA_ZERO_SHOT"),
-        "MetaLearning": (".engines.content_based.learning_paradigms", "LEA_META_LEARNING"),
-        # multimodal
-        "MUL_MULTI_MODAL": (".engines.content_based.multi_modal_cross_domain_methods", "MUL_MULTI_MODAL"),
-        "MUL_CROSS_DOMAIN": (".engines.content_based.multi_modal_cross_domain_methods", "MUL_CROSS_DOMAIN"),
-        "MUL_CROSS_LINGUAL": (".engines.content_based.multi_modal_cross_domain_methods", "MUL_CROSS_LINGUAL"),
-        "MultiModal": (".engines.content_based.multi_modal_cross_domain_methods", "MUL_MULTI_MODAL"),
-        "CrossDomain": (".engines.content_based.multi_modal_cross_domain_methods", "MUL_CROSS_DOMAIN"),
-        "CrossLingual": (".engines.content_based.multi_modal_cross_domain_methods", "MUL_CROSS_LINGUAL"),
-        # other
-        "OTH_RULE_BASED": (".engines.content_based.other_approaches", "OTH_RULE_BASED"),
-        "OTH_SENTIMENT_ANALYSIS": (".engines.content_based.other_approaches", "OTH_SENTIMENT_ANALYSIS"),
-        "OTH_ONTOLOGY_BASED": (".engines.content_based.other_approaches", "OTH_ONTOLOGY_BASED"),
-        "RuleBased": (".engines.content_based.other_approaches", "OTH_RULE_BASED"),
-        "SentimentAnalysis": (".engines.content_based.other_approaches", "OTH_SENTIMENT_ANALYSIS"),
-        "OntologyBased": (".engines.content_based.other_approaches", "OTH_ONTOLOGY_BASED"),
-        # misc
-        "MIS_FEATURE_SELECTION": (".engines.content_based.miscellaneous_techniques", "MIS_FEATURE_SELECTION"),
-        "MIS_NOISE_HANDLING": (".engines.content_based.miscellaneous_techniques", "MIS_NOISE_HANDLING"),
-        "MIS_COLD_START": (".engines.content_based.miscellaneous_techniques", "MIS_COLD_START"),
-        "FeatureSelection": (".engines.content_based.miscellaneous_techniques", "MIS_FEATURE_SELECTION"),
-        "NoiseHandling": (".engines.content_based.miscellaneous_techniques", "MIS_NOISE_HANDLING"),
-        "ColdStart": (".engines.content_based.miscellaneous_techniques", "MIS_COLD_START"),
-        # cnn
-        "CNN": (".cnn", "CNN"),
-        # performance
-        "PER_SCALABLE_ALGORITHMS": (".engines.content_based.performance_scalability", "PER_SCALABLE_ALGORITHMS"),
-        "PER_FEATURE_EXTRACTION": (".engines.content_based.performance_scalability", "PER_FEATURE_EXTRACTION"),
-        "PER_LOAD_BALANCING": (".engines.content_based.performance_scalability", "PER_LOAD_BALANCING"),
-        "ScalableAlgorithms": (".engines.content_based.performance_scalability", "PER_SCALABLE_ALGORITHMS"),
-        "FeatureExtraction": (".engines.content_based.performance_scalability", "PER_FEATURE_EXTRACTION"),
-        "LoadBalancing": (".engines.content_based.performance_scalability", "PER_LOAD_BALANCING"),
-        # context
-        "CON_CONTEXT_AWARE": (".engines.content_based.context_personalization", "CON_CONTEXT_AWARE"),
-        "CON_USER_PROFILING": (".engines.content_based.context_personalization", "CON_USER_PROFILING"),
-        "CON_ITEM_PROFILING": (".engines.content_based.context_personalization", "CON_ITEM_PROFILING"),
-        "ContextAware": (".engines.content_based.context_personalization", "CON_CONTEXT_AWARE"),
-        "UserProfiling": (".engines.content_based.context_personalization", "CON_USER_PROFILING"),
-        "ItemProfiling": (".engines.content_based.context_personalization", "CON_ITEM_PROFILING"),
-        # probabilistic
-        "PRO_LSA": (".engines.content_based.probabilistic_statistical_methods", "PRO_LSA"),
-        "LSA": (".engines.content_based.probabilistic_statistical_methods", "PRO_LSA"),
-        # special
-        "SPE_INTERACTIVE_FILTERING": (".engines.content_based.special_techniques", "SPE_INTERACTIVE_FILTERING"),
-        "SPE_DYNAMIC_FILTERING": (".engines.content_based.special_techniques", "SPE_DYNAMIC_FILTERING"),
-        "InteractiveFiltering": (".engines.content_based.special_techniques", "SPE_INTERACTIVE_FILTERING"),
-        "DynamicFiltering": (".engines.content_based.special_techniques", "SPE_DYNAMIC_FILTERING"),
-        # fairness
-        "FAI_EXPLAINABLE": (".engines.content_based.fairness_explainability", "FAI_EXPLAINABLE"),
-        "FAI_FAIRNESS_AWARE": (".engines.content_based.fairness_explainability", "FAI_FAIRNESS_AWARE"),
-        "FAI_PRIVACY_PRESERVING": (".engines.content_based.fairness_explainability", "FAI_PRIVACY_PRESERVING"),
-        "Explainable": (".engines.content_based.fairness_explainability", "FAI_EXPLAINABLE"),
-        "FairnessAware": (".engines.content_based.fairness_explainability", "FAI_FAIRNESS_AWARE"),
-        "PrivacyPreserving": (".engines.content_based.fairness_explainability", "FAI_PRIVACY_PRESERVING"),
-    }
-    
-    if name in _model_aliases:
-        import importlib
-        mod_path, attr_name = _model_aliases[name]
-        try:
-            mod = importlib.import_module(mod_path, __name__)
-            val = getattr(mod, attr_name)
-            globals()[name] = val
-            return val
-        except (ImportError, AttributeError) as exc:
-            # Previously this cached None and returned it, so `corerec.ColdStart`
-            # handed back None and blew up somewhere else with a confusing
-            # AttributeError on NoneType. Fail here, where the cause is visible.
-            raise AttributeError(
-                f"{__name__}.{name} is unavailable: importing {mod_path} failed ({exc})"
-            ) from exc
-
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -234,8 +148,6 @@ __all__ = [
     "utils",
     "metrics",
     "evaluation",
-    "vish_graphs",
-    "visualization",
     "pipelines",
     "retrieval",
     "ranking",
@@ -247,7 +159,6 @@ __all__ = [
     "serving",
     # Base classes
     "BaseRecommender",
-    "BaseCorerec",
     # NOTE: 35 names were removed here (TransferLearning, ZeroShot, MetaLearning,
     # MultiModal, CrossDomain, ColdStart, FairnessAware, the LEA_/MUL_/OTH_/MIS_
     # aliases, ...). Every one of them resolved to None: the modules behind them

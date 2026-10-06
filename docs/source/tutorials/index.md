@@ -11,7 +11,7 @@ Before diving into specific models, we recommend:
 
 ## Production Models (Tested & Stable)
 
-These models are **production-ready** — fully tested, CI-enforced, and implement the complete `BaseRecommender` interface. **14 production models** — start here.
+These models are **production-ready** — fully tested, CI-enforced, and implement the complete `BaseRecommender` interface. Start here.
 
 ### Core Engine Models
 
@@ -21,11 +21,7 @@ maxdepth: 1
 ---
 dcn_tutorial
 deepfm_tutorial
-gnnrec_tutorial
-mind_tutorial
-nasrec_tutorial
 sasrec_tutorial
-bert4rec_tutorial
 two_tower_tutorial
 ```
 
@@ -35,11 +31,8 @@ two_tower_tutorial
 ---
 maxdepth: 1
 ---
-ncf_tutorial
 sar_tutorial
 lightgcn_tutorial
-fast_tutorial
-fast_recommender_tutorial
 ```
 
 ### Content-Based Models
@@ -101,7 +94,6 @@ youtubednn_tutorial
 pnn_tutorial
 mmoe_tutorial
 ple_tutorial
-monolith_tutorial
 tdm_tutorial
 ```
 
@@ -171,7 +163,6 @@ End-to-end system tutorials:
 maxdepth: 1
 ---
 pipeline_tutorial
-imshow_tutorial
 ```
 
 ## Tutorial Structure
@@ -191,15 +182,12 @@ Each sandbox tutorial covers:
 
 ### Beginners
 1. Start with [DCN Tutorial](dcn_tutorial.md) (Production)
-2. Try [NCF Tutorial](ncf_tutorial.md) (Production)
 3. Explore [SAR Tutorial](sar_tutorial.md) (Production)
 
 ### Intermediate
 1. Deep dive into [DeepFM](deepfm_tutorial.md) (Production)
 2. Learn [Graph Methods with LightGCN](lightgcn_tutorial.md) (Production)
-3. Master [Multi-Interest with MIND](mind_tutorial.md) (Production)
 
 ### Advanced
-1. Study [Neural Architecture Search](nasrec_tutorial.md) (Production)
 2. Explore [Sandbox Models](../models/index.md#sandbox-models-experimental) for research
 3. Deploy to [Production](../examples/production_deployment.md)

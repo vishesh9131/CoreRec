@@ -37,7 +37,6 @@ Deep learning approaches to collaborative filtering.
 - **WideDeep**, **xDeepFM**, **FiBiNet**
 - **TwoTower** (retrieval)
 
-[**→ Neural Network Documentation**](neural-network.md)
 
 ### 3. Graph-Based
 
@@ -63,7 +62,6 @@ Attention-based collaborative filtering.
 - **BERT4Rec** (bidirectional transformer)
 - **Attention-based Sequential Models**
 
-[**→ Attention Mechanisms Documentation**](attention-mechanisms.md)
 
 ### 5. Bayesian Methods
 
@@ -75,7 +73,6 @@ Probabilistic approaches to recommendation.
 - **MultVAE** / **MultiDAE** (multinomial variational autoencoders)
 - **Probabilistic Graphical Models**
 
-[**→ Bayesian Methods Documentation**](bayesian-methods.md)
 
 ### 6. Sequential Models
 
@@ -87,7 +84,6 @@ Time-aware and sequence-aware recommendations.
 - **GRU-based Recommenders**
 - **Caser** (Convolutional Sequence Embedding)
 
-[**→ Sequential Models Documentation**](sequential-models.md)
 
 ### 7. Variational Encoders
 
@@ -334,7 +330,6 @@ model.fit(user_ids, item_ids, ratings)
 
 ## See Also
 
-- [Content Filter Engine](../content-filter/index.md) - For feature-based recommendations
 - [Deep Learning Models](../deep-learning/index.md) - For large-scale deep learning
 - [Examples](../../examples/index.md) - Usage examples
 - [API Reference](../../api/index.md) - Detailed API documentation

@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Planned as 0.7.0. This release cuts CoreRec down to what is tested, benchmarked
+and maintained. Everything removed is in the git history at commit `33911a3`.
+
+### Removed
+
+- **The model zoo goes from 35 to 15.** Kept: `ALS`, `SAR`, `ItemKNN`,
+  `UserKNN`, `EASE`, `SLIM`, `Item2Vec`, `TwoTower`, `LightGCN`, `DCN`,
+  `DeepFM`, `SASRec`, `MultVAE`, `MultiDAE`, `TFIDFRecommender`. Removed:
+  `GNNRec` (cannot finish ML-100K in an hour), `MIND`, `NASRec`, `BERT4Rec`,
+  `NCF`, `NGCF`, `FAST`/`FASTRecommender`, the deep-CTR family (`FM`, `AFM`,
+  `NFM`, `AutoInt`, `xDeepFM`, `FiBiNet`, `PNN`, `WideDeep`, `GMF`, `MLP`,
+  `DeepFMCTR`, `DCNCTR`), the session family (`GRU4Rec`, `Caser`, `BST`, `DIN`,
+  `DIEN`, `NARM`), and `YoutubeDNN`/`DSSM`/`Word2VecRecommender`.
+- Side projects that were not part of the recommender API: `demo_frontends`,
+  `imshow`, `format_master`, `vish_graphs`, `visualization`, `timecapsule`,
+  `judge`, `cf_engine`, `uf_engine`, `csrc`, `config`, `preprocessing`,
+  `optimal_path`, `output`, `engines/monolith`, and the top-level shims
+  (`cnn`, `rnn`, `dkn`, `aitm`, `autoencoder`, `transformer`, `Tmodel`,
+  `async_ddp`, `hyper_train`, `train`, `predict`, `models`, `core_rec`,
+  `12datasets`, `sshh`, `run_algo_tests`). Most imported modules that no
+  longer existed.
+- `BaseCorerec` and the re-export shims `engines/base_recommender.py` and
+  `engines/collaborative/base_recommender.py`. `corerec.api.BaseRecommender` is
+  the only base class. The deprecated `ModelInterface` / `PredictorInterface`
+  are gone too.
+- Repository clutter: `src/` (backups and use-case scratch), `vish_graphs/`,
+  `roadmap/`, `scripts/` (one-off migration fixers), `setup.py` (duplicated
+  `pyproject.toml` with a different dependency list), 75 one-line stub pages
+  in the mkdocs site, internal status notes under `docs/`, and examples for
+  removed models (including committed `.pkl` model files).
+- `matplotlib` is no longer a dependency.
+
+### Changed
+
+- **`corerec.engines.MODELS` is the single registry of shipped models.** The
+  CLI (`corerec models`, `corerec engines`), the contract tests and the docs
+  count all read from it. A model that fails to import now raises
+  `AttributeError` naming the cause instead of returning `None`.
+- **`epochs=` everywhere.** `SASRec` and `TwoTower` took `num_epochs=`; they
+  now take `epochs=` like every other model. `num_epochs=` still works with a
+  `DeprecationWarning`, and bundles saved by 0.6 load unchanged.
+- **NumPy 2 and pandas 3 are supported.** The `numpy<2` pin made `pip install
+  corerec` build NumPy 1.26 from source on Python 3.13. Supported Python is now
+  3.10 to 3.13 (CI tests all four); 3.8 and 3.9 are end-of-life.
+- `tests/test_model_contract.py` now covers every interaction model in the
+  registry (previously 7), and no longer falls back to default constructor
+  arguments when a model rejects one, which is how the `num_epochs` mismatch
+  went unnoticed.
+
+### Fixed
+
+- `SAR(col_user=..., col_item=...)` with a DataFrame always raised
+  `InvalidDataError: Missing required columns`: `fit()` renamed the columns to
+  SAR's defaults before looking for the configured names.
+  `examples/pipeline_example.py` failed on this.
+- `examples/unionized_sar_example.py` called `SAR.fit()` with three lists and
+  crashed; `examples/engines_quickstart.py` hid every failure behind "Skip".
+- The devcontainer launched a streamlit app at `SANDBOX/test_meta.py`, which
+  does not exist.
+
 ## [0.6.0] - 2026-08-07
 
 ### Fixed

@@ -26,20 +26,22 @@ retriever, a precise ranker over its output, and business rules on top.
 
 ### Where they live
 
-Import location matters and is not always where the name suggests:
+Every model imports from `corerec.engines`, and `corerec.engines.MODELS` is the
+one list of what ships (`corerec models` prints it):
 
-| Module | Models |
+| Family | Models |
 |---|---|
-| `corerec.engines` | `DCN`, `DeepFM`, `SASRec`, `BERT4Rec`, `MIND`, `NASRec`, `GNNRec`, `TwoTower` |
-| `corerec.engines.collaborative` | `NCF`, `SAR`, `LightGCN`, `FAST`, `TwoTower` |
-| `corerec.engines.matrix_factorization` | `ALS`, `Item2Vec` |
-| `corerec.engines.content_based` | `TFIDFRecommender`, `DSSM`, `YoutubeDNN`, `BERT4Rec` |
+| classic | `ALS`, `SAR`, `ItemKNN`, `UserKNN`, `EASE`, `SLIM`, `Item2Vec` |
+| retrieval | `TwoTower` |
+| graph | `LightGCN` |
+| ranking | `DCN`, `DeepFM` |
+| sequential | `SASRec` |
+| autoencoder | `MultVAE`, `MultiDAE` |
+| content | `TFIDFRecommender` |
 
-`corerec.engines` also lazily resolves `AutoInt`, `AFM`, `DIN`, `DIEN`, `NFM`,
-`PNN`, `FiBiNet`, `xDeepFM`, `WideDeep`, `Caser`, `MultVAE`, `MultiDAE`. They do
-not appear in `dir()` because of the lazy `__getattr__`, but they import.
-
-34 models are importable in total.
+15 models in total. The 0.7.0 cut removed the rest (GNNRec, MIND, NASRec,
+BERT4Rec, NCF, NGCF, the deep-CTR and session-based families); they are in the
+git history at commit 33911a3.
 
 ### The six calls
 
@@ -67,9 +69,9 @@ model = ALS.load("artifacts/als")                       # recommendations identi
 `save` writes a *bundle*: `artifacts/als.meta.json` + `artifacts/als.weights.pt`.
 Pass the base path to both `save` and `load`, not a `.pkl` filename.
 
-### Two models take a DataFrame instead
+### One model takes a DataFrame instead
 
-`SAR` and `NCF` predate the triple convention:
+`SAR` predates the triple convention:
 
 ```python
 import pandas as pd
@@ -93,8 +95,7 @@ From `BENCHMARKS.md` (MovieLens-100K, NDCG@10):
 | **Start here** | `ALS` — 0.4168, best single model measured |
 | Fast baseline | `SAR(similarity_type="cosine")` — 0.3955 in 0.35s |
 | Best result | fuse two models (see below) — 0.4493 |
-| Avoid for small data | `NCF` 0.3359, `LightGCN` 0.3360 — worse than a 0.08s ItemKNN and 300x slower |
-| Do not use | `GNNRec` — does not finish ML-100K in an hour |
+| Avoid for small data | `LightGCN` 0.3360 — worse than a 0.08s ItemKNN and 300x slower |
 
 Use `similarity_type="cosine"` for SAR. `jaccard` is the default and scores
 0.3730; `lift`, `mutual_information` and `inclusion_index` are near-random at the
@@ -199,15 +200,15 @@ supports incremental `add_items` and `fold_in_user` without retraining.
 ## Things worth knowing
 
 **Seeds.** `LightGCN` takes `seed=` (default 42) and is reproducible.
-`BERT4Rec`, `TwoTower` and `SASRec` draw from numpy's global RNG with no seeding
+`TwoTower` and `SASRec` draw from numpy's global RNG with no seeding
 — two runs of identical code give different models. Recorded in
 `tests/test_benchmark_bugfixes.py::KNOWN_NONREPRODUCIBLE`.
 
 **Single runs of sampled-negative models mean little.** Measured spread across
-5 seeds: `NCF_binary` 13.1%, `LightGCN` 6.0%, `implicit`'s BPR 5.1%. Report
+5 seeds: `LightGCN` 6.0%, `implicit`'s BPR 5.1%. Report
 mean ± std, or use a deterministic model.
 
-**`batch_predict` batches on NCF only.** The base implementation is a list
+**`batch_predict` is not batched by default.** The base implementation is a list
 comprehension over `predict()` — fine for classical models, one forward pass per
 pair for a torch model. If you add a neural model, override it.
 

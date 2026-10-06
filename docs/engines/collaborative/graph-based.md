@@ -15,11 +15,3 @@ A simplified GCN that removes non-linearities and feature transformations, makin
     options:
       show_root_heading: true
       show_source: true
-
-### NGCF (Neural Graph Collaborative Filtering)
-Explicitly models the high-order connectivity in the user-item graph.
-
-::: corerec.engines.collaborative.graph_based_base.ngcf.NGCF
-    options:
-      show_root_heading: true
-      show_source: true

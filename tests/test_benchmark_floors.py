@@ -5,7 +5,7 @@ Two layers:
 1. ``test_no_output_collapse_*`` (fast, always on): trains each deep model on a
    small synthetic dataset and asserts the per-item score variance is non-trivial.
    This is a regression guard for the sigmoid+BCE-on-all-positives collapse that
-   previously made DCN/DeepFM/GNNRec emit a constant score.
+   previously made DCN/DeepFM emit a constant score.
 
 2. ``test_ndcg_floor_ml100k`` (slower, skipped if the dataset is absent): trains
    on the canonical MovieLens-100K split and asserts NDCG@10 clears a floor, so a
@@ -55,17 +55,6 @@ def test_no_output_collapse_ctr(model_name):
     assert std > 1e-3, f"{model_name} output collapsed (score std={std:.2e})"
 
 
-def test_no_output_collapse_gnnrec():
-    from corerec.engines import GNNRec
-
-    u, i, r = _synthetic()
-    n_items = int(i.max()) + 1
-    model = GNNRec(embedding_dim=16, epochs=5, verbose=False, device="cpu")
-    model.fit(u, i, r)
-    std = _score_std(model, n_items)
-    assert std > 1e-3, f"GNNRec output collapsed (score std={std:.2e})"
-
-
 def test_rating_task_predicts_in_range():
     """task='rating' should regress the rating scale, not emit a [0,1] score."""
     from corerec.engines import DCN
@@ -102,7 +91,6 @@ _FLOORS = {  # NDCG@10 floors; the collapsed models used to score < 0.02
     ("corerec", "SAR"): 0.25,
     ("corerec", "DCN"): 0.05,
     ("corerec", "DeepFM"): 0.05,
-    ("corerec", "NCF"): 0.05,
     ("corerec", "LightGCN"): 0.05,
 }
 

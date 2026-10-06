@@ -8,7 +8,7 @@
 <div align="center">
   <img src="docs/images/coreRec.svg" width="80" height="80" style="margin-bottom: 16px;" /><br/>
   <h1>CoreRec</h1>
-  <p><strong>Production-grade recommendation systems framework.<br/>35 deep-learning models · Unified API · Multi-stage pipelines · Research to deployment.</strong></p>
+  <p><strong>Recommendation systems framework for PyTorch.<br/>15 models · One fit/recommend API · Train to a live HTTP endpoint in one object.</strong></p>
   <br/>
   <code>pip install corerec</code> &nbsp;&nbsp; <code>pip install cr_learn</code>
   <br/><br/>
@@ -25,7 +25,7 @@
 CoreRec is a modern recommendation engine built for the deep learning era. It implements industry-standard architectures — Two-Tower retrieval, Transformers, Graph Neural Networks — following the multi-stage pipeline approach used at Netflix, YouTube, and major e-commerce platforms.
 
 - **Unified API**: every model shares `fit`, `predict`, `recommend`, `save`, `load`
-- **35 deep-learning models**: deep learning, collaborative filtering, graph-based, sequential, matrix factorization
+- **15 models**: classic CF (ALS, SAR, ItemKNN, EASE, SLIM), retrieval (TwoTower), graph (LightGCN), ranking (DCN, DeepFM), sequential (SASRec), autoencoders (MultVAE) and content (TF-IDF). `corerec models` lists them.
 - **Multi-stage pipeline**: Retrieval → Ranking → Reranking in a single orchestrated system
 - **cr_learn**: companion dataset library for fast prototyping on real-world data
 
@@ -45,12 +45,13 @@ pip install cr_learn          # dataset companion (optional but recommended)
 ```
 
 ### Requirements
-- Python ≥ 3.8
-- PyTorch ≥ 1.9
-- NumPy, Pandas, SciPy
+- Python 3.10 to 3.13
+- PyTorch ≥ 2.0
+- NumPy (1.x or 2.x), pandas, SciPy
 
-Some models (TwoTower, multimodal fusion, and other encoder-based engines) depend on Hugging
-Face `transformers`. Install the extra to use them:
+The text encoders in `corerec.core.encoders` and `corerec.towers` (used by multimodal
+fusion) depend on Hugging Face `transformers`. None of the 15 models need it. Install
+the extra to use the encoders:
 
 ```bash
 pip install "corerec[transformers]"
@@ -97,10 +98,10 @@ that whole path in one runnable file, and `tests/test_train_and_serve.py` runs i
 every commit, so it cannot drift from what this README claims.
 
 The same three calls — `fit`, `recommend`, `predict` — are shared by every model.
-`tests/test_model_contract.py` enforces that across the zoo; the two models that
-still diverge (`SAR` and `NCF` take a DataFrame, with `fit_from_lists` /
-`fit_from_dataset` as their triple-shaped entry points) are listed there explicitly
-rather than left for you to discover.
+`tests/test_model_contract.py` enforces that across the zoo; the one model that
+still diverges (`SAR` takes a DataFrame, with `fit_from_lists` as its
+triple-shaped entry point) is listed there explicitly rather than left for you to
+discover.
 
 ---
 
@@ -123,9 +124,9 @@ that ratio is the deciding factor. Fusing two models with reciprocal rank fusion
 implicit's ensemble still edges CoreRec's (0.4547 vs 0.4493).
 
 The benchmark also found seven bugs in CoreRec itself, including a `batch_predict`
-that never batched (262ms → 6.8ms per user once fixed) and a graph model that
-cannot finish training on the smallest standard dataset within an hour. Those are
-documented rather than omitted.
+that never batched (262ms → 6.8ms per user once fixed) and a graph model (GNNRec,
+since removed) that could not finish training on the smallest standard dataset
+within an hour. Those are documented rather than omitted.
 
 ---
 
@@ -150,22 +151,22 @@ model = ModelClass.load('artifacts/my_model')   # restore
 
 ## Model Families
 
-### <img src="docs/images/feature.png" width="20" height="20" style="vertical-align:middle"/> Deep Learning
+Every model imports from `corerec.engines`. `corerec.engines.MODELS` is the single
+list of what ships; `corerec models` prints it.
 
-Best for feature-rich data with complex interaction patterns.
+| Family | Models | Good for |
+|--------|--------|----------|
+| Classic CF | `ALS`, `SAR`, `ItemKNN`, `UserKNN`, `EASE`, `SLIM`, `Item2Vec` | Strong, fast baselines; no GPU needed |
+| Retrieval | `TwoTower` | Candidate generation over large catalogs |
+| Graph | `LightGCN` | User-item graph structure |
+| Ranking | `DCN`, `DeepFM` | Scoring candidates with feature interactions |
+| Sequential | `SASRec` | Next-item prediction from history order |
+| Autoencoder | `MultVAE`, `MultiDAE` | Sparse implicit feedback |
+| Content | `TFIDFRecommender` | Item text; items with no interactions yet |
 
-| Model | Description | Import |
-|-------|-------------|--------|
-| **DCN** | Deep & Cross Network — explicit + implicit feature crossing | `from corerec.engines import DCN` |
-| **DeepFM** | Factorization Machines + Deep Network | `from corerec.engines import DeepFM` |
-| **GNNRec** | Graph Neural Network recommender | `from corerec.engines import GNNRec` |
-| **MIND** | Multi-Interest sequential network | `from corerec.engines import MIND` |
-| **SASRec** | Self-Attentive Sequential Recommendation | `from corerec.engines import SASRec` |
-| **NASRec** | Neural Architecture Search for RecSys | `from corerec.engines import NASRec` |
-| **BERT4Rec** | Bidirectional Transformer for sequences | `from corerec.engines.content_based import BERT4Rec` |
-| **TwoTower** | Dual-encoder retrieval (YouTube-style) | `from corerec.engines import TwoTower` |
-| **NCF** | Neural Collaborative Filtering | `from corerec.engines.collaborative import NCF` |
-| AFM, AutoInt, DIN, DIEN, NFM, PNN, FiBiNet, xDeepFM, WideDeep, Caser, MultVAE, MultiDAE | lazily exported | `from corerec.engines import AutoInt` |
+Version 0.7.0 cut the zoo from 35 models to these 15. The removed ones (GNNRec,
+MIND, NASRec, BERT4Rec, NCF, NGCF, the deep-CTR family and the GRU4Rec/Caser/BST/
+DIN/DIEN/NARM family) are in the git history at commit `33911a3`.
 
 #### DCN example
 
@@ -197,13 +198,11 @@ print(f"Score: {score:.3f}  |  Top-10: {recs}")
 
 #### TwoTower (retrieval at scale)
 
-> Requires the `transformers` extra: `pip install "corerec[transformers]"`.
-
 ```python
 from corerec.engines import TwoTower
 
-model = TwoTower(user_input_dim=64, item_input_dim=128, embedding_dim=256)
-model.fit(user_ids, item_ids, interactions)
+model = TwoTower(embedding_dim=256, epochs=10)
+model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
 
 candidates = model.recommend(user_id=42, top_k=100)
 ```
@@ -211,10 +210,10 @@ candidates = model.recommend(user_id=42, top_k=100)
 #### Sequential / transformer
 
 ```python
-from corerec.engines.content_based import BERT4Rec
+from corerec.engines import SASRec
 
-model = BERT4Rec(hidden_dim=256, num_layers=4)
-model.fit(user_ids, item_ids, interactions)
+model = SASRec(hidden_units=64, num_blocks=2, epochs=10)
+model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
 next_items = model.recommend(user_id=1, top_k=10)
 ```
 
@@ -261,18 +260,11 @@ recs  = model.recommend_by_text(query_text="action thriller", top_n=5)
 
 ### Graph-Based
 
-GNNRec trains with BCE loss, so ratings must be in `[0, 1]` (implicit feedback or
-normalized explicit ratings). Binarize raw ratings before calling `fit`:
-
 ```python
-import numpy as np
-from corerec.engines import GNNRec
+from corerec.engines import LightGCN
 
-# Raw explicit ratings (e.g. 1-5) -> implicit signal in [0, 1]
-binary_ratings = (ratings >= 1.0).astype(np.float32)
-
-model = GNNRec(embedding_dim=64, epochs=20)
-model.fit(user_ids, item_ids, binary_ratings)
+model = LightGCN(n_factors=64, epochs=20)
+model.fit(user_ids=user_ids, item_ids=item_ids, ratings=(ratings >= 4).astype(float))
 recs = model.recommend(user_id=1, top_k=10)
 ```
 
@@ -384,44 +376,15 @@ optimizer = Adam(model.parameters(), lr=0.001)
 
 ## Runnable Examples
 
-### Deep Learning Engines
-
 ```bash
-python examples/engines_dcn_example.py        # Deep & Cross Network
-python examples/engines_deepfm_example.py     # DeepFM
-python examples/engines_gnnrec_example.py     # GNN-based recommender
-python examples/engines_mind_example.py       # MIND (multi-interest)
-python examples/engines_nasrec_example.py     # NASRec
-python examples/engines_sasrec_example.py     # SASRec (self-attentive)
-```
-
-### Collaborative / Hybrid
-
-```bash
-python examples/unionized_sar_example.py      # SAR (item-to-item similarity)
-python examples/unionized_fast_example.py     # FastAI-style embedding
-python examples/unionized_rbm_example.py      # Restricted Boltzmann Machine
-python examples/unionized_rlrmc_example.py    # Riemannian low-rank matrix completion
-python examples/unionized_geomlc_example.py   # Geometric matrix completion
-```
-
-### Content Filter
-
-```bash
-python examples/content_filter_tfidf_example.py   # TF-IDF content filter
-```
-
-### Frontends (imshow)
-
-```bash
-python examples/imshow_connector_example.py   # plug-and-play demo UI
-# Then open http://127.0.0.1:8000
-```
-
-### Full Test Suite
-
-```bash
-python examples/run_all_algo_tests_example.py  # discover + run all algorithm tests
+python examples/train_and_serve.py              # train, then serve over HTTP (needs corerec[serving])
+python examples/engines_quickstart.py           # eight models, same data, same three calls
+python examples/engines_dcn_example.py          # Deep & Cross Network
+python examples/engines_deepfm_example.py       # DeepFM
+python examples/engines_sasrec_example.py       # SASRec (self-attentive)
+python examples/unionized_sar_example.py        # SAR (item-to-item similarity)
+python examples/content_filter_tfidf_example.py # TF-IDF content filter
+python examples/pipeline_example.py             # retrieval -> ranking -> reranking
 ```
 
 > **Tip**: All scripts add the project root to `sys.path` automatically. If `cr_learn` is installed, they prefer it; otherwise they use `sample_data/` CSVs bundled in this repo.
@@ -435,11 +398,11 @@ python examples/run_all_algo_tests_example.py  # discover + run all algorithm te
 <tbody>
 <tr><td><strong>Core models</strong></td><td><pre>
 corerec/
-├── engines/
-│   ├── dcn.py, deepfm.py, gnnrec.py, mind.py,
-│   │   sasrec.py, nasrec.py, bert4rec.py, two_tower.py
-│   ├── collaborative/       SAR, LightGCN, NCF, TwoTower
-│   └── content_based/       TFIDFRecommender, YoutubeDNN, DSSM
+├── engines/                 all 15 models; MODELS is the registry
+│   ├── matrix_factorization.py, classic_cf.py, vae_cf.py,
+│   │   dcn.py, deepfm.py, sasrec.py, two_tower.py
+│   ├── collaborative/       SAR, LightGCN
+│   └── content_based/       TFIDFRecommender
 ├── pipelines/               RecommendationPipeline, DataPipeline
 ├── retrieval/               Candidate retrieval, ensemble fusion
 ├── ranking/                 Pointwise, pairwise, feature-cross rankers
@@ -449,8 +412,7 @@ corerec/
 ├── evaluation/              Evaluator, metrics (RMSE, NDCG, MAP …)
 ├── explanation/             Feature-based & generative explainers
 ├── serving/                 ModelServer, batch inference
-├── api/                     BaseRecommender, exceptions, mixins
-└── cr_boosters/             Adam, NAdam, SGD, … optimizers
+└── api/                     BaseRecommender, exceptions, mixins
 </pre></td></tr>
 <tr><td><strong>Datasets</strong></td><td><pre>
 cr_learn_setup/cr_learn/
@@ -464,50 +426,15 @@ cr_learn_setup/cr_learn/
 </pre></td></tr>
 <tr><td><strong>Docs & Examples</strong></td><td><pre>
 docs/source/
-├── tutorials/     model zoo tutorials (DCN, DeepFM, SASRec …)
+├── tutorials/     model tutorials (DCN, DeepFM, SASRec …)
 ├── api/           Full API reference
 ├── user_guide/    Data prep, training, persistence, best practices
 └── examples/      Basic, advanced, production deployment
 
-examples/          Runnable .py scripts for every engine
+examples/          Runnable .py scripts (see above)
 </pre></td></tr>
 </tbody>
 </table>
-
----
-
-## VishGraphs
-
-**VishGraphs** is CoreRec's built-in module for graph visualization and analysis.
-It ships inside CoreRec — no extra install, import it from `corerec`:
-
-```python
-from corerec import vish_graphs as vg
-
-# Generate a random graph and save to CSV
-graph_file = vg.generate_random_graph(num_people=100, file_path="graph.csv")
-
-# Load as adjacency matrix
-adj_matrix = vg.bipartite_matrix_maker(graph_file)
-
-# Highlight the most-connected nodes
-top_nodes = vg.find_top_nodes(adj_matrix, num_nodes=3)
-
-vg.draw_graph(adj_matrix, top_nodes=top_nodes)          # 2D
-vg.draw_graph_3d(adj_matrix, top_nodes=top_nodes)       # 3D
-vg.show_bipartite_relationship(adj_matrix)              # bipartite view
-```
-
-**API summary:**
-
-| Function | Description |
-|----------|-------------|
-| `generate_random_graph(n, file_path, seed)` | Generate & save random adjacency matrix |
-| `draw_graph(adj, top_nodes, recommended_nodes, ...)` | 2D graph visualization |
-| `draw_graph_3d(adj, top_nodes, ...)` | 3D graph visualization |
-| `show_bipartite_relationship(adj)` | Bipartite relationship view |
-| `find_top_nodes(matrix, num_nodes)` | Most-connected nodes |
-| `bipartite_matrix_maker(csv_path)` | Load adjacency matrix from CSV |
 
 ---
 
@@ -539,14 +466,6 @@ open docs/build/html/index.html
 
 ```bash
 pip install --upgrade corerec
-```
-</details>
-
-<details>
-<summary><strong>NumPy 2.x conflict with PyTorch</strong></summary>
-
-```bash
-pip install "numpy<2"
 ```
 </details>
 

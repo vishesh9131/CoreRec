@@ -1,2 +1,0 @@
-# svm implementation
-pass

@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -34,9 +34,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          # CPU-only torch keeps the runner from downloading multi-GB CUDA wheels.
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -e ".[dev,serving]"
-          pip install pytest pytest-cov
 
       - name: Install faiss (serving tests fall back to brute force without it)
         run: pip install faiss-cpu || echo "faiss-cpu unavailable; VectorIndex uses brute-force fallback"

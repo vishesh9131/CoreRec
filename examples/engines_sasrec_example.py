@@ -45,7 +45,7 @@ if __name__ == "__main__":
         hidden_units=32,  # Smaller model for stability
         num_blocks=1,
         num_heads=1,
-        num_epochs=1,
+        epochs=1,
         batch_size=128,  # Smaller batch size
         max_seq_length=50,
         device="cpu",

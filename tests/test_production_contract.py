@@ -1,4 +1,4 @@
-"""Production contract tests — all 14 models must follow the unified API."""
+"""Production contract tests: every registered model must follow the unified API."""
 import importlib
 import inspect
 import unittest
@@ -8,22 +8,9 @@ from corerec.api.dataset import RecommenderDataset
 from corerec.api.exceptions import ModelNotFittedError
 
 
-PRODUCTION_MODELS = [
-    ("corerec.engines.dcn", "DCN"),
-    ("corerec.engines.deepfm", "DeepFM"),
-    ("corerec.engines.gnnrec", "GNNRec"),
-    ("corerec.engines.mind", "MIND"),
-    ("corerec.engines.nasrec", "NASRec"),
-    ("corerec.engines.sasrec", "SASRec"),
-    ("corerec.engines.two_tower", "TwoTower"),
-    ("corerec.engines.bert4rec", "BERT4Rec"),
-    ("corerec.engines.collaborative.sar", "SAR"),
-    ("corerec.engines.collaborative.nn_base.ncf", "NCF"),
-    ("corerec.engines.collaborative.fast", "FAST"),
-    ("corerec.engines.collaborative.fast_recommender", "FASTRecommender"),
-    ("corerec.engines.collaborative.graph_based_base.lightgcn", "LightGCN"),
-    ("corerec.engines.content_based.tfidf_recommender", "TFIDFRecommender"),
-]
+from corerec.engines import MODELS
+
+PRODUCTION_MODELS = [("corerec.engines" + module, name) for name, (module, _, _) in MODELS.items()]
 
 
 class TestProductionContract(unittest.TestCase):

@@ -10,12 +10,8 @@ These models live under `corerec.engines.*`, inherit `BaseRecommender`, and pass
 |-------|--------|----------|
 | **DCN** | `from corerec.engines.dcn import DCN` | [DCN Tutorial](../tutorials/dcn_tutorial.md) |
 | **DeepFM** | `from corerec.engines.deepfm import DeepFM` | [DeepFM Tutorial](../tutorials/deepfm_tutorial.md) |
-| **GNNRec** | `from corerec.engines.gnnrec import GNNRec` | [GNNRec Tutorial](../tutorials/gnnrec_tutorial.md) |
-| **MIND** | `from corerec.engines.mind import MIND` | [MIND Tutorial](../tutorials/mind_tutorial.md) |
-| **NASRec** | `from corerec.engines.nasrec import NASRec` | [NASRec Tutorial](../tutorials/nasrec_tutorial.md) |
 | **SASRec** | `from corerec.engines.sasrec import SASRec` | [SASRec Tutorial](../tutorials/sasrec_tutorial.md) |
 | **TwoTower** | `from corerec.engines.two_tower import TwoTower` | [TwoTower Tutorial](../tutorials/two_tower_tutorial.md) |
-| **BERT4Rec** | `from corerec.engines.bert4rec import BERT4Rec` | [BERT4Rec Tutorial](../tutorials/bert4rec_tutorial.md) |
 
 ### Example (triplet-based models)
 
@@ -70,7 +66,6 @@ Implementations under `corerec/sandbox/`. Not production-tested.
 | PNN | sandbox nn_base | [PNN](../tutorials/pnn_tutorial.md) |
 | MMoE | `corerec.sandbox.collaborative_full.nn_base.MMoE_base` | [MMoE](../tutorials/mmoe_tutorial.md) |
 | PLE | `corerec.sandbox.collaborative_full.nn_base.PLE_base` | [PLE](../tutorials/ple_tutorial.md) |
-| Monolith | `corerec.sandbox.collaborative_full.nn_base.Monolith_base` | [Monolith](../tutorials/monolith_tutorial.md) |
 | TDM | `corerec.sandbox.collaborative_full.nn_base.TDM_base` | [TDM](../tutorials/tdm_tutorial.md) |
 | DCN-Base | `corerec.sandbox.collaborative_full.nn_base.DCN` | [DCN Base](../tutorials/dcn_base_tutorial.md) |
 | DeepFM-Base | `corerec.sandbox.collaborative_full.nn_base.DeepFM_base` | [DeepFM Base](../tutorials/deepfm_base_tutorial.md) |

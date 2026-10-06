@@ -287,34 +287,6 @@ def run_corerec(model_name, data):
             return out
         return score_fn, None, fit_t
 
-    if model_name in ("NCF", "NCF_binary"):
-        import pandas as pd
-        from corerec.engines.collaborative import NCF
-        model = NCF(model_type="NeuMF", gmf_embedding_dim=RANK_DIM,
-                    mlp_embedding_dim=RANK_DIM, num_epochs=EPOCHS,
-                    learning_rate=0.001, verbose=False, seed=SEED, device=DEVICE)
-        # NCF.fit labels every observed interaction 1.0 and samples negatives
-        # (see ncf.py: ratings_parts = [np.ones(len(pos_u))]), so the rating
-        # column is discarded -- a 1-star rating trains as a positive. Passing
-        # binarized targets changes nothing; it was verified to give an
-        # identical NDCG to five decimals.
-        #
-        # implicit's ALS, by contrast, feeds rating in as confidence, so it
-        # weights a 5-star interaction 5x a 1-star one. It is using signal NCF
-        # throws away. NCF_binary keeps only rating>=4 rows as positives, which
-        # is the same relevance definition the metric uses.
-        df = pd.DataFrame({"user_id": uid, "item_id": iid, "rating": rt})
-        if model_name.endswith("_binary"):
-            df = df[rt >= 4.0].reset_index(drop=True)
-        t0 = time.perf_counter()
-        model.fit(df)
-        fit_t = time.perf_counter() - t0
-        items = np.arange(n_items)
-
-        def score_fn(u):
-            return np.asarray(model.batch_predict([(int(u), int(i)) for i in items]), float)
-        return score_fn, None, fit_t
-
     if model_name == "LightGCN":
         from corerec.engines.collaborative import LightGCN
         model = LightGCN(n_factors=RANK_DIM, n_layers=3, epochs=EPOCHS,
@@ -322,18 +294,6 @@ def run_corerec(model_name, data):
                          seed=SEED)
         t0 = time.perf_counter()
         model.fit(user_ids=uid, item_ids=iid, ratings=(rt >= 4).astype(float))
-        fit_t = time.perf_counter() - t0
-        items = np.arange(n_items)
-
-        def score_fn(u):
-            return np.asarray(model.batch_predict([(int(u), int(i)) for i in items]), float)
-        return score_fn, None, fit_t
-
-    if model_name == "GNNRec":
-        from corerec.engines import GNNRec
-        model = GNNRec(embedding_dim=RANK_DIM, epochs=EPOCHS, verbose=False)
-        t0 = time.perf_counter()
-        model.fit(uid, iid, (rt >= 4).astype(np.float32))
         fit_t = time.perf_counter() - t0
         items = np.arange(n_items)
 

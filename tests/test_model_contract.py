@@ -15,19 +15,27 @@ assertions -- the point is that divergence stays visible.
 import numpy as np
 import pytest
 
-# (test id, import path, class name, constructor kwargs kept small for speed)
+from corerec.engines import MODELS as REGISTRY
+
+# Small constructor kwargs so CI stays fast. Models not listed use defaults.
+_FAST_KWARGS = {
+    "TwoTower": {"embedding_dim": 16, "epochs": 3, "verbose": False},
+    "SASRec": {"hidden_units": 16, "num_blocks": 1, "epochs": 1,
+               "batch_size": 32, "max_seq_length": 20, "verbose": False},
+    "DCN": {"embedding_dim": 16, "epochs": 2},
+    "DeepFM": {"embedding_dim": 16, "epochs": 2},
+    "LightGCN": {"epochs": 5},
+    "MultVAE": {"epochs": 5},
+    "MultiDAE": {"epochs": 5},
+}
+
+# (test id, import path, class name, constructor kwargs). Every interaction
+# model in the registry is checked; content-based models take item text
+# instead of interactions and are covered by their own tests.
 MODELS = [
-    ("two_tower", "corerec.engines.two_tower", "TwoTower",
-     {"embedding_dim": 16, "num_epochs": 3, "verbose": False}),
-    ("bert4rec", "corerec.engines.bert4rec", "BERT4Rec", {}),
-    ("sasrec", "corerec.engines.sasrec", "SASRec",
-     {"hidden_units": 16, "num_blocks": 1, "num_epochs": 1,
-      "batch_size": 32, "max_seq_length": 20, "verbose": False}),
-    ("dcn", "corerec.engines.dcn", "DCN", {"embedding_dim": 16, "epochs": 2}),
-    ("deepfm", "corerec.engines.deepfm", "DeepFM", {"embedding_dim": 16, "epochs": 2}),
-    ("ncf", "corerec.engines.collaborative.nn_base.ncf", "NCF", {}),
-    ("lightgcn", "corerec.engines.collaborative.graph_based_base.lightgcn",
-     "LightGCN", {}),
+    (name.lower(), "corerec.engines" + module, name, _FAST_KWARGS.get(name, {}))
+    for name, (module, family, _) in REGISTRY.items()
+    if family != "content"
 ]
 
 # model id -> why it cannot meet the common contract yet.
@@ -37,7 +45,6 @@ MODELS = [
 # here and shows up as xfail rather than being silently tolerated.
 KNOWN_DIVERGENT = {
     "sar": "fit() takes a DataFrame; use fit_from_lists() for the triple form",
-    "ncf": "fit(data, validation_data) takes a DataFrame; see fit_from_dataset()",
 }
 
 
@@ -60,10 +67,9 @@ def _build(module_path, cls_name, kwargs):
     cls = getattr(module, cls_name, None)
     if cls is None:
         pytest.skip(f"{cls_name} not exported from {module_path}")
-    try:
-        return cls(**kwargs)
-    except TypeError:
-        return cls()  # constructor kwargs are a convenience, not the contract
+    # No fallback to cls(): a model that rejects a shared knob such as
+    # epochs= must fail here, not silently train with its defaults.
+    return cls(**kwargs)
 
 
 @pytest.fixture(scope="module")
@@ -196,3 +202,24 @@ def test_batch_predict_matches_predict(model_id, module_path, cls_name, kwargs, 
         assert got == pytest.approx(want, abs=1e-5), (
             f"{cls_name}.batch_predict disagrees with predict: {batched} vs {one_at_a_time}"
         )
+
+
+@pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS,
+                         ids=[m[0] for m in MODELS])
+def test_training_length_is_called_epochs(model_id, module_path, cls_name, kwargs):
+    """Iterative models take epochs=; num_epochs= survives only as a deprecated alias."""
+    import inspect
+
+    params = inspect.signature(_build(module_path, cls_name, {}).__class__.__init__).parameters
+    if "num_epochs" in params:
+        assert "epochs" in params, f"{cls_name} takes num_epochs but not epochs"
+
+
+@pytest.mark.parametrize("cls_name", ["SASRec", "TwoTower"])
+def test_num_epochs_alias_warns_and_applies(cls_name):
+    import corerec.engines as engines
+
+    with pytest.warns(DeprecationWarning, match="num_epochs"):
+        model = getattr(engines, cls_name)(num_epochs=3)
+    assert model.epochs == 3
+

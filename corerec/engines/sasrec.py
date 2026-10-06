@@ -13,6 +13,7 @@ from pathlib import Path
 # Project imports (assumed present)
 from corerec.api.base_recommender import BaseRecommender, normalize_interactions
 from corerec.api.exceptions import ModelNotFittedError,  RecommendationError
+from corerec.api.versioning import warn_deprecated_arg
 from corerec.utils.validation import (
     validate_fit_inputs,
     validate_user_id,
@@ -297,7 +298,7 @@ class SASRec(BaseRecommender):
         learning_rate: float = 1e-3,
         l2_reg: float = 1e-6,
         batch_size: int = 128,
-        num_epochs: int = 10,
+        epochs: int = 10,
         neg_samples: int = 1,
         loss_type: str = "bce",  # 'bce' | 'bpr' | 'ce'
         early_stopping_patience: int = 3,
@@ -308,8 +309,12 @@ class SASRec(BaseRecommender):
         user_cooling: bool = False,
         log_interval: int = 100,
         verbose: bool = True,
+        num_epochs: Optional[int] = None,
     ):
         super().__init__()
+        if num_epochs is not None:
+            warn_deprecated_arg("num_epochs", "epochs")
+            epochs = num_epochs
         self.name = name
         self.hidden_units = hidden_units
         self.num_blocks = num_blocks
@@ -324,7 +329,7 @@ class SASRec(BaseRecommender):
         self.learning_rate = learning_rate
         self.l2_reg = l2_reg
         self.batch_size = batch_size
-        self.num_epochs = num_epochs
+        self.epochs = epochs
         self.neg_samples = neg_samples
         self.loss_type = loss_type.lower()
         self.early_stopping_patience = early_stopping_patience
@@ -371,6 +376,8 @@ class SASRec(BaseRecommender):
             if dev is None and cfg.get("device"):
                 dev = torch.device(cfg["device"])
             init_cfg = {k: v for k, v in cfg.items() if k != "device"}
+            if "num_epochs" in init_cfg:  # bundles saved before 0.7.0
+                init_cfg["epochs"] = init_cfg.pop("num_epochs")
             return cls(device=dev, **init_cfg)
 
         def _coerce_id(key):
@@ -444,7 +451,7 @@ class SASRec(BaseRecommender):
             "learning_rate": self.learning_rate,
             "l2_reg": self.l2_reg,
             "batch_size": self.batch_size,
-            "num_epochs": self.num_epochs,
+            "epochs": self.epochs,
             "neg_samples": self.neg_samples,
             "loss_type": self.loss_type,
             "early_stopping_patience": self.early_stopping_patience,
@@ -797,7 +804,7 @@ class SASRec(BaseRecommender):
             os.makedirs(self.checkpoint_dir, exist_ok=True)
 
         # training loop
-        for epoch in range(self.num_epochs):
+        for epoch in range(self.epochs):
             self.model.train()
             if n_train == 0:
                 self.logger.warning("No training instances. Skipping training.")
@@ -1025,7 +1032,7 @@ class SASRec(BaseRecommender):
                 processed += batch_size
 
                 if (i // self.batch_size) % self.log_interval == 0:
-                    self.logger.info(f"Epoch {epoch+1}/{self.num_epochs} Batch {i//self.batch_size} Loss: {loss.item():.4f}")
+                    self.logger.info(f"Epoch {epoch+1}/{self.epochs} Batch {i//self.batch_size} Loss: {loss.item():.4f}")
 
             # Check if we processed any batches
             if processed == 0:
@@ -1053,7 +1060,7 @@ class SASRec(BaseRecommender):
             if validation_data:
                 metrics = self.evaluate(validation_data)
                 current_metric = np.mean([metrics[m] for m in metrics]) if len(metrics) > 0 else 0.0
-                self.logger.info(f"Epoch {epoch+1}/{self.num_epochs}, Loss: {avg_loss:.4f}, Validation metric(avg): {current_metric:.4f}")
+                self.logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}, Validation metric(avg): {current_metric:.4f}")
 
                 if current_metric > best_metric:
                     best_metric = current_metric
@@ -1065,7 +1072,7 @@ class SASRec(BaseRecommender):
                         self.logger.info(f"Early stopping after epoch {epoch+1}")
                         break
             else:
-                self.logger.info(f"Epoch {epoch+1}/{self.num_epochs}, Loss: {avg_loss:.4f}")
+                self.logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {avg_loss:.4f}")
                 if avg_loss < best_loss:
                     best_loss = avg_loss
                     patience_counter = 0

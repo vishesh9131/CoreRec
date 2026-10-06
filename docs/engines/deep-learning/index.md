@@ -17,27 +17,3 @@ Combines the power of factorization machines for recommendation and deep learnin
     options:
       show_root_heading: true
       show_source: true
-
-## GNNRec (Graph Neural Network)
-Applies Graph Neural Networks to the user-item graph.
-
-::: corerec.engines.gnnrec.GNNRec
-    options:
-      show_root_heading: true
-      show_source: true
-
-## MIND (Multi-Interest Network with Dynamic Routing)
-Captures diverse user interests using dynamic routing.
-
-::: corerec.engines.mind.MIND
-    options:
-      show_root_heading: true
-      show_source: true
-
-## NASRec (Neural Architecture Search)
-Automatically searches for the best recommendation architecture.
-
-::: corerec.engines.nasrec.NASRec
-    options:
-      show_root_heading: true
-      show_source: true

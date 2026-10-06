@@ -132,114 +132,6 @@ class TestDeepFM(unittest.TestCase):
             assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
 
 
-class TestGNNRec(unittest.TestCase):
-
-    def setUp(self):
-        self.user_ids, self.item_ids, self.ratings = _triplet_data()
-
-    def test_import_and_init(self):
-        from corerec.engines.gnnrec import GNNRec
-        model = GNNRec(epochs=1, verbose=False, batch_size=64, num_gnn_layers=2)
-        self.assertIsInstance(model, BaseRecommender)
-
-    def test_fit_predict_recommend(self):
-        from corerec.engines.gnnrec import GNNRec
-        model = GNNRec(epochs=1, verbose=False, batch_size=64, num_gnn_layers=2)
-        model.fit(user_ids=self.user_ids, item_ids=self.item_ids,
-                  ratings=self.ratings)
-        self.assertTrue(model.is_fitted)
-
-        score = model.predict(self.user_ids[0], self.item_ids[0])
-        self.assertIsInstance(score, float)
-
-        recs = model.recommend(user_id=self.user_ids[0], top_k=5)
-        self.assertIsInstance(recs, list)
-
-    def test_save_load(self):
-        from corerec.engines.gnnrec import GNNRec
-        model = GNNRec(epochs=1, verbose=False, batch_size=64, num_gnn_layers=2)
-        model.fit(user_ids=self.user_ids, item_ids=self.item_ids,
-                  ratings=self.ratings)
-        with tempfile.TemporaryDirectory() as d:
-            path = os.path.join(d, "gnnrec.pkl")
-            model.save(path)
-            loaded = GNNRec.load(path)
-            self.assertTrue(loaded.is_fitted)
-            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
-
-
-class TestMIND(unittest.TestCase):
-
-    def setUp(self):
-        self.user_ids, self.item_ids, self.ratings = _triplet_data()
-
-    def test_import_and_init(self):
-        from corerec.engines.mind import MIND
-        model = MIND(epochs=1, verbose=False, batch_size=64)
-        self.assertIsInstance(model, BaseRecommender)
-
-    def test_fit_predict_recommend(self):
-        from corerec.engines.mind import MIND
-        model = MIND(epochs=1, verbose=False, batch_size=64)
-        model.fit(user_ids=self.user_ids, item_ids=self.item_ids,
-                  ratings=self.ratings)
-        self.assertTrue(model.is_fitted)
-
-        score = model.predict(self.user_ids[0], self.item_ids[0])
-        self.assertIsInstance(score, float)
-
-        recs = model.recommend(user_id=self.user_ids[0], top_k=5)
-        self.assertIsInstance(recs, list)
-
-    def test_save_load(self):
-        from corerec.engines.mind import MIND
-        model = MIND(epochs=1, verbose=False, batch_size=64)
-        model.fit(user_ids=self.user_ids, item_ids=self.item_ids,
-                  ratings=self.ratings)
-        with tempfile.TemporaryDirectory() as d:
-            path = os.path.join(d, "mind.pkl")
-            model.save(path)
-            loaded = MIND.load(path)
-            self.assertTrue(loaded.is_fitted)
-            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
-
-
-class TestNASRec(unittest.TestCase):
-
-    def setUp(self):
-        self.user_ids, self.item_ids, self.ratings = _triplet_data()
-
-    def test_import_and_init(self):
-        from corerec.engines.nasrec import NASRec
-        model = NASRec(epochs=1, verbose=False, batch_size=64)
-        self.assertIsInstance(model, BaseRecommender)
-
-    def test_fit_predict_recommend(self):
-        from corerec.engines.nasrec import NASRec
-        model = NASRec(epochs=1, verbose=False, batch_size=64)
-        model.fit(user_ids=self.user_ids, item_ids=self.item_ids,
-                  ratings=self.ratings)
-        self.assertTrue(model.is_fitted)
-
-        score = model.predict(self.user_ids[0], self.item_ids[0])
-        self.assertIsInstance(score, float)
-
-        recs = model.recommend(user_id=self.user_ids[0], top_k=5)
-        self.assertIsInstance(recs, list)
-
-    def test_save_load(self):
-        from corerec.engines.nasrec import NASRec
-        model = NASRec(epochs=1, verbose=False, batch_size=64)
-        model.fit(user_ids=self.user_ids, item_ids=self.item_ids,
-                  ratings=self.ratings)
-        with tempfile.TemporaryDirectory() as d:
-            path = os.path.join(d, "nasrec.pkl")
-            model.save(path)
-            loaded = NASRec.load(path)
-            self.assertTrue(loaded.is_fitted)
-            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
-
-
 class TestSASRec(unittest.TestCase):
 
     def setUp(self):
@@ -247,13 +139,13 @@ class TestSASRec(unittest.TestCase):
 
     def test_import_and_init(self):
         from corerec.engines.sasrec import SASRec
-        model = SASRec(num_epochs=1, verbose=False, batch_size=64,
+        model = SASRec(epochs=1, verbose=False, batch_size=64,
                        max_seq_length=10, hidden_units=16, num_blocks=1)
         self.assertIsInstance(model, BaseRecommender)
 
     def test_fit_predict_recommend(self):
         from corerec.engines.sasrec import SASRec
-        model = SASRec(num_epochs=1, verbose=False, batch_size=64,
+        model = SASRec(epochs=1, verbose=False, batch_size=64,
                        max_seq_length=10, hidden_units=16, num_blocks=1)
         model.fit(self.user_list, self.item_list, self.mat)
         self.assertTrue(model.is_fitted)
@@ -268,7 +160,7 @@ class TestSASRec(unittest.TestCase):
 
     def test_save_load(self):
         from corerec.engines.sasrec import SASRec
-        model = SASRec(num_epochs=1, verbose=False, batch_size=64,
+        model = SASRec(epochs=1, verbose=False, batch_size=64,
                        max_seq_length=10, hidden_units=16, num_blocks=1)
         model.fit(self.user_list, self.item_list, self.mat)
         with tempfile.TemporaryDirectory() as d:
@@ -288,13 +180,13 @@ class TestTwoTower(unittest.TestCase):
 
     def test_import_and_init(self):
         from corerec.engines.two_tower import TwoTower
-        model = TwoTower(num_epochs=1, verbose=False, batch_size=64,
+        model = TwoTower(epochs=1, verbose=False, batch_size=64,
                          embedding_dim=16, hidden_dims=[32, 16])
         self.assertIsInstance(model, BaseRecommender)
 
     def test_fit_predict_recommend(self):
         from corerec.engines.two_tower import TwoTower
-        model = TwoTower(num_epochs=1, verbose=False, batch_size=64,
+        model = TwoTower(epochs=1, verbose=False, batch_size=64,
                          embedding_dim=16, hidden_dims=[32, 16])
         model.fit(self.user_list, self.item_list, self.mat)
         self.assertTrue(model.is_fitted)
@@ -310,7 +202,7 @@ class TestTwoTower(unittest.TestCase):
 
     def test_save_load(self):
         from corerec.engines.two_tower import TwoTower
-        model = TwoTower(num_epochs=1, verbose=False, batch_size=64,
+        model = TwoTower(epochs=1, verbose=False, batch_size=64,
                          embedding_dim=16, hidden_dims=[32, 16])
         model.fit(self.user_list, self.item_list, self.mat)
         with tempfile.TemporaryDirectory() as d:
@@ -322,53 +214,6 @@ class TestTwoTower(unittest.TestCase):
             recs = loaded.recommend(self.user_list[0], top_k=3)
             self.assertIsInstance(recs, list)
 
-
-class TestBERT4Rec(unittest.TestCase):
-
-    def setUp(self):
-        self.user_list, self.item_list, self.mat = _matrix_data(density=0.4)
-
-    def test_import_and_init(self):
-        from corerec.engines.bert4rec import BERT4Rec
-        model = BERT4Rec(num_epochs=1, verbose=False, batch_size=64,
-                         hidden_dim=16, num_layers=1, num_heads=2, max_len=10)
-        self.assertIsInstance(model, BaseRecommender)
-
-    def test_fit_predict_recommend(self):
-        from corerec.engines.bert4rec import BERT4Rec
-        model = BERT4Rec(num_epochs=1, verbose=False, batch_size=64,
-                         hidden_dim=16, num_layers=1, num_heads=2, max_len=10)
-        model.fit(self.user_list, self.item_list, self.mat)
-        self.assertTrue(model.is_fitted)
-
-        if model.user_seqs:
-            uid = next(iter(model.user_seqs))
-            iid = next(iter(model.item_to_idx))
-            score = model.predict(uid, iid)
-            self.assertIsInstance(score, float)
-
-            recs = model.recommend(uid, top_k=5)
-            self.assertIsInstance(recs, list)
-
-    def test_save_load(self):
-        from corerec.engines.bert4rec import BERT4Rec
-        model = BERT4Rec(num_epochs=1, verbose=False, batch_size=64,
-                         hidden_dim=16, num_layers=1, num_heads=2, max_len=10)
-        model.fit(self.user_list, self.item_list, self.mat)
-        with tempfile.TemporaryDirectory() as d:
-            path = os.path.join(d, "bert4rec.pt")
-            model.save(path)
-            loaded = BERT4Rec.load(path)
-            self.assertTrue(loaded.is_fitted)
-            if model.user_seqs:
-                uid = next(iter(model.user_seqs))
-                iid = next(iter(model.item_to_idx))
-                assert_predict_parity(self, model, loaded, uid, iid)
-
-
-# ===================================================================
-# 2. Collaborative filtering models
-# ===================================================================
 
 class TestSAR(unittest.TestCase):
 
@@ -418,131 +263,6 @@ class TestSAR(unittest.TestCase):
             uid = int(self.df["userID"].iloc[0])
             iid = int(self.df["itemID"].iloc[0])
             assert_predict_parity(self, model, loaded, uid, iid)
-
-
-class TestNCF(unittest.TestCase):
-
-    def setUp(self):
-        rng = np.random.RandomState(42)
-        n = 100
-        self.df = pd.DataFrame({
-            "user_id": rng.randint(0, 20, n),
-            "item_id": rng.randint(0, 15, n),
-            "rating": rng.choice([0, 1], n).astype(float),
-        })
-
-    def test_import_and_init(self):
-        from corerec.engines.collaborative.nn_base.ncf import NCF
-        model = NCF(num_epochs=1, verbose=False, batch_size=64)
-        self.assertIsInstance(model, BaseRecommender)
-
-    def test_fit_predict_recommend(self):
-        from corerec.engines.collaborative.nn_base.ncf import NCF
-        model = NCF(num_epochs=1, verbose=False, batch_size=64)
-        model.fit(self.df)
-        self.assertTrue(model.is_fitted)
-
-        uid = self.df["user_id"].iloc[0]
-        iid = self.df["item_id"].iloc[0]
-        score = model.predict(uid, iid)
-        self.assertIsInstance(score, float)
-
-        recs = model.recommend(uid, top_k=5)
-        self.assertIsInstance(recs, list)
-
-    def test_save_load(self):
-        from corerec.engines.collaborative.nn_base.ncf import NCF
-        model = NCF(num_epochs=1, verbose=False, batch_size=64)
-        model.fit(self.df)
-        with tempfile.TemporaryDirectory() as d:
-            path = os.path.join(d, "ncf.pkl")
-            model.save(path)
-            loaded = NCF.load(path)
-            self.assertTrue(loaded.is_fitted)
-            uid = int(self.df["user_id"].iloc[0])
-            iid = int(self.df["item_id"].iloc[0])
-            assert_predict_parity(self, model, loaded, uid, iid)
-
-
-class TestFAST(unittest.TestCase):
-
-    def setUp(self):
-        rng = np.random.RandomState(42)
-        n = 100
-        self.user_ids = rng.randint(0, 20, n).tolist()
-        self.item_ids = rng.randint(0, 15, n).tolist()
-        self.ratings = (rng.rand(n) * 5).tolist()
-
-    def test_import_and_init(self):
-        from corerec.engines.collaborative.fast import FAST
-        model = FAST(factors=10, iterations=2, seed=42)
-        self.assertIsNotNone(model)
-
-    def test_fit_predict_recommend(self):
-        from corerec.engines.collaborative.fast import FAST
-        model = FAST(factors=10, iterations=2, seed=42)
-        model.fit(self.user_ids, self.item_ids, self.ratings)
-
-        uid = self.user_ids[0]
-        iid = self.item_ids[0]
-        score = model.predict(uid, iid)
-        self.assertIsInstance(score, float)
-
-        recs = model.recommend(uid, top_k=5)
-        self.assertIsInstance(recs, list)
-        self.assertLessEqual(len(recs), 5)
-
-    def test_save_load(self):
-        from corerec.engines.collaborative.fast import FAST
-        model = FAST(factors=10, iterations=2, seed=42)
-        model.fit(self.user_ids, self.item_ids, self.ratings)
-        with tempfile.TemporaryDirectory() as d:
-            path = os.path.join(d, "fast_model")
-            model.save(path)
-            loaded = FAST.load(path)
-            self.assertIsNotNone(loaded.user_factors)
-            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
-
-
-class TestFASTRecommender(unittest.TestCase):
-
-    def setUp(self):
-        rng = np.random.RandomState(42)
-        n = 100
-        self.user_ids = rng.randint(0, 20, n).tolist()
-        self.item_ids = rng.randint(0, 15, n).tolist()
-        self.ratings = (rng.rand(n) * 5).tolist()
-
-    def test_import_and_init(self):
-        from corerec.engines.collaborative.fast_recommender import FASTRecommender
-        model = FASTRecommender(factors=10, iterations=2, seed=42)
-        self.assertIsInstance(model, BaseRecommender)
-
-    def test_fit_predict_recommend(self):
-        from corerec.engines.collaborative.fast_recommender import FASTRecommender
-        model = FASTRecommender(factors=10, iterations=2, seed=42)
-        model.fit(self.user_ids, self.item_ids, self.ratings)
-        self.assertTrue(model.is_fitted)
-
-        uid = self.user_ids[0]
-        iid = self.item_ids[0]
-        score = model.predict(uid, iid)
-        self.assertIsInstance(score, float)
-
-        recs = model.recommend(uid, top_k=5)
-        self.assertIsInstance(recs, list)
-        self.assertLessEqual(len(recs), 5)
-
-    def test_save_load(self):
-        from corerec.engines.collaborative.fast_recommender import FASTRecommender
-        model = FASTRecommender(factors=10, iterations=2, seed=42)
-        model.fit(self.user_ids, self.item_ids, self.ratings)
-        with tempfile.TemporaryDirectory() as d:
-            path = os.path.join(d, "fast_recommender")
-            model.save(path)
-            loaded = FASTRecommender.load(path)
-            self.assertIsNotNone(loaded.user_factors)
-            assert_predict_parity(self, model, loaded, self.user_ids[0], self.item_ids[0])
 
 
 class TestLightGCN(unittest.TestCase):
@@ -638,48 +358,8 @@ class TestTFIDFRecommender(unittest.TestCase):
 # 4. Meta-test: all models are BaseRecommender subclasses
 # ===================================================================
 
-class TestAllModelsInheritBaseRecommender(unittest.TestCase):
-    """Ensure every production model is a proper BaseRecommender subclass."""
-
-    MODELS = [
-        ("corerec.engines.dcn", "DCN"),
-        ("corerec.engines.deepfm", "DeepFM"),
-        ("corerec.engines.gnnrec", "GNNRec"),
-        ("corerec.engines.mind", "MIND"),
-        ("corerec.engines.nasrec", "NASRec"),
-        ("corerec.engines.sasrec", "SASRec"),
-        ("corerec.engines.two_tower", "TwoTower"),
-        ("corerec.engines.bert4rec", "BERT4Rec"),
-        ("corerec.engines.collaborative.sar", "SAR"),
-        ("corerec.engines.collaborative.nn_base.ncf", "NCF"),
-        ("corerec.engines.collaborative.fast_recommender", "FASTRecommender"),
-        ("corerec.engines.collaborative.graph_based_base.lightgcn", "LightGCN"),
-        ("corerec.engines.content_based.tfidf_recommender", "TFIDFRecommender"),
-    ]
-
-    def test_subclass_check(self):
-        import importlib
-        for mod_path, cls_name in self.MODELS:
-            with self.subTest(model=cls_name):
-                mod = importlib.import_module(mod_path)
-                cls = getattr(mod, cls_name)
-                self.assertTrue(
-                    issubclass(cls, BaseRecommender),
-                    f"{cls_name} is not a BaseRecommender subclass",
-                )
-
-    def test_required_methods_exist(self):
-        import importlib
-        required = ["fit", "predict", "recommend", "save", "load"]
-        for mod_path, cls_name in self.MODELS:
-            with self.subTest(model=cls_name):
-                mod = importlib.import_module(mod_path)
-                cls = getattr(mod, cls_name)
-                for method in required:
-                    self.assertTrue(
-                        hasattr(cls, method),
-                        f"{cls_name} missing required method '{method}'",
-                    )
+# Inheritance and required-method checks for every registered model live in
+# tests/test_deep_zoo_api_parity.py, driven by corerec.engines.MODELS.
 
 
 if __name__ == "__main__":

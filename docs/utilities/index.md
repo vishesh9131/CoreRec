@@ -94,7 +94,6 @@ div = diversity(recommendations)
 print(f"Diversity: {div:.4f}")
 ```
 
-[**→ Learn more about Evaluation Metrics**](evaluation-metrics.md)
 
 ## Visualization
 
@@ -190,7 +189,6 @@ plt.ylabel('PC2')
 plt.show()
 ```
 
-[**→ Learn more about Visualization**](visualization.md)
 
 ## Serialization
 
@@ -256,7 +254,6 @@ versions = serializer.list_versions()
 print(f"Available versions: {versions}")
 ```
 
-[**→ Learn more about Serialization**](serialization.md)
 
 ## Configuration Management
 
@@ -328,7 +325,6 @@ config = ConfigManager.from_env(
 os.environ['COREREC_MODEL_EMBEDDING_DIM'] = '128'
 ```
 
-[**→ Learn more about Configuration**](configuration.md)
 
 ## Device Management
 
@@ -382,7 +378,6 @@ device_manager.clear_cache()
 device_manager.set_memory_limit(max_memory_gb=8)
 ```
 
-[**→ Learn more about Device Management**](device-management.md)
 
 ## Example Data
 
@@ -547,12 +542,6 @@ for batch in batch_iterator(data, batch_size=256):
 ## Next Steps
 
 - Explore detailed utility documentation:
-  - [Evaluation Metrics](evaluation-metrics.md)
-  - [Visualization](visualization.md)
-  - [Serialization](serialization.md)
-  - [Configuration](configuration.md)
-  - [Device Management](device-management.md)
 - See [Examples](../examples/index.md) for usage examples
-- Read [Best Practices](../user-guide/best-practices.md) for optimization tips
 
 

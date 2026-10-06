@@ -29,7 +29,6 @@ run implicit ALS      cpu  2000
 run implicit BPR      cpu  2000
 run lightfm  WARP     cpu  2000
 # CoreRec neural: per-pair scoring is slow, smaller cap (labeled)
-run corerec  NCF      cuda 200
 run corerec  LightGCN cuda 200
 run corerec  DCN      cuda 200
 

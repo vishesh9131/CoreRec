@@ -48,7 +48,7 @@ def test_exclude_items_is_honoured():
 
     example = _load_example()
     users, items, ratings, _, _ = example.build_interactions()
-    model = example.TwoTower(embedding_dim=16, num_epochs=5, verbose=False)
+    model = example.TwoTower(embedding_dim=16, epochs=5, verbose=False)
     model.fit(users, items, ratings)
 
     client = TestClient(ModelServer(model).app)

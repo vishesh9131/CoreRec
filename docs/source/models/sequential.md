@@ -7,8 +7,6 @@ Models that use ordered interaction history for next-item prediction.
 | Model | Import | Tutorial |
 |-------|--------|----------|
 | **SASRec** | `from corerec.engines.sasrec import SASRec` | [SASRec](../tutorials/sasrec_tutorial.md) |
-| **BERT4Rec** | `from corerec.engines.bert4rec import BERT4Rec` | [BERT4Rec](../tutorials/bert4rec_tutorial.md) |
-| **MIND** | `from corerec.engines.mind import MIND` | [MIND](../tutorials/mind_tutorial.md) |
 
 ```{admonition} Not sequential
 :class: note
@@ -39,10 +37,6 @@ model = SASRec(
 model.fit(user_list, item_list, train_mat)
 recs = model.recommend(user_id=1, top_k=10)
 ```
-
-### MIND (triplet API)
-
-MIND uses `(user_ids, item_ids, ratings)` triplets — see the [MIND tutorial](../tutorials/mind_tutorial.md).
 
 ## Sandbox models (experimental)
 

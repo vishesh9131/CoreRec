@@ -1,6 +1,6 @@
-"""API parity smoke for the 35 deep-learning zoo entries.
+"""API parity smoke for every model in the zoo.
 
-Source of truth: corerec.engines._deep_learning_models
+Source of truth: corerec.engines.MODELS
 
 Checks that every named model:
   - imports and subclasses BaseRecommender
@@ -18,7 +18,14 @@ from pathlib import Path
 import pytest
 
 from corerec.api.base_recommender import BaseRecommender
-from corerec.engines import _deep_learning_models, list_deep_learning_models
+from corerec.engines import MODELS, list_models
+
+# Models whose fit() is not the (user_ids, item_ids, ratings) triple, with why.
+NOT_TRIPLE = {
+    "SAR": "fit() takes a DataFrame; use fit_from_lists() for the triple form",
+    "TFIDFRecommender": "content-based: fit(items, docs) takes item text, not interactions",
+}
+TRIPLE_MODELS = sorted(n for n in MODELS if n not in NOT_TRIPLE)
 
 
 REQUIRED = ("fit", "predict", "recommend", "save", "load")
@@ -35,7 +42,7 @@ def _build(name):
     import importlib
     import inspect
 
-    mod = importlib.import_module(_deep_learning_models[name], "corerec.engines")
+    mod = importlib.import_module(MODELS[name][0], "corerec.engines")
     cls = getattr(mod, name)
     sig = inspect.signature(cls.__init__)
     params = sig.parameters
@@ -44,7 +51,6 @@ def _build(name):
         "embedding_dim": 8,
         "hidden_dims": [16],
         "hidden_units": 8,
-        "num_epochs": 1,
         "epochs": 1,
         "batch_size": 4,
         "verbose": False,
@@ -62,23 +68,23 @@ def _build(name):
         return cls()
 
 
-def test_sot_locked_at_thirty_five():
-    assert len(_deep_learning_models) == 35
-    assert len(list_deep_learning_models()) == 35
+def test_registry_and_list_models_agree():
+    assert list_models() == list(MODELS)
+    assert sorted(n for f in {m[1] for m in MODELS.values()} for n in list_models(f)) == sorted(MODELS)
 
 
-@pytest.mark.parametrize("name", sorted(_deep_learning_models.keys()))
+@pytest.mark.parametrize("name", sorted(MODELS))
 def test_model_is_base_recommender_with_contract(name):
     import importlib
 
-    mod = importlib.import_module(_deep_learning_models[name], "corerec.engines")
+    mod = importlib.import_module(MODELS[name][0], "corerec.engines")
     cls = getattr(mod, name)
     assert issubclass(cls, BaseRecommender), f"{name} does not inherit BaseRecommender"
     for method in REQUIRED:
         assert hasattr(cls, method), f"{name} missing {method}"
 
 
-@pytest.mark.parametrize("name", sorted(_deep_learning_models.keys()))
+@pytest.mark.parametrize("name", TRIPLE_MODELS)
 def test_fit_predict_recommend_save_load_keyword_ratings(name):
     users, items, ratings = _tiny()
     model = _build(name)

@@ -23,7 +23,6 @@ export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 
 JOBS=(
   "implicit:BPR"
-  "corerec:NCF_binary"
   "corerec:LightGCN"
   "implicit:ALS"          # control: deterministic
   "implicit:ItemKNN"      # control: deterministic

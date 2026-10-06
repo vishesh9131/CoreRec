@@ -7,8 +7,7 @@ ROOT = os.path.dirname(os.path.dirname(__file__))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-# Using new Engine-Level Organization API
-from corerec.engines import unionized
+from corerec.engines import SAR
 from examples.utils_example_data import load_interactions
 
 
@@ -16,8 +15,8 @@ if __name__ == "__main__":
     data = load_interactions("crlearn")
     users, items, ratings = data["users"], data["items"], data["ratings"]
 
-    # New API: Direct access to SAR from unionized
-    model = unionized.SAR(similarity_type="jaccard")
-    model.fit(users, items, ratings)
-    recs = model.recommend(users[0], top_n=10, exclude_seen=True)
+    # SAR.fit() takes a DataFrame; fit_from_lists() takes the triple form.
+    model = SAR(similarity_type="jaccard")
+    model.fit_from_lists(users, items, ratings)
+    recs = model.recommend(users[0], top_k=10)
     print("SAR recommendations for", users[0], ":", recs)

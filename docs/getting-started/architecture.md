@@ -464,7 +464,6 @@ model = DCN(mixed_precision=True)
 
 - Explore [Engines](../engines/index.md) for detailed algorithm documentation
 - Learn about [Core Components](../core/index.md) for building custom models
-- Check [Training & Optimization](../training/index.md) for advanced training techniques
 - See [Examples](../examples/index.md) for real-world implementations
 
 

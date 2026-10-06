@@ -523,8 +523,6 @@ class MyCustomModel(BaseRecommender):
 
 ## See Also
 
-- [Model Interface](model-interface.md) - Interface for model components
-- [Predictor Interface](predictor-interface.md) - Interface for predictors
 - [Engines](../engines/index.md) - All available models
 - [Examples](../examples/index.md) - Usage examples
 

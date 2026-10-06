@@ -1,6 +1,6 @@
 """Production-contract tests for Batch-3 families:
-classic CF (ItemKNN, UserKNN, EASE), auto-encoder CF (MultVAE, MultiDAE), and
-graph CF (NGCF). Each must fit without collapsing, predict, recommend top_k known
+classic CF (ItemKNN, UserKNN, EASE, SLIM) and auto-encoder CF (MultVAE,
+MultiDAE). Each must fit without collapsing, predict, recommend top_k known
 items, and round-trip through save/load with identical predictions.
 """
 import os
@@ -14,7 +14,6 @@ MODELS = {
     "ItemKNN": {}, "UserKNN": {}, "EASE": {"reg": 50.0}, "SLIM": {"alpha": 0.1},
     "MultVAE": {"epochs": 15, "device": "cpu"},
     "MultiDAE": {"epochs": 15, "device": "cpu"},
-    "NGCF": {"epochs": 30, "device": "cpu"},
 }
 
 

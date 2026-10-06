@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from corerec.api.model_bundle import is_safe_bundle, load_bundle, save_bundle
-from corerec.engines.collaborative import FAST, SAR
+from corerec.engines.collaborative import SAR
 from corerec.engines.dcn import DCN
 
 
@@ -39,18 +39,6 @@ class TestSafePersistence(unittest.TestCase):
             self.assertTrue(loaded.is_fitted)
             recs = loaded.recommend(0, top_k=2)
             self.assertIsInstance(recs, list)
-
-    def test_fast_safe_save_load(self):
-        model = FAST(factors=4, iterations=1, batch_size=2, seed=42)
-        model.fit([0, 0, 1], [10, 11, 10], [5.0, 4.0, 3.0])
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "fast")
-            model.save(path, safe=True)
-            self.assertTrue(is_safe_bundle(path))
-            loaded = FAST.load(path)
-            self.assertTrue(loaded.is_fitted)
-            self.assertIsNotNone(loaded.user_factors)
-            self.assertAlmostEqual(model.predict(0, 10), loaded.predict(0, 10), delta=1e-2)
 
     def test_dcn_predict_parity_after_safe_load(self):
         model = DCN(embedding_dim=8, num_cross_layers=1, deep_layers=[8], epochs=1, batch_size=4)
@@ -110,7 +98,7 @@ class TestSafePersistence(unittest.TestCase):
         model = SASRec(
             hidden_units=8,
             num_blocks=1,
-            num_epochs=1,
+            epochs=1,
             batch_size=4,
             verbose=False,
         )
