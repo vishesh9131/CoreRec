@@ -2,7 +2,7 @@
 
 Alphabetical reference for all documented CoreRec models. See [Model Tiers](index.md#model-tiers) for production vs sandbox policy.
 
-## Production models (15)
+## Production models (16)
 
 The list is `corerec.engines.MODELS`; `corerec models` prints it.
 
@@ -12,6 +12,7 @@ The list is `corerec.engines.MODELS`; `corerec models` prints it.
 | DCN | Ranking | `from corerec.engines import DCN` | [Tutorial](../tutorials/dcn_tutorial.md) |
 | DeepFM | Ranking | `from corerec.engines import DeepFM` | [Tutorial](../tutorials/deepfm_tutorial.md) |
 | EASE | Classic CF | `from corerec.engines import EASE` | - |
+| HSTU | Generative | `from corerec.engines import HSTU` | [Sequential models](sequential.md) |
 | Item2Vec | Classic CF | `from corerec.engines import Item2Vec` | - |
 | ItemKNN | Classic CF | `from corerec.engines import ItemKNN` | - |
 | LightGCN | Graph | `from corerec.engines import LightGCN` | [Tutorial](../tutorials/lightgcn_tutorial.md) |

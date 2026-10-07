@@ -8,7 +8,7 @@
 <div align="center">
   <img src="docs/images/corerec-icon.svg" alt="CoreRec" width="84" height="88" style="margin-bottom: 16px;" /><br/>
   <h1>CoreRec</h1>
-  <p><strong>Recommendation systems framework for PyTorch.<br/>15 models · One fit/recommend API · Train to a live HTTP endpoint in one object.</strong></p>
+  <p><strong>Recommendation systems framework for PyTorch.<br/>16 models, including generative HSTU · One fit/recommend API · Train to a live HTTP endpoint in one object.</strong></p>
   <br/>
   <code>pip install corerec</code> &nbsp;&nbsp; <code>pip install cr_learn</code>
   <br/><br/>
@@ -19,7 +19,7 @@
 </div>
 
 <p align="center">
-  <img src="docs/images/corerec-demo.gif" width="720" alt="CoreRec teaser: corerec serve events.csv trains, scores the model at 2.2x a most-popular baseline on the demo data, and serves it" />
+  <img src="docs/images/corerec-demo.gif" width="720" alt="CoreRec launch film: corerec serve events.csv trains on the demo data, beats a most-popular baseline 2.2x, and serves the model" />
 </p>
 
 ---
@@ -55,7 +55,7 @@ model has to clear (it warns you when it doesn't). Then it retrains on
 everything and serves it. Users it has never seen get the popular items, marked
 `"source": "fallback"`, instead of an error.
 
-- `corerec serve events.csv --model EASE` picks a different model; `corerec models` lists all 15.
+- `corerec serve events.csv --model EASE` picks a different model; `corerec models` lists all 16. With a timestamp column, sequential models (`--model HSTU`) read each user's history in time order.
 - `corerec train events.csv -o artifacts/m` saves the model and its report; `corerec serve artifacts/m` serves it later.
 - `docker build -t corerec . && docker run -p 8000:8000 -v "$PWD:/data" corerec /data/events.csv` does the same in a container.
 
@@ -75,7 +75,7 @@ fast classic baselines to two-tower retrieval, graph and sequential models, plus
 the pieces to evaluate and serve them.
 
 - **Unified API**: every model shares `fit`, `predict`, `recommend`, `save`, `load`
-- **15 models**: classic CF (ALS, SAR, ItemKNN, EASE, SLIM), retrieval (TwoTower), graph (LightGCN), ranking (DCN, DeepFM), sequential (SASRec), autoencoders (MultVAE) and content (TF-IDF). `corerec models` lists them.
+- **16 models**: classic CF (ALS, SAR, ItemKNN, EASE, SLIM), retrieval (TwoTower), graph (LightGCN), ranking (DCN, DeepFM), sequential (SASRec), generative (HSTU), autoencoders (MultVAE) and content (TF-IDF). `corerec models` lists them.
 - **Multi-stage pipeline**: Retrieval → Ranking → Reranking in a single orchestrated system
 - **cr_learn**: companion dataset library for fast prototyping on real-world data
 
@@ -100,7 +100,7 @@ pip install cr_learn          # dataset companion (optional but recommended)
 - NumPy (1.x or 2.x), pandas, SciPy
 
 The text encoders in `corerec.core.encoders` and `corerec.towers` (used by multimodal
-fusion) depend on Hugging Face `transformers`. None of the 15 models need it. Install
+fusion) depend on Hugging Face `transformers`. None of the 16 models need it. Install
 the extra to use the encoders:
 
 ```bash
@@ -230,10 +230,11 @@ list of what ships; `corerec models` prints it.
 | Graph | `LightGCN` | User-item graph structure |
 | Ranking | `DCN`, `DeepFM` | Scoring candidates with feature interactions |
 | Sequential | `SASRec` | Next-item prediction from history order |
+| Generative | `HSTU` | Next-item generation, Meta's 2024 transducer; uses timestamps |
 | Autoencoder | `MultVAE`, `MultiDAE` | Sparse implicit feedback |
 | Content | `TFIDFRecommender` | Item text; items with no interactions yet |
 
-Version 0.7.0 cut the zoo from 35 models to these 15. The removed ones (GNNRec,
+Version 0.7.0 cut the zoo from 35 models to 15, then added HSTU as the one generative model. The removed ones (GNNRec,
 MIND, NASRec, BERT4Rec, NCF, NGCF, the deep-CTR family and the GRU4Rec/Caser/BST/
 DIN/DIEN/NARM family) are in the git history at commit `33911a3`.
 
@@ -467,7 +468,7 @@ python examples/pipeline_example.py             # retrieval -> ranking -> rerank
 <tbody>
 <tr><td><strong>Core models</strong></td><td><pre>
 corerec/
-├── engines/                 all 15 models; MODELS is the registry
+├── engines/                 all 16 models; MODELS is the registry
 │   ├── matrix_factorization.py, classic_cf.py, vae_cf.py,
 │   │   dcn.py, deepfm.py, sasrec.py, two_tower.py
 │   ├── collaborative/       SAR, LightGCN

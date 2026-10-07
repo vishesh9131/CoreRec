@@ -338,8 +338,9 @@ class HSTU(BaseRecommender):
         h = self.model.encode(x, ts)                        # [B, n, d]
         items = self.model.item_vectors()
         # One set of random negatives per sequence, shared by its positions. The
-        # reference draws a fresh set per position; sharing gives the same
-        # estimator in expectation at a sixth of the CPU cost.
+        # reference draws a fresh set per position; here each position still sees
+        # K uniform negatives, only correlated across positions, at a sixth of the
+        # CPU cost.
         neg_idx = torch.as_tensor(rng.integers(1, n_items + 1, size=(len(y), self.num_negatives)),
                                   device=self.device)                      # [B, K]
         neg = torch.einsum("bnd,bkd->bnk", h, items[neg_idx])                # [B, n, K]
