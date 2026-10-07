@@ -128,7 +128,8 @@ def test_unknown_and_content_models_are_rejected_before_reading(tmp_path):
 
 
 @pytest.mark.parametrize("model,params", [("ALS", {"iterations": 3}), ("SAR", {}),
-                                          ("EASE", {}), ("LightGCN", {"epochs": 2})])
+                                          ("EASE", {}), ("LightGCN", {"epochs": 2}),
+                                          ("HSTU", {"epochs": 2, "embedding_dim": 16})])
 def test_artifact_roundtrip_serves_the_same_recommendations(events_csv, tmp_path, model, params):
     result = train_from_csv(events_csv, model=model, params=params, evaluate=False)
     out = save_artifact(result, tmp_path / "artifact")
@@ -138,6 +139,12 @@ def test_artifact_roundtrip_serves_the_same_recommendations(events_csv, tmp_path
 
     loaded, manifest = load_artifact(out)
     assert loaded.recommend("user0", top_k=5) == result.model.recommend("user0", top_k=5)
+
+
+def test_sequential_models_are_given_the_timestamps(events_csv):
+    result = train_from_csv(events_csv, model="HSTU", params={"epochs": 1, "embedding_dim": 16},
+                            evaluate=False)
+    assert result.model.has_time
 
 
 def test_server_falls_back_to_popular_items_for_unknown_users(events_csv, tmp_path):

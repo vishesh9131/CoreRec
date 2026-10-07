@@ -25,6 +25,7 @@ explicitly.
 from __future__ import annotations
 
 import ast
+import inspect
 import json
 import re
 import time
@@ -193,8 +194,12 @@ def fit_model(name: str, df: pd.DataFrame, params: Optional[Dict[str, Any]] = No
     users, items, ratings = df["user"].tolist(), df["item"].tolist(), df["rating"].astype(float).tolist()
     if name == "SAR":
         model.fit_from_lists(users, items, ratings)
-    else:
-        model.fit(user_ids=users, item_ids=items, ratings=ratings)
+        return model
+    extra = {}
+    # Sequential models read the order of events; hand them the clock when the file has one.
+    if "timestamp" in df and "timestamps" in inspect.signature(model.fit).parameters:
+        extra["timestamps"] = df["timestamp"].astype(float).tolist()
+    model.fit(user_ids=users, item_ids=items, ratings=ratings, **extra)
     return model
 
 

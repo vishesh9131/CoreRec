@@ -42,6 +42,8 @@ MODELS = {
     "DeepFM": (".deepfm", "ranking", "Factorization machine + deep network"),
     # sequential
     "SASRec": (".sasrec", "sequential", "Self-attentive next-item prediction"),
+    # generative
+    "HSTU": (".hstu", "generative", "Generative next-item transducer (Meta's HSTU, ICML 2024)"),
     # autoencoders
     "MultVAE": (".vae_cf", "autoencoder", "Variational autoencoder for implicit feedback"),
     "MultiDAE": (".vae_cf", "autoencoder", "Denoising autoencoder for implicit feedback"),

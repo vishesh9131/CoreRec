@@ -22,6 +22,7 @@ _FAST_KWARGS = {
     "TwoTower": {"embedding_dim": 16, "epochs": 3, "verbose": False},
     "SASRec": {"hidden_units": 16, "num_blocks": 1, "epochs": 1,
                "batch_size": 32, "max_seq_length": 20, "verbose": False},
+    "HSTU": {"embedding_dim": 16, "epochs": 2, "num_negatives": 8, "batch_size": 16},
     "DCN": {"embedding_dim": 16, "epochs": 2},
     "DeepFM": {"embedding_dim": 16, "epochs": 2},
     "LightGCN": {"epochs": 5},
