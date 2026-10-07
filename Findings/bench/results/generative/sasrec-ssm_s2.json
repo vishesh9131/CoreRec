@@ -1,0 +1,16 @@
+{
+  "model": "sasrec-ssm",
+  "dataset": "ml-1m",
+  "protocol": "leave-latest-out, full ranking, history removed",
+  "epochs": 100,
+  "seed": 2,
+  "max_len": 200,
+  "n_eval_users": 6038,
+  "fit_time_s": 3148.0,
+  "eval_time_s": 4.5,
+  "HR@10": 0.27824,
+  "NDCG@10": 0.15415,
+  "HR@50": 0.55234,
+  "NDCG@50": 0.2147,
+  "final_train_loss": 2.3925
+}
