@@ -34,8 +34,9 @@ API. Everything removed is in the git history at commit `33911a3`.
   time-gap biases, trained on next-item prediction with sampled softmax as in
   the paper's public ML-1M recipe. `HSTU(encoder="sasrec")` trains a SASRec
   block under the identical recipe. On MovieLens-1M (full ranking, 100
-  epochs, one seed) it reaches NDCG@10 0.1584 against 0.1532 for SASRec;
-  Meta's published numbers are 0.1720 and 0.1603. See `BENCHMARKS.md`.
+  epochs, three seeds) it reaches NDCG@10 0.1613 ± 0.0028 against
+  0.1531 ± 0.0010 for SASRec and wins on every seed; Meta's published numbers
+  are 0.1720 and 0.1603. See `BENCHMARKS.md`.
 - `corerec serve` passes the file's timestamp column to models whose `fit()`
   accepts `timestamps`, so `--model HSTU` reads each history in time order.
 - `Findings/bench/generative_bench.py`: the HSTU vs SASRec benchmark.

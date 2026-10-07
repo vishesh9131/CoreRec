@@ -1,0 +1,16 @@
+{
+  "model": "hstu",
+  "dataset": "ml-1m",
+  "protocol": "leave-latest-out, full ranking, history removed",
+  "epochs": 100,
+  "seed": 3,
+  "max_len": 200,
+  "n_eval_users": 6038,
+  "fit_time_s": 3424.3,
+  "eval_time_s": 9.4,
+  "HR@10": 0.28933,
+  "NDCG@10": 0.16168,
+  "HR@50": 0.56823,
+  "NDCG@50": 0.22341,
+  "final_train_loss": 2.3059
+}

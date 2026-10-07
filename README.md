@@ -202,15 +202,15 @@ architecture.
 
 | Model | NDCG@10 | HR@10 | Fit (CPU) |
 |---|---:|---:|---:|
-| **CoreRec HSTU** | **0.1584** | **0.2821** | 65 min |
-| CoreRec SASRec, same recipe | 0.1532 | 0.2761 | 60 min |
+| **CoreRec HSTU** | **0.1613 ± 0.0028** | **0.2884 ± 0.0059** | 60 min |
+| CoreRec SASRec, same recipe | 0.1531 ± 0.0010 | 0.2757 ± 0.0028 | 55 min |
 | *Meta HSTU, published* | *0.1720* | *0.3097* | *GPU* |
 | *Meta SASRec, published* | *0.1603* | *0.2853* | *GPU* |
 
-HSTU wins, by +3.4% NDCG@10 rather than the paper's +7.3%, and both of our
-models land 4-8% below Meta's numbers. One seed per model so far; the method,
-the known differences from Meta's setup and the raw learning curves are in
-[BENCHMARKS.md](BENCHMARKS.md).
+Mean ± std over three seeds. HSTU wins on every seed, by +5.3% NDCG@10 on
+average rather than the paper's +7.3%, and both of our models land 4-6% below
+Meta's numbers. The method, the per-seed results, the known differences from
+Meta's setup and the raw JSON are in [BENCHMARKS.md](BENCHMARKS.md).
 
 ```python
 from corerec.engines import HSTU

@@ -190,26 +190,39 @@ results sit next to theirs.
 with exactly the same loss, sampler and budget, so the only thing that differs
 from the HSTU row is the architecture.
 
+Mean ± standard deviation over three seeds (1, 2, 3) for the CoreRec rows.
+
 | Model | NDCG@10 | HR@10 | NDCG@50 | HR@50 | Fit |
 |---|---:|---:|---:|---:|---:|
-| **CoreRec HSTU** | **0.1584** | **0.2821** | **0.2205** | **0.5633** | 65 min |
-| CoreRec SASRec, same recipe | 0.1532 | 0.2761 | 0.2140 | 0.5525 | 60 min |
+| **CoreRec HSTU** | **0.1613 ± 0.0028** | **0.2884 ± 0.0059** | **0.2227 ± 0.0019** | **0.5657 ± 0.0025** | 60 min |
+| CoreRec SASRec, same recipe | 0.1531 ± 0.0010 | 0.2757 ± 0.0028 | 0.2146 ± 0.0006 | 0.5540 ± 0.0027 | 55 min |
 | Meta HSTU (published) | 0.1720 | 0.3097 | 0.2307 | 0.5754 | GPU |
 | Meta SASRec (published) | 0.1603 | 0.2853 | 0.2185 | 0.5474 | GPU |
 | CoreRec `SASRec` (the existing class) | *did not finish one epoch in 28 min* | | | | |
 
-Single run each (seed 1). Raw JSON, including the learning curve every 10
-epochs, is in [`Findings/bench/results/generative/`](Findings/bench/results/generative/).
+Per seed, NDCG@10:
+
+| Seed | HSTU | SASRec, same recipe | HSTU lead |
+|---:|---:|---:|---:|
+| 1 | 0.1584 | 0.1532 | +3.4% |
+| 2 | 0.1639 | 0.1542 | +6.3% |
+| 3 | 0.1617 | 0.1521 | +6.3% |
+
+Raw JSON for every run, with the learning curve every 10 epochs for seed 1, is
+in [`Findings/bench/results/generative/`](Findings/bench/results/generative/).
 
 What this says, and what it does not:
 
-- **HSTU beats SASRec, by less than Meta reported.** +3.4% NDCG@10 and +2.2%
-  HR@10 here, against +7.3% and +8.6% in the paper. HSTU was ahead at every one
-  of the ten checkpoints (epoch 10 to 100), which makes a lucky final epoch an
-  unlikely explanation, but this is one seed per model: until more seeds are
-  in, treat the size of the gap as unsettled.
-- **Both CoreRec models land below Meta's numbers**: SASRec by 4.4%, HSTU by
-  7.9% on NDCG@10. Known differences: CoreRec shares each sequence's 128
+- **HSTU beats SASRec on every seed, by somewhat less than Meta reported.**
+  +5.3% NDCG@10 and +4.6% HR@10 on the means, against +7.3% and +8.6% in the
+  paper. HSTU's worst seed (0.1584) is above SASRec's best (0.1542), and on
+  seed 1 HSTU led at all ten checkpoints from epoch 10 to 100, so neither a
+  lucky seed nor a lucky final epoch explains it.
+- **HSTU is the noisier model**: its NDCG@10 std across seeds (0.0028) is
+  almost three times SASRec's (0.0010). One run of HSTU can land 2% either side
+  of its mean.
+- **Both CoreRec models land below Meta's numbers**: SASRec by 4.5%, HSTU by
+  6.2% on mean NDCG@10. Known differences: CoreRec shares each sequence's 128
   negatives across its positions instead of drawing a fresh set per position
   (about six times cheaper on a CPU); the time bias uses the gap between two
   past interactions rather than the gap to the next one; and no hyperparameter
@@ -220,15 +233,21 @@ What this says, and what it does not:
   negative sampling and a NaN scan of every parameter per batch; one epoch on
   ML-1M did not finish in 28 minutes. For sequential recommendation on real
   data, use `HSTU`, or `HSTU(encoder="sasrec")` for a SASRec architecture.
-- **HSTU costs about 8% more training time** than SASRec under the same recipe.
+- **HSTU costs about 8% more training time** than SASRec under the same recipe
+  (60 vs 55 minutes per run on 2 CPU threads).
 
 Reproduce (about an hour per run on 2 CPU threads; the data downloads once):
 
 ```bash
 cd Findings/bench
-python generative_bench.py --model hstu       --epochs 100 --seed 1 --eval_every 10 --out results/generative/hstu_s1.json
-python generative_bench.py --model sasrec-ssm --epochs 100 --seed 1 --eval_every 10 --out results/generative/sasrec-ssm_s1.json
+for s in 1 2 3; do
+  python generative_bench.py --model hstu       --epochs 100 --seed $s --out results/generative/hstu_s$s.json
+  python generative_bench.py --model sasrec-ssm --epochs 100 --seed $s --out results/generative/sasrec-ssm_s$s.json
+done
 ```
+
+Add `--eval_every 10` to record the learning curve; it scores the test target
+along the way but never changes what is trained or reported.
 
 ## Bugs this benchmark found
 
