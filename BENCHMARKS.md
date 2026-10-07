@@ -170,6 +170,66 @@ are choosing a model for a dataset this size, the classical ones are the answer.
   section: those rows move by up to 5% between machines and need multi-seed
   runs before small differences mean anything.
 
+## Generative recommendation: HSTU vs SASRec on MovieLens-1M
+
+Phase 2 added one generative model, `corerec.engines.HSTU` (Zhai et al.,
+ICML 2024), and the question it has to answer is whether it beats SASRec.
+This comparison uses the protocol behind Meta's public ML-1M numbers, so our
+results sit next to theirs.
+
+| | |
+|---|---|
+| Data | All 1,000,209 ML-1M ratings with timestamps; each user's latest rating is the test target (the NCF authors' leave-latest-out split) |
+| Ranking | Full ranking over all 3,706 items, items already in the history removed |
+| Metrics | HR@K and NDCG@K, K = 10 and 50, over all 6,038 users whose target item appears in training |
+| Recipe | Meta's ML-1M config for both models: 50-dim, 2 layers, 1 head, 200-item history, dropout 0.2, Adam 1e-3, batch 128, sampled softmax with 128 negatives at temperature 0.05, 100 epochs |
+| Selection | None. Every run trains 100 epochs and is scored once at the end; the learning curve is recorded but never used to pick a checkpoint |
+| Hardware | CPU only, 2 threads per run |
+
+`sasrec-ssm` is CoreRec's `HSTU(encoder="sasrec")`: the SASRec block trained
+with exactly the same loss, sampler and budget, so the only thing that differs
+from the HSTU row is the architecture.
+
+| Model | NDCG@10 | HR@10 | NDCG@50 | HR@50 | Fit |
+|---|---:|---:|---:|---:|---:|
+| **CoreRec HSTU** | **0.1584** | **0.2821** | **0.2205** | **0.5633** | 65 min |
+| CoreRec SASRec, same recipe | 0.1532 | 0.2761 | 0.2140 | 0.5525 | 60 min |
+| Meta HSTU (published) | 0.1720 | 0.3097 | 0.2307 | 0.5754 | GPU |
+| Meta SASRec (published) | 0.1603 | 0.2853 | 0.2185 | 0.5474 | GPU |
+| CoreRec `SASRec` (the existing class) | *did not finish one epoch in 28 min* | | | | |
+
+Single run each (seed 1). Raw JSON, including the learning curve every 10
+epochs, is in [`Findings/bench/results/generative/`](Findings/bench/results/generative/).
+
+What this says, and what it does not:
+
+- **HSTU beats SASRec, by less than Meta reported.** +3.4% NDCG@10 and +2.2%
+  HR@10 here, against +7.3% and +8.6% in the paper. HSTU was ahead at every one
+  of the ten checkpoints (epoch 10 to 100), which makes a lucky final epoch an
+  unlikely explanation, but this is one seed per model: until more seeds are
+  in, treat the size of the gap as unsettled.
+- **Both CoreRec models land below Meta's numbers**: SASRec by 4.4%, HSTU by
+  7.9% on NDCG@10. Known differences: CoreRec shares each sequence's 128
+  negatives across its positions instead of drawing a fresh set per position
+  (about six times cheaper on a CPU); the time bias uses the gap between two
+  past interactions rather than the gap to the next one; and no hyperparameter
+  was retuned for CPU training. The SASRec gap is the cleaner measure of how
+  far the shared recipe is from Meta's, since that row has no time bias.
+- **CoreRec's existing `SASRec` class cannot be benchmarked at this scale.**
+  It trains on each history position as a separate sample with Python-side
+  negative sampling and a NaN scan of every parameter per batch; one epoch on
+  ML-1M did not finish in 28 minutes. For sequential recommendation on real
+  data, use `HSTU`, or `HSTU(encoder="sasrec")` for a SASRec architecture.
+- **HSTU costs about 8% more training time** than SASRec under the same recipe.
+
+Reproduce (about an hour per run on 2 CPU threads; the data downloads once):
+
+```bash
+cd Findings/bench
+python generative_bench.py --model hstu       --epochs 100 --seed 1 --eval_every 10 --out results/generative/hstu_s1.json
+python generative_bench.py --model sasrec-ssm --epochs 100 --seed 1 --eval_every 10 --out results/generative/sasrec-ssm_s1.json
+```
+
 ## Bugs this benchmark found
 
 Running the comparison was worth more than the table.

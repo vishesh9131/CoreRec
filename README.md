@@ -192,6 +192,33 @@ run, inside the seed-to-seed spread measured for LightGCN), and a loss on
 MovieLens-1M. RecBole's LightGCN, the strongest reference implementation, is not
 in this table yet.
 
+### Generative recommendation: HSTU vs SASRec
+
+`HSTU`, Meta's generative recommender from *Actions Speak Louder than Words*
+(ICML 2024), against SASRec on MovieLens-1M with Meta's own recipe and
+protocol: each user's latest rating held out, full ranking over all 3,706
+items, 100 epochs, scored once at the end. Our two rows differ only in the
+architecture.
+
+| Model | NDCG@10 | HR@10 | Fit (CPU) |
+|---|---:|---:|---:|
+| **CoreRec HSTU** | **0.1584** | **0.2821** | 65 min |
+| CoreRec SASRec, same recipe | 0.1532 | 0.2761 | 60 min |
+| *Meta HSTU, published* | *0.1720* | *0.3097* | *GPU* |
+| *Meta SASRec, published* | *0.1603* | *0.2853* | *GPU* |
+
+HSTU wins, by +3.4% NDCG@10 rather than the paper's +7.3%, and both of our
+models land 4-8% below Meta's numbers. One seed per model so far; the method,
+the known differences from Meta's setup and the raw learning curves are in
+[BENCHMARKS.md](BENCHMARKS.md).
+
+```python
+from corerec.engines import HSTU
+
+model = HSTU(epochs=50).fit(user_ids, item_ids, timestamps=timestamps)
+model.recommend(user_id, top_k=10)
+```
+
 The benchmark also found seven bugs in CoreRec itself, including a `batch_predict`
 that never batched (262ms → 6.8ms per user once fixed) and a graph model (GNNRec,
 since removed) that could not finish training on the smallest standard dataset
@@ -277,14 +304,18 @@ model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
 candidates = model.recommend(user_id=42, top_k=100)
 ```
 
-#### Sequential / transformer
+#### Sequential / generative
 
 ```python
-from corerec.engines import SASRec
+from corerec.engines import HSTU
 
-model = SASRec(hidden_units=64, num_blocks=2, epochs=10)
-model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
+# Reads each user's history in time order and predicts the next item.
+model = HSTU(epochs=50)
+model.fit(user_ids, item_ids, timestamps=timestamps)
 next_items = model.recommend(user_id=1, top_k=10)
+
+# The SASRec architecture under the same training recipe:
+sasrec = HSTU(encoder="sasrec", epochs=50)
 ```
 
 ---
