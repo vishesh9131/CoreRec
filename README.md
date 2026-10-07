@@ -19,7 +19,7 @@
 </div>
 
 <p align="center">
-  <img src="docs/images/corerec-demo.gif" width="860" alt="CoreRec teaser: corerec serve events.csv trains, scores the model at 2.2x a most-popular baseline on the demo data, and serves it" />
+  <img src="docs/images/corerec-demo.gif" width="720" alt="CoreRec teaser: corerec serve events.csv trains, scores the model at 2.2x a most-popular baseline on the demo data, and serves it" />
 </p>
 
 ---
