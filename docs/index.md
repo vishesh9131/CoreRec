@@ -1,7 +1,7 @@
 # CoreRec: Advanced Recommendation Systems Library
 
 <div align="center">
-    <img src="images/coreRec.svg" alt="CoreRec Logo" width="120">
+    <img src="images/corerec-icon.svg" alt="CoreRec Logo" width="120">
     <p><em>State-of-the-Art Recommendation Engines for Researchers and Developers</em></p>
 </div>
 
