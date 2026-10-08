@@ -58,6 +58,7 @@ everything and serves it. Users it has never seen get the popular items, marked
 - `corerec serve events.csv --model EASE` picks a different model; `corerec models` lists all 16. With a timestamp column, sequential models (`--model HSTU`) read each user's history in time order.
 - `corerec train events.csv -o artifacts/m` saves the model and its report; `corerec serve artifacts/m` serves it later.
 - `docker build -t corerec . && docker run -p 8000:8000 -v "$PWD:/data" corerec /data/events.csv` does the same in a container.
+- `corerec serve artifacts/m --feedback-log feedback.jsonl` logs what users saw and clicked; `GET /metrics` reports online CTR and drift, `--challenger` runs an A/B test, and `corerec retrain` (e.g. nightly from cron) ships a fresher model only when it beats the current one ([guide](docs/source/user_guide/production_loop.md)).
 - Researching a new model? Write a plain `torch.nn.Module` and wrap it in `corerec.nn.Recommender`: training, evaluation, serving and ONNX export come with it ([guide](docs/source/user_guide/custom_models.md)).
 - `corerec.export.to_onnx(model, "model.onnx")` exports TwoTower, DCN, DeepFM or SASRec for ONNX Runtime, so the serving side needs no Python ([guide](docs/source/user_guide/onnx_export.md)).
 

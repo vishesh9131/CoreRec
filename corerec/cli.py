@@ -238,8 +238,10 @@ def serve_command(args):
     """corerec serve FILE|ARTIFACT"""
     from corerec.serving.from_csv import build_server, is_artifact, load_artifact, save_artifact
 
+    artifact = None
     if is_artifact(args.data):
         model, manifest = load_artifact(args.data)
+        artifact = args.data
         print(f"Loaded    {manifest['model']} from {args.data}")
     else:
         result = _train(args)
@@ -247,10 +249,43 @@ def serve_command(args):
         model = result.model
         if args.save:
             print(f"Saved     {save_artifact(result, args.save)}/")
-    server = build_server(model, manifest, host=args.host, port=args.port)
+    challenger = None
+    if args.challenger:
+        challenger = load_artifact(args.challenger)[0]
+        print(f"A/B       challenger {args.challenger} gets {args.challenger_share:.0%} of users")
+    server = build_server(model, manifest, host=args.host, port=args.port,
+                          feedback_log=args.feedback_log, challenger=challenger,
+                          challenger_share=args.challenger_share, artifact=artifact)
+    if args.feedback_log:
+        print(f"Feedback  logging to {args.feedback_log}  (POST /feedback, GET /metrics)")
     print(f"Serving   http://{args.host}:{args.port}  (docs at /docs, Ctrl-C to stop)")
     print(f"""Try       curl -X POST localhost:{args.port}/recommend -H 'Content-Type: application/json' -d '{{"user_id": "<a user>", "top_k": 5}}'""")
     server.start()
+
+
+def retrain_command(args):
+    """corerec retrain ARTIFACT [--data FILE] [--feedback LOG]"""
+    from corerec.serving.from_csv import retrain_artifact
+
+    d = retrain_artifact(args.artifact, data=args.data, feedback=args.feedback,
+                         tolerance=args.tolerance, k=args.k, dry_run=args.dry_run)
+    print(f"Data      {d['rows']:,} interactions, {d['new_rows']:,} new since the last training "
+          f"({d['feedback_rows']:,} from feedback)")
+    if d["candidate"] is None:
+        print(f"Kept      the current model: {d['reason']}")
+        return d
+    print(f"Test      the newest {d['test_rows']:,} interactions, unseen by both models")
+    print(f"          {d['metric']:>10}")
+    print(f"current   {d['current']:>10.4f}")
+    print(f"candidate {d['candidate']:>10.4f}")
+    if d["promoted"]:
+        print(f"Promoted  the candidate; the old model is in {args.artifact}/previous "
+              f"(POST /reload to serve it without a restart)")
+    elif d["would_promote"]:
+        print("Dry run   the candidate would be promoted")
+    else:
+        print("Kept      the current model; the candidate scored lower")
+    return d
 
 
 def main():
@@ -304,8 +339,28 @@ def main():
     serve_parser.add_argument("--host", default="0.0.0.0")
     serve_parser.add_argument("--port", type=int, default=8000)
     serve_parser.add_argument("--save", metavar="DIR", help="also save the trained artifact here")
+    serve_parser.add_argument("--feedback-log", metavar="FILE",
+                              help="log impressions and feedback here; enables /feedback and /metrics")
+    serve_parser.add_argument("--challenger", metavar="ARTIFACT",
+                              help="A/B test: serve this artifact to a share of users")
+    serve_parser.add_argument("--challenger-share", type=float, default=0.1,
+                              help="share of users the challenger gets (default 0.1)")
     _add_training_args(serve_parser)
     serve_parser.set_defaults(func=serve_command)
+
+    retrain_parser = subparsers.add_parser(
+        "retrain", help="Retrain an artifact on fresh data and feedback; replace it only if it isn't worse",
+        description="Run from cron to keep a served model fresh: retrains with the artifact's own "
+                    "model and settings, compares against the current model on a recent holdout, "
+                    "and swaps it in only when the candidate scores at least as well.")
+    retrain_parser.add_argument("artifact", help="artifact directory written by corerec train")
+    retrain_parser.add_argument("--data", help="interactions file (default: the artifact's training file)")
+    retrain_parser.add_argument("--feedback", metavar="LOG", help="feedback log from corerec serve --feedback-log")
+    retrain_parser.add_argument("--tolerance", type=float, default=0.0,
+                                help="promote if candidate NDCG >= current - tolerance (default 0)")
+    retrain_parser.add_argument("--k", type=int, default=10)
+    retrain_parser.add_argument("--dry-run", action="store_true", help="compare only; change nothing")
+    retrain_parser.set_defaults(func=retrain_command)
 
     # Info command
     info_parser = subparsers.add_parser("info", help="Show installation info")

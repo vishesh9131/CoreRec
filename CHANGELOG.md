@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Apple Silicon GPU support. Torch models default to `device="auto"` (CUDA,
   then MPS, then CPU) via `corerec.device.resolve_device`. A model saved on a
   GPU or Mac now loads on a CPU-only machine instead of failing.
+- The production loop. `corerec serve --feedback-log FILE` logs every list
+  shown and adds `POST /feedback` and `GET /metrics` (CTR, MRR, coverage,
+  fallback share, per variant). `--challenger ARTIFACT` A/B tests a second
+  model with sticky hash assignment and a z-test. `corerec retrain` backtests
+  a retrained model against the deployed one on rows neither has seen and
+  promotes it only if it isn't worse; `POST /reload` swaps it in without a
+  restart. `/metrics` also reports drift alerts (CTR drop, rising fallback
+  share, shifted click distribution). Artifacts now record `trained_through`.
 - `corerec.nn`: build new models in plain PyTorch. Wrap any `nn.Module` with
   `forward(query, items) -> scores` in `corerec.nn.Recommender` and it trains
   (BPR / BCE / sampled softmax, or your own loss), recommends, saves, loads via
@@ -38,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   position. On a next-item test this cost HR@1 0.98 -> 0.75. The published
   SASRec benchmark numbers came from `HSTU(encoder="sasrec")` and are
   unaffected.
+- `corerec.evaluation.evaluate` skipped users whose `recommend()` raised
+  without saying so; it now reports `n_errors`.
 - `SASRec` and `LightGCN` hung forever in `fit()` when a user had interacted
   with every item.
 - `ItemKNN` / `EASE` / `SLIM` / `UserKNN` `recommend()` took ~28 ms at 4k

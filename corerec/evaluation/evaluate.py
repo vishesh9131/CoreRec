@@ -75,7 +75,7 @@ def evaluate(
     users = list(relevant.keys()) if user_subset is None else list(user_subset)
 
     ndcg, mapk, mrr, prec, rec, hr = [], [], [], [], [], []
-    n_eval = 0
+    n_eval = n_errors = 0
     for u in users:
         truth = relevant.get(u)
         if not truth:
@@ -84,6 +84,8 @@ def evaluate(
         try:
             recs = model.recommend(u, top_k=k + len(seen.get(u, ())))
         except Exception:
+            # usually a user the model never saw; counted so it isn't invisible
+            n_errors += 1
             continue
         if recs is None:
             continue
@@ -112,6 +114,7 @@ def evaluate(
         f"Recall@{k}": m(rec),
         f"HitRate@{k}": m(hr),
         "n_users": n_eval,
+        "n_errors": n_errors,
     }
     if verbose:
         for key, val in results.items():

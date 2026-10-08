@@ -197,6 +197,7 @@ user_guide/data_preparation
 user_guide/model_training
 user_guide/making_predictions
 user_guide/online_serving
+user_guide/production_loop
 user_guide/custom_models
 user_guide/onnx_export
 user_guide/model_persistence

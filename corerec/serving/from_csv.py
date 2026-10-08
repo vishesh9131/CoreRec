@@ -231,6 +231,8 @@ class TrainResult:
             "fit_seconds": round(self.fit_seconds, 3),
             "source": self.source,
             "popular_items": [_json_id(i) for i in self.popular],
+            # newest event the model learned from; corerec retrain treats later rows as new
+            "trained_through": self.extra.get("trained_through"),
         }
 
     def report(self) -> str:
@@ -310,9 +312,129 @@ def train_from_csv(
     else:
         final = held_out
 
+    extra = {"trained_through": float(df["timestamp"].max())} if "timestamp" in df else {}
     return TrainResult(model=final, model_name=model, params=params, columns=cols, stats=stats,
                        popular=popular_items(df), fit_seconds=fit_seconds, k=k,
-                       metrics=metrics, baseline=baseline, source=str(path))
+                       metrics=metrics, baseline=baseline, source=str(path), extra=extra)
+
+
+class _Served:
+    """A model as the server answers: popular items when it can't (unknown user, empty)."""
+
+    def __init__(self, model, popular: List[Any]):
+        self.model, self.popular = model, popular
+
+    def recommend(self, user_id: Any, top_k: int = 10, **kwargs: Any) -> List[Any]:
+        try:
+            recs = self.model.recommend(user_id, top_k=top_k)
+        except Exception:
+            recs = []
+        return recs or self.popular[:top_k]
+
+
+def retrain_artifact(
+    artifact: Union[str, Path],
+    data: Optional[Union[str, Path]] = None,
+    feedback: Optional[Union[str, Path]] = None,
+    tolerance: float = 0.0,
+    k: int = 10,
+    min_new_rows: int = 100,
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    """Retrain the model in *artifact* on new data; replace it only if it isn't worse.
+
+    *data* defaults to the file the artifact was trained on, re-read so rows
+    appended since count. Clicks/purchases from a *feedback* log are added as
+    interactions. Rows newer than the artifact's ``trained_through`` are the new
+    data, split in time into two halves:
+
+    - candidate: trained on everything old plus the earlier half
+    - both models are scored on the later half, which neither has seen, served
+      as ModelServer serves them (popular items for users a model can't answer)
+
+    A random holdout can't judge the deployed model: it was trained on those
+    rows, and its exclude-seen filter removes exactly the held-out items.
+
+    The candidate is promoted when its NDCG@k >= current - ``tolerance``; it is
+    then refit on all rows and saved, with the old artifact in ``previous/``.
+    """
+    import shutil
+
+    from corerec.evaluation.evaluate import evaluate as run_eval
+
+    artifact = Path(artifact)
+    current, manifest = load_artifact(artifact)
+    source = data or manifest.get("source")
+    if not source:
+        raise ValueError("the artifact doesn't record its training file; pass data=")
+    cutoff = manifest.get("trained_through")
+    if cutoff is None:
+        raise ValueError("retrain needs to know which rows are new, and this artifact has no "
+                         "trained_through: train it from a file with a timestamp column "
+                         "(corerec 0.7.1+)")
+    cols = manifest.get("columns") or {}
+    df, cols = read_interactions(source, user_col=cols.get("user"), item_col=cols.get("item"),
+                                 rating_col=cols.get("rating"), timestamp_col=cols.get("timestamp"))
+    if "timestamp" not in df:
+        raise ValueError(f"{source} has no timestamp column; retrain can't tell new rows from old")
+    n_feedback = 0
+    if feedback:
+        from corerec.serving.feedback import FeedbackLog
+
+        fb = FeedbackLog(feedback).to_events().rename(columns={"user_id": "user", "item_id": "item"})
+        n_feedback = len(fb)
+        df = pd.concat([df, fb[["user", "item", "rating", "timestamp"]]], ignore_index=True)
+
+    name, params = manifest["model"], manifest.get("params") or {}
+    old, new = df[df["timestamp"] <= cutoff], df[df["timestamp"] > cutoff].sort_values("timestamp")
+    decision = {"promoted": False, "would_promote": False, "model": name, "metric": f"NDCG@{k}",
+                "rows": len(df), "new_rows": len(new), "feedback_rows": n_feedback,
+                "data": str(source), "candidate": None, "current": None, "tolerance": tolerance}
+    if len(new) < min_new_rows:
+        decision["reason"] = f"only {len(new)} new rows since the last training (need {min_new_rows})"
+        return decision
+
+    def merged(frame):
+        agg = {"rating": "sum", "timestamp": "max"}
+        return frame.groupby(["user", "item"], as_index=False, sort=False).agg(agg)
+
+    half = len(new) // 2
+    train = merged(pd.concat([old, new.iloc[:half]]))
+    test = new.iloc[half:]
+    test = test.merge(train[["user", "item"]], on=["user", "item"], how="left", indicator=True)
+    test = merged(test[test["_merge"] == "left_only"].drop(columns="_merge"))
+    start = time.perf_counter()
+    candidate = fit_model(name, train, params)
+    popular = popular_items(train, n=k + 1000)
+    eval_args = dict(test_interactions=test, train_interactions=train, k=k,
+                     user_col="user", item_col="item", rating_col="rating")
+    key = f"NDCG@{k}"
+    cand = run_eval(_Served(candidate, popular), **eval_args)
+    curr = run_eval(_Served(current, popular), **eval_args)
+    promote = cand[key] >= curr[key] - tolerance
+    decision.update(candidate=cand[key], current=curr[key], test_rows=len(test),
+                    would_promote=bool(promote), promoted=bool(promote and not dry_run))
+    if promote and not dry_run:
+        everything = merged(df)
+        final = fit_model(name, everything, params)  # ship the model trained on everything
+        backup = artifact / "previous"
+        shutil.rmtree(backup, ignore_errors=True)
+        backup.mkdir()
+        for f in artifact.iterdir():
+            if f.is_file():
+                shutil.move(str(f), backup / f.name)
+        stats = {"rows": len(everything), "users": int(everything["user"].nunique()),
+                 "items": int(everything["item"].nunique()), "test_rows": len(test)}
+        result = TrainResult(model=final, model_name=name, params=params, columns=cols,
+                             stats=stats, popular=popular_items(everything),
+                             fit_seconds=time.perf_counter() - start, k=k, metrics=cand,
+                             baseline=None, source=str(source),
+                             extra={"trained_through": float(everything["timestamp"].max())})
+        save_artifact(result, artifact)
+        m = json.loads((artifact / MANIFEST).read_text())
+        m["retrain"] = {k_: v for k_, v in decision.items() if k_ != "promoted"}
+        (artifact / MANIFEST).write_text(json.dumps(m, indent=2, default=str))
+    return decision
 
 
 def save_artifact(result: TrainResult, out_dir: Union[str, Path]) -> Path:
@@ -340,13 +462,27 @@ def load_artifact(path: Union[str, Path]):
     return model, manifest
 
 
-def build_server(model, manifest: Optional[Dict[str, Any]] = None, host: str = "0.0.0.0", port: int = 8000):
-    """A :class:`~corerec.serving.ModelServer` that answers unknown users with popular items."""
+def build_server(model, manifest: Optional[Dict[str, Any]] = None, host: str = "0.0.0.0",
+                 port: int = 8000, feedback_log: Optional[Union[str, Path]] = None,
+                 challenger: Optional[Any] = None, challenger_share: float = 0.1,
+                 artifact: Optional[Union[str, Path]] = None):
+    """A :class:`~corerec.serving.ModelServer` that answers unknown users with popular items.
+
+    feedback_log: JSONL path; turns on /feedback and /metrics.
+    challenger: a second model for an A/B test, given ``challenger_share`` of users.
+    artifact: the directory *model* came from; enables POST /reload after a retrain.
+    """
     from corerec.serving.model_server import ModelServer
 
     manifest = manifest or {}
-    return ModelServer(model, host=host, port=port, metadata=manifest,
-                       fallback_items=manifest.get("popular_items"))
+    models, traffic = model, None
+    if challenger is not None:
+        models = {"control": model, "challenger": challenger}
+        traffic = {"control": 1 - challenger_share, "challenger": challenger_share}
+    reload_fn = (lambda: load_artifact(artifact)[0]) if artifact and challenger is None else None
+    return ModelServer(models, host=host, port=port, metadata=manifest,
+                       fallback_items=manifest.get("popular_items"), feedback_log=feedback_log,
+                       traffic=traffic, reload_fn=reload_fn)
 
 
 def parse_params(pairs: Sequence[str]) -> Dict[str, Any]:

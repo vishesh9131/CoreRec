@@ -26,6 +26,17 @@ def _to_json_safe(value: Any) -> Any:
         return {k: _to_json_safe(v) for k, v in value.items()}
     return value
 
+def _no_nan(value: Any) -> Any:
+    """NaN/inf -> None: JSON has no NaN, and metrics on an empty window are NaN."""
+    if isinstance(value, float) and (value != value or value in (float("inf"), float("-inf"))):
+        return None
+    if isinstance(value, dict):
+        return {k: _no_nan(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_no_nan(v) for v in value]
+    return _to_json_safe(value)
+
+
 # Optional FastAPI import
 try:
     from fastapi import FastAPI, HTTPException, Request
@@ -52,6 +63,15 @@ class RecommendationRequest(BaseModel):
     top_k: int = 10
     exclude_items: List[Any] = []
     context: Optional[Dict[str, Any]] = None
+
+
+class FeedbackRequest(BaseModel):
+    """A user acted on a recommended item."""
+
+    user_id: Any
+    item_id: Any
+    event: str = "click"
+    request_id: Optional[str] = None
 
 
 class BatchPredictionRequest(BaseModel):
@@ -105,7 +125,10 @@ class ModelServer:
             port: int = 8000,
             enable_docs: bool = True,
             metadata: Optional[Dict[str, Any]] = None,
-            fallback_items: Optional[List[Any]] = None):
+            fallback_items: Optional[List[Any]] = None,
+            feedback_log: Any = None,
+            traffic: Optional[Dict[str, float]] = None,
+            reload_fn: Any = None):
         """
         Initialize model server.
 
@@ -119,6 +142,13 @@ class ModelServer:
             fallback_items: Items, best first, returned to users the model
                 cannot answer (unknown users, empty results). Responses say
                 which path answered in their "source" field.
+            feedback_log: path or FeedbackLog. Enables impression logging,
+                POST /feedback and GET /metrics.
+            traffic: for A/B tests pass ``model`` as {"name": model, ...} and the
+                share of users each gets, e.g. {"control": 0.9, "treatment": 0.1}.
+                Users are assigned by a stable hash, so each sees one variant.
+            reload_fn: zero-argument callable returning a fresh model; enables
+                POST /reload (e.g. after ``corerec retrain`` replaced the artifact).
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
@@ -126,7 +156,16 @@ class ModelServer:
             raise ImportError(
                 "FastAPI not installed. Install with: pip install fastapi uvicorn")
 
-        self.model = model
+        from corerec.serving.feedback import FeedbackLog
+
+        self.models = dict(model) if isinstance(model, dict) else {"default": model}
+        if traffic is not None and set(traffic) != set(self.models):
+            raise ValueError(f"traffic names {sorted(traffic)} must match models {sorted(self.models)}")
+        self.traffic = traffic or {name: 1.0 for name in self.models}
+        self.model = next(iter(self.models.values()))
+        self.feedback_log = (feedback_log if feedback_log is None or isinstance(feedback_log, FeedbackLog)
+                             else FeedbackLog(feedback_log))
+        self.reload_fn = reload_fn
         self.host = host
         self.port = port
         self.metadata = metadata
@@ -147,12 +186,20 @@ class ModelServer:
         # Setup routes
         self._setup_routes()
 
-    def _recommend(self, user_id: Any, top_k: int, exclude_items: List[Any]):
+    def _variant(self, user_id: Any) -> str:
+        if len(self.models) == 1:
+            return next(iter(self.models))
+        from corerec.serving.feedback import assign_variant
+
+        return assign_variant(user_id, self.traffic)
+
+    def _recommend(self, user_id: Any, top_k: int, exclude_items: List[Any], variant: Optional[str] = None):
         """Return (items, source); source is "model" or "fallback"."""
         from corerec.api.exceptions import RecommendationError
 
+        model = self.models[variant or self._variant(user_id)]
         try:
-            recs = self.model.recommend(user_id, top_k=top_k, exclude_items=exclude_items)
+            recs = model.recommend(user_id, top_k=top_k, exclude_items=exclude_items)
         except RecommendationError:
             # Raised for users the model never saw; anything else is a real error.
             if self.fallback_items is None:
@@ -186,7 +233,8 @@ class ModelServer:
                 }
             """
             try:
-                score = self.model.predict(request.user_id, request.item_id)
+                model = self.models[self._variant(request.user_id)]
+                score = model.predict(request.user_id, request.item_id)
                 return {
                     "user_id": _to_json_safe(request.user_id),
                     "item_id": _to_json_safe(request.item_id),
@@ -216,13 +264,20 @@ class ModelServer:
                 }
             """
             try:
+                variant = self._variant(request.user_id)
                 recs, source = self._recommend(
-                    request.user_id, request.top_k, request.exclude_items)
-                return {
+                    request.user_id, request.top_k, request.exclude_items, variant)
+                body = {
                     "user_id": _to_json_safe(request.user_id),
                     "recommendations": _to_json_safe(recs),
                     "top_k": request.top_k,
-                    "source": source}
+                    "source": source,
+                    "variant": variant}
+                if self.feedback_log is not None:
+                    # echo request_id back on POST /feedback to attribute the click
+                    body["request_id"] = self.feedback_log.impression(
+                        request.user_id, recs, variant=variant, source=source)
+                return body
             except Exception as e:
                 self.logger.error(f"Recommendation error: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
@@ -231,10 +286,10 @@ class ModelServer:
         async def batch_predict(request: BatchPredictionRequest):
             """Batch predictions for multiple user-item pairs."""
             try:
-                if hasattr(self.model, "batch_predict"):
+                if len(self.models) == 1 and hasattr(self.model, "batch_predict"):
                     scores = self.model.batch_predict(request.pairs)
                 else:
-                    scores = [self.model.predict(u, i)
+                    scores = [self.models[self._variant(u)].predict(u, i)
                               for u, i in request.pairs]
 
                 return {
@@ -251,7 +306,7 @@ class ModelServer:
         async def batch_recommend(request: BatchRecommendationRequest):
             """Batch recommendations for multiple users."""
             try:
-                if hasattr(self.model, "batch_recommend"):
+                if len(self.models) == 1 and hasattr(self.model, "batch_recommend"):
                     recs = self.model.batch_recommend(
                         request.user_ids, request.top_k)
                 else:
@@ -263,6 +318,46 @@ class ModelServer:
             except Exception as e:
                 self.logger.error(f"Batch recommendation error: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.post("/feedback")
+        async def feedback(request: FeedbackRequest):
+            """Record that a user clicked (or bought, ...) an item.
+
+            Pass the request_id from the /recommend response so the click is
+            credited to the list and variant that showed the item.
+            """
+            if self.feedback_log is None:
+                raise HTTPException(status_code=404, detail="feedback logging is off; "
+                                    "start the server with a feedback log")
+            self.feedback_log.feedback(request.user_id, request.item_id, request.event,
+                                       request.request_id)
+            return {"status": "recorded"}
+
+        @self.app.get("/metrics")
+        async def metrics(recent: int = 1000):
+            """Online metrics per variant, A/B comparison and drift alerts."""
+            if self.feedback_log is None:
+                raise HTTPException(status_code=404, detail="feedback logging is off")
+            out = {"variants": self.feedback_log.metrics(),
+                   "drift": self.feedback_log.drift(recent=recent)}
+            names = list(self.models)
+            if len(names) == 2:
+                try:
+                    out["ab_test"] = self.feedback_log.compare(*names)
+                except (ValueError, ZeroDivisionError):
+                    out["ab_test"] = None
+            for alert in out["drift"]["alerts"]:
+                self.logger.warning(f"drift: {alert}")
+            return _no_nan(out)
+
+        @self.app.post("/reload")
+        async def reload():
+            """Swap in a fresh model from reload_fn without restarting."""
+            if self.reload_fn is None or len(self.models) != 1:
+                raise HTTPException(status_code=404, detail="reload is not configured")
+            name = next(iter(self.models))
+            self.models[name] = self.model = self.reload_fn()
+            return {"status": "reloaded", "model": type(self.model).__name__}
 
         @self.app.get("/health")
         async def health():
