@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Apple Silicon GPU support. Torch models default to `device="auto"` (CUDA,
   then MPS, then CPU) via `corerec.device.resolve_device`. A model saved on a
   GPU or Mac now loads on a CPU-only machine instead of failing.
+- `corerec.nn`: build new models in plain PyTorch. Wrap any `nn.Module` with
+  `forward(query, items) -> scores` in `corerec.nn.Recommender` and it trains
+  (BPR / BCE / sampled softmax, or your own loss), recommends, saves, loads via
+  `ModelLoader`, serves via `ModelServer`, evaluates and exports to ONNX.
+  User-index and history (sequential) inputs. Building blocks shared with the
+  built-in models: `SASRecBlock`, `HSTUBlock`, `CrossLayer`, `FMInteraction`,
+  `MLP`, `causal_mask`; templates `MatrixFactorization`, `SequentialTransformer`.
 - ONNX export: `corerec.export.to_onnx(model, "m.onnx")` for TwoTower, DCN,
   DeepFM and SASRec. One self-contained file with the raw ids in its
   metadata; scores match `model.recommend()`. `pip install "corerec[onnx]"`.

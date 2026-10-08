@@ -110,6 +110,9 @@ def _detect_class(path: Path):
         state = torch.load(path, map_location="cpu", weights_only=False)
 
     if isinstance(state, dict):
+        if state.get("corerec_class"):  # corerec.nn.Recommender and friends
+            module, _, name = state["corerec_class"].rpartition(".")
+            return getattr(importlib.import_module(module), name)
         name = state.get("cls") or state.get("params", {}).get("name") or state.get("cfg", {}).get("name")
         if name:
             return _engine_class(name)

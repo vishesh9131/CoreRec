@@ -135,17 +135,7 @@ class DCN(BaseRecommender):
         self.model = None
 
     def _build_model(self, num_features: int, max_features: int = 2, use_sigmoid: bool = True):
-        class CrossLayer(nn.Module):
-            def __init__(self, input_dim: int):
-                super().__init__()
-                self.weight = nn.Parameter(torch.randn(input_dim) * 0.01)
-                self.bias = nn.Parameter(torch.zeros(input_dim))
-
-            def forward(self, x0, x):
-                # x0 is the input, x is the current layer's input
-                # Cross network formula: x0 * (x^T w) + b + x
-                xw = (x * self.weight).sum(dim=1, keepdim=True)  # [batch, 1]
-                return x0 * xw + self.bias + x
+        from corerec.nn.layers import CrossLayer
 
         class DeepCrossNetworkModel(nn.Module):
             def __init__(

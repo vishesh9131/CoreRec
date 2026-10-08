@@ -85,9 +85,30 @@ def _ordered(id_map):
     return [k for k, _ in sorted(id_map.items(), key=lambda kv: kv[1])]
 
 
+class _RecommenderScores(nn.Module):
+    """corerec.nn.Recommender: the user's module, scored over the whole catalogue."""
+
+    def __init__(self, rec):
+        super().__init__()
+        self.net, self._rec = rec.model, rec
+
+    def forward(self, query):
+        return self._rec._score_all(query)
+
+
 def _wrap(model):
     """(module, example input, input name, metadata) for a supported model."""
+    from corerec.nn.recommender import Recommender
+
     name = type(model).__name__
+    if isinstance(model, Recommender):
+        meta = {"user_ids": model._users, "item_ids": model._items}
+        if model.inputs == "user":
+            return _RecommenderScores(model), torch.zeros(2, dtype=torch.long), "user_index", meta
+        ex = torch.zeros(2, model.max_len, dtype=torch.long)
+        ex[:, -1] = 1
+        meta["max_seq_length"] = model.max_len
+        return _RecommenderScores(model), ex, "history", meta
     if name == "TwoTower":
         if model.user_input_dim != len(model.user_map):
             raise NotImplementedError("TwoTower trained on user features can't be exported yet")
@@ -114,7 +135,7 @@ def _wrap(model):
         return _SASRecScores(model.model, pop), ex, "history", {
             "item_ids": items, "max_seq_length": model.max_seq_length}
     raise NotImplementedError(
-        f"ONNX export supports TwoTower, DCN, DeepFM and SASRec, not {name}. Classic models "
+        f"ONNX export supports TwoTower, DCN, DeepFM, SASRec and corerec.nn.Recommender, not {name}. Classic models "
         "(ALS, EASE, ItemKNN, ...) are a matrix lookup; serve them with ModelServer.")
 
 
