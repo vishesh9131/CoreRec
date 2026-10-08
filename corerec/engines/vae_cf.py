@@ -16,6 +16,7 @@ from typing import Any, List, Union
 
 import numpy as np
 import torch
+from corerec.device import resolve_device
 import torch.nn as nn
 import torch.nn.functional as F
 from scipy.sparse import csr_matrix
@@ -68,13 +69,13 @@ class _VAEBase(BaseRecommender):
                  dropout: float = 0.5, learning_rate: float = 1e-3, batch_size: int = 256,
                  epochs: int = 50, beta: float = 0.2, reg: float = 0.0,
                  verbose: bool = False,
-                 device: str = "cuda" if torch.cuda.is_available() else "cpu",
+                 device: str = "auto",
                  seed: int = 42, trainable: bool = True):
         super().__init__(name=name or self.MODEL, trainable=trainable, verbose=verbose)
         self.hidden_dim = hidden_dim; self.latent_dim = latent_dim
         self.dropout = dropout; self.learning_rate = learning_rate
         self.batch_size = batch_size; self.epochs = epochs; self.beta = beta
-        self.reg = reg; self.device = device; self.seed = seed
+        self.reg = reg; self.device = str(resolve_device(device)); self.seed = seed
         self.model = None; self.user_map = {}; self.item_map = {}
 
     def fit(self, user_ids, item_ids, ratings=None, **kwargs) -> "_VAEBase":
@@ -94,7 +95,7 @@ class _VAEBase(BaseRecommender):
         self.R = csr_matrix((np.ones(len(uidx), np.float32), (uidx, iidx)),
                             shape=(self.num_users, self.num_items))
 
-        dev = torch.device(self.device if (self.device == "cpu" or torch.cuda.is_available()) else "cpu")
+        dev = resolve_device(self.device)
         self.model = _VAENet(self.num_items, self.hidden_dim, self.latent_dim,
                              self.dropout, self.VARIATIONAL).to(dev)
         opt = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=self.reg)

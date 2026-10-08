@@ -1,4 +1,5 @@
 import torch
+from corerec.device import resolve_device
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
@@ -41,7 +42,7 @@ class DeepFM(BaseRecommender):
         epochs: int = 20,
         trainable: bool = True,
         verbose: bool = False,
-        device: str = "cuda" if torch.cuda.is_available() else "cpu",
+        device: str = "auto",
         task: str = "auto",
         num_negatives: int = 4,
     ):
@@ -60,7 +61,7 @@ class DeepFM(BaseRecommender):
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.epochs = epochs
-        self.device = device
+        self.device = str(resolve_device(device))
 
         self.feature_map = {}
         self.field_dims = []

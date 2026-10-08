@@ -37,6 +37,7 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 
 import numpy as np
 import torch
+from corerec.device import resolve_device
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -182,7 +183,7 @@ class HSTU(BaseRecommender):
         encoder: ``"hstu"`` (default) or ``"sasrec"`` to train a SASRec encoder
             with the identical recipe, for like-for-like comparisons.
         seed: Seed for initialisation and negative sampling.
-        device: Torch device; defaults to CUDA when available.
+        device: Torch device; "auto" (default) picks CUDA, then Apple MPS, then CPU.
     """
 
     def __init__(
@@ -224,8 +225,7 @@ class HSTU(BaseRecommender):
         self.use_time = use_time
         self.encoder = encoder
         self.seed = seed
-        self.device = torch.device(device) if device is not None else (
-            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
+        self.device = resolve_device(device)
 
         self.model: Optional[_SequenceNet] = None
         self.item_to_index: Dict[Any, int] = {}

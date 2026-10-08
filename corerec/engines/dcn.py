@@ -1,4 +1,5 @@
 import torch
+from corerec.device import resolve_device
 import torch.nn as nn
 import numpy as np
 import logging
@@ -68,7 +69,7 @@ class DCN(BaseRecommender):
         checkpoint_dir: Optional[str] = None,
         trainable: bool = True,
         verbose: bool = False,
-        device: str = "cuda" if torch.cuda.is_available() else "cpu",
+        device: str = "auto",
         task: str = "auto",
         num_negatives: int = 4,
     ):
@@ -122,7 +123,7 @@ class DCN(BaseRecommender):
         self.epochs = epochs
         self.early_stopping_patience = early_stopping_patience
         self.checkpoint_dir = checkpoint_dir
-        self.device = device
+        self.device = str(resolve_device(device))
 
         self.user_map = {}
         self.item_map = {}

@@ -7,6 +7,7 @@ by Xiangnan He, Kuan Deng, Xiang Wang, Yan Li, Yongdong Zhang, Meng Wang
 
 import numpy as np
 import torch
+from corerec.device import resolve_device
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Union, List, Dict, Tuple, Optional, Any
@@ -83,7 +84,7 @@ class LightGCN(BaseRecommender):
         regularization: float = 1e-5,
         batch_size: int = 1024,
         epochs: int = 100,
-        device: str = "cuda" if torch.cuda.is_available() else "cpu",
+        device: str = "auto",
         dropout: float = 0.0,
         early_stopping_patience: int = 10,
         verbose: bool = True,
@@ -97,7 +98,7 @@ class LightGCN(BaseRecommender):
         self.regularization = regularization
         self.batch_size = batch_size
         self.epochs = epochs
-        self.device = device
+        self.device = str(resolve_device(device, needs_sparse=True))
         self.dropout = dropout
         self.early_stopping_patience = early_stopping_patience
         self.verbose = verbose
@@ -188,10 +189,12 @@ class LightGCN(BaseRecommender):
 
     def _sample_negative(self, user_idx: int) -> int:
         pos = self.user_interactions.get(user_idx, set())
-        while True:
+        # capped: a user who has seen every item used to hang fit() forever
+        for _ in range(100):
             neg = int(self._rng.integers(0, self.n_items))
             if neg not in pos:
-                return neg
+                break
+        return neg
 
     def _bpr_loss(self, users, pos_items, neg_items):
         user_emb, item_emb = self.model()

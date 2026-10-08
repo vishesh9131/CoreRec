@@ -174,7 +174,9 @@ class Item2Vec(_EmbeddingCFBase):
     def _train_embeddings(self, uidx, iidx, r):
         import torch
         torch.manual_seed(self.seed)
-        dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        from corerec.device import resolve_device
+
+        dev = resolve_device(getattr(self, "device", "auto"))
         # positive (center, context) pairs from each user's item set
         baskets = {}
         for u, i in zip(uidx.tolist(), iidx.tolist()):

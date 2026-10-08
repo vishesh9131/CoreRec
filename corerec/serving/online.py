@@ -272,10 +272,9 @@ def _frame_to_arrays(df, user_col, item_col):
 
 
 def _resolve_device(device):
-    import torch
-    if device != "cpu" and torch.cuda.is_available():
-        return torch.device(device)
-    return torch.device("cpu")
+    from corerec.device import resolve_device
+
+    return resolve_device(device, needs_sparse=True)  # LightGCN/BPR use torch.sparse
 
 
 def _train_bpr_embeddings(users, items, n_users, n_items, dim=64, epochs=100,

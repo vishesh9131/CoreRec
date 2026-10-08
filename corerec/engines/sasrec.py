@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from corerec.device import resolve_device
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import List, Dict, Tuple, Optional, Union, Any
@@ -325,7 +326,7 @@ class SASRec(BaseRecommender):
         self.attention_type = attention_type
         self.activation = activation
 
-        self.device = device or (torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
+        self.device = resolve_device(device)
         self.learning_rate = learning_rate
         self.l2_reg = l2_reg
         self.batch_size = batch_size
@@ -374,7 +375,7 @@ class SASRec(BaseRecommender):
         def _factory(cfg):
             dev = device
             if dev is None and cfg.get("device"):
-                dev = torch.device(cfg["device"])
+                dev = resolve_device(cfg["device"])
             init_cfg = {k: v for k, v in cfg.items() if k != "device"}
             if "num_epochs" in init_cfg:  # bundles saved before 0.7.0
                 init_cfg["epochs"] = init_cfg.pop("num_epochs")
@@ -579,11 +580,21 @@ class SASRec(BaseRecommender):
         from corerec.api.exceptions import InvalidDataError
         import scipy.sparse as sp
 
+        events = None  # (users, items) in input order, when given one row per event
+
+        def _events(u, i, third):
+            third = None if third is None else (third if sp.issparse(third) else np.asarray(third))
+            if third is not None and third.ndim == 2:
+                return None  # matrix form: no order to keep
+            keep = np.ones(len(u), bool) if third is None else np.asarray(third, float) > 0
+            return [x for x, k in zip(u, keep) if k], [x for x, k in zip(i, keep) if k]
+
         # keyword path — rest of the zoo documents this form
         if user_ids is not None and item_ids is not None:
             third = ratings if ratings is not None else (
                 interactions if interactions is not None else interaction_matrix
             )
+            events = _events(user_ids, item_ids, third)
             user_ids, item_ids, interaction_matrix = normalize_interactions(
                 user_ids, item_ids, third
             )
@@ -598,6 +609,7 @@ class SASRec(BaseRecommender):
                 if ds.infer_mode() != "matrix":
                     # event-style dataset: flatten via normalize_interactions
                     if getattr(ds, "ratings", None) is not None:
+                        events = _events(ds.user_ids, ds.item_ids, ds.ratings)
                         user_ids, item_ids, interaction_matrix = normalize_interactions(
                             ds.user_ids, ds.item_ids, ds.ratings
                         )
@@ -630,6 +642,7 @@ class SASRec(BaseRecommender):
                     item_ids = arg3
                 elif isinstance(arg1, list) and arg2 is not None and isinstance(arg2, list):
                     # fit(user_ids, item_ids, third) — matrix OR event ratings
+                    events = _events(arg1, arg2, arg3)
                     user_ids, item_ids, interaction_matrix = normalize_interactions(
                         arg1, arg2, arg3
                     )
@@ -646,11 +659,9 @@ class SASRec(BaseRecommender):
         if not isinstance(item_ids, list) or len(item_ids) == 0:
             raise ValueError("item_ids must be a non-empty list")
 
-        # Handle sparse matrices (scipy.sparse)
-        if hasattr(interaction_matrix, 'toarray'):
-            interaction_matrix = interaction_matrix.toarray()
-        elif not isinstance(interaction_matrix, np.ndarray):
-            interaction_matrix = np.array(interaction_matrix)
+        # kept sparse: a dense [n_users, n_items] copy is 8 GB at 100k x 20k
+        interaction_matrix = sp.csr_matrix(interaction_matrix)
+        interaction_matrix.sort_indices()
 
         if interaction_matrix.ndim != 2:
             raise ValueError("interaction_matrix must be 2D")
@@ -690,11 +701,18 @@ class SASRec(BaseRecommender):
                     if len(items) > 0:
                         self.user_sequences[user_id] = items
                         user_interaction_counts.append(len(items))
+        elif events is not None:
+            # One row per event: the order given is the order that happened.
+            # This used to go through the matrix, which sorted every history
+            # by item index -- a sequential model trained on shuffled sequences.
+            for u, it in zip(*events):
+                self.user_sequences.setdefault(u, []).append(self.item_to_index[it])
+            user_interaction_counts = [len(v) for v in self.user_sequences.values()]
         else:
-            # Fallback: build sequences from interaction matrix (no temporal order)
+            # matrix input carries no order
             for u_idx, user_id in enumerate(user_ids):
-                # For 1D array, nonzero() returns (indices,), so use [0]
-                user_interactions = interaction_matrix[u_idx].nonzero()[0]
+                lo, hi = interaction_matrix.indptr[u_idx], interaction_matrix.indptr[u_idx + 1]
+                user_interactions = interaction_matrix.indices[lo:hi][interaction_matrix.data[lo:hi] > 0]
                 if len(user_interactions) > 0:
                     items = [self.item_to_index[item_ids[i]] for i in user_interactions]
                     self.user_sequences[user_id] = items
@@ -829,8 +847,9 @@ class SASRec(BaseRecommender):
                     negatives = []
                     for user_id, target in zip(batch_users, batch_targets):
                         user_seq = self.user_sequences.get(user_id, [])
-                        # sample until not in seq
-                        while True:
+                        # sample until not in seq -- unless the user has seen
+                        # every item, where that loop never ended and fit() hung
+                        for _ in range(100):
                             neg = np.random.randint(1, n_items + 1)
                             if neg not in user_seq:
                                 break

@@ -570,7 +570,15 @@ pip install --upgrade corerec
 </details>
 
 <details>
-<summary><strong>CUDA / GPU issues</strong></summary>
+<summary><strong>CUDA / GPU / Apple Silicon</strong></summary>
+
+Torch models default to `device="auto"`: CUDA if present, then Apple's GPU
+(MPS) on M-series Macs, then CPU. Pass `device="cpu"`, `"cuda"` or `"mps"` to
+choose. LightGCN stays on CPU on Macs because MPS has no sparse tensors.
+A model saved on a GPU or a Mac loads on a CPU-only server (with a warning).
+
+On a Mac, use a native arm64 Python (e.g. Miniforge arm64). An x86_64 Python
+runs under Rosetta and is several times slower.
 
 ```bash
 pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu118

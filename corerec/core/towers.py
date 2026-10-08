@@ -130,6 +130,12 @@ class MLPTower(Tower):
         Returns:
             torch.Tensor: Output embedding
         """
+        if not x.is_floating_point():
+            # integer ids: same result as a one-hot row through the first
+            # Linear, without materialising an [n, n] identity matrix
+            first = self.network[0]
+            h = first.weight.t()[x.reshape(-1)] + first.bias
+            return self.network[1:](h)
         return self.network(x)
 
 

@@ -5,6 +5,26 @@ All notable changes to CoreRec will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Apple Silicon GPU support. Torch models default to `device="auto"` (CUDA,
+  then MPS, then CPU) via `corerec.device.resolve_device`. A model saved on a
+  GPU or Mac now loads on a CPU-only machine instead of failing.
+
+### Fixed
+
+- `TwoTower` built `np.eye(n_users)` and a dense user x item matrix: 160 GB at
+  200k users. It now feeds ids to the towers (same maths, same saved weights)
+  and keeps interactions sparse.
+- `SASRec` trained on each user's history sorted by item id, not by when the
+  events happened. It now keeps event order, and `fit(df)` sorts by a
+  `timestamp` column when there is one. It also no longer densifies the
+  interaction matrix.
+- `SASRec` and `LightGCN` hung forever in `fit()` when a user had interacted
+  with every item.
+
 ## [0.7.0] - 2026-10-08
 
 This release cuts CoreRec down to what is tested, benchmarked

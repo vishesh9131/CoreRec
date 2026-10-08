@@ -667,9 +667,15 @@ def normalize_interactions(user_ids, item_ids, interactions):
     API section use the triple fit(user_ids, item_ids, ratings) with one entry
     per interaction. Models that call this support both.
 
-    Returns unique user/item ID lists alongside the pivoted matrix.
+    Returns unique user/item ID lists alongside the pivoted matrix. The triple
+    form comes back as a scipy CSR matrix: a dense one is n_users * n_items
+    floats, 8 GB at 100k users x 20k items.
     """
+    import scipy.sparse as sp
+
     users, items = list(user_ids), list(item_ids)
+    if sp.issparse(interactions) and interactions.shape == (len(users), len(items)):
+        return users, items, interactions.tocsr()
     arr = None if interactions is None else np.asarray(interactions)
 
     # Matrix form: one row per user, one column per item.
@@ -692,14 +698,15 @@ def normalize_interactions(user_ids, item_ids, interactions):
                 f"Got {len(ratings)} ratings for {len(users)} interactions."
             )
 
-    uniq_users = list(dict.fromkeys(users))
-    uniq_items = list(dict.fromkeys(items))
-    u_pos = {u: i for i, u in enumerate(uniq_users)}
-    i_pos = {v: i for i, v in enumerate(uniq_items)}
-    matrix = np.zeros((len(uniq_users), len(uniq_items)), dtype=np.float32)
-    for u, it, r in zip(users, items, ratings):
-        matrix[u_pos[u], i_pos[it]] = r
-    return uniq_users, uniq_items, matrix
+    # first-appearance order, same as dict.fromkeys
+    u_codes, uniq_users = pd.factorize(pd.Series(users, dtype=object))
+    i_codes, uniq_items = pd.factorize(pd.Series(items, dtype=object))
+    # a repeated (user, item) keeps its last rating, as the dense version did
+    last = ~pd.DataFrame({"u": u_codes, "i": i_codes}).duplicated(keep="last").to_numpy()
+    matrix = sp.csr_matrix(
+        (ratings[last], (u_codes[last], i_codes[last])),
+        shape=(len(uniq_users), len(uniq_items)), dtype=np.float32)
+    return list(uniq_users), list(uniq_items), matrix
 
 
 def _accept_datasets(fit):
@@ -715,6 +722,7 @@ def _accept_datasets(fit):
     if not params or params[0] in ("items",):  # content-based: fit(items, docs)
         return fit
     wants_frame = len(params) == 1 or params[1] in ("kwargs", "args")
+    takes_timestamps = "timestamps" in params
 
     @functools.wraps(fit)
     def wrapper(self, *args, **kwargs):
@@ -730,6 +738,11 @@ def _accept_datasets(fit):
             else:
                 frame = as_interaction_frame(data)
                 if frame is not None:
+                    if "timestamp" in frame.columns:
+                        # sequential models read row order as time order
+                        frame = frame.sort_values("timestamp", kind="stable")
+                        if takes_timestamps and "timestamps" not in kwargs:
+                            kwargs["timestamps"] = frame["timestamp"].tolist()
                     args = (frame["user_id"].tolist(), frame["item_id"].tolist(),
                             frame["rating"].astype(float).tolist())
         return fit(self, *args, **kwargs)

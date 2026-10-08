@@ -18,6 +18,7 @@ import pickle
 import logging
 
 from corerec.api.base_recommender import BaseRecommender, normalize_interactions
+from corerec.device import resolve_device
 from corerec.api.exceptions import ModelNotFittedError
 from corerec.api.versioning import warn_deprecated_arg
 from corerec.core.towers import UserTower, ItemTower
@@ -152,7 +153,7 @@ class TwoTower(BaseRecommender):
         self.lr = learning_rate
         self.batch_size = batch_size
         self.epochs = epochs
-        self.device = device or (torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
+        self.device = resolve_device(device)
         self.neg_samples = negative_samples
         self.temp = temperature
         self.verbose = verbose
@@ -207,7 +208,10 @@ class TwoTower(BaseRecommender):
 
         # What each user interacted with, by item index, so recommend(exclude_seen=True)
         # has something to exclude.
-        rows, cols = np.nonzero(np.asarray(interactions) > 0)
+        import scipy.sparse as sp
+
+        interactions = sp.csr_matrix(interactions)
+        rows, cols = (interactions > 0).nonzero()
         self._seen_by_user = {}
         for r, c in zip(rows, cols):
             self._seen_by_user.setdefault(user_ids[r], set()).add(int(c))
@@ -215,15 +219,10 @@ class TwoTower(BaseRecommender):
         n_users = len(user_ids)
         n_items = len(item_ids)
         
-        # if no features provided, use one-hot or learned embeddings
-        if user_features is None:
-            user_features = np.eye(n_users, dtype=np.float32)
-        if item_features is None:
-            item_features = np.eye(n_items, dtype=np.float32)
-        
-        # update input dims if needed
-        self.user_input_dim = user_features.shape[1]
-        self.item_input_dim = item_features.shape[1]
+        # No features: the towers take ids, which is a one-hot input without
+        # the np.eye(n_users) (40 GB at 100k users) -- see MLPTower.forward.
+        self.user_input_dim = n_users if user_features is None else user_features.shape[1]
+        self.item_input_dim = n_items if item_features is None else item_features.shape[1]
         
         # init model
         self.model = TwoTowerModel(
@@ -237,8 +236,13 @@ class TwoTower(BaseRecommender):
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         
         # convert to torch
-        user_feats_t = torch.from_numpy(user_features).float().to(self.device)
-        item_feats_t = torch.from_numpy(item_features).float().to(self.device)
+        def _feats(f, n):
+            if f is None:
+                return torch.arange(n, device=self.device).unsqueeze(1)
+            return torch.from_numpy(f).float().to(self.device)
+
+        user_feats_t = _feats(user_features, n_users)
+        item_feats_t = _feats(item_features, n_items)
         
         # create training pairs
         train_data = self._create_training_pairs(interactions)
@@ -259,8 +263,8 @@ class TwoTower(BaseRecommender):
                 batch = train_data[i:i+self.batch_size]
                 
                 # extract batch
-                user_indices = [p[0] for p in batch]
-                pos_indices = [p[1] for p in batch]
+                user_indices = torch.from_numpy(batch[:, 0]).long().to(self.device)
+                pos_indices = torch.from_numpy(batch[:, 1]).long().to(self.device)
                 
                 # get features
                 batch_users = user_feats_t[user_indices]
@@ -277,7 +281,7 @@ class TwoTower(BaseRecommender):
                     
                     # negative samples
                     neg_indices = np.random.randint(0, n_items, size=(len(batch), self.neg_samples))
-                    neg_indices_t = torch.from_numpy(neg_indices).long()
+                    neg_indices_t = torch.from_numpy(neg_indices).long().to(self.device)
                     batch_neg_items = item_feats_t[neg_indices_t.reshape(-1)]
                     batch_neg_items = batch_neg_items.view(len(batch), self.neg_samples, -1)
                     
@@ -300,7 +304,7 @@ class TwoTower(BaseRecommender):
                     
                     # sample negatives
                     neg_indices = np.random.randint(0, n_items, size=len(batch))
-                    batch_neg_items = item_feats_t[neg_indices]
+                    batch_neg_items = item_feats_t[torch.from_numpy(neg_indices).to(self.device)]
                     neg_scores = self.model(batch_users, batch_neg_items)
                     
                     # BPR loss
@@ -341,13 +345,17 @@ class TwoTower(BaseRecommender):
         self.log.info("Training complete")
         return self
     
-    def _create_training_pairs(self, interactions: np.ndarray) -> List[Tuple[int, int]]:
-        """Extract positive user-item pairs from interaction matrix."""
-        pairs = []
-        rows, cols = np.nonzero(interactions > 0)
-        for u, i in zip(rows, cols):
-            pairs.append((u, i))
-        return pairs
+    def _create_training_pairs(self, interactions) -> np.ndarray:
+        """Positive (user, item) index pairs, one row each."""
+        rows, cols = (interactions > 0).nonzero()
+        return np.stack([rows, cols], axis=1)
+
+    def _user_input(self, user_idx: int) -> torch.Tensor:
+        if self.user_input_dim == len(self.user_map):
+            return torch.tensor([[user_idx]], device=self.device)  # id input
+        user_feat = torch.zeros(1, self.user_input_dim, device=self.device)
+        user_feat[0, min(user_idx, self.user_input_dim - 1)] = 1.0
+        return user_feat
     
     def recommend(self, user_id: Any, top_k: int = 10,
                   exclude_items: Optional[List[Any]] = None,
@@ -369,10 +377,7 @@ class TwoTower(BaseRecommender):
 
         user_idx = self.user_map[user_id]
 
-        # encode user
-        # (in practice, you'd pass actual features here)
-        user_feat = torch.zeros(1, self.user_input_dim, device=self.device)
-        user_feat[0, min(user_idx, self.user_input_dim - 1)] = 1.0
+        user_feat = self._user_input(user_idx)
 
         self.model.eval()
         with torch.no_grad():
@@ -408,9 +413,7 @@ class TwoTower(BaseRecommender):
         if user_id not in self.user_map:
             return None
         
-        user_idx = self.user_map[user_id]
-        user_feat = torch.zeros(1, self.user_input_dim, device=self.device)
-        user_feat[0, user_idx] = 1.0
+        user_feat = self._user_input(self.user_map[user_id])
         
         self.model.eval()
         with torch.no_grad():
@@ -429,8 +432,7 @@ class TwoTower(BaseRecommender):
         user_idx = self.user_map[user_id]
         item_idx = self.item_map[item_id]
 
-        user_feat = torch.zeros(1, self.user_input_dim, device=self.device)
-        user_feat[0, min(user_idx, self.user_input_dim - 1)] = 1.0
+        user_feat = self._user_input(user_idx)
 
         self.model.eval()
         with torch.no_grad():
@@ -522,7 +524,7 @@ class TwoTower(BaseRecommender):
                     embedding_dim=cfg["embedding_dim"],
                     hidden_dims=cfg["hidden_dims"],
                     dropout=cfg["dropout"],
-                )
+                ).to(instance.device)
 
         def _factory(cfg):
             return cls(
@@ -570,7 +572,7 @@ class TwoTower(BaseRecommender):
                 embedding_dim=cfg["embedding_dim"],
                 hidden_dims=cfg["hidden_dims"],
                 dropout=cfg["dropout"],
-            )
+            ).to(instance.device)
             instance.model.load_state_dict(state["model_state_dict"])
             instance.model.eval()
         return instance

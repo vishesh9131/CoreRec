@@ -100,7 +100,8 @@ validate_fit_inputs(train_df, col_user='userID', col_item='itemID')
 Deep learning models support GPU acceleration:
 
 ```python
-model = DeepFM(device='cuda')  # Use GPU
+model = DeepFM(device='auto')  # default: CUDA, then Apple MPS, then CPU
+model = DeepFM(device='cuda')  # NVIDIA GPU
+model = DeepFM(device='mps')   # Apple Silicon GPU
 model = DeepFM(device='cpu')   # Force CPU
-model = DeepFM(device='auto')  # Auto-detect
 ```
