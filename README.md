@@ -58,6 +58,7 @@ everything and serves it. Users it has never seen get the popular items, marked
 - `corerec serve events.csv --model EASE` picks a different model; `corerec models` lists all 16. With a timestamp column, sequential models (`--model HSTU`) read each user's history in time order.
 - `corerec train events.csv -o artifacts/m` saves the model and its report; `corerec serve artifacts/m` serves it later.
 - `docker build -t corerec . && docker run -p 8000:8000 -v "$PWD:/data" corerec /data/events.csv` does the same in a container.
+- `corerec.export.to_onnx(model, "model.onnx")` exports TwoTower, DCN, DeepFM or SASRec for ONNX Runtime, so the serving side needs no Python ([guide](docs/source/user_guide/onnx_export.md)).
 
 The output above is real: `sample_data/events.csv` ships with the repo, so
 `corerec serve sample_data/events.csv` reproduces it.

@@ -145,3 +145,26 @@ def test_blocked_neighbour_search_matches_one_shot():
     one_shot = _sparse_cosine_topk(X, 0.0, 10)
     blocked = _sparse_cosine_topk(X, 0.0, 10, max_block_entries=70 * 3)
     assert abs(one_shot - blocked).max() < 1e-6
+
+
+def test_sasrec_predicts_from_the_newest_position():
+    """Inference read position len(history)-1 of a left-padded sequence -- a pad
+    slot for every short history -- while training reads the last position.
+    On this chain task that cost HR@1 0.98 -> 0.75."""
+    from corerec.engines import SASRec
+
+    rng = np.random.default_rng(0)
+    users, items, nxt = [], [], {}
+    for u in range(300):
+        s, n = int(rng.integers(0, 40)), int(rng.integers(3, 9))
+        for k in range(n):
+            users.append(u)
+            items.append(s + k)
+        nxt[u] = s + n
+    torch.manual_seed(0)
+    np.random.seed(0)
+    m = SASRec(hidden_units=32, num_blocks=1, epochs=15, max_seq_length=20,
+               verbose=False, device="cpu")
+    m.fit(users, items, [1.0] * len(users))
+    hits = [nxt[u] in m.recommend(u, top_k=1) for u in nxt if nxt[u] < 48]
+    assert np.mean(hits) > 0.9

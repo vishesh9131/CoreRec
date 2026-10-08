@@ -542,8 +542,9 @@ class SASRec(BaseRecommender):
         self.model.eval()
         with torch.no_grad():
             logits = self.model(input_seq, padding_mask)
-            last_idx = max(0, torch.sum(input_seq > 0, dim=1).item() - 1)
-            last_emb = logits[0, last_idx, :].unsqueeze(0)
+            # sequences are left-padded, so the newest item is always the last
+            # position -- the one training reads (seq_emb[:, -1])
+            last_emb = logits[:, -1, :]
             scores = self._score_items(last_emb).squeeze(0).cpu().numpy()
 
         item_idx = self.item_to_index[item_id]
@@ -1155,9 +1156,10 @@ class SASRec(BaseRecommender):
         self.model.eval()
         with torch.no_grad():
             logits = self.model(input_seq, padding_mask)  # [1, seq_len, hidden]
-            last_idx = torch.sum(input_seq > 0, dim=1) - 1
-            last_idx = torch.clamp(last_idx, min=0)
-            last_emb = logits[0, last_idx[0], :].unsqueeze(0)  # [1, hidden]
+            # Left-padded: the newest item is at the last position, which is
+            # what training reads. This used sum(seq > 0) - 1, a padding slot
+            # for every user with fewer than max_seq_length events.
+            last_emb = logits[:, -1, :]  # [1, hidden]
             scores = self._score_items(last_emb)  # [1, n_items+1]
             scores = scores.squeeze(0).cpu().numpy()
 

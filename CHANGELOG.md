@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Apple Silicon GPU support. Torch models default to `device="auto"` (CUDA,
   then MPS, then CPU) via `corerec.device.resolve_device`. A model saved on a
   GPU or Mac now loads on a CPU-only machine instead of failing.
+- ONNX export: `corerec.export.to_onnx(model, "m.onnx")` for TwoTower, DCN,
+  DeepFM and SASRec. One self-contained file with the raw ids in its
+  metadata; scores match `model.recommend()`. `pip install "corerec[onnx]"`.
 
 ### Fixed
 
@@ -22,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   events happened. It now keeps event order, and `fit(df)` sorts by a
   `timestamp` column when there is one. It also no longer densifies the
   interaction matrix.
+- `SASRec.recommend()` / `predict()` read the output at position
+  `len(history) - 1` of a left-padded sequence, a padding slot for every user
+  with fewer than `max_seq_length` events, while training reads the last
+  position. On a next-item test this cost HR@1 0.98 -> 0.75. The published
+  SASRec benchmark numbers came from `HSTU(encoder="sasrec")` and are
+  unaffected.
 - `SASRec` and `LightGCN` hung forever in `fit()` when a user had interacted
   with every item.
 - `ItemKNN` / `EASE` / `SLIM` / `UserKNN` `recommend()` took ~28 ms at 4k
