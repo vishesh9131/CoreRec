@@ -99,14 +99,15 @@ class _VAEBase(BaseRecommender):
         self.model = _VAENet(self.num_items, self.hidden_dim, self.latent_dim,
                              self.dropout, self.VARIATIONAL).to(dev)
         opt = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=self.reg)
-        Rd = torch.as_tensor(self.R.toarray(), device=dev)
+        # Densify one batch at a time. The whole R on the device was
+        # n_users * n_items floats: 8 GB at 100k x 20k.
         n = self.num_users
         self.model.train()
         for ep in range(self.epochs):
-            perm = torch.randperm(n, device=dev); tot = 0.0; nb = 0
+            perm = torch.randperm(n).numpy(); tot = 0.0; nb = 0
             for s in range(0, n, self.batch_size):
                 idx = perm[s:s + self.batch_size]
-                x = Rd[idx]
+                x = torch.as_tensor(self.R[idx].toarray(), device=dev)
                 logits, mu, logvar = self.model(x)
                 ll = -(F.log_softmax(logits, 1) * x).sum(1).mean()
                 if self.VARIATIONAL:

@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, List, Union
 
 import numpy as np
+import scipy.sparse as sp
 from scipy.sparse import csr_matrix
 
 from corerec.api.base_recommender import BaseRecommender
@@ -51,7 +52,10 @@ class _ClassicCFBase(BaseRecommender):
         self.num_users = len(users); self.num_items = len(items)
         uidx = np.fromiter((self.user_map[x] for x in u.tolist()), dtype=np.int64)
         iidx = np.fromiter((self.item_map[x] for x in it.tolist()), dtype=np.int64)
-        self.R = csr_matrix((r, (uidx, iidx)), shape=(self.num_users, self.num_items))
+        # float32 to match the item-item matrices: a float64 user row against a
+        # float32 [I, I] matrix made numpy upcast-copy the whole matrix per call
+        self.R = csr_matrix((r, (uidx, iidx)), shape=(self.num_users, self.num_items),
+                            dtype=np.float32)
         self._fit_model()
         self.is_fitted = True
         return self
@@ -121,32 +125,56 @@ class _ClassicCFBase(BaseRecommender):
         pass
 
 
-def _cosine_gram(R, shrink):
-    G = (R.T @ R).toarray().astype(np.float64)          # [I, I] co-occurrence
-    norms = np.sqrt(np.maximum(np.diag(G), 1e-12))
-    S = G / (np.outer(norms, norms) + shrink + 1e-12)
-    np.fill_diagonal(S, 0.0)
-    return S
+def _row_times(R, row, M) -> np.ndarray:
+    """R[row] @ M touching only the rows of M the user interacted with."""
+    lo, hi = R.indptr[row], R.indptr[row + 1]
+    idx, vals = R.indices[lo:hi], R.data[lo:hi].astype(np.float32)
+    if sp.issparse(M):
+        return np.asarray((csr_matrix((vals, idx, [0, len(idx)]), shape=(1, M.shape[0])) @ M)
+                          .todense()).ravel()
+    return vals @ M[idx]  # dense, e.g. EASE; also old pickles with a dense S
 
 
-def _topk_rows(S, k):
-    if k and k < S.shape[1]:
-        for r in range(S.shape[0]):
-            row = S[r]
-            cut = np.argpartition(row, -k)[:-k]
-            row[cut] = 0.0
-    return S
+def _sparse_cosine_topk(X, shrink, k, max_block_entries=50_000_000):
+    """Top-k cosine neighbours of each column of X, as a sparse [n, n] CSR.
+
+    Built a block of rows at a time and pruned to k before the next block, so
+    peak memory is ~max_block_entries floats however large n gets. The dense
+    version this replaced allocated n*n (40 GB at 100k items); a one-shot sparse
+    X^T X isn't enough either, since popular items co-occur with nearly everything.
+    """
+    X = X.tocsc()
+    n = X.shape[1]
+    Xt = X.T.tocsr()
+    norms = np.sqrt(np.maximum(np.asarray(X.multiply(X).sum(axis=0)).ravel(), 1e-12))
+    block = max(1, max_block_entries // max(n, 1))
+    rows, cols, data = [], [], []
+    for b0 in range(0, n, block):
+        G = (Xt[b0:b0 + block] @ X).tocsr()
+        for r in range(G.shape[0]):
+            lo, hi = G.indptr[r], G.indptr[r + 1]
+            c = G.indices[lo:hi]
+            d = G.data[lo:hi] / (norms[b0 + r] * norms[c] + shrink + 1e-12)
+            keep = c != b0 + r
+            c, d = c[keep], d[keep]
+            if k and len(d) > k:
+                top = np.argpartition(d, -k)[-k:]
+                c, d = c[top], d[top]
+            rows.append(np.full(len(c), b0 + r)); cols.append(c); data.append(d)
+    if not rows:
+        return csr_matrix((n, n), dtype=np.float32)
+    return csr_matrix((np.concatenate(data).astype(np.float32),
+                       (np.concatenate(rows), np.concatenate(cols))), shape=(n, n))
 
 
 class ItemKNN(_ClassicCFBase):
     MODEL = "ItemKNN"
 
     def _fit_model(self):
-        S = _cosine_gram(self.R, self.shrink)
-        self.S = _topk_rows(S, self.top_k_neighbors).astype(np.float32)
+        self.S = _sparse_cosine_topk(self.R, self.shrink, self.top_k_neighbors)
 
     def _score_all_items(self, user_id):
-        return np.asarray(self.R[self.user_map[user_id]] @ self.S).ravel()
+        return _row_times(self.R, self.user_map[user_id], self.S)
 
     def _state(self): return {"S": self.S}
     def _set_state(self, s): self.S = s["S"]
@@ -156,18 +184,14 @@ class UserKNN(_ClassicCFBase):
     MODEL = "UserKNN"
 
     def _fit_model(self):
-        G = (self.R @ self.R.T).toarray().astype(np.float64)   # user-user
-        norms = np.sqrt(np.maximum(np.diag(G), 1e-12))
-        Su = G / (np.outer(norms, norms) + self.shrink + 1e-12)
-        np.fill_diagonal(Su, 0.0)
-        self.Su = _topk_rows(Su, self.top_k_neighbors).astype(np.float32)
+        # user-user neighbours: cosine over the columns of R^T
+        self.Su = _sparse_cosine_topk(self.R.T.tocsr(), self.shrink, self.top_k_neighbors)
 
     def _score_all_items(self, user_id):
-        u = self.user_map[user_id]
-        return np.asarray(self.Su[u] @ self.R).ravel()
+        return _row_times(self.Su, self.user_map[user_id], self.R)
 
     def _state(self): return {"Su": self.Su}
-    def _set_state(self, s): self.Su = s["Su"]
+    def _set_state(self, s): self.Su = csr_matrix(s["Su"])  # old pickles hold a dense Su
 
 
 class EASE(_ClassicCFBase):
@@ -175,6 +199,13 @@ class EASE(_ClassicCFBase):
     MODEL = "EASE"
 
     def _fit_model(self):
+        # EASE is a dense [I, I] inverse by construction; say so up front
+        # rather than dying in the allocator
+        need_gb = 3 * 8 * self.num_items ** 2 / 1e9
+        if need_gb > 64:
+            raise MemoryError(
+                f"EASE on {self.num_items:,} items needs ~{need_gb:.0f} GB (dense item x item "
+                "inverse). Use ItemKNN or ALS at this catalogue size, or prune rare items.")
         G = (self.R.T @ self.R).toarray().astype(np.float64)
         G[np.diag_indices_from(G)] += self.reg
         P = np.linalg.inv(G)
@@ -183,7 +214,7 @@ class EASE(_ClassicCFBase):
         self.B = B.astype(np.float32)
 
     def _score_all_items(self, user_id):
-        return np.asarray(self.R[self.user_map[user_id]] @ self.B).ravel()
+        return _row_times(self.R, self.user_map[user_id], self.B)
 
     def _state(self): return {"B": self.B}
     def _set_state(self, s): self.B = s["B"]
@@ -203,24 +234,31 @@ class SLIM(_ClassicCFBase):
 
     def _fit_model(self):
         from sklearn.linear_model import ElasticNet
-        R = self.R.tocsc()
+        R = self.R.tocsc().astype(np.float64)
         n = self.num_items
-        W = np.zeros((n, n), dtype=np.float32)
         model = ElasticNet(alpha=self.alpha, l1_ratio=self.l1_ratio, positive=True,
                            fit_intercept=False, copy_X=False, max_iter=self.max_iter,
                            tol=1e-3)
+        rows, cols, vals = [], [], []
         for j in range(n):
-            target = R[:, j].toarray().ravel()
-            col_backup = R[:, j].copy()
-            R[:, j] = 0.0                                   # exclude self
+            lo, hi = R.indptr[j], R.indptr[j + 1]
+            target = np.zeros(R.shape[0])
+            target[R.indices[lo:hi]] = R.data[lo:hi]
+            # Zero column j in place to exclude self. R[:, j] = 0 rebuilt the
+            # sparse structure on every item -- SLIM couldn't finish 4k items in 10 min.
+            saved = R.data[lo:hi].copy()
+            R.data[lo:hi] = 0.0
             model.fit(R, target)
-            W[:, j] = model.coef_
-            R[:, j] = col_backup
-        np.fill_diagonal(W, 0.0)
+            R.data[lo:hi] = saved
+            nz = np.flatnonzero(model.coef_)
+            rows.append(nz); cols.append(np.full(len(nz), j)); vals.append(model.coef_[nz])
+        W = csr_matrix((np.concatenate(vals).astype(np.float32),
+                        (np.concatenate(rows), np.concatenate(cols))), shape=(n, n))
+        W.setdiag(0.0); W.eliminate_zeros()
         self.W = W
 
     def _score_all_items(self, user_id):
-        return np.asarray(self.R[self.user_map[user_id]] @ self.W).ravel()
+        return _row_times(self.R, self.user_map[user_id], self.W)
 
     def _state(self): return {"W": self.W}
     def _set_state(self, s): self.W = s["W"]

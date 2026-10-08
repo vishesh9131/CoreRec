@@ -24,6 +24,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   interaction matrix.
 - `SASRec` and `LightGCN` hung forever in `fit()` when a user had interacted
   with every item.
+- `ItemKNN` / `EASE` / `SLIM` / `UserKNN` `recommend()` took ~28 ms at 4k
+  items because every call upcast-copied the whole item x item matrix to
+  float64; now ~0.1 ms, same results.
+- `ItemKNN` and `UserKNN` stored dense n x n similarity matrices; they now
+  keep only the top-k neighbours, built block by block with bounded memory.
+- `SLIM` rebuilt its sparse matrix once per item and could not fit 4k items in
+  10 minutes; it now fits in under 3 s and stores `W` sparse.
+- `EASE` raises a clear `MemoryError` with the size estimate instead of dying
+  in the allocator on catalogues it cannot invert.
+- `MultVAE` / `MultiDAE` no longer copy the full user x item matrix to the
+  device; batches are densified one at a time.
 
 ## [0.7.0] - 2026-10-08
 

@@ -78,3 +78,70 @@ def test_user_who_saw_every_item_does_not_hang_fit(name, kw):
     m = getattr(E, name)(**kw)
     m.fit([0, 0, 0, 1], [1, 2, 3, 1], [1.0] * 4)
     assert m.is_fitted
+
+
+def _cf_data(seed=0, n=3000):
+    rng = np.random.default_rng(seed)
+    return (rng.integers(0, 150, n).tolist(), rng.integers(0, 120, n).tolist(),
+            rng.uniform(0.5, 5, n).tolist())
+
+
+@pytest.mark.parametrize("name,attr", [("ItemKNN", "S"), ("UserKNN", "Su"), ("SLIM", "W")])
+def test_neighbour_matrices_are_sparse(name, attr):
+    """These were dense n x n: 40 GB for ItemKNN at 100k items."""
+    import scipy.sparse as sp
+
+    import corerec.engines as E
+
+    m = getattr(E, name)(top_k_neighbors=10) if name != "SLIM" else E.SLIM()
+    m.fit(*_cf_data())
+    M = getattr(m, attr)
+    assert sp.issparse(M)
+    if name != "SLIM":
+        assert np.diff(M.indptr).max() <= 10
+
+
+def test_old_dense_itemknn_pickle_still_loads(tmp_path):
+    from corerec.engines import ItemKNN
+
+    m = ItemKNN(top_k_neighbors=10)
+    m.fit(*_cf_data())
+    want = m.recommend(0, top_k=10)
+    m.S = m.S.toarray()  # what 0.7.0 and earlier pickled
+    m.save(str(tmp_path / "old.pkl"))
+    assert ItemKNN.load(str(tmp_path / "old.pkl")).recommend(0, top_k=10) == want
+
+
+def test_ease_refuses_a_catalogue_it_cannot_invert():
+    from corerec.engines import EASE
+
+    m = EASE()
+    m.num_items = 200_000
+    with pytest.raises(MemoryError, match="ItemKNN or ALS"):
+        m._fit_model()
+
+
+def test_vae_never_densifies_all_users(monkeypatch):
+    """MultVAE put the whole [n_users, n_items] matrix on the device."""
+    import scipy.sparse as sp
+
+    from corerec.engines import MultVAE
+
+    calls = []
+    real = sp.csr_matrix.toarray
+    monkeypatch.setattr(sp.csr_matrix, "toarray",
+                        lambda self, *a, **k: calls.append(self.shape[0]) or real(self, *a, **k))
+    u, i, _ = _cf_data()
+    MultVAE(epochs=1, batch_size=32).fit(u, i)
+    assert max(calls) <= 32
+
+
+def test_blocked_neighbour_search_matches_one_shot():
+    from corerec.engines.classic_cf import _sparse_cosine_topk, csr_matrix
+
+    rng = np.random.default_rng(2)
+    X = csr_matrix((rng.uniform(1, 5, 2000).astype(np.float32),
+                    (rng.integers(0, 90, 2000), rng.integers(0, 70, 2000))), shape=(90, 70))
+    one_shot = _sparse_cosine_topk(X, 0.0, 10)
+    blocked = _sparse_cosine_topk(X, 0.0, 10, max_block_entries=70 * 3)
+    assert abs(one_shot - blocked).max() < 1e-6
