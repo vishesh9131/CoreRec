@@ -6,9 +6,12 @@ Tools for evaluating and comparing recommendation models.
 Author: Vishesh Yadav (mail: sciencely98@gmail.com)
 """
 
+import logging
 from typing import Dict, List, Any, Optional
 import numpy as np
 from corerec.evaluation.metrics import RankingMetrics
+
+logger = logging.getLogger(__name__)
 
 
 class Evaluator:
@@ -47,20 +50,24 @@ class Evaluator:
         self.metrics = metrics or ["ndcg@10", "map@10", "precision@10", "recall@10"]
         self.ranking_metrics = RankingMetrics()
 
-    def evaluate(self, model, test_data: Dict[Any, List]) -> Dict[str, float]:
+    def evaluate(self, model, test_data: Dict[Any, List], strict: bool = False) -> Dict[str, float]:
         """
         Evaluate model on test data.
 
         Args:
             model: Recommendation model with recommend() method
             test_data: Dict mapping user_id to list of relevant items
+            strict: re-raise the first per-user error instead of skipping the user
 
         Returns:
-            Dictionary of metric_name -> score
+            Dictionary of metric_name -> score, plus ``n_users`` (users scored)
+            and ``n_errors`` (users skipped because recommend() raised).
+            A metric with no scored users is NaN, not 0.0.
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
         results = {metric: [] for metric in self.metrics}
+        n_errors = 0
 
         for user_id, ground_truth in test_data.items():
             try:
@@ -96,11 +103,18 @@ class Evaluator:
                     results[metric_name].append(score)
 
             except Exception as e:
-                print(f"Error evaluating user {user_id}: {e}")
-                continue
+                if strict:
+                    raise
+                n_errors += 1
+                logger.warning("Error evaluating user %s: %s", user_id, e)
 
-        # Average results
-        return {k: np.mean(v) if v else 0.0 for k, v in results.items()}
+        if n_errors:
+            logger.warning("%d of %d users failed to evaluate", n_errors, len(test_data))
+        # NaN, not 0.0: a model that crashed on every user must not look like a bad model
+        out = {k: float(np.mean(v)) if v else float("nan") for k, v in results.items()}
+        out["n_users"] = len(test_data) - n_errors
+        out["n_errors"] = n_errors
+        return out
 
     def compare_models(
         self, models: Dict[str, Any], test_data: Dict[Any, List]
@@ -185,7 +199,8 @@ class CrossValidator:
     Example::
 
         cv = CrossValidator(n_folds=5)
-        avg_score = cv.cross_validate(model, data, metric='ndcg@10')
+        out = cv.cross_validate(lambda: SAR(), df, metric='ndcg@10')
+        out['mean'], out['folds']
 
     Author: Vishesh Yadav (mail: sciencely98@gmail.com)
     """
@@ -238,3 +253,39 @@ class CrossValidator:
             return folds
         else:
             raise NotImplementedError("Only DataFrame supported currently")
+
+    def cross_validate(
+        self,
+        model,
+        data: Any,
+        metric: str = "ndcg@10",
+        user_col: str = "user_id",
+        item_col: str = "item_id",
+        rating_col: str = "rating",
+    ) -> Dict[str, Any]:
+        """
+        Fit a fresh model on each fold and score it on the held-out rows.
+
+        Args:
+            model: zero-arg factory returning an unfitted model, or an unfitted
+                model instance (deep-copied per fold so folds don't leak)
+            data: DataFrame of interactions
+            metric: any metric Evaluator understands, e.g. 'ndcg@10'
+
+        Returns:
+            {'mean': float, 'std': float, 'folds': [per-fold score]}
+        """
+        import copy
+
+        evaluator = Evaluator(metrics=[metric])
+        scores = []
+        for train, test in self.split(data):
+            m = model() if isinstance(model, type) or not hasattr(model, "fit") else copy.deepcopy(model)
+            m.fit(
+                train[user_col].tolist(),
+                train[item_col].tolist(),
+                train[rating_col].tolist() if rating_col in train else [1.0] * len(train),
+            )
+            truth = test.groupby(user_col)[item_col].apply(list).to_dict()
+            scores.append(evaluator.evaluate(m, truth)[metric])
+        return {"mean": float(np.nanmean(scores)), "std": float(np.nanstd(scores)), "folds": scores}

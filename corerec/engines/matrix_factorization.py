@@ -32,11 +32,19 @@ class _EmbeddingCFBase(BaseRecommender):
                  iterations: int = 15, verbose: bool = False, seed: int = 42,
                  trainable: bool = True, **kwargs):
         super().__init__(name=name or self.MODEL, trainable=trainable, verbose=verbose)
+        # epochs= is the name every other model uses; it used to land in
+        # **kwargs below and be silently ignored
+        if "epochs" in kwargs:
+            iterations = kwargs.pop("epochs")
         self.factors = factors; self.reg = reg; self.iterations = iterations
         self.seed = seed
         for k, v in kwargs.items():
             setattr(self, k, v)
         self.user_map = {}; self.item_map = {}
+
+    @property
+    def epochs(self) -> int:
+        return self.iterations
 
     def fit(self, user_ids, item_ids, ratings=None, **kwargs) -> "_EmbeddingCFBase":
         (user_ids, item_ids, ratings), _ = self._unpack_fit_args(

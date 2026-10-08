@@ -176,3 +176,38 @@ def coerce_dataset(first_arg: Any) -> Optional[RecommenderDataset]:
     if isinstance(first_arg, pd.DataFrame):
         return RecommenderDataset.from_dataframe(first_arg)
     return None
+
+
+def as_interaction_frame(obj: Any) -> Optional[pd.DataFrame]:
+    """
+    user_id/item_id/rating DataFrame from any interaction container, or None.
+
+    Bridges corerec.data datasets (``.interactions`` frame or ``.data`` tuples),
+    RecommenderDataset and plain DataFrames into what fit() needs.
+    """
+    if isinstance(obj, RecommenderDataset):
+        if obj.dataframe is not None:
+            return as_interaction_frame(
+                obj.dataframe.rename(columns={obj.user_col: "user_id", obj.item_col: "item_id",
+                                              obj.rating_col: "rating"}))
+        if obj.user_ids is not None and obj.item_ids is not None:
+            r = obj.ratings if obj.ratings is not None else np.ones(len(obj.user_ids))
+            return pd.DataFrame({"user_id": obj.user_ids, "item_id": obj.item_ids, "rating": r})
+        return None
+    if isinstance(obj, pd.DataFrame):
+        if not {"user_id", "item_id"} <= set(obj.columns):
+            return None
+        return obj if "rating" in obj.columns else obj.assign(rating=1.0)
+    frame = getattr(obj, "interactions", None)
+    if isinstance(frame, pd.DataFrame):
+        # corerec.data.RecommendationDataset keeps its own column names
+        return as_interaction_frame(frame.rename(columns={
+            getattr(obj, "user_id_col", "user_id"): "user_id",
+            getattr(obj, "item_id_col", "item_id"): "item_id",
+            getattr(obj, "rating_col", "rating"): "rating"}))
+    rows = getattr(obj, "data", None)
+    if isinstance(rows, list) and rows and isinstance(rows[0], (tuple, list)) and len(rows[0]) >= 2:
+        # (user, item[, rating, ...]) tuples: ContextualDataset, GraphDataset
+        return pd.DataFrame({"user_id": [t[0] for t in rows], "item_id": [t[1] for t in rows],
+                             "rating": [float(t[2]) if len(t) > 2 else 1.0 for t in rows]})
+    return None

@@ -118,6 +118,11 @@ class BaseRecommender(ABC):
     Author: Vishesh Yadav (mail: sciencely98@gmail.com)
     """
 
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if "fit" in cls.__dict__:
+            cls.fit = _accept_datasets(cls.__dict__["fit"])
+
     def __init__(self, name: Optional[str] = None, trainable: bool = True, verbose: bool = False):
         """
         Initialize base recommender.
@@ -695,3 +700,38 @@ def normalize_interactions(user_ids, item_ids, interactions):
     for u, it, r in zip(users, items, ratings):
         matrix[u_pos[u], i_pos[it]] = r
     return uniq_users, uniq_items, matrix
+
+
+def _accept_datasets(fit):
+    """Let fit(dataset) work on every model, whatever its fit() signature.
+
+    Models take (user_ids, item_ids, ratings) or, like SAR, one DataFrame. A
+    single DataFrame / corerec.data dataset / RecommenderDataset argument is
+    unpacked into whichever form this fit() wants. Content models are left alone.
+    """
+    import functools
+
+    params = list(inspect.signature(fit).parameters)[1:]
+    if not params or params[0] in ("items",):  # content-based: fit(items, docs)
+        return fit
+    wants_frame = len(params) == 1 or params[1] in ("kwargs", "args")
+
+    @functools.wraps(fit)
+    def wrapper(self, *args, **kwargs):
+        if len(args) == 1 and not kwargs.keys() & {"item_ids", "ratings", "interactions"}:
+            from corerec.api.dataset import as_interaction_frame
+
+            data = args[0]
+            if wants_frame:
+                if not isinstance(data, pd.DataFrame):
+                    frame = as_interaction_frame(data)
+                    if frame is not None:
+                        args = (frame,)
+            else:
+                frame = as_interaction_frame(data)
+                if frame is not None:
+                    args = (frame["user_id"].tolist(), frame["item_id"].tolist(),
+                            frame["rating"].astype(float).tolist())
+        return fit(self, *args, **kwargs)
+
+    return wrapper

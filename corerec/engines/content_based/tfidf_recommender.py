@@ -201,13 +201,15 @@ class TFIDFRecommender(BaseRecommender):
         
         return [item for item, _ in items_with_scores[:top_k]]
     
-    def recommend_by_text(self, query_text: str, top_n: int = 10) -> List[Any]:
+    def recommend_by_text(self, query_text: str, top_k: int = 10,
+                          top_n: Optional[int] = None) -> List[Any]:
         """
         Recommend items based on text query using TF-IDF similarity.
         
         Args:
             query_text: Text query to find similar items
-            top_n: Number of recommendations to return
+            top_k: Number of recommendations to return
+            top_n: old name for top_k, kept for existing callers
             
         Returns:
             List of recommended item IDs sorted by relevance
@@ -224,8 +226,9 @@ class TFIDFRecommender(BaseRecommender):
         # Compute cosine similarity with all items
         similarities = cosine_similarity(query_vector, self.tfidf_matrix).flatten()
         
-        # Get top N items
-        top_indices = np.argsort(similarities)[::-1][:top_n]
+        if top_n is not None:
+            top_k = top_n
+        top_indices = np.argsort(similarities)[::-1][:top_k]
         
         # Return top items even if similarity is low (content-based can have low scores)
         recommendations = [

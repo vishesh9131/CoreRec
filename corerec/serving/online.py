@@ -124,19 +124,18 @@ class OnlineRecommender:
         )
 
     @classmethod
-    def from_model(cls, model, index_type: str = "hnsw", metric: str = "cosine"):
-        """Extract user/item embeddings from a trained CoreRec model.
+    def from_model(cls, model, index_type: str = "hnsw", metric: str = "ip"):
+        """Serve a trained ALS, Item2Vec, LightGCN or TwoTower model from an ANN index.
 
-        Supports models that expose factors via common attributes/methods
-        (item_factors/user_factors, get_item_embeddings, embeddings).
+        metric defaults to 'ip' because these models rank by dot product;
+        'cosine' would serve a different ranking than model.recommend().
         """
-        item_ids, item_emb, user_map, user_emb = _extract_embeddings(model)
-        self = cls.from_embeddings(
+        item_ids, item_emb, user_ids, user_emb, seen = _extract_embeddings(model)
+        return cls.from_embeddings(
             item_ids=item_ids, item_emb=item_emb,
-            user_ids=list(user_map), user_emb=user_emb,
+            user_ids=user_ids, user_emb=user_emb, seen=seen,
             index_type=index_type, metric=metric,
         )
-        return self
 
     # ------------------------------------------------------------------ #
     # Serving
@@ -396,8 +395,14 @@ def _train_lightgcn_embeddings(users, items, n_users, n_items, dim=64, n_layers=
     return allE[:n_users].detach().cpu().numpy(), allE[n_users:].detach().cpu().numpy()
 
 
-def _extract_embeddings(model) -> Tuple[List, np.ndarray, List, np.ndarray]:
-    """Best-effort extraction of (item_ids, item_emb, user_ids, user_emb)."""
+def _extract_embeddings(model):
+    """(item_ids, item_emb, user_ids, user_emb, seen) from a trained dot-product model.
+
+    seen maps raw user id -> raw item ids from training, or None if unknown.
+    Only models that rank by user.item dot product qualify; KNN/EASE/DCN/
+    sequential models don't, and serving them from an ANN index would give a
+    ranking that disagrees with model.recommend().
+    """
     import torch
 
     def _np(x):
@@ -405,19 +410,38 @@ def _extract_embeddings(model) -> Tuple[List, np.ndarray, List, np.ndarray]:
             return x.detach().cpu().numpy()
         return np.asarray(x)
 
-    # implicit/factor-style
-    for ue, ie in (("user_factors", "item_factors"), ("user_embeddings", "item_embeddings")):
-        if hasattr(model, ue) and hasattr(model, ie):
-            U = _np(getattr(model, ue)); V = _np(getattr(model, ie))
-            users = list(getattr(model, "uid_map", range(U.shape[0])))
-            items = list(getattr(model, "iid_map", range(V.shape[0])))
-            return items, V, users, U
-    # method-based
-    if hasattr(model, "get_item_embeddings") and hasattr(model, "get_user_embeddings"):
-        V = _np(model.get_item_embeddings()); U = _np(model.get_user_embeddings())
-        users = list(getattr(model, "uid_map", range(U.shape[0])))
-        items = list(getattr(model, "iid_map", range(V.shape[0])))
-        return items, V, users, U
-    raise NotImplementedError(
-        f"{type(model).__name__} does not expose embeddings; use "
-        "OnlineRecommender.from_interactions or from_embeddings instead.")
+    def _ordered(id_map):
+        # raw id -> row; dict order is insertion order, not row order
+        return [raw for raw, _ in sorted(id_map.items(), key=lambda kv: kv[1])]
+
+    seen_idx = None  # user row -> item rows
+    if getattr(model, "U", None) is not None and getattr(model, "V", None) is not None:
+        # ALS, Item2Vec
+        U, V = _np(model.U), _np(model.V)
+        users, items = _ordered(model.user_map), _ordered(model.item_map)
+        R = getattr(model, "R", None)
+        if R is not None:
+            seen_idx = {r: set(R.indices[R.indptr[r]:R.indptr[r + 1]]) for r in range(R.shape[0])}
+    elif getattr(model, "user_embedding", None) is not None and hasattr(model, "user_id_map"):
+        # LightGCN: propagated embeddings cached after fit
+        U, V = _np(model.user_embedding), _np(model.item_embedding)
+        users, items = _ordered(model.user_id_map), _ordered(model.item_id_map)
+        seen_idx = getattr(model, "user_interactions", None)
+    elif hasattr(model, "get_user_embedding") and hasattr(model, "get_item_embeddings"):
+        # TwoTower: user tower is evaluated per user
+        users, items = _ordered(model.user_map), _ordered(model.item_map)
+        V = _np(model.get_item_embeddings())
+        U = np.vstack([np.ravel(_np(model.get_user_embedding(u))) for u in users])
+        seen_by = getattr(model, "_seen_by_user", None)
+        if seen_by is not None:
+            seen_idx = {model.user_map[u]: v for u, v in seen_by.items() if u in model.user_map}
+    else:
+        raise NotImplementedError(
+            f"{type(model).__name__} does not rank by a user.item dot product, so it "
+            "can't be served from an ANN index. Supported: ALS, Item2Vec, LightGCN, "
+            "TwoTower. Otherwise use OnlineRecommender.from_interactions or from_embeddings.")
+
+    seen = None
+    if seen_idx is not None:
+        seen = {users[u]: {items[i] for i in its} for u, its in seen_idx.items()}
+    return items, V, users, U, seen

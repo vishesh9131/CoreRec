@@ -99,6 +99,23 @@ API. Everything removed is in the git history at commit `33911a3`.
   does not exist.
 - The `corerec` CLI redirected stderr to `/dev/null` for the whole process, so
   any error it hit printed nothing.
+- `Evaluator.evaluate` printed per-user errors and returned 0.0 for a model
+  that crashed on every user. It now logs, returns NaN for metrics with no
+  scored users, reports `n_users` / `n_errors`, and takes `strict=True`.
+- `corerec.hybrid.RetrievalThenRerank` was silently `None` (wrong import path,
+  error swallowed). `EnsembleRetriever` dropped failing child retrievers
+  without a trace; it now logs them and keeps them on `last_errors`.
+- `OnlineRecommender.from_model` raised `NotImplementedError` for every model.
+  It now serves ALS, Item2Vec, LightGCN and TwoTower with the same ranking as
+  `model.recommend()`, and defaults to `metric="ip"`.
+- `ModelLoader.load(path)` returned a raw dict for ALS/Item2Vec/KNN/EASE saves
+  and could not find torch-model saves. It now reconstructs every model from
+  the path that was passed to `save()`.
+- `ALS(epochs=...)` and `Item2Vec(epochs=...)` silently ignored `epochs`.
+- Every model's `fit()` accepts a DataFrame, `RecommenderDataset` or
+  `corerec.data` dataset as its single argument.
+- `CrossValidator.cross_validate` was documented but missing.
+- `TFIDFRecommender.recommend_by_text` accepts `top_k`, like `recommend`.
 
 ## [0.6.0] - 2026-08-07
 

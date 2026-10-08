@@ -6,11 +6,14 @@ both coverage and quality. This module provides strategies for
 merging results from different retrievers.
 """
 
+import logging
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
 from .base import BaseRetriever, Candidate, RetrievalResult
+
+logger = logging.getLogger(__name__)
 
 
 class EnsembleRetriever(BaseRetriever):
@@ -116,14 +119,16 @@ class EnsembleRetriever(BaseRetriever):
         
         # gather candidates from each retriever
         all_results: List[Tuple[str, float, RetrievalResult]] = []
+        self.last_errors: Dict[str, Exception] = {}
         for name, retriever, weight in self.retrievers:
             try:
                 result = retriever.retrieve(query, top_k=k_each, **kwargs)
                 all_results.append((name, weight, result))
             except Exception as e:
-                # one retriever failing shouldn't kill the ensemble
-                # in production you'd log this
-                pass
+                # one retriever failing shouldn't kill the ensemble, but it
+                # must not vanish either: log it and keep it on last_errors
+                logger.warning("Retriever '%s' failed: %s", name, e)
+                self.last_errors[name] = e
         
         if not all_results:
             return RetrievalResult(

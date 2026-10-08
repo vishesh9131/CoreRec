@@ -16,7 +16,7 @@ import os
 
 from corerec.core.base_model import BaseModel
 from corerec.retrieval.model_retriever import BaseRetriever
-from corerec.ranking.base_ranker import BaseRanker
+from corerec.ranking.base import BaseRanker
 
 
 class RetrievalThenRerank(BaseModel):

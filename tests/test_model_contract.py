@@ -171,6 +171,30 @@ def test_save_load_preserves_recommendations(model_id, module_path, cls_name, kw
 
 @pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS,
                          ids=[m[0] for m in MODELS])
+def test_model_loader_reconstructs_without_knowing_the_class(model_id, module_path, cls_name,
+                                                             kwargs, data, tmp_path):
+    """serving.ModelLoader is how another process picks a model up.
+
+    It used to return a raw dict for pickled CF state and FileNotFoundError for
+    models that write <stem>.meta.json next to the path (Findings/bug.md #8).
+    """
+    if model_id in KNOWN_DIVERGENT:
+        pytest.xfail(KNOWN_DIVERGENT[model_id])
+    from corerec.serving import ModelLoader
+
+    users, items, ratings = data
+    model = _build(module_path, cls_name, kwargs)
+    model.fit(users, items, ratings)
+    path = tmp_path / f"{model_id}.model"
+    model.save(str(path))
+
+    loaded = ModelLoader().load(str(path))
+    assert type(loaded) is type(model)
+    assert loaded.recommend(users[0], top_k=5) == model.recommend(users[0], top_k=5)
+
+
+@pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS,
+                         ids=[m[0] for m in MODELS])
 def test_batch_predict_matches_predict(model_id, module_path, cls_name, kwargs, data):
     """batch_predict must agree with predict, pair for pair.
 
@@ -214,6 +238,38 @@ def test_training_length_is_called_epochs(model_id, module_path, cls_name, kwarg
     params = inspect.signature(_build(module_path, cls_name, {}).__class__.__init__).parameters
     if "num_epochs" in params:
         assert "epochs" in params, f"{cls_name} takes num_epochs but not epochs"
+
+
+@pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS,
+                         ids=[m[0] for m in MODELS])
+def test_fit_accepts_a_corerec_data_dataset(model_id, module_path, cls_name, kwargs, data):
+    """corerec.data datasets used to be unusable with every model (Findings/bug.md #6)."""
+    import pandas as pd
+
+    from corerec.data import RecommendationDataset
+
+    users, items, ratings = data
+    ds = RecommendationDataset(pd.DataFrame({"user_id": users, "item_id": items,
+                                             "rating": ratings}))
+    model = _build(module_path, cls_name, kwargs)
+    model.fit(ds)
+    assert len(model.recommend(users[0], top_k=5)) > 0
+
+
+# models with no training loop; everything else must take epochs=
+_NO_EPOCHS = {"SAR", "ItemKNN", "UserKNN", "EASE", "SLIM", "TFIDFRecommender"}
+
+
+@pytest.mark.parametrize("cls_name", sorted(set(REGISTRY) - _NO_EPOCHS))
+def test_every_iterative_model_takes_epochs(cls_name):
+    """One config dict must work across the zoo (Findings/bug.md #2).
+
+    ALS and Item2Vec spelled it iterations=, and epochs= went into **kwargs and
+    was silently ignored -- they trained for their default length.
+    """
+    import corerec.engines as engines
+
+    assert getattr(engines, cls_name)(epochs=2).epochs == 2
 
 
 @pytest.mark.parametrize("cls_name", ["SASRec", "TwoTower"])

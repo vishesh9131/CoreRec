@@ -32,6 +32,11 @@ Report only. Fixes happen in a separate session where they can be reviewed.
 
 ## Open
 
+None.
+
+## Fixed
+
+
 
 ### 2. Constructor training-length kwarg is three different names across the zoo
 
@@ -82,6 +87,9 @@ until `__init__(**params)` is too.
 **Suggested fix:** pick one name (`epochs` is the plurality) and accept the
 other two as deprecated aliases on the minority classes; extend the contract
 test to construct every registered model from `{"epochs": 2}`.
+
+
+**Status:** fixed 2026-10-08; accepted `epochs=` on ALS/Item2Vec (it was silently swallowed by `**kwargs`); `num_epochs` alias landed upstream. `test_every_iterative_model_takes_epochs`.
 
 ---
 
@@ -143,6 +151,9 @@ error into a silent zero.
 **Suggested fix:** count errors, expose them alongside metrics, and coerce
 empty metric lists to `NaN` rather than `0.0`. Optionally add a `strict=True`
 flag that re-raises. Ideally, refuse to average when errors > threshold.
+
+
+**Status:** fixed 2026-10-08; `Evaluator.evaluate` logs instead of printing, returns NaN for metrics with no scored users, adds `n_users`/`n_errors`, and takes `strict=True`. `tests/test_silent_failures.py`.
 
 ---
 
@@ -221,6 +232,9 @@ around it and then discover it can't drive `fit()`.
 that unpacks any known dataset type into arrays, or give every dataset a
 `.to_triples()` method that returns `(user_ids, item_ids, ratings)`; add a
 test that fits every model type from every dataset type.
+
+
+**Status:** fixed 2026-10-08; `BaseRecommender.__init_subclass__` lets every model's `fit()` take a DataFrame, `RecommenderDataset` or `corerec.data` dataset; `corerec.api.dataset.as_interaction_frame` does the unpacking. `test_fit_accepts_a_corerec_data_dataset`.
 
 ---
 
@@ -305,6 +319,9 @@ the actual attribute names ALS/Item2Vec use, or define one contract method
 have every embedding model implement it. Add a contract test that runs
 `from_model` on every model with an embedding surface.
 
+
+**Status:** fixed 2026-10-08; extractor rewritten for ALS, Item2Vec, LightGCN, TwoTower with ids in row order and training seen-sets; `from_model` now defaults to `metric='ip'` and matches `model.recommend()` exactly. Non-dot-product models get a clear `NotImplementedError`. `tests/test_silent_failures.py`.
+
 ---
 
 ### 8. `model.save(path)` doesn't create `path`, and generic loaders can't find/reconstruct it
@@ -386,6 +403,9 @@ reconstruct, or (b) drop `ModelLoader.load` in favour of a factory that reads
 the class name from a manifest. Add a contract test:
 `save → ModelLoader.load → predict/recommend` on every model.
 
+
+**Status:** fixed 2026-10-08; `ModelLoader.load(path)` reads the class marker every save format already carries (`meta.json` `model_class`, pickled `cls` / `params.name`, torch `cfg.name`) and calls that class's `load()`; `model_class=` overrides. On-disk layout unchanged. `test_model_loader_reconstructs_without_knowing_the_class`.
+
 ---
 
 ### 9. `CrossValidator.cross_validate` is documented but not implemented
@@ -441,6 +461,9 @@ that (a) splits, (b) refits a fresh model per fold, (c) evaluates each fold
 with `Evaluator`, (d) returns per-fold + mean. Or delete the class and
 document the manual `Evaluator` + `split` loop as the CV recipe. Either way,
 the docstring and the class body must agree.
+
+
+**Status:** fixed 2026-10-08; `CrossValidator.cross_validate(model_or_factory, df, metric)` implemented, returns mean/std/folds.
 
 ---
 
@@ -504,6 +527,9 @@ finding that revealed 74 broken documented paths.
 `try/except ImportError` swallow (or, if kept for optional torch/faiss
 deps, apply the `7dcf838` "name the extra" pattern so the failure tells
 the user what to install).
+
+
+**Status:** fixed 2026-10-08; import path fixed (`corerec.ranking.base`); `RetrievalThenRerank` is imported directly so a future break raises. `PromptReranker` raises a clear ImportError on use when requests/aiohttp are missing. The `Word2VecRecommender` swallow was already gone upstream.
 
 ---
 
@@ -588,6 +614,9 @@ exception and the retriever name. Better: attach an `errors` dict on
 `RetrievalResult` so downstream code can act on it. Optionally support
 `strict=True` on the ensemble constructor to re-raise instead of swallow.
 
+
+**Status:** fixed 2026-10-08; failing child retrievers are logged at WARNING and kept on `ensemble.last_errors`.
+
 ---
 
 ### 12. `TFIDFRecommender` — `recommend(top_k=…)` works, `recommend_by_text(top_k=…)` doesn't
@@ -642,10 +671,11 @@ drift inside code that's supposed to be uniform.
 (keeping `top_n` for compatibility), or standardise on one name across
 every `recommend*` in the codebase.
 
+
+**Status:** fixed 2026-10-08; `recommend_by_text` takes `top_k` (with `top_n` still accepted).
+
 ---
 
-
-## Fixed
 
 ### 1. `fit(..., ratings=...)` raises TypeError on TwoTower and BERT4Rec
 

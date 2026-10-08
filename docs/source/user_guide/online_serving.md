@@ -56,9 +56,11 @@ supports inner-product HNSW, so dot-product rankings are preserved rather than
 distorted by cosine normalization.
 ```
 
-`OnlineRecommender.from_model(model)` extracts embeddings automatically from models
-that expose `user_factors`/`item_factors` or `get_user_embeddings()`/
-`get_item_embeddings()`.
+`OnlineRecommender.from_model(model)` serves a trained `ALS`, `Item2Vec`,
+`LightGCN` or `TwoTower` model, and returns the same ranking as
+`model.recommend()`. Other models don't rank by a user-item dot product, so
+`from_model` raises `NotImplementedError` for them; keep those behind
+`ModelServer` instead.
 
 ## Freshness: updating without retraining
 
