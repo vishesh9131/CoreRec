@@ -62,9 +62,8 @@ everything and serves it. Users it has never seen get the popular items, marked
 The output above is real: `sample_data/events.csv` ships with the repo, so
 `corerec serve sample_data/events.csv` reproduces it.
 
-> `corerec train` / `corerec serve` are new and not on PyPI yet (0.6.0 does not
-> have them). Until the next release, install from a clone:
-> `pip install -e ".[serving]"`.
+> `corerec train` / `corerec serve` need 0.7.0 or later:
+> `pip install -U "corerec[serving]"`.
 
 ---
 

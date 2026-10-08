@@ -5,9 +5,9 @@ All notable changes to CoreRec will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.0] - 2026-10-08
 
-Planned as 0.7.0. This release cuts CoreRec down to what is tested, benchmarked
+This release cuts CoreRec down to what is tested, benchmarked
 and maintained, and adds a one-command path from an interactions file to a live
 API. Everything removed is in the git history at commit `33911a3`.
 
