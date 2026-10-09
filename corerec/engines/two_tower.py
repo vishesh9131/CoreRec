@@ -137,8 +137,7 @@ class TwoTower(BaseRecommender):
                  negative_samples: int = 4,
                  temperature: float = 0.07,  # for InfoNCE
                  verbose: bool = True,
-                 num_epochs: Optional[int] = None,
-                 seed: Optional[int] = 42):
+                 num_epochs: Optional[int] = None):
         super().__init__()
         if num_epochs is not None:
             warn_deprecated_arg("num_epochs", "epochs")
@@ -158,10 +157,6 @@ class TwoTower(BaseRecommender):
         self.neg_samples = negative_samples
         self.temp = temperature
         self.verbose = verbose
-        # Shuffling and negative sampling used the global np.random, which
-        # nothing seeded, so two fits on the same data gave different models.
-        # None means unseeded, on purpose.
-        self.seed = seed
         
         self.log = logging.getLogger(self.name)
         if verbose:
@@ -229,11 +224,6 @@ class TwoTower(BaseRecommender):
         self.user_input_dim = n_users if user_features is None else user_features.shape[1]
         self.item_input_dim = n_items if item_features is None else item_features.shape[1]
         
-        # fresh generators per fit, so refitting the same object repeats too
-        self._rng = np.random.default_rng(self.seed)
-        if self.seed is not None:
-            torch.manual_seed(self.seed)  # weight init + dropout
-
         # init model
         self.model = TwoTowerModel(
             user_input_dim=self.user_input_dim,
@@ -265,7 +255,7 @@ class TwoTower(BaseRecommender):
         for epoch in range(self.epochs):
             self.model.train()
             
-            self._rng.shuffle(train_data)
+            np.random.shuffle(train_data)
             epoch_loss = 0.0
             n_batches = 0
             
@@ -290,7 +280,7 @@ class TwoTower(BaseRecommender):
                     )
                     
                     # negative samples
-                    neg_indices = self._rng.integers(0, n_items, size=(len(batch), self.neg_samples))
+                    neg_indices = np.random.randint(0, n_items, size=(len(batch), self.neg_samples))
                     neg_indices_t = torch.from_numpy(neg_indices).long().to(self.device)
                     batch_neg_items = item_feats_t[neg_indices_t.reshape(-1)]
                     batch_neg_items = batch_neg_items.view(len(batch), self.neg_samples, -1)
@@ -313,7 +303,7 @@ class TwoTower(BaseRecommender):
                     pos_scores = self.model(batch_users, batch_pos_items)
                     
                     # sample negatives
-                    neg_indices = self._rng.integers(0, n_items, size=len(batch))
+                    neg_indices = np.random.randint(0, n_items, size=len(batch))
                     batch_neg_items = item_feats_t[torch.from_numpy(neg_indices).to(self.device)]
                     neg_scores = self.model(batch_users, batch_neg_items)
                     
@@ -468,7 +458,6 @@ class TwoTower(BaseRecommender):
             "lr": self.lr,
             "batch_size": self.batch_size,
             "epochs": self.epochs,
-            "seed": self.seed,
         }
         state = {
             "is_fitted": self.is_fitted,
@@ -549,7 +538,6 @@ class TwoTower(BaseRecommender):
                 learning_rate=cfg["lr"],
                 batch_size=cfg["batch_size"],
                 epochs=cfg.get("epochs", cfg.get("num_epochs", 10)),
-                seed=cfg.get("seed"),
             )
 
         loaded = load_torch_production(cls, path, build_model=_build, restore=_restore, factory=_factory)
@@ -569,7 +557,6 @@ class TwoTower(BaseRecommender):
             learning_rate=cfg["lr"],
             batch_size=cfg["batch_size"],
             epochs=cfg.get("epochs", cfg.get("num_epochs", 10)),
-            seed=cfg.get("seed"),
         )
         instance.user_map = state["user_map"]
         instance.item_map = state["item_map"]

@@ -311,7 +311,6 @@ class SASRec(BaseRecommender):
         log_interval: int = 100,
         verbose: bool = True,
         num_epochs: Optional[int] = None,
-        seed: Optional[int] = 42,
     ):
         super().__init__()
         if num_epochs is not None:
@@ -342,9 +341,6 @@ class SASRec(BaseRecommender):
         self.user_cooling = user_cooling
         self.log_interval = log_interval
         self.verbose = verbose
-        # Same story as LightGCN: shuffling and negatives came from the global
-        # np.random, unseeded, so reruns trained different models. None = unseeded.
-        self.seed = seed
 
         self.logger = self._create_logger()
         # mappings and state
@@ -467,7 +463,6 @@ class SASRec(BaseRecommender):
             "user_cooling": self.user_cooling,
             "log_interval": self.log_interval,
             "verbose": self.verbose,
-            "seed": self.seed,
         }
         state = {
             "n_items": n_items,
@@ -730,11 +725,6 @@ class SASRec(BaseRecommender):
             for user_id, seq in self.user_sequences.items():
                 self.user_cooling_weights[user_id] = 1.0 / math.sqrt(len(seq) / max_count) if len(seq) > 0 else 1.0
 
-        # fresh generators per fit, so refitting the same object repeats too
-        self._rng = np.random.default_rng(self.seed)
-        if self.seed is not None:
-            torch.manual_seed(self.seed)  # weight init + dropout
-
         # build model
         self.model = SASRecModel(
             n_items=n_items,
@@ -840,7 +830,7 @@ class SASRec(BaseRecommender):
                 break
 
             indices = np.arange(n_train)
-            self._rng.shuffle(indices)
+            np.random.shuffle(indices)
 
             epoch_loss = 0.0
             processed = 0
@@ -861,7 +851,7 @@ class SASRec(BaseRecommender):
                         # sample until not in seq -- unless the user has seen
                         # every item, where that loop never ended and fit() hung
                         for _ in range(100):
-                            neg = int(self._rng.integers(1, n_items + 1))
+                            neg = np.random.randint(1, n_items + 1)
                             if neg not in user_seq:
                                 break
                         negatives.append(neg)
