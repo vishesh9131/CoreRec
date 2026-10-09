@@ -48,7 +48,7 @@ sar.fit(train_df)
 collab_retriever = CollaborativeRetriever(model=sar, name="collab")
 
 # Popularity-based retriever for cold-start coverage
-item_counts = train_df.groupby('item_id').size()
+item_counts = train_df.groupby('itemID').size()
 pop_retriever = PopularityRetriever(name="popularity")
 pop_retriever.fit(
     item_ids=list(item_counts.index),
@@ -118,15 +118,7 @@ for item_id, score in result:
 
 ## Step 7: Configuration from YAML
 
-```python
-from corerec.pipelines import load_pipeline_config, build_pipeline_from_config
-
-# Load from YAML file
-config = load_pipeline_config('pipeline.yaml')
-pipeline = build_pipeline_from_config(config)
-```
-
-Example `pipeline.yaml`:
+The same pipeline can come from a config file. Save this as `pipeline.yaml`:
 
 ```yaml
 pipeline:
@@ -150,3 +142,28 @@ pipeline:
         - item: 42
           multiplier: 2.0
 ```
+
+A YAML file can't hold a trained model or interaction counts, so the
+retrievers it builds start out unfitted. Hand their `fit()` arguments to
+`build_pipeline_from_config` with `fit=`, keyed by retriever name (the
+`name` field, or the `type` when there is no name):
+
+```python
+from corerec.pipelines import load_pipeline_config, build_pipeline_from_config
+
+config = load_pipeline_config('pipeline.yaml')
+pipeline = build_pipeline_from_config(config, fit={
+    'collaborative': {'model': sar},
+    'popularity': {
+        'item_ids': list(item_counts.index),
+        'interaction_counts': list(item_counts.values),
+    },
+})
+
+result = pipeline.recommend(query=5, top_k=10)
+print(result.to_list())
+```
+
+Without `fit=`, `recommend()` raises because the retrievers were never fitted
+(the ranker is fitted for you on its defaults).
+A key that matches no retriever raises a `ValueError` right away.

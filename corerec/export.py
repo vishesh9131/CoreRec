@@ -24,6 +24,7 @@ Excluding already-seen items is left to the caller, as it needs the history.
 Needs ``pip install onnx`` (and onnxruntime to run the result).
 """
 
+import inspect
 import json
 from pathlib import Path
 from typing import Any, Union
@@ -149,10 +150,14 @@ def to_onnx(model: Any, path: Union[str, Path], opset: int = 17) -> Path:
     mod = mod.cpu().eval()
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    # torch>=2.9 defaults to the dynamo exporter, which needs onnxscript and can't
+    # trace DCN/SASRec yet. Stay on the TorchScript one; older torch has no flag.
+    kw = {"dynamo": False} if "dynamo" in inspect.signature(torch.onnx.export).parameters else {}
     with torch.no_grad():
         torch.onnx.export(
             mod, (example.cpu(),), str(path), input_names=[input_name], output_names=["scores"],
-            dynamic_axes={input_name: {0: "batch"}, "scores": {0: "batch"}}, opset_version=opset)
+            dynamic_axes={input_name: {0: "batch"}, "scores": {0: "batch"}}, opset_version=opset,
+            **kw)
     # The export moved the model to CPU; put it back where it was trained.
     model.model.to(model.device)
 

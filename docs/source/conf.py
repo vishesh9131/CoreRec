@@ -84,6 +84,8 @@ intersphinx_mapping = {
 }
 
 # MyST settings
+# Give h1-h3 GitHub-style ids, so links like models/index.md#model-tiers resolve.
+myst_heading_anchors = 3
 myst_enable_extensions = [
     "colon_fence",
     "deflist",
