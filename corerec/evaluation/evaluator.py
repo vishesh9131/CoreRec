@@ -68,11 +68,14 @@ class Evaluator:
         """
         results = {metric: [] for metric in self.metrics}
         n_errors = 0
+        # ask for as many items as the deepest metric needs; a fixed 20 made
+        # recall@50 count ranks 21..50 as misses
+        max_k = max(int(m.split("@")[1]) if "@" in m else 10 for m in self.metrics)
 
         for user_id, ground_truth in test_data.items():
             try:
                 # Get recommendations
-                predictions = model.recommend(user_id, top_k=20)
+                predictions = model.recommend(user_id, top_k=max_k)
 
                 # Compute each metric
                 for metric_name in self.metrics:
