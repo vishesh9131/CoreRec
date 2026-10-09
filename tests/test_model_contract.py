@@ -44,7 +44,9 @@ MODELS = [
 # (fit_from_lists, fit_from_dataset). Changing a released fit() signature is its
 # own decision, not a drive-by in a test file -- so the divergence is recorded
 # here and shows up as xfail rather than being silently tolerated.
-KNOWN_DIVERGENT = {}
+KNOWN_DIVERGENT = {
+    "sar": "fit() takes a DataFrame; use fit_from_lists() for the triple form",
+}
 
 
 def _interactions(n_users=25, n_items=40, seed=0):
