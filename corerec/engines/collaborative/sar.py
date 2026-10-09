@@ -396,7 +396,7 @@ class SAR(BaseRecommender):
     # FIT
     # =========================================================================
     
-    def fit(self, df: pd.DataFrame) -> "SAR":
+    def fit(self, df: pd.DataFrame, *args, timestamps=None) -> "SAR":
         """
         Train the SAR model on interaction data.
         
@@ -404,6 +404,9 @@ class SAR(BaseRecommender):
             df: DataFrame with user, item, rating columns.
                 Must not have duplicate (user, item) pairs.
                 If timedecay_formula=True, needs timestamp column too.
+                Can also be the user_ids list, with item_ids and ratings
+                following it, like the other models: fit(users, items, ratings).
+            timestamps: only for the list form, see fit_from_lists().
         
         Returns:
             self (for method chaining)
@@ -411,6 +414,11 @@ class SAR(BaseRecommender):
         Raises:
             InvalidDataError: if input has issues
         """
+        # (user_ids, item_ids, ratings) triple, the shape every other model takes.
+        # Param is named *args on purpose: _accept_datasets reads that as
+        # "this fit wants a frame" and keeps unpacking datasets to a DataFrame.
+        if args:
+            return self.fit_from_lists(df, *args, timestamps=timestamps)
         # A DataFrame that already uses this model's column names is taken as
         # is. Coercing it would rename the columns to SAR's defaults and then
         # fail to find the custom col_user/col_item the caller configured.
