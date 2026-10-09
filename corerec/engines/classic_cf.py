@@ -151,16 +151,27 @@ def _sparse_cosine_topk(X, shrink, k, max_block_entries=50_000_000):
     rows, cols, data = [], [], []
     for b0 in range(0, n, block):
         G = (Xt[b0:b0 + block] @ X).tocsr()
-        for r in range(G.shape[0]):
-            lo, hi = G.indptr[r], G.indptr[r + 1]
-            c = G.indices[lo:hi]
-            d = G.data[lo:hi] / (norms[b0 + r] * norms[c] + shrink + 1e-12)
-            keep = c != b0 + r
-            c, d = c[keep], d[keep]
-            if k and len(d) > k:
-                top = np.argpartition(d, -k)[-k:]
-                c, d = c[top], d[top]
-            rows.append(np.full(len(c), b0 + r)); cols.append(c); data.append(d)
+        # whole block at once; a per-row python loop here dominated fit time at 100k
+        r = b0 + np.repeat(np.arange(G.shape[0]), np.diff(G.indptr))
+        c = G.indices
+        d = G.data / (norms[r] * norms[c] + shrink + 1e-12)
+        keep = c != r
+        r, c, d = r[keep], c[keep], d[keep]
+        if k:
+            # only rows with more than k neighbours need pruning; sort just those,
+            # by row then score high->low, using one float key (|d| < 1, so row*4
+            # keeps rows apart) and keep each row's first k
+            counts = np.bincount(r - b0, minlength=G.shape[0])
+            over = np.flatnonzero((counts > k)[r - b0])
+            if len(over):
+                order = over[np.argsort((r[over] - b0) * 4.0 - d[over], kind="stable")]
+                n_over = counts[counts > k]
+                rank = np.arange(len(order)) - np.repeat(np.cumsum(n_over) - n_over, n_over)
+                keep = np.ones(len(r), bool)
+                keep[over] = False
+                keep[order[rank < k]] = True
+                r, c, d = r[keep], c[keep], d[keep]
+        rows.append(r); cols.append(c); data.append(d)
     if not rows:
         return csr_matrix((n, n), dtype=np.float32)
     return csr_matrix((np.concatenate(data).astype(np.float32),

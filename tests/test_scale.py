@@ -147,6 +147,37 @@ def test_blocked_neighbour_search_matches_one_shot():
     assert abs(one_shot - blocked).max() < 1e-6
 
 
+@pytest.mark.parametrize("binary", [False, True])
+@pytest.mark.parametrize("block", [None, 70 * 3])
+def test_neighbour_topk_matches_dense_reference(binary, block):
+    """Per-row top-k is vectorised over the block; check it against brute force.
+
+    binary=True gives lots of tied scores, where only the kept *values* are
+    defined (which of two equal neighbours survives is a tie-break)."""
+    from corerec.engines.classic_cf import _sparse_cosine_topk, csr_matrix
+
+    rng = np.random.default_rng(5)
+    vals = np.ones(2000, np.float32) if binary else rng.uniform(1, 5, 2000).astype(np.float32)
+    X = csr_matrix((vals, (rng.integers(0, 90, 2000), rng.integers(0, 70, 2000))), shape=(90, 70))
+    X.sum_duplicates()
+    k, shrink = 10, 2.0
+    kw = {} if block is None else {"max_block_entries": block}
+    S = _sparse_cosine_topk(X, shrink, k, **kw).toarray()
+
+    D = X.toarray()
+    G = D.T @ D
+    norms = np.sqrt(np.maximum((D * D).sum(axis=0), 1e-12))
+    full = G / (np.outer(norms, norms) + shrink + 1e-12)
+    for i in range(70):
+        cand = [(full[i, j], j) for j in range(70) if j != i and G[i, j] != 0]
+        want = sorted(v for v, _ in cand)[-k:]
+        got = S[i][S[i] != 0]
+        assert len(got) == len(want)
+        np.testing.assert_allclose(np.sort(got), want, rtol=1e-5)
+        if not binary:
+            assert set(np.flatnonzero(S[i])) == {j for v, j in cand if v >= want[0]}
+
+
 def test_sasrec_predicts_from_the_newest_position():
     """Inference read position len(history)-1 of a left-padded sequence -- a pad
     slot for every short history -- while training reads the last position.
