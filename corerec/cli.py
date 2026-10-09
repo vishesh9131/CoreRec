@@ -255,9 +255,16 @@ def serve_command(args):
         print(f"A/B       challenger {args.challenger} gets {args.challenger_share:.0%} of users")
     server = build_server(model, manifest, host=args.host, port=args.port,
                           feedback_log=args.feedback_log, challenger=challenger,
-                          challenger_share=args.challenger_share, artifact=artifact)
+                          challenger_share=args.challenger_share, artifact=artifact,
+                          admin_token=args.admin_token, feedback_token=args.feedback_token)
     if args.feedback_log:
         print(f"Feedback  logging to {args.feedback_log}  (POST /feedback, GET /metrics)")
+    guarded = [p for p, t in (("/reload", args.admin_token), ("/feedback", args.feedback_token)) if t]
+    if guarded:
+        print(f"Auth      {' and '.join(guarded)} need a bearer token")
+    elif args.feedback_log or artifact:
+        print("Auth      none: anyone who reaches this port can POST /reload and /feedback "
+              "(set COREREC_ADMIN_TOKEN / COREREC_FEEDBACK_TOKEN)")
     print(f"Serving   http://{args.host}:{args.port}  (docs at /docs, Ctrl-C to stop)")
     print(f"""Try       curl -X POST localhost:{args.port}/recommend -H 'Content-Type: application/json' -d '{{"user_id": "<a user>", "top_k": 5}}'""")
     server.start()
@@ -347,6 +354,12 @@ def main():
                               help="A/B test: serve this artifact to a share of users")
     serve_parser.add_argument("--challenger-share", type=float, default=0.1,
                               help="share of users the challenger gets (default 0.1)")
+    serve_parser.add_argument("--admin-token", default=os.environ.get("COREREC_ADMIN_TOKEN"),
+                              help="require 'Authorization: Bearer TOKEN' on POST /reload "
+                                   "(default: $COREREC_ADMIN_TOKEN)")
+    serve_parser.add_argument("--feedback-token", default=os.environ.get("COREREC_FEEDBACK_TOKEN"),
+                              help="require 'Authorization: Bearer TOKEN' on POST /feedback "
+                                   "(default: $COREREC_FEEDBACK_TOKEN)")
     _add_training_args(serve_parser)
     serve_parser.set_defaults(func=serve_command)
 

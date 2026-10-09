@@ -504,12 +504,14 @@ def load_artifact(path: Union[str, Path]):
 def build_server(model, manifest: Optional[Dict[str, Any]] = None, host: str = "0.0.0.0",
                  port: int = 8000, feedback_log: Optional[Union[str, Path]] = None,
                  challenger: Optional[Any] = None, challenger_share: float = 0.1,
-                 artifact: Optional[Union[str, Path]] = None):
+                 artifact: Optional[Union[str, Path]] = None,
+                 admin_token: Optional[str] = None, feedback_token: Optional[str] = None):
     """A :class:`~corerec.serving.ModelServer` that answers unknown users with popular items.
 
     feedback_log: JSONL path; turns on /feedback and /metrics.
     challenger: a second model for an A/B test, given ``challenger_share`` of users.
     artifact: the directory *model* came from; enables POST /reload after a retrain.
+    admin_token, feedback_token: bearer tokens for POST /reload and POST /feedback.
     """
     from corerec.serving.model_server import ModelServer
 
@@ -521,7 +523,8 @@ def build_server(model, manifest: Optional[Dict[str, Any]] = None, host: str = "
     reload_fn = (lambda: load_artifact(artifact)[0]) if artifact and challenger is None else None
     return ModelServer(models, host=host, port=port, metadata=manifest,
                        fallback_items=manifest.get("popular_items"), feedback_log=feedback_log,
-                       traffic=traffic, reload_fn=reload_fn)
+                       traffic=traffic, reload_fn=reload_fn,
+                       admin_token=admin_token, feedback_token=feedback_token)
 
 
 def parse_params(pairs: Sequence[str]) -> Dict[str, Any]:

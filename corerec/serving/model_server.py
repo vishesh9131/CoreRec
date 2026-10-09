@@ -128,7 +128,9 @@ class ModelServer:
             fallback_items: Optional[List[Any]] = None,
             feedback_log: Any = None,
             traffic: Optional[Dict[str, float]] = None,
-            reload_fn: Any = None):
+            reload_fn: Any = None,
+            admin_token: Optional[str] = None,
+            feedback_token: Optional[str] = None):
         """
         Initialize model server.
 
@@ -149,6 +151,11 @@ class ModelServer:
                 Users are assigned by a stable hash, so each sees one variant.
             reload_fn: zero-argument callable returning a fresh model; enables
                 POST /reload (e.g. after ``corerec retrain`` replaced the artifact).
+            admin_token: when set, POST /reload needs ``Authorization: Bearer <token>``.
+            feedback_token: when set, POST /feedback needs ``Authorization: Bearer <token>``.
+                Without them anyone who reaches the port can swap the model or
+                write clicks that retraining learns from; set both unless the
+                port is private.
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
@@ -166,6 +173,8 @@ class ModelServer:
         self.feedback_log = (feedback_log if feedback_log is None or isinstance(feedback_log, FeedbackLog)
                              else FeedbackLog(feedback_log))
         self.reload_fn = reload_fn
+        self.admin_token = admin_token
+        self.feedback_token = feedback_token
         self.host = host
         self.port = port
         self.metadata = metadata
@@ -319,13 +328,25 @@ class ModelServer:
                 self.logger.error(f"Batch recommendation error: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
 
+        def _check_token(http: "Request", token: Optional[str]) -> None:
+            if token is None:
+                return
+            import hmac
+
+            sent = http.headers.get("authorization", "")
+            # constant-time compare, so the token can't be guessed byte by byte
+            if not hmac.compare_digest(sent.encode(), f"Bearer {token}".encode()):
+                raise HTTPException(status_code=401, detail="missing or wrong bearer token",
+                                    headers={"WWW-Authenticate": "Bearer"})
+
         @self.app.post("/feedback")
-        async def feedback(request: FeedbackRequest):
+        async def feedback(request: FeedbackRequest, http: Request):
             """Record that a user clicked (or bought, ...) an item.
 
             Pass the request_id from the /recommend response so the click is
             credited to the list and variant that showed the item.
             """
+            _check_token(http, self.feedback_token)
             if self.feedback_log is None:
                 raise HTTPException(status_code=404, detail="feedback logging is off; "
                                     "start the server with a feedback log")
@@ -351,8 +372,9 @@ class ModelServer:
             return _no_nan(out)
 
         @self.app.post("/reload")
-        async def reload():
+        async def reload(http: Request):
             """Swap in a fresh model from reload_fn without restarting."""
+            _check_token(http, self.admin_token)
             if self.reload_fn is None or len(self.models) != 1:
                 raise HTTPException(status_code=404, detail="reload is not configured")
             name = next(iter(self.models))

@@ -98,6 +98,31 @@ Nightly with cron:
 0 3 * * *  corerec retrain /srv/artifacts/m --feedback /srv/feedback.jsonl && curl -s -X POST localhost:8000/reload
 ```
 
+### Protect /reload and /feedback
+
+By default anyone who can reach the port can swap the served model or write
+clicks that the next retrain learns from. Unless the port is private, give
+each endpoint a bearer token. Environment variables keep the tokens out of
+`ps` output and shell history:
+
+```bash
+export COREREC_ADMIN_TOKEN="$(openssl rand -hex 32)"     # POST /reload
+export COREREC_FEEDBACK_TOKEN="$(openssl rand -hex 32)"  # POST /feedback
+corerec serve artifacts/m --feedback-log feedback.jsonl
+```
+
+Callers then send the token:
+
+```bash
+curl -X POST localhost:8000/reload -H "Authorization: Bearer $COREREC_ADMIN_TOKEN"
+```
+
+A missing or wrong token gets `401`. `--admin-token` and `--feedback-token`
+set them on the command line instead, and in Python they are
+`ModelServer(..., admin_token=..., feedback_token=...)`. `/feedback` is
+usually called by your frontend's backend, not the browser, so its token stays
+server-side.
+
 Retrain needs a timestamp column in the data, to tell new rows from old.
 
 ## 5. Drift alerts

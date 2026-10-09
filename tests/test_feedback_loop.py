@@ -154,3 +154,32 @@ def test_log_lines_are_plain_json(tmp_path):
     log.impression(np.int64(3), [np.int64(1), 2])
     rec = json.loads((tmp_path / "fb.jsonl").read_text().splitlines()[0])
     assert rec["user_id"] == 3 and rec["items"] == [1, 2]
+
+
+def test_tokens_guard_reload_and_feedback(good, tmp_path):
+    """Without a token anyone reaching the port could swap the model or write
+    clicks that retrain learns from (#47)."""
+    server = ModelServer(good, feedback_log=tmp_path / "fb.jsonl", reload_fn=lambda: Worst(),
+                         admin_token="adm", feedback_token="fbk")
+    client = TestClient(server.app)
+    click = {"user_id": 0, "item_id": 1, "event": "click"}
+
+    assert client.post("/reload").status_code == 401
+    assert client.post("/reload", headers={"Authorization": "Bearer fbk"}).status_code == 401
+    assert client.post("/feedback", json=click).status_code == 401
+    assert client.post("/feedback", json=click, headers={"Authorization": "Bearer adm"}).status_code == 401
+    from corerec.serving.feedback import FeedbackLog
+    assert not any(r["type"] == "feedback" for r in FeedbackLog(tmp_path / "fb.jsonl").records())
+
+    assert client.post("/feedback", json=click, headers={"Authorization": "Bearer fbk"}).status_code == 200
+    r = client.post("/reload", headers={"Authorization": "Bearer adm"})
+    assert r.status_code == 200 and r.json()["model"] == "Worst"
+    # reading endpoints stay open
+    assert client.post("/recommend", json={"user_id": 0, "top_k": 3}).status_code == 200
+
+
+def test_no_tokens_keeps_endpoints_open(good, tmp_path):
+    server = ModelServer(good, feedback_log=tmp_path / "fb.jsonl", reload_fn=lambda: Worst())
+    client = TestClient(server.app)
+    assert client.post("/feedback", json={"user_id": 0, "item_id": 1}).status_code == 200
+    assert client.post("/reload").status_code == 200
