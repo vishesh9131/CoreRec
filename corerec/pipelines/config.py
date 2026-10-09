@@ -78,15 +78,30 @@ def load_pipeline_config(
         raise ValueError(f"Unsupported config format: {path.suffix}")
 
 
-def build_pipeline_from_config(config: Dict[str, Any]) -> "RecommendationPipeline":
+def build_pipeline_from_config(
+    config: Dict[str, Any],
+    fit: Optional[Dict[str, Dict[str, Any]]] = None,
+) -> "RecommendationPipeline":
     """
     Build a pipeline from configuration dict.
     
     This is a factory function that instantiates all components
     based on the config specification.
     
+    Retrievers come out of the config unfitted, since a YAML file can't
+    hold a trained model or interaction counts. Pass ``fit`` to fit them
+    here, keyed by component name (the ``name`` field, or the ``type``
+    when no name is set). The ranker is always fitted, with its ``fit``
+    entry if there is one::
+
+        pipeline = build_pipeline_from_config(config, fit={
+            'collaborative': {'model': sar},
+            'popularity': {'item_ids': ids, 'interaction_counts': counts},
+        })
+    
     Args:
         config: pipeline configuration
+        fit: component name -> kwargs for that component's ``fit()``
     
     Returns:
         Configured RecommendationPipeline
@@ -109,10 +124,13 @@ def build_pipeline_from_config(config: Dict[str, Any]) -> "RecommendationPipelin
     )
     
     # add retrievers
+    fit = dict(fit or {})
     retrieval_cfg = pipeline_config.get('retrieval', {})
     for source in retrieval_cfg.get('sources', []):
         retriever = _build_retriever(source)
         if retriever:
+            if retriever.name in fit:
+                retriever.fit(**fit.pop(retriever.name))
             pipeline.add_retriever(retriever, weight=source.get('weight', 1.0))
     
     # set ranker
@@ -120,7 +138,13 @@ def build_pipeline_from_config(config: Dict[str, Any]) -> "RecommendationPipelin
     if ranking_cfg:
         ranker = _build_ranker(ranking_cfg)
         if ranker:
+            # both config rankers work on their defaults, so always fit
+            ranker.fit(**fit.pop(ranker.name, {}))
             pipeline.set_ranker(ranker)
+    
+    # a typo'd key would otherwise leave a stage unfitted with no hint why
+    if fit:
+        raise ValueError(f"fit= keys {sorted(fit)} match no retriever or ranker in the config")
     
     # add rerankers
     reranking_cfg = pipeline_config.get('reranking', [])
