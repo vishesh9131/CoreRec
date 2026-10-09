@@ -48,7 +48,6 @@ KNOWN_STALE = {
     "engines/collaborative/index.md",
     "engines/index.md",
     "examples/index.md",
-    "getting-started/architecture.md",
     "utilities/index.md",
 }
 
