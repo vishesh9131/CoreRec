@@ -271,6 +271,8 @@ def retrain_command(args):
                          tolerance=args.tolerance, k=args.k, dry_run=args.dry_run)
     print(f"Data      {d['rows']:,} interactions, {d['new_rows']:,} new since the last training "
           f"({d['feedback_rows']:,} from feedback)")
+    if d["mode"] == "row order":
+        print("          no timestamps: rows appended to the file since the last training are new")
     if d["candidate"] is None:
         print(f"Kept      the current model: {d['reason']}")
         return d

@@ -99,11 +99,14 @@ def read_interactions(
     item_col: Optional[str] = None,
     rating_col: Optional[str] = None,
     timestamp_col: Optional[str] = None,
+    merge: bool = True,
 ):
     """Read a CSV/TSV/Parquet file into a frame with columns user, item, rating[, timestamp].
 
     Duplicate (user, item) rows are merged: weights are summed (so repeated
-    plays or clicks count up), and the latest timestamp is kept.
+    plays or clicks count up), and the latest timestamp is kept. With
+    ``merge=False`` every row is kept, with its position in the file in ``row``.
+    ``frame.attrs["source_rows"]`` is the number of rows in the file.
 
     Returns ``(frame, columns)`` where *columns* maps each role to the source
     column name it came from.
@@ -131,15 +134,19 @@ def read_interactions(
             # Works at any datetime resolution (pandas 3 may infer seconds or us).
             ts = (pd.to_datetime(ts, errors="coerce") - pd.Timestamp("1970-01-01")) // pd.Timedelta(seconds=1)
         df["timestamp"] = pd.to_numeric(ts, errors="coerce")
+    df["row"] = np.arange(len(raw))
     df = df.dropna(subset=["user", "item", "rating"])
     if df.empty:
         raise ValueError(f"{path} has no usable rows after dropping missing values")
 
-    agg = {"rating": "sum"}
-    if "timestamp" in df:
-        agg["timestamp"] = "max"
-    df = df.groupby(["user", "item"], as_index=False, sort=False).agg(agg)
-    return df.reset_index(drop=True), cols
+    if merge:
+        agg = {"rating": "sum"}
+        if "timestamp" in df:
+            agg["timestamp"] = "max"
+        df = df.groupby(["user", "item"], as_index=False, sort=False).agg(agg)
+    df = df.reset_index(drop=True)
+    df.attrs["source_rows"] = len(raw)
+    return df, cols
 
 
 def holdout_split(df: pd.DataFrame, test_fraction: float = 0.2, seed: int = 42):
@@ -233,6 +240,10 @@ class TrainResult:
             "popular_items": [_json_id(i) for i in self.popular],
             # newest event the model learned from; corerec retrain treats later rows as new
             "trained_through": self.extra.get("trained_through"),
+            # without timestamps: rows of the file it learned from (an append-only
+            # log grows past this) and the newest feedback event it saw
+            "trained_rows": self.extra.get("trained_rows"),
+            "feedback_through": self.extra.get("feedback_through"),
         }
 
     def report(self) -> str:
@@ -312,7 +323,10 @@ def train_from_csv(
     else:
         final = held_out
 
-    extra = {"trained_through": float(df["timestamp"].max())} if "timestamp" in df else {}
+    if "timestamp" in df:
+        extra = {"trained_through": float(df["timestamp"].max())}
+    else:
+        extra = {"trained_rows": df.attrs["source_rows"]}
     return TrainResult(model=final, model_name=model, params=params, columns=cols, stats=stats,
                        popular=popular_items(df), fit_seconds=fit_seconds, k=k,
                        metrics=metrics, baseline=baseline, source=str(path), extra=extra)
@@ -346,7 +360,10 @@ def retrain_artifact(
     *data* defaults to the file the artifact was trained on, re-read so rows
     appended since count. Clicks/purchases from a *feedback* log are added as
     interactions. Rows newer than the artifact's ``trained_through`` are the new
-    data, split in time into two halves:
+    data. A file without timestamps is taken as an append-only log: rows past
+    the ``trained_rows`` the artifact was trained on are new, in file order,
+    followed by feedback newer than ``feedback_through``. The new rows are split
+    in time into two halves:
 
     - candidate: trained on everything old plus the earlier half
     - both models are scored on the later half, which neither has seen, served
@@ -367,27 +384,47 @@ def retrain_artifact(
     source = data or manifest.get("source")
     if not source:
         raise ValueError("the artifact doesn't record its training file; pass data=")
-    cutoff = manifest.get("trained_through")
-    if cutoff is None:
-        raise ValueError("retrain needs to know which rows are new, and this artifact has no "
-                         "trained_through: train it from a file with a timestamp column "
-                         "(corerec 0.7.1+)")
+    cutoff, trained_rows = manifest.get("trained_through"), manifest.get("trained_rows")
+    if cutoff is None and trained_rows is None:
+        raise ValueError("retrain needs to know which rows are new, and this artifact records "
+                         "neither trained_through nor trained_rows: retrain it with "
+                         "corerec train first")
+    by_time = cutoff is not None
     cols = manifest.get("columns") or {}
     df, cols = read_interactions(source, user_col=cols.get("user"), item_col=cols.get("item"),
-                                 rating_col=cols.get("rating"), timestamp_col=cols.get("timestamp"))
-    if "timestamp" not in df:
-        raise ValueError(f"{source} has no timestamp column; retrain can't tell new rows from old")
-    n_feedback = 0
+                                 rating_col=cols.get("rating"), timestamp_col=cols.get("timestamp"),
+                                 merge=by_time)  # row order needs every row where it sits
+    source_rows = df.attrs["source_rows"]
+    if by_time and "timestamp" not in df:
+        raise ValueError(f"{source} has no timestamp column, but the artifact was trained on "
+                         "timestamps; retrain can't tell new rows from old")
+    if not by_time:
+        if source_rows < trained_rows:
+            raise ValueError(f"{source} has {source_rows} rows but the model was trained on "
+                             f"{trained_rows}; without timestamps retrain needs an append-only file")
+        # append-only log: a row's position in the file is its time
+        df["timestamp"] = df["row"].astype(float)
+        cutoff = trained_rows - 1
+    df = df.drop(columns="row", errors="ignore")
+    n_feedback, feedback_through = 0, manifest.get("feedback_through")
     if feedback:
         from corerec.serving.feedback import FeedbackLog
 
         fb = FeedbackLog(feedback).to_events().rename(columns={"user_id": "user", "item_id": "item"})
         n_feedback = len(fb)
+        if not by_time and len(fb):
+            # feedback has real times: older than what the model saw stays old,
+            # the rest goes after the file's rows, in time order
+            fb = fb.sort_values("timestamp", kind="stable")
+            seen = fb["timestamp"] <= (feedback_through if feedback_through is not None else -np.inf)
+            feedback_through = float(fb["timestamp"].max())
+            fb["timestamp"] = np.where(seen, -1.0, source_rows + np.cumsum(~seen) - 1.0)
         df = pd.concat([df, fb[["user", "item", "rating", "timestamp"]]], ignore_index=True)
 
     name, params = manifest["model"], manifest.get("params") or {}
     old, new = df[df["timestamp"] <= cutoff], df[df["timestamp"] > cutoff].sort_values("timestamp")
     decision = {"promoted": False, "would_promote": False, "model": name, "metric": f"NDCG@{k}",
+                "mode": "timestamps" if by_time else "row order",
                 "rows": len(df), "new_rows": len(new), "feedback_rows": n_feedback,
                 "data": str(source), "candidate": None, "current": None, "tolerance": tolerance}
     if len(new) < min_new_rows:
@@ -429,7 +466,9 @@ def retrain_artifact(
                              stats=stats, popular=popular_items(everything),
                              fit_seconds=time.perf_counter() - start, k=k, metrics=cand,
                              baseline=None, source=str(source),
-                             extra={"trained_through": float(everything["timestamp"].max())})
+                             extra={"trained_through": float(everything["timestamp"].max())}
+                             if by_time else {"trained_rows": source_rows,
+                                              "feedback_through": feedback_through})
         save_artifact(result, artifact)
         m = json.loads((artifact / MANIFEST).read_text())
         m["retrain"] = {k_: v for k_, v in decision.items() if k_ != "promoted"}
