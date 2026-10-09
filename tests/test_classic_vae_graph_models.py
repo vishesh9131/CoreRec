@@ -68,3 +68,39 @@ def test_save_load_roundtrip(fitted, tmp_path):
     after = reloaded.predict(int(u[0]), int(i[0]))
     assert abs(before - after) < 1e-4, f"{name} save/load mismatch"
     assert len(reloaded.recommend(0, top_k=5)) == 5
+
+
+@pytest.mark.parametrize("cls_name", ["MultVAE", "MultiDAE"])
+def test_model_loader_finds_vae_saved_with_a_custom_name(cls_name, tmp_path):
+    """ModelLoader picked the class from cfg["name"], the display name, so
+    MultVAE(name="my_vae") saved fine and then couldn't be loaded (#51)."""
+    import corerec.engines as engines
+    from corerec.serving import ModelLoader
+
+    cls = getattr(engines, cls_name)
+    m = cls(epochs=1, hidden_dim=16, latent_dim=4, name="my_vae")
+    m.fit([0, 0, 1, 1, 2], [1, 2, 2, 3, 1])
+    path = tmp_path / "v.pt"
+    m.save(str(path))
+
+    loaded = ModelLoader().load(str(path))
+    assert type(loaded) is cls
+    assert loaded.name == "my_vae"
+    assert loaded.recommend(0, top_k=2) == m.recommend(0, top_k=2)
+
+
+def test_model_loader_still_reads_vae_files_saved_before_cls_was_written(tmp_path):
+    import torch
+
+    from corerec.engines import MultiDAE
+    from corerec.serving import ModelLoader
+
+    m = MultiDAE(epochs=1, hidden_dim=16, latent_dim=4)
+    m.fit([0, 0, 1, 1, 2], [1, 2, 2, 3, 1])
+    path = tmp_path / "old.pt"
+    m.save(str(path))
+    ckpt = torch.load(path, map_location="cpu", weights_only=False)
+    del ckpt["cls"]  # what save() wrote before
+    torch.save(ckpt, path)
+
+    assert type(ModelLoader().load(str(path))) is MultiDAE
