@@ -8,16 +8,8 @@ from corerec.core.base_model import BaseModel
 from corerec.core.towers import UserTower, ItemTower, TowerFactory
 from corerec.core.losses import DotProductLoss, CosineLoss, InfoNCE
 
-# Optional imports that require transformers
-try:
-    from corerec.core.encoders import AbstractEncoder, TextEncoder, VisionEncoder
-
-    _ENCODERS_AVAILABLE = True
-except (ImportError, ModuleNotFoundError):
-    _ENCODERS_AVAILABLE = False
-    AbstractEncoder = None
-    TextEncoder = None
-    VisionEncoder = None
+# transformers is only needed once an encoder is built (corerec[transformers])
+from corerec.core.encoders import AbstractEncoder, TextEncoder, VisionEncoder
 
 __all__ = [
     "BaseModel",
@@ -27,7 +19,7 @@ __all__ = [
     "DotProductLoss",
     "CosineLoss",
     "InfoNCE",
+    "AbstractEncoder",
+    "TextEncoder",
+    "VisionEncoder",
 ]
-
-if _ENCODERS_AVAILABLE:
-    __all__.extend(["AbstractEncoder", "TextEncoder", "VisionEncoder"])
