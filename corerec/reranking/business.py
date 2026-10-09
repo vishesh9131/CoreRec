@@ -112,7 +112,7 @@ class BusinessRulesReranker(BaseReranker):
         rules configured at all.
 
         top_k truncates the output, same as the other rerankers. It used to be
-        swallowed by **kwargs and ignored.
+        swallowed by ``**kwargs`` and ignored.
         """
         start = time.perf_counter()
         
