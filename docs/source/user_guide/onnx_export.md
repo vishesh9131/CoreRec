@@ -14,7 +14,6 @@ pip install "corerec[onnx]"
 |---|---|---|
 | `TwoTower`, `DCN`, `DeepFM` | `user_index` int64 `[batch]` | `scores` float `[batch, n_items]` |
 | `SASRec` | `history` int64 `[batch, max_seq_length]` | `scores` float `[batch, n_items]` |
-| `MultVAE`, `MultiDAE` | `interactions` float32 `[batch, n_items]` | `scores` float `[batch, n_items]` |
 
 Column `j` of `scores` is the score of `item_ids[j]`, the same scores
 `model.recommend()` ranks. Classic models (ALS, EASE, ItemKNN, SAR, ...) are a
@@ -72,30 +71,6 @@ seq = [index[i] for i in history][-max_len:]
 x = np.zeros((1, max_len), dtype=np.int64)
 x[0, -len(seq):] = seq
 scores = sess.run(None, {"history": x})[0][0]
-```
-
-## MultVAE / MultiDAE input
-
-These score from what the user has interacted with, not from a user index, so
-the metadata has `item_ids` only. Column `j` is how many times the user
-interacted with `item_ids[j]`: the model trains on counts, so an item seen
-twice is 2, not 1. A user who wasn't in the training data can be scored the
-same way.
-
-```python
-from corerec.engines import MultVAE
-
-model = MultVAE(hidden_dim=64, latent_dim=16, epochs=10)
-model.fit(users, items, [1.0] * len(users))
-to_onnx(model, "vae.onnx")
-
-sess = ort.InferenceSession("vae.onnx")
-item_ids = json.loads(sess.get_modelmeta().custom_metadata_map["item_ids"])
-col = {item: j for j, item in enumerate(item_ids)}
-history = [i for u, i in zip(users, items) if u == users[0]]
-x = np.zeros((1, len(item_ids)), dtype=np.float32)
-np.add.at(x[0], [col[i] for i in history], 1)  # repeats add up
-scores = sess.run(None, {"interactions": x})[0][0]
 ```
 
 ## Notes

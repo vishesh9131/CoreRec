@@ -10,9 +10,6 @@ of ``item_ids[j]``, the same scores ``model.recommend()`` ranks. The input is
 - ``user_index`` int64 [batch]           TwoTower, DCN, DeepFM
 - ``history``    int64 [batch, max_len]  SASRec: item indices (1-based,
   ``item_ids[k-1]``), oldest first, left-padded with 0
-- ``interactions`` float32 [batch, n_items]  MultVAE, MultiDAE: the user's
-  row, column j = how many times they interacted with ``item_ids[j]`` (the
-  model trains on counts, so a repeat is 2, not 1)
 
 The raw ids live in the file's metadata (``user_ids``, ``item_ids`` as JSON, in
 index order), so the .onnx is all a server needs:
@@ -81,16 +78,6 @@ class _SASRecScores(nn.Module):
         return (h @ self.net.item_emb.weight.t())[:, 1:] - self.pop
 
 
-class _VAEScores(nn.Module):
-    def __init__(self, net):
-        super().__init__()
-        self.net = net
-
-    def forward(self, interactions):
-        # sample=False: score from the mean, as recommend() does
-        return self.net(interactions, sample=False)[0]
-
-
 def _ids(seq):
     return json.dumps([x.item() if isinstance(x, np.generic) else x for x in seq], default=str)
 
@@ -148,14 +135,8 @@ def _wrap(model):
         ex[:, -1] = 1
         return _SASRecScores(model.model, pop), ex, "history", {
             "item_ids": items, "max_seq_length": model.max_seq_length}
-    if name in ("MultVAE", "MultiDAE"):
-        # these score from the user's interaction row, not a user index, so a
-        # user unseen at fit time can still be scored from their history
-        ex = torch.zeros(2, model.num_items)
-        ex[:, 0] = 1
-        return _VAEScores(model.model), ex, "interactions", {"item_ids": _ordered(model.item_map)}
     raise NotImplementedError(
-        f"ONNX export supports TwoTower, DCN, DeepFM, SASRec, MultVAE, MultiDAE and corerec.nn.Recommender, not {name}. Classic models "
+        f"ONNX export supports TwoTower, DCN, DeepFM, SASRec and corerec.nn.Recommender, not {name}. Classic models "
         "(ALS, EASE, ItemKNN, ...) are a matrix lookup; serve them with ModelServer.")
 
 
