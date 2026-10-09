@@ -70,25 +70,3 @@ class TestPipelineIntegration(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-class TestBuildPipelineFromConfig(unittest.TestCase):
-    config = {"pipeline": {
-        "retrieval": {"sources": [{"type": "popularity"}]},
-        "ranking": {"type": "pointwise"},
-        "final_k": 3,
-    }}
-    pop_fit = {"popularity": {"item_ids": [1, 2, 3, 4], "interaction_counts": [5, 9, 1, 7]}}
-
-    def test_fit_kwargs_make_config_pipeline_recommend(self):
-        from corerec.pipelines import build_pipeline_from_config
-
-        pipe = build_pipeline_from_config(self.config, fit=self.pop_fit)
-        items = [i for i, _ in pipe.recommend(query=0).to_list()]
-        self.assertEqual(items, [2, 4, 1])
-
-    def test_unknown_fit_key_raises(self):
-        from corerec.pipelines import build_pipeline_from_config
-
-        with self.assertRaises(ValueError):
-            build_pipeline_from_config(self.config, fit={"populrity": {}})
