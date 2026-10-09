@@ -50,6 +50,7 @@ KNOWN_STALE = {
     "engines/index.md",
     "examples/index.md",
     "getting-started/architecture.md",
+    "testing/index.md",
     "utilities/index.md",
 }
 

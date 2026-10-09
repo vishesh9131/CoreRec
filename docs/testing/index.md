@@ -4,27 +4,36 @@ CoreRec includes a comprehensive test suite to ensure reliability and correctnes
 
 ## Test Organization
 
-Tests live flat in `tests/`, one file per concern rather than one per engine:
+CoreRec's tests are organized by engine and component:
 
 ```
 tests/
-├── test_all_production_models.py   # CI gate: import, fit, predict, recommend, save/load
-├── test_model_contract.py          # every interaction model meets the same API
-├── test_production_contract.py     # unified API, model by model
-├── test_mf_models.py               # ALS, Item2Vec
-├── test_classic_vae_graph_models.py # ItemKNN, UserKNN, EASE, SLIM, VAEs
-├── test_hstu.py
-├── test_nn.py                      # corerec.nn building blocks
-├── test_onnx_export.py
-├── test_safe_persistence.py        # safe bundle save/load
-├── test_serving_smoke.py           # ModelServer
-├── test_feedback_loop.py           # feedback, online metrics, drift
-├── test_pipeline_integration.py    # retrieval -> ranking pipelines
-├── test_docs_imports.py            # every import in docs/ resolves
-├── test_scale.py                   # regressions that only show at 100k users
-├── contentFilterEngine/
-│   └── tfidf_recommender_test.py
-└── conftest.py
+├── unionizedFilterEngine/          # Collaborative filtering tests
+│   ├── algorithms_smoke_test.py    # Quick smoke tests
+│   ├── mf_base_import_test.py      # Matrix factorization tests
+│   ├── nn_base_import_test.py      # Neural network tests
+│   ├── graph_based_base_import_test.py
+│   ├── attention_mechanism_base_import_test.py
+│   ├── bayesian_method_base_import_test.py
+│   ├── sequential_model_base_import_test.py
+│   └── variational_encoder_base_import_test.py
+│
+├── contentFilterEngine/            # Content-based filtering tests
+│   ├── all_algorithms_test.py
+│   ├── context_personalization_tests.py
+│   ├── embedding_rep_learning_tests.py
+│   ├── fairness_explainability_tests.py
+│   ├── graph_based_algorithms_tests.py
+│   ├── hybrid_ensemble_methods_tests.py
+│   ├── learning_paradigms_tests.py
+│   ├── nn_based_algorithms_tests.py
+│   ├── probabilistic_statistical_methods_tests.py
+│   ├── special_techniques_tests.py
+│   └── traditional_ml_algorithms_tests.py
+│
+├── engines_models_smoke_test.py    # Deep learning models tests
+├── test_integration.py             # Integration tests
+└── test_*.py                       # Individual model tests
 ```
 
 ## Running Tests
@@ -38,48 +47,46 @@ pytest tests/
 # Run with verbose output
 pytest tests/ -v
 
-# Run what CI runs (skips the slow docs build)
-pytest tests/ -m "not docs_build"
+# Run with coverage
+pytest tests/ --cov=corerec --cov-report=html
 ```
-
-`pyproject.toml` turns coverage on for every run (`--cov=corerec`, fails
-under 40%). Add `--no-cov` when you run a single file and don't want the
-coverage gate to fail it.
 
 ### Run Specific Test Categories
 
 ```bash
-# Production gate: every production model, end to end
-pytest tests/test_all_production_models.py
+# Run unionized filter tests
+pytest tests/unionizedFilterEngine/
 
-# Shared API contract
-pytest tests/test_model_contract.py
-
-# Content filter tests
+# Run content filter tests
 pytest tests/contentFilterEngine/
 
-# Serving and integration
-pytest tests/test_serving_smoke.py tests/test_pipeline_integration.py
+# Run engine smoke tests
+pytest tests/engines_models_smoke_test.py
+
+# Run integration tests
+pytest tests/test_integration.py
 ```
 
 ### Run Individual Test Files
 
 ```bash
-# Test one model across the contract
-pytest tests/test_model_contract.py -k dcn --no-cov
-pytest tests/test_model_contract.py -k deepfm --no-cov
+# Test specific algorithm
+pytest tests/test_DCN_base.py
+pytest tests/test_DeepFM_base.py
+pytest tests/test_GNN_base.py
 
-# Only the docs build tests, or everything but them
-pytest tests/ -m "docs_build"
-pytest tests/ -m "not docs_build"
+# Test with specific markers
+pytest tests/ -m "slow"
+pytest tests/ -m "not slow"
 ```
 
 ### Run Quick Smoke Tests
 
 ```bash
-# Quick checks that everything imports and the public API is in place
-pytest tests/test_imports.py tests/test_public_api.py --no-cov
-pytest tests/test_serving_smoke.py --no-cov
+# Quick smoke tests for all algorithms
+python tests/unionizedFilterEngine/algorithms_smoke_test.py
+python tests/contentFilterEngine/all_algorithms_test.py
+python tests/engines_models_smoke_test.py
 ```
 
 ## Test Types
@@ -89,19 +96,19 @@ pytest tests/test_serving_smoke.py --no-cov
 Test individual components and methods:
 
 ```python
-# tests/test_als_example.py
+# tests/test_SVD_base.py
 import pytest
-from corerec.engines import ALS
+from corerec.engines.unionizedFilterEngine.mf_base.SVD_base import SVD
 
-def test_als_initialization():
-    """Test ALS model initialization"""
-    model = ALS(factors=20, iterations=10)
-    assert model.factors == 20
-    assert model.iterations == 10
+def test_svd_initialization():
+    """Test SVD model initialization"""
+    model = SVD(n_factors=20, n_epochs=10)
+    assert model.n_factors == 20
+    assert model.n_epochs == 10
 
-def test_als_fit():
-    """Test ALS training"""
-    model = ALS(factors=10, iterations=5)
+def test_svd_fit():
+    """Test SVD training"""
+    model = SVD(n_factors=10, n_epochs=5)
     user_ids = [1, 1, 2, 2, 3]
     item_ids = [1, 2, 1, 3, 2]
     ratings = [5.0, 4.0, 4.0, 5.0, 3.0]
@@ -109,9 +116,9 @@ def test_als_fit():
     model.fit(user_ids, item_ids, ratings)
     assert model.is_fitted
 
-def test_als_predict():
-    """Test ALS prediction"""
-    model = ALS(factors=10, iterations=5)
+def test_svd_predict():
+    """Test SVD prediction"""
+    model = SVD(n_factors=10, n_epochs=5)
     user_ids = [1, 1, 2, 2, 3]
     item_ids = [1, 2, 1, 3, 2]
     ratings = [5.0, 4.0, 4.0, 5.0, 3.0]
@@ -119,10 +126,11 @@ def test_als_predict():
     model.fit(user_ids, item_ids, ratings)
     score = model.predict(user_id=1, item_id=1)
     assert isinstance(score, float)
+    assert 0 <= score <= 5
 
-def test_als_recommend():
-    """Test ALS recommendations"""
-    model = ALS(factors=10, iterations=5)
+def test_svd_recommend():
+    """Test SVD recommendations"""
+    model = SVD(n_factors=10, n_epochs=5)
     user_ids = [1, 1, 2, 2, 3]
     item_ids = [1, 2, 1, 3, 2]
     ratings = [5.0, 4.0, 4.0, 5.0, 3.0]
@@ -133,46 +141,49 @@ def test_als_recommend():
     assert len(recs) <= 2
 ```
 
-ALS is implicit-feedback: `predict()` is a preference score, not a rating
-on the 1-5 scale, so don't assert a range on it.
-
 ### 2. Integration Tests
 
 Test complete workflows:
 
 ```python
-# tests/test_integration_example.py
-import numpy as np
+# tests/test_integration.py
 import pytest
-from corerec.engines import DCN
-from corerec.evaluation import evaluate
+from corerec.engines.dcn import DCN
+from corerec.evaluation import evaluate_model
 
 def test_complete_workflow():
     """Test complete train-evaluate workflow"""
-    # Prepare data: 30 users, 60 items, 600 interactions
-    rng = np.random.default_rng(0)
-    user_ids = rng.integers(0, 30, 600).tolist()
-    item_ids = rng.integers(0, 60, 600).tolist()
-    ratings = [1.0] * len(user_ids)
+    # Prepare data
+    user_ids = list(range(1, 100))
+    item_ids = list(range(1, 50))
+    ratings = [float(i % 5 + 1) for i in range(len(user_ids))]
     
     # Split data
     train_size = int(0.8 * len(user_ids))
-    train = list(zip(user_ids, item_ids, ratings))[:train_size]
-    test = list(zip(user_ids, item_ids, ratings))[train_size:]
+    train_users = user_ids[:train_size]
+    train_items = item_ids[:train_size]
+    train_ratings = ratings[:train_size]
+    
+    test_users = user_ids[train_size:]
+    test_items = item_ids[train_size:]
+    test_ratings = ratings[train_size:]
     
     # Train model
     model = DCN(embedding_dim=16, num_cross_layers=2, epochs=5)
-    model.fit(*map(list, zip(*train)))
+    model.fit(train_users, train_items, train_ratings)
     
-    # Evaluate: ranking metrics through model.recommend(), seen items excluded
-    metrics = evaluate(model, test, train_interactions=train, k=10)
+    # Evaluate
+    metrics = evaluate_model(
+        model, test_users, test_items, test_ratings,
+        metrics=['rmse', 'mae']
+    )
     
-    assert "NDCG@10" in metrics
-    assert "Recall@10" in metrics
-    assert 0.0 <= metrics["NDCG@10"] <= 1.0
+    assert 'rmse' in metrics
+    assert 'mae' in metrics
+    assert metrics['rmse'] > 0
     
     # Get recommendations
-    recs = model.recommend(user_id=user_ids[0], top_k=10)
+    recs = model.recommend(user_id=1, top_k=10)
     assert len(recs) == 10
 ```
 
@@ -181,60 +192,75 @@ def test_complete_workflow():
 Quick sanity checks:
 
 ```python
-# tests/test_smoke_example.py
+# tests/engines_models_smoke_test.py
 """
-Smoke tests for deep learning models.
+Smoke tests for all deep learning models.
 Quick checks to ensure models can be imported and run.
 """
 
 def test_dcn_smoke():
     """Quick smoke test for DCN"""
-    from corerec.engines import DCN
+    from corerec.engines.dcn import DCN
     
     model = DCN(embedding_dim=8, num_cross_layers=1, epochs=1)
     users = [1, 2, 1, 3]
     items = [10, 10, 20, 30]
     ratings = [1, 0, 1, 0]
     
-    model.fit(users, items, ratings)
-    recs = model.recommend(1, top_k=3)
-    assert len(recs) > 0
+    try:
+        model.fit(users, items, ratings)
+        recs = model.recommend(1, top_n=3)
+        assert len(recs) > 0
+        print("✓ DCN smoke test passed")
+    except Exception as e:
+        print(f"✗ DCN smoke test failed: {e}")
 
 def test_deepfm_smoke():
     """Quick smoke test for DeepFM"""
-    from corerec.engines import DeepFM
+    from corerec.engines.deepfm import DeepFM
     
     model = DeepFM(embedding_dim=8, hidden_layers=[8], epochs=1)
     users = [1, 2, 1, 3]
     items = [10, 10, 20, 30]
     ratings = [1, 0, 1, 0]
     
-    model.fit(users, items, ratings)
-    recs = model.recommend(1, top_k=3)
-    assert len(recs) > 0
+    try:
+        model.fit(users, items, ratings)
+        recs = model.recommend(1, top_n=3)
+        assert len(recs) > 0
+        print("✓ DeepFM smoke test passed")
+    except Exception as e:
+        print(f"✗ DeepFM smoke test failed: {e}")
 ```
-
-Let a failure raise. A `try/except` that prints and carries on makes the
-test pass whatever happens.
 
 ### 4. Import Tests
 
 Verify all imports work:
 
 ```python
-# tests/test_import_example.py
-"""Test imports for the classic collaborative filtering models"""
+# tests/unionizedFilterEngine/mf_base_import_test.py
+"""Test imports for matrix factorization algorithms"""
+
+def test_svd_import():
+    try:
+        from corerec.engines.unionizedFilterEngine.mf_base.SVD_base import SVD
+        print("✓ SVD import successful")
+    except ImportError as e:
+        print(f"✗ SVD import failed: {e}")
 
 def test_als_import():
-    from corerec.engines import ALS
+    try:
+        from corerec.engines.unionizedFilterEngine.mf_base.ALS_base import ALS
+        print("✓ ALS import successful")
+    except ImportError as e:
+        print(f"✗ ALS import failed: {e}")
 
-def test_ease_import():
-    from corerec.engines import EASE
-
-def test_every_registered_model_imports():
-    import corerec.engines as engines
-    for name in engines.list_models():
-        getattr(engines, name)
+def test_nmf_import():
+    try:
+        from corerec.engines.unionizedFilterEngine.mf_base.nmf_base import NMF
+        print("✓ NMF import successful")
+    except ImportError as e:
+        print(f"✗ NMF import failed: {e}")
 ```
 
 ## Writing Tests
@@ -313,15 +339,15 @@ import pytest
 def sample_interactions():
     """Provide sample user-item interactions"""
     return {
-        'user_ids': [i % 20 for i in range(100)],
-        'item_ids': [i % 50 for i in range(100)],
+        'user_ids': list(range(1, 101)),
+        'item_ids': list(range(1, 51)),
         'ratings': [float(i % 5 + 1) for i in range(100)]
     }
 
 @pytest.fixture
 def trained_model(sample_interactions):
     """Provide a trained model"""
-    from corerec.engines import DCN
+    from corerec.engines.dcn import DCN
     model = DCN(embedding_dim=16, epochs=5)
     model.fit(**sample_interactions)
     return model
@@ -337,16 +363,16 @@ def test_with_trained_model(trained_model):
 ```python
 import pytest
 
-@pytest.mark.parametrize("factors,iterations", [
+@pytest.mark.parametrize("n_factors,n_epochs", [
     (10, 5),
     (20, 10),
     (50, 20)
 ])
-def test_als_with_different_params(factors, iterations):
-    """Test ALS with different hyperparameters"""
-    from corerec.engines import ALS
+def test_svd_with_different_params(n_factors, n_epochs):
+    """Test SVD with different hyperparameters"""
+    from corerec.engines.unionizedFilterEngine.mf_base.SVD_base import SVD
     
-    model = ALS(factors=factors, iterations=iterations)
+    model = SVD(n_factors=n_factors, n_epochs=n_epochs)
     user_ids = [1, 1, 2, 2, 3]
     item_ids = [1, 2, 1, 3, 2]
     ratings = [5.0, 4.0, 4.0, 5.0, 3.0]
@@ -369,12 +395,11 @@ open htmlcov/index.html
 
 ## Continuous Integration
 
-CoreRec uses GitHub Actions for CI. The model tests job in
-`.github/workflows/ci.yml` looks like this (trimmed):
+CoreRec uses GitHub Actions for CI:
 
 ```yaml
-# .github/workflows/ci.yml
-name: CI
+# .github/workflows/tests.yml
+name: Tests
 
 on: [push, pull_request]
 
@@ -383,22 +408,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: [3.8, 3.9, 3.10, 3.11]
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v2
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip install torch --index-url https://download.pytorch.org/whl/cpu
-        pip install -e ".[dev,serving,onnx]"
+        pip install -e .
+        pip install pytest pytest-cov
     - name: Run tests
-      run: |
-        python -m pytest tests/ -v --tb=short --strict-markers \
-          -m "not docs_build" --cov=corerec --cov-fail-under=40
+      run: pytest tests/ --cov=corerec
 ```
 
 ## Test Examples
@@ -409,7 +432,7 @@ jobs:
 # tests/test_complete_example.py
 import pytest
 import numpy as np
-from corerec.engines import DCN
+from corerec.engines.dcn import DCN
 
 class TestDCNComplete:
     """Complete test suite for DCN"""
@@ -426,12 +449,12 @@ class TestDCNComplete:
     
     @pytest.fixture
     def data(self):
-        rng = np.random.default_rng(42)
+        np.random.seed(42)
         n = 100
         return {
-            'user_ids': rng.integers(1, 20, n).tolist(),
-            'item_ids': rng.integers(1, 50, n).tolist(),
-            'ratings': rng.uniform(1, 5, n).tolist()
+            'user_ids': np.random.randint(1, 20, n).tolist(),
+            'item_ids': np.random.randint(1, 50, n).tolist(),
+            'ratings': np.random.uniform(1, 5, n).tolist()
         }
     
     def test_initialization(self, model):
@@ -445,23 +468,23 @@ class TestDCNComplete:
     
     def test_predict(self, model, data):
         model.fit(**data)
-        score = model.predict(user_id=data['user_ids'][0], item_id=data['item_ids'][0])
+        score = model.predict(user_id=1, item_id=1)
         assert isinstance(score, (int, float))
     
     def test_recommend(self, model, data):
         model.fit(**data)
-        recs = model.recommend(user_id=data['user_ids'][0], top_k=5)
+        recs = model.recommend(user_id=1, top_k=5)
         assert len(recs) <= 5
     
     def test_batch_predict(self, model, data):
         model.fit(**data)
-        pairs = list(zip(data['user_ids'][:3], data['item_ids'][:3]))
+        pairs = [(1, 1), (2, 2), (3, 3)]
         scores = model.batch_predict(pairs)
         assert len(scores) == 3
     
     def test_batch_recommend(self, model, data):
         model.fit(**data)
-        users = sorted(set(data['user_ids']))[:3]
+        users = [1, 2, 3]
         recs = model.batch_recommend(users, top_k=5)
         assert len(recs) == 3
         for user_recs in recs.values():
@@ -470,15 +493,17 @@ class TestDCNComplete:
 
 ## Running the Test Suite
 
-There is no separate test runner; use pytest directly:
+Use the provided test runner:
 
 ```bash
-# What CI runs
-python -m pytest tests/ -m "not docs_build"
+# Run all algorithm tests
+python examples/run_all_algo_tests_example.py
 
-# Just the production gate, fastest useful check before a PR
-python -m pytest tests/test_all_production_models.py tests/test_model_contract.py --no-cov
+# Custom test runner
+python corerec/run_algo_tests.py
 ```
 
 ## Next Steps
+
+
 
