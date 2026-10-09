@@ -47,7 +47,6 @@ Where things live:
 | `corerec/serving/` | `ModelServer`, feedback log, retrain, CLI artifacts |
 | `corerec/export.py` | ONNX export |
 | `corerec/evaluation/` | Metrics and evaluators |
-| `corerec/sandbox/` | Experimental models: not tested in CI, not production |
 | `tests/` | One pytest suite; CI runs all of it |
 | `docs/source/` | Sphinx docs (Markdown via MyST) |
 
