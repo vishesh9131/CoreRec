@@ -70,11 +70,48 @@ def test_feedback_clicks_count_as_new_data(files):
     assert d["feedback_rows"] == 300 and d["new_rows"] == 300
 
 
-def test_artifact_without_timestamps_is_refused(tmp_path):
-    pd.read_csv(SAMPLE).drop(columns="timestamp").head(3000).to_csv(tmp_path / "e.csv", index=False)
+def test_append_only_file_without_timestamps_is_retrained(tmp_path):
+    """No time column: rows appended since the last training are the new data (#48)."""
+    df = pd.read_csv(SAMPLE).sort_values("timestamp").head(12000).drop(columns="timestamp")
+    n = int(len(df) * 0.7)
+    log = tmp_path / "log.csv"
+    df.iloc[:n].to_csv(log, index=False)
+    art = tmp_path / "a"
+    save_artifact(train_from_csv(log, model="ItemKNN", evaluate=False), art)
+    assert json.loads((art / "manifest.json").read_text())["trained_rows"] == n
+
+    assert retrain_artifact(art)["new_rows"] == 0  # same file, nothing new
+
+    df.to_csv(log, index=False)  # the log grew
+    d = retrain_artifact(art)
+    assert d["mode"] == "row order"
+    assert d["new_rows"] == len(df) - n
+    assert d["current"] > 0, "the deployed model must be scored on rows it hasn't seen"
+    if d["promoted"]:
+        assert json.loads((art / "manifest.json").read_text())["trained_rows"] == len(df)
+
+
+def test_rewritten_file_without_timestamps_is_refused(tmp_path):
+    df = pd.read_csv(SAMPLE).drop(columns="timestamp").head(3000)
+    df.to_csv(tmp_path / "e.csv", index=False)
     save_artifact(train_from_csv(tmp_path / "e.csv", model="ItemKNN", evaluate=False), tmp_path / "a")
-    with pytest.raises(ValueError, match="trained_through"):
+    df.head(1000).to_csv(tmp_path / "e.csv", index=False)  # shrank: not append-only
+    with pytest.raises(ValueError, match="append-only"):
         retrain_artifact(tmp_path / "a")
+
+
+def test_feedback_counts_as_new_data_without_timestamps(tmp_path):
+    from corerec.serving.feedback import FeedbackLog
+
+    df = pd.read_csv(SAMPLE).drop(columns="timestamp").head(6000)
+    df.to_csv(tmp_path / "e.csv", index=False)
+    art = tmp_path / "a"
+    save_artifact(train_from_csv(tmp_path / "e.csv", model="ItemKNN", evaluate=False), art)
+    log = FeedbackLog(tmp_path / "fb.jsonl")
+    for u, i in df.sample(300, random_state=0)[["user_id", "item_id"]].itertuples(index=False):
+        log.feedback(u, i, request_id=log.impression(u, [i]))
+    d = retrain_artifact(art, feedback=tmp_path / "fb.jsonl", min_new_rows=50, dry_run=True)
+    assert d["mode"] == "row order" and d["feedback_rows"] == 300 and d["new_rows"] == 300
 
 
 def test_served_artifact_reloads_after_retrain(files):
