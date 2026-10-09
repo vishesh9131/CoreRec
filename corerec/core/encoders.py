@@ -9,7 +9,18 @@ import torch
 import torch.nn as nn
 from typing import Dict, Any, Union, Optional, List, Tuple
 from abc import ABC, abstractmethod
-from transformers import AutoModel, AutoTokenizer, AutoImageProcessor, AutoFeatureExtractor
+
+
+def _transformers():
+    # transformers is an optional extra; import it when an encoder is built so
+    # `import corerec.core.encoders` works without it
+    try:
+        import transformers
+    except ImportError as exc:
+        raise ImportError(
+            "TextEncoder/VisionEncoder need HuggingFace transformers: "
+            'pip install "corerec[transformers]"') from exc
+    return transformers
 
 
 class AbstractEncoder(nn.Module, ABC):
@@ -80,8 +91,9 @@ class TextEncoder(AbstractEncoder):
         self.max_length = config.get("max_length", 512)
 
         # Load model and tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        self.model = AutoModel.from_pretrained(self.model_name)
+        hf = _transformers()
+        self.tokenizer = hf.AutoTokenizer.from_pretrained(self.model_name)
+        self.model = hf.AutoModel.from_pretrained(self.model_name)
 
         # Freeze model if not trainable
         if not config.get("trainable", False):
@@ -186,14 +198,15 @@ class VisionEncoder(AbstractEncoder):
         self.image_size = config.get("image_size", 224)
 
         # Load model and processor
+        hf = _transformers()
         try:
-            self.processor = AutoImageProcessor.from_pretrained(
+            self.processor = hf.AutoImageProcessor.from_pretrained(
                 self.model_name)
         except Exception:
-            self.processor = AutoFeatureExtractor.from_pretrained(
+            self.processor = hf.AutoFeatureExtractor.from_pretrained(
                 self.model_name)
 
-        self.model = AutoModel.from_pretrained(self.model_name)
+        self.model = hf.AutoModel.from_pretrained(self.model_name)
 
         # Freeze model if not trainable
         if not config.get("trainable", False):
