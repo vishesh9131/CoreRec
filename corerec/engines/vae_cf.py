@@ -162,7 +162,9 @@ class _VAEBase(BaseRecommender):
 
     def save(self, path: Union[str, Path], **kwargs) -> None:
         p = Path(path); p.parent.mkdir(parents=True, exist_ok=True)
-        torch.save({"cfg": {"name": self.name, "hidden_dim": self.hidden_dim,
+        # "cls" is what ModelLoader reads; cfg["name"] is a display name and may be custom
+        torch.save({"cls": type(self).__name__,
+                    "cfg": {"name": self.name, "hidden_dim": self.hidden_dim,
                             "latent_dim": self.latent_dim, "dropout": self.dropout,
                             "learning_rate": self.learning_rate, "batch_size": self.batch_size,
                             "epochs": self.epochs, "beta": self.beta, "reg": self.reg,
