@@ -1,332 +1,104 @@
 # Contributing to CoreRec
 
-First off, thank you for considering contributing to CoreRec! It's people like you that make CoreRec such a great tool for the recommendation systems community.
+Thanks for helping. This page gets you from a fresh clone to a merged pull
+request. Every command here is what CI runs, so if it passes locally it should
+pass on the PR.
 
-## 📋 Table of Contents
+## Find something to work on
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [How to Contribute](#how-to-contribute)
-- [Coding Standards](#coding-standards)
-- [Testing](#testing)
-- [Documentation](#documentation)
-- [Pull Request Process](#pull-request-process)
+- Issues labelled [`good first issue`](https://github.com/vishesh9131/CoreRec/labels/good%20first%20issue)
+  are scoped to one or two files and say which test proves the fix.
+- Comment on the issue before starting so two people don't do the same work.
+- For anything larger (a new model, an API change), open an issue first and
+  describe the change. It saves a rewrite later.
 
-## 🤝 Code of Conduct
+## Set up
 
-This project and everyone participating in it is governed by our commitment to providing a welcoming and inspiring community for all. Please be respectful and constructive.
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Python 3.7 or higher
-- Git
-- Familiarity with recommendation systems (helpful but not required)
-
-### Finding an Issue to Work On
-
-1. Check the [Issues](https://github.com/vishesh9131/CoreRec/issues) page
-2. Look for issues labeled `good first issue` or `help wanted`
-3. Comment on the issue to let others know you're working on it
-
-## 💻 Development Setup
-
-### 1. Fork and Clone
+Python 3.10 or newer. On Apple Silicon use a native arm64 Python
+(for example Miniforge arm64); an x86_64 Python runs under Rosetta and is
+several times slower.
 
 ```bash
-# Fork the repository on GitHub, then clone your fork
-git clone https://github.com/YOUR_USERNAME/CoreRec.git
+git clone https://github.com/<your-username>/CoreRec.git
 cd CoreRec
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev,serving,onnx]"
 ```
 
-### 2. Set Up Development Environment
+Check the install:
 
 ```bash
-# Create a virtual environment
-python -m venv venv
-
-# Activate it
-# On macOS/Linux:
-source venv/bin/activate
-# On Windows:
-# venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements-dev.txt
-
-# Install CoreRec in editable mode
-pip install -e .
+python -m pytest tests/test_model_contract.py -q
 ```
 
-### 3. Set Up Pre-commit Hooks (Optional but Recommended)
+## Make a change
 
 ```bash
-pre-commit install
+git checkout -b fix/short-description
 ```
 
-### 4. Create a Branch
+Where things live:
+
+| Path | What |
+|---|---|
+| `corerec/engines/` | The production models (`corerec models` lists them) |
+| `corerec/nn/` | Building blocks and `Recommender` for custom torch models |
+| `corerec/serving/` | `ModelServer`, feedback log, retrain, CLI artifacts |
+| `corerec/export.py` | ONNX export |
+| `corerec/evaluation/` | Metrics and evaluators |
+| `corerec/sandbox/` | Experimental models: not tested in CI, not production |
+| `tests/` | One pytest suite; CI runs all of it |
+| `docs/source/` | Sphinx docs (Markdown via MyST) |
+
+## Test
+
+Run the suite the way CI does:
 
 ```bash
-git checkout -b feature/your-feature-name
-# or
-git checkout -b fix/your-bug-fix
+python -m pytest tests/ --tb=short --strict-markers -m "not docs_build" \
+    --cov=corerec --cov-fail-under=40
 ```
 
-## 🔧 How to Contribute
+The slow MovieLens-100K accuracy floors in `tests/test_benchmark_floors.py`
+skip themselves unless the dataset is present.
 
-### Reporting Bugs
+What a fix needs:
 
-1. Check if the bug has already been reported
-2. If not, create a new issue with:
-   - Clear title and description
-   - Steps to reproduce
-   - Expected vs actual behavior
-   - Your environment (OS, Python version, CoreRec version)
-   - Code samples if applicable
+- **A test that fails without the fix.** Put it next to related tests, and
+  say in its docstring what used to go wrong.
+- **Production models keep the shared contract.** `tests/test_model_contract.py`
+  runs every model in `corerec.engines.MODELS` through `fit`, `recommend`,
+  `exclude_items`, save/load and `ModelLoader`. A model that can't meet it goes
+  in `KNOWN_DIVERGENT` with a reason; don't loosen the assertions.
+- **No silent failures.** Don't swallow exceptions with `except Exception: pass`
+  or turn an import error into `X = None`. Raise, or log and count it.
 
-### Suggesting Enhancements
-
-1. Check if the enhancement has been suggested
-2. Create an issue describing:
-   - Use case and motivation
-   - Proposed API or implementation
-   - Examples of how it would be used
-
-### Adding New Algorithms
-
-1. Place the algorithm in the appropriate engine:
-   - `corerec/engines/collaborative/` for collaborative filtering
-   - `corerec/engines/content_based/` for content-based
-   - `corerec/engines/` for deep learning models
-
-2. Ensure it inherits from `BaseRecommender`
-
-3. Implement required methods:
-   - `fit()`
-   - `predict()`
-   - `recommend()`
-
-4. Add comprehensive docstrings
-
-5. Include unit tests
-
-6. Add example usage in `examples/`
-
-## 📝 Coding Standards
-
-### Style Guide
-
-We follow PEP 8 with some modifications:
-
-- Line length: 100 characters (not 79)
-- Use Black for code formatting
-- Use isort for import sorting
+Lint (CI runs this exact check):
 
 ```bash
-# Format your code
-black corerec/
-isort corerec/
-
-# Check linting
-flake8 corerec/
-pylint corerec/
+ruff check . --select=E9,F63,F7,F82 --no-fix
 ```
 
-### Type Hints
+## Docs
 
-All public functions should have type hints:
-
-```python
-def recommend(
-    self, 
-    user_id: int, 
-    top_k: int = 10
-) -> List[Tuple[int, float]]:
-    """
-    Generate recommendations for a user.
-    
-    Args:
-        user_id: User identifier
-        top_k: Number of recommendations to return
-        
-    Returns:
-        List of (item_id, score) tuples
-    """
-    pass
-```
-
-### Documentation
-
-- All public classes, methods, and functions need docstrings
-- Follow NumPy/Google docstring format
-- Include examples in docstrings where helpful
-
-```python
-def fit(self, data: pd.DataFrame) -> 'BaseRecommender':
-    """
-    Train the recommendation model.
-    
-    Args:
-        data: Training data with columns ['user_id', 'item_id', 'rating']
-        
-    Returns:
-        Self for method chaining
-        
-    Example:
-        >>> model = MyRecommender()
-        >>> model.fit(train_data).save('model.pkl')
-    """
-    pass
-```
-
-### Import Organization
-
-```python
-# Standard library imports
-import os
-from typing import List, Dict
-
-# Third-party imports
-import numpy as np
-import pandas as pd
-import torch
-
-# Local imports
-from corerec.api.base_recommender import BaseRecommender
-from corerec.utils import logging
-```
-
-## 🧪 Testing
-
-### Running Tests
+If you change behaviour a user sees, update the page in `docs/source/` and
+`CHANGELOG.md` (under `[Unreleased]`). Code in docs must run as written. Build
+locally with:
 
 ```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=corerec --cov-report=html
-
-# Run specific test file
-pytest tests/test_dcn.py
-
-# Run tests in parallel
-pytest -n auto
+pip install sphinx sphinx-book-theme sphinx-copybutton sphinx-design myst-parser
+python -m sphinx -b html docs/source docs/build/html
 ```
 
-### Writing Tests
+## Open the pull request
 
-- Place tests in `tests/` directory
-- Mirror the source structure
-- Use descriptive test names
-- Aim for >80% code coverage
+- One change per PR. Link the issue (`Fixes #123`).
+- Describe what was wrong, how you fixed it, and how you tested it. Numbers
+  help: before/after timings, NDCG, memory.
+- Keep commits as your own work under your own GitHub account.
+- CI must be green. A maintainer reviews, may ask for changes, then merges.
 
-```python
-import pytest
-from corerec.engines import DCN
+## Questions
 
-class TestDCN:
-    @pytest.fixture
-    def sample_data(self):
-        return {
-            'user_ids': [1, 2, 3],
-            'item_ids': [1, 2, 3],
-            'ratings': [5.0, 4.0, 3.0]
-        }
-    
-    def test_dcn_initialization(self):
-        model = DCN(embedding_dim=64)
-        assert model.embedding_dim == 64
-    
-    def test_dcn_fit(self, sample_data):
-        model = DCN()
-        model.fit(**sample_data)
-        assert model.is_fitted
-```
-
-## 📚 Documentation
-
-### Building Documentation
-
-```bash
-cd docs/
-mkdocs serve
-# Visit http://localhost:8000
-```
-
-### Adding Documentation
-
-- Update `docs/` for user-facing documentation
-- Ensure docstrings are comprehensive for API docs
-- Add examples to `examples/` directory
-
-## 🔄 Pull Request Process
-
-### Before Submitting
-
-1. ✅ Run all tests and ensure they pass
-2. ✅ Run linters (black, flake8, mypy)
-3. ✅ Update documentation if needed
-4. ✅ Add tests for new features
-5. ✅ Update CHANGELOG.md
-
-### Submitting PR
-
-1. Push to your fork
-2. Create a pull request against `main` branch
-3. Fill out the PR template:
-   - Description of changes
-   - Related issue number
-   - Type of change (bug fix, feature, docs, etc.)
-   - Checklist confirmation
-
-4. Wait for review
-5. Address feedback
-6. Once approved, maintainers will merge
-
-### PR Guidelines
-
-- Keep PRs focused (one feature/fix per PR)
-- Write clear commit messages
-- Reference related issues
-- Update documentation
-- Add tests
-
-### Commit Message Format
-
-```
-type(scope): Short description
-
-Longer description if needed
-
-Fixes #123
-```
-
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
-
-Example:
-```
-feat(engines): Add BERT-based content recommender
-
-Implement a new content-based recommender using BERT embeddings
-for better semantic understanding of item descriptions.
-
-Fixes #456
-```
-
-## ❓ Questions?
-
-- Open an issue with the `question` label
-- Email: vishesh@corerec.tech
-- Join our discussions on GitHub
-
-## 🙏 Thank You!
-
-Your contributions help make CoreRec better for everyone in the recommendation systems community!
-
----
-
-**Happy Coding! 🚀**
-
+Open an issue with the `question` label, or email vishesh@corerec.tech.
