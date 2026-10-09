@@ -27,6 +27,23 @@ def test_evaluator_strict_reraises():
         Evaluator(metrics=["ndcg@10"]).evaluate(_Broken(), {1: [1]}, strict=True)
 
 
+def test_evaluator_asks_for_enough_items_for_deep_metrics():
+    """Evaluator always requested 20 items, so recall@50 counted ranks 21..50
+    as misses (#50). Both relevant items here are in the top 50."""
+    from corerec.evaluation import Evaluator
+
+    asked = []
+
+    class Model:
+        def recommend(self, user_id, top_k=10, **kw):
+            asked.append(top_k)
+            return list(range(top_k))
+
+    out = Evaluator(metrics=["recall@50", "ndcg@10"]).evaluate(Model(), {0: [30, 40]})
+    assert out["recall@50"] == 1.0
+    assert asked == [50]
+
+
 def test_cross_validate_runs_the_documented_call():
     from corerec.engines import ItemKNN
     from corerec.evaluation import CrossValidator
