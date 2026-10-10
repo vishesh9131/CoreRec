@@ -397,6 +397,8 @@ def retrain_artifact(
     k: int = 10,
     min_new_rows: int = 100,
     dry_run: bool = False,
+    *,
+    allow_pickle: bool = False,
 ) -> Dict[str, Any]:
     """Retrain the model in *artifact* on new data; replace it only if it isn't worse.
 
@@ -423,7 +425,7 @@ def retrain_artifact(
     from corerec.evaluation.evaluate import evaluate as run_eval
 
     artifact = Path(artifact)
-    current, manifest = load_artifact(artifact)
+    current, manifest = load_artifact(artifact, allow_pickle=allow_pickle)
     source = data or manifest.get("source")
     if not source:
         raise ValueError("the artifact doesn't record its training file; pass data=")
@@ -534,15 +536,16 @@ def is_artifact(path: Union[str, Path]) -> bool:
     return (Path(path) / MANIFEST).is_file()
 
 
-def load_artifact(path: Union[str, Path]):
+def load_artifact(path: Union[str, Path], *, allow_pickle: bool = False):
     """Load ``(model, manifest)`` from a directory written by :func:`save_artifact`.
 
-    Some classic models persist with pickle, so only load artifacts you made
-    or trust.
+    Safe bundles load by default. Legacy artifacts require allow_pickle=True
+    explicitly and must come from a trusted source.
     """
     path = Path(path)
     manifest = json.loads((path / MANIFEST).read_text())
-    model = _model_class(manifest["model"]).load(str(path / MODEL_FILE))
+    load_kwargs = {"allow_pickle": True} if allow_pickle else {}
+    model = _model_class(manifest["model"]).load(str(path / MODEL_FILE), **load_kwargs)
     return model, manifest
 
 
@@ -550,7 +553,8 @@ def build_server(model, manifest: Optional[Dict[str, Any]] = None, host: str = "
                  port: int = 8000, feedback_log: Optional[Union[str, Path]] = None,
                  challenger: Optional[Any] = None, challenger_share: float = 0.1,
                  artifact: Optional[Union[str, Path]] = None,
-                 admin_token: Optional[str] = None, feedback_token: Optional[str] = None):
+                 admin_token: Optional[str] = None, feedback_token: Optional[str] = None,
+                 allow_pickle: bool = False):
     """A :class:`~corerec.serving.ModelServer` that answers unknown users with popular items.
 
     feedback_log: JSONL path; turns on /feedback and /metrics.
@@ -565,7 +569,7 @@ def build_server(model, manifest: Optional[Dict[str, Any]] = None, host: str = "
     if challenger is not None:
         models = {"control": model, "challenger": challenger}
         traffic = {"control": 1 - challenger_share, "challenger": challenger_share}
-    reload_fn = (lambda: load_artifact(artifact)[0]) if artifact and challenger is None else None
+    reload_fn = (lambda: load_artifact(artifact, allow_pickle=allow_pickle)[0]) if artifact and challenger is None else None
     return ModelServer(models, host=host, port=port, metadata=manifest,
                        fallback_items=manifest.get("popular_items"), feedback_log=feedback_log,
                        traffic=traffic, reload_fn=reload_fn,

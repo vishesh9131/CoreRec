@@ -98,12 +98,12 @@ def test_model_loader_still_reads_vae_files_saved_before_cls_was_written(tmp_pat
     m = MultiDAE(epochs=1, hidden_dim=16, latent_dim=4)
     m.fit([0, 0, 1, 1, 2], [1, 2, 2, 3, 1])
     path = tmp_path / "old.pt"
-    m.save(str(path))
+    m.save(str(path), safe=False)
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
     del ckpt["cls"]  # what save() wrote before
     torch.save(ckpt, path)
 
-    assert type(ModelLoader().load(str(path))) is MultiDAE
+    assert type(ModelLoader().load(str(path), allow_pickle=True)) is MultiDAE
 
 
 @pytest.mark.parametrize("cls_name", ["MultVAE", "MultiDAE"])
@@ -123,7 +123,10 @@ def test_vae_trains_on_a_binary_matrix_unless_told_not_to(cls_name, tmp_path):
     counts.save(str(path))
     assert cls.load(str(path)).binarize is False
     # bundles written before binarize existed trained on counts
+    legacy = tmp_path / "legacy.pt"
+    counts.save(str(legacy), safe=False)
+    path = legacy
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
     del ckpt["cfg"]["binarize"]
     torch.save(ckpt, path)
-    assert cls.load(str(path)).binarize is False
+    assert cls.load(str(path), allow_pickle=True).binarize is False

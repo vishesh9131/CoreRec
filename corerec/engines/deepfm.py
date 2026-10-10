@@ -563,7 +563,7 @@ class DeepFM(BaseRecommender):
             logger.info(f"{self.name} model saved to {path}")
 
     @classmethod
-    def load(cls, path: Union[str, Path], **kwargs) -> "DeepFM":
+    def load(cls, path: Union[str, Path], *, allow_pickle: bool = False, **kwargs) -> "DeepFM":
         """
         Load the model from disk.
 
@@ -593,7 +593,7 @@ class DeepFM(BaseRecommender):
                     use_sigmoid=(getattr(instance, "_fit_task", "implicit") != "rating"),
                 )
 
-        loaded = load_torch_production(cls, path, build_model=_build, restore=_restore)
+        loaded = load_torch_production(cls, path, build_model=_build, restore=_restore, allow_pickle=allow_pickle)
         if loaded is not None:
             if loaded.verbose:
                 logger.info(f"{loaded.name} model loaded (safe bundle) from {path}")

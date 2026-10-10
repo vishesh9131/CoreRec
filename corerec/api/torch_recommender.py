@@ -199,7 +199,7 @@ class TorchRecommender(BaseRecommender):
             raise ValueError(f"Unsupported format: {format}. Use 'torch' or 'pickle'")
 
     @classmethod
-    def load(cls, path: Union[str, Path]) -> "TorchRecommender":
+    def load(cls, path: Union[str, Path], *, allow_pickle: bool = False) -> "TorchRecommender":
         """
         Load model from disk.
 
@@ -209,12 +209,15 @@ class TorchRecommender(BaseRecommender):
         Returns:
             Loaded model instance
         """
+        from corerec.api.model_bundle import require_legacy_pickle
+        require_legacy_pickle(path, allow_pickle)
+
         path = Path(path)
 
         # Try to detect format
         try:
             # Try loading as torch checkpoint
-            checkpoint = torch.load(path, map_location="cpu")
+            checkpoint = torch.load(path, map_location="cpu", weights_only=False)
 
             if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
                 # This is a torch checkpoint - subclass must override

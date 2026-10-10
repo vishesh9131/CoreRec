@@ -165,10 +165,11 @@ class _VAEBase(BaseRecommender):
                 break
         return out
 
-    def save(self, path: Union[str, Path], **kwargs) -> None:
-        p = Path(path); p.parent.mkdir(parents=True, exist_ok=True)
+    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
+        self._check_fitted()
+        p = Path(path)
         # "cls" is what ModelLoader reads; cfg["name"] is a display name and may be custom
-        torch.save({"cls": type(self).__name__,
+        payload = {"cls": type(self).__name__,
                     "cfg": {"name": self.name, "hidden_dim": self.hidden_dim,
                             "latent_dim": self.latent_dim, "dropout": self.dropout,
                             "learning_rate": self.learning_rate, "batch_size": self.batch_size,
@@ -176,11 +177,35 @@ class _VAEBase(BaseRecommender):
                             "device": self.device, "seed": self.seed, "binarize": self.binarize},
                     "user_map": self.user_map, "item_map": self.item_map,
                     "num_users": self.num_users, "num_items": self.num_items,
-                    "R": self.R, "state_dict": self.model.state_dict() if self.model else None}, p)
+                    "R": self.R, "state_dict": self.model.state_dict() if self.model else None}
+        if safe:
+            from corerec.api.bundle_helpers import pack_sparse_arrays
+            from corerec.api.model_bundle import save_bundle
+            save_bundle(path, model_class=f"{type(self).__module__}.{type(self).__name__}",
+                        config=payload["cfg"],
+                        state={"user_map_pairs": list(self.user_map.items()),
+                               "item_map_pairs": list(self.item_map.items()),
+                               "num_users": self.num_users, "num_items": self.num_items},
+                        arrays=pack_sparse_arrays({"R": self.R}), state_dict=payload["state_dict"])
+        else:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            torch.save(payload, p)
 
     @classmethod
-    def load(cls, path: Union[str, Path], **kwargs) -> "_VAEBase":
-        ckpt = torch.load(Path(path), map_location="cpu", weights_only=False)
+    def load(cls, path: Union[str, Path], *, allow_pickle: bool = False, **kwargs) -> "_VAEBase":
+        from corerec.api.model_bundle import is_safe_bundle, load_bundle, require_legacy_pickle
+        if is_safe_bundle(path):
+            from corerec.api.bundle_helpers import unpack_sparse_arrays
+            bundle = load_bundle(path, map_location="cpu", allow_pickle=allow_pickle)
+            ckpt = {"cfg": bundle["config"], "state_dict": bundle["state_dict"],
+                    "R": unpack_sparse_arrays(bundle["arrays"])["R"],
+                    "user_map": dict(bundle["state"]["user_map_pairs"]),
+                    "item_map": dict(bundle["state"]["item_map_pairs"]),
+                    "num_users": bundle["state"]["num_users"],
+                    "num_items": bundle["state"]["num_items"]}
+        else:
+            require_legacy_pickle(path, allow_pickle)
+            ckpt = torch.load(Path(path), map_location="cpu", weights_only=False)
         # bundles from before binarize existed were trained on counts
         inst = cls(**{"binarize": False, **ckpt["cfg"]})
         inst.user_map = ckpt["user_map"]; inst.item_map = ckpt["item_map"]

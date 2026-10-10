@@ -452,7 +452,8 @@ class HSTU(BaseRecommender):
         save_torch_production(self, path, config=self._config(), state=state, arrays=arrays)
 
     @classmethod
-    def load(cls, path: Union[str, Path], device: Optional[Union[str, torch.device]] = None) -> "HSTU":
+    def load(cls, path: Union[str, Path], device: Optional[Union[str, torch.device]] = None,
+             *, allow_pickle: bool = False) -> "HSTU":
         from corerec.api.torch_bundle import load_torch_production
 
         def _factory(cfg):
@@ -477,7 +478,7 @@ class HSTU(BaseRecommender):
                                       inst.has_time).to(inst.device)
 
         loaded = load_torch_production(cls, path, build_model=_build, factory=_factory, restore=_restore,
-                                       map_location=device)
+                                       map_location=device, allow_pickle=allow_pickle)
         if loaded is None:
             raise FileNotFoundError(f"No HSTU bundle at {path}")
         return loaded

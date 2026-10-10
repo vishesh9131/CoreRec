@@ -265,14 +265,15 @@ class Recommender(BaseRecommender):
         return [self._items[j] for j in top]
 
     # -- contract: persistence ------------------------------------------ #
-    def save(self, path: Union[str, Path], **kwargs) -> None:
+    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
+        self._check_fitted()
         cls = self.module_cls
         if cls.__module__ == "__main__":
             warnings.warn(f"{cls.__name__} is defined in __main__: loading in another process "
                           "needs module_cls=. Put it in an importable module to avoid that.")
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
-        torch.save({
+        payload = {
             "corerec_class": "corerec.nn.recommender.Recommender",
             "module": f"{cls.__module__}:{cls.__qualname__}",
             "module_kwargs": self.module_kwargs,
@@ -284,15 +285,39 @@ class Recommender(BaseRecommender):
             "seen": (self._seen.data, self._seen.indices, self._seen.indptr),
             "sequences": self._sequences,
             "state_dict": {k: v.cpu() for k, v in self.model.state_dict().items()},
-        }, p)
+        }
+        if safe:
+            from corerec.api.bundle_helpers import pack_sparse_arrays
+            from corerec.api.model_bundle import save_bundle
+            state = {k: v for k, v in payload.items() if k not in ("config", "seen", "state_dict")}
+            save_bundle(path, model_class=payload["corerec_class"], config=payload["config"],
+                        state=state, arrays=pack_sparse_arrays({"seen": self._seen}),
+                        state_dict=payload["state_dict"])
+        else:
+            torch.save(payload, p)
 
     @classmethod
     def load(cls, path: Union[str, Path], module_cls: Optional[type] = None,
-             device: str = "auto", **kwargs) -> "Recommender":
-        d = torch.load(Path(path), map_location="cpu", weights_only=False)
+             device: str = "auto", *, allow_pickle: bool = False, **kwargs) -> "Recommender":
+        from corerec.api.model_bundle import is_safe_bundle, load_bundle, require_legacy_pickle
+        if is_safe_bundle(path):
+            from corerec.api.bundle_helpers import unpack_sparse_arrays
+            bundle = load_bundle(path, map_location="cpu", allow_pickle=allow_pickle)
+            seen = unpack_sparse_arrays(bundle["arrays"])["seen"]
+            d = {**bundle["state"], "config": bundle["config"],
+                 "seen": (seen.data, seen.indices, seen.indptr),
+                 "state_dict": bundle["state_dict"]}
+        else:
+            require_legacy_pickle(path, allow_pickle)
+            d = torch.load(Path(path), map_location="cpu", weights_only=False)
         if module_cls is None:
             mod, _, qual = d["module"].partition(":")
-            # a notebook or script defines it in __main__: fine within that session
+            from corerec.nn.models import MatrixFactorization, SequentialTransformer, HSTUTransformer
+            builtins = {f"{c.__module__}:{c.__qualname__}": c
+                        for c in (MatrixFactorization, SequentialTransformer, HSTUTransformer)}
+            if d["module"] not in builtins and not allow_pickle:
+                raise ValueError("Custom module requires module_cls= explicitly; "
+                                 "artifact metadata cannot authorize importing Python modules")
             module_cls = importlib.import_module(mod)
             for part in qual.split("."):
                 module_cls = getattr(module_cls, part, None)
@@ -310,7 +335,7 @@ class Recommender(BaseRecommender):
         data, indices, indptr = d["seen"]
         inst._seen = sp.csr_matrix((data, indices, indptr),
                                    shape=(inst.num_users, inst.num_items + 1))
-        inst._sequences = d["sequences"]
+        inst._sequences = [np.asarray(seq, dtype=np.int64) for seq in d["sequences"]]
         inst.model = inst._build()
         inst.model.load_state_dict(d["state_dict"])
         inst.model.eval()

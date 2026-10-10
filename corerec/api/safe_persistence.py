@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import pickle
-import warnings
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
@@ -39,6 +38,8 @@ def save_artifact(
         ``{path}.skops``    — pickle fallback for sklearn-only models (if allow_pickle)
         ``{path}.meta.json`` — version, class, hyperparams, maps
     """
+    if sklearn_payload is not None and not allow_pickle:
+        raise SaveLoadError("Saving a Python payload requires allow_pickle=True explicitly")
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     meta = {
@@ -56,13 +57,6 @@ def save_artifact(
             raise SaveLoadError("torch is required to save state_dict artifacts") from e
 
     if sklearn_payload is not None:
-        if not allow_pickle:
-            warnings.warn(
-                "Saving sklearn payload with pickle. Pass allow_pickle=True explicitly "
-                "or migrate to state_dict format.",
-                UserWarning,
-                stacklevel=2,
-            )
         with open(path.with_suffix(".skops"), "wb") as f:
             pickle.dump(sklearn_payload, f, protocol=pickle.HIGHEST_PROTOCOL)
         meta["sklearn_file"] = str(path.with_suffix(".skops").name)
@@ -75,6 +69,7 @@ def load_artifact(
     path: Union[str, Path],
     *,
     map_location: Any = None,
+    allow_pickle: bool = False,
 ) -> Dict[str, Any]:
     """
     Load saved artifact components.
@@ -98,12 +93,15 @@ def load_artifact(
     if weights_name:
         import torch
 
-        weights_path = path.parent / weights_name
+        from corerec.api.model_bundle import _bundle_component
+        weights_path = _bundle_component(path, weights_name)
         result["state_dict"] = torch.load(weights_path, map_location=map_location, weights_only=True)
 
     skops_name = metadata.get("sklearn_file")
     if skops_name:
-        skops_path = path.parent / skops_name
+        from corerec.api.model_bundle import _bundle_component, require_legacy_pickle
+        skops_path = _bundle_component(path, skops_name)
+        require_legacy_pickle(skops_path, allow_pickle)
         with open(skops_path, "rb") as f:
             result["sklearn_payload"] = pickle.load(f)
 

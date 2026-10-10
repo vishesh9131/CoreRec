@@ -16,12 +16,12 @@ ITEMS = [10, 20, 20, 30]
 def test_unfitted_save_preserves_existing_artifact(model_class, tmp_path):
     path = tmp_path / "model.pkl"
     model = model_class().fit(USERS, ITEMS)
-    model.save(path)
+    model.save(path, safe=False)
     original = path.read_bytes()
     with pytest.raises(ModelNotFittedError):
         model_class().save(path)
     assert path.read_bytes() == original
-    assert model_class.load(path).predict(1, 10) == pytest.approx(model.predict(1, 10))
+    assert model_class.load(path, allow_pickle=True).predict(1, 10) == pytest.approx(model.predict(1, 10))
     new_path = tmp_path / "new" / "model.pkl"
     with pytest.raises(ModelNotFittedError):
         model_class().save(new_path)
@@ -33,7 +33,7 @@ def test_unfitted_save_preserves_existing_artifact(model_class, tmp_path):
 def test_failed_save_preserves_artifact_and_removes_temporary_file(model_class, failure, tmp_path):
     path = tmp_path / "model.pkl"
     model = model_class().fit(USERS, ITEMS)
-    model.save(path)
+    model.save(path, safe=False)
     original = path.read_bytes()
     if failure == "serialization":
         def fail_dump(payload, stream, **kwargs):
@@ -43,10 +43,10 @@ def test_failed_save_preserves_artifact_and_removes_temporary_file(model_class, 
     else:
         target, effect = "os.replace", OSError("replace failed")
     with patch(target, side_effect=effect), pytest.raises(OSError):
-        model.save(path)
+        model.save(path, safe=False)
     assert path.read_bytes() == original
     assert list(tmp_path.iterdir()) == [path]
-    assert model_class.load(path).predict(1, 10) == pytest.approx(model.predict(1, 10))
+    assert model_class.load(path, allow_pickle=True).predict(1, 10) == pytest.approx(model.predict(1, 10))
 
 
 @pytest.mark.parametrize("model_class,params", [
@@ -84,6 +84,6 @@ def test_older_embedding_artifacts_load_with_constructor_defaults(model_class, t
     path = tmp_path / "old.pkl"
     with path.open("wb") as stream:
         pickle.dump(payload, stream)
-    loaded = model_class.load(path)
+    loaded = model_class.load(path, allow_pickle=True)
     assert loaded.seed == 42
     assert loaded.predict(1, 10) == pytest.approx(model.predict(1, 10))

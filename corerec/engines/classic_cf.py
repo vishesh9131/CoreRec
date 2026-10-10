@@ -20,7 +20,8 @@ import scipy.sparse as sp
 from scipy.sparse import csr_matrix
 
 from corerec.api.base_recommender import BaseRecommender
-from corerec.api.model_bundle import atomic_pickle_dump
+from corerec.api.model_bundle import (atomic_pickle_dump, is_safe_bundle, load_bundle,
+                                      require_legacy_pickle, save_bundle)
 
 logger = logging.getLogger(__name__)
 
@@ -97,21 +98,41 @@ class _ClassicCFBase(BaseRecommender):
         return out
 
     # -- contract: persistence ----------------------------------------- #
-    def save(self, path: Union[str, Path], **kwargs) -> None:
+    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         if not self.is_fitted:
             from corerec.api.exceptions import ModelNotFittedError
             raise ModelNotFittedError()
-        atomic_pickle_dump(path, {
-            "cls": self.__class__.__name__, "user_map": self.user_map,
-            "item_map": self.item_map, "R": self.R, "state": self._state(),
-            "params": {"top_k_neighbors": self.top_k_neighbors,
-                       "reg": self.reg, "shrink": self.shrink, "name": self.name},
-        })
+        params = {"top_k_neighbors": self.top_k_neighbors, "reg": self.reg,
+                  "shrink": self.shrink, "name": self.name,
+                  "verbose": self.verbose, "trainable": self.trainable}
+        for key in ("l1_ratio", "alpha", "max_iter"):
+            if hasattr(self, key):
+                params[key] = getattr(self, key)
+        state = self._state()
+        if safe:
+            from corerec.api.bundle_helpers import pack_sparse_arrays
+            save_bundle(path, model_class=f"{type(self).__module__}.{type(self).__name__}",
+                        config=params, state={"user_map_pairs": list(self.user_map.items()),
+                                              "item_map_pairs": list(self.item_map.items())},
+                        arrays=pack_sparse_arrays({"R": self.R, **state}))
+            return
+        atomic_pickle_dump(path, {"cls": type(self).__name__, "user_map": self.user_map,
+                                 "item_map": self.item_map, "R": self.R,
+                                 "state": state, "params": params})
 
     @classmethod
-    def load(cls, path: Union[str, Path], **kwargs) -> "_ClassicCFBase":
-        with open(Path(path), "rb") as f:
-            d = pickle.load(f)
+    def load(cls, path: Union[str, Path], *, allow_pickle: bool = False, **kwargs) -> "_ClassicCFBase":
+        if is_safe_bundle(path):
+            from corerec.api.bundle_helpers import unpack_sparse_arrays
+            bundle = load_bundle(path, allow_pickle=allow_pickle)
+            arrays = unpack_sparse_arrays(bundle["arrays"])
+            d = {"params": bundle["config"], "user_map": dict(bundle["state"]["user_map_pairs"]),
+                 "item_map": dict(bundle["state"]["item_map_pairs"]), "R": arrays.pop("R"),
+                 "state": arrays}
+        else:
+            require_legacy_pickle(path, allow_pickle)
+            with open(Path(path), "rb") as f:
+                d = pickle.load(f)
         inst = cls(**d["params"])
         inst.user_map = d["user_map"]; inst.item_map = d["item_map"]
         inst.uid_map = inst.user_map; inst.iid_map = inst.item_map

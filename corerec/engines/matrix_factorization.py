@@ -22,7 +22,8 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 from corerec.api.base_recommender import BaseRecommender
-from corerec.api.model_bundle import atomic_pickle_dump
+from corerec.api.model_bundle import (atomic_pickle_dump, is_safe_bundle, load_bundle,
+                                      require_legacy_pickle, save_bundle)
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +111,7 @@ class _EmbeddingCFBase(BaseRecommender):
                 break
         return out
 
-    def save(self, path: Union[str, Path], **kwargs) -> None:
+    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         if not self.is_fitted:
             from corerec.api.exceptions import ModelNotFittedError
             raise ModelNotFittedError()
@@ -120,15 +121,30 @@ class _EmbeddingCFBase(BaseRecommender):
         for key in ("alpha", "num_negatives", "learning_rate"):
             if hasattr(self, key):
                 params[key] = getattr(self, key)
+        if safe:
+            from corerec.api.bundle_helpers import pack_sparse_arrays
+            save_bundle(path, model_class=f"{type(self).__module__}.{type(self).__name__}",
+                        config=params, state={"user_map_pairs": list(self.user_map.items()),
+                                              "item_map_pairs": list(self.item_map.items())},
+                        arrays=pack_sparse_arrays({"R": self.R, "U": self.U, "V": self.V}))
+            return
         atomic_pickle_dump(path, {
             "cls": type(self).__name__, "U": self.U, "V": self.V, "R": self.R,
             "user_map": self.user_map, "item_map": self.item_map, "params": params,
         })
 
     @classmethod
-    def load(cls, path: Union[str, Path], **kwargs) -> "_EmbeddingCFBase":
-        with open(Path(path), "rb") as f:
-            d = pickle.load(f)
+    def load(cls, path: Union[str, Path], *, allow_pickle: bool = False, **kwargs) -> "_EmbeddingCFBase":
+        if is_safe_bundle(path):
+            from corerec.api.bundle_helpers import unpack_sparse_arrays
+            bundle = load_bundle(path, allow_pickle=allow_pickle)
+            d = {**unpack_sparse_arrays(bundle["arrays"]), "params": bundle["config"],
+                 "user_map": dict(bundle["state"]["user_map_pairs"]),
+                 "item_map": dict(bundle["state"]["item_map_pairs"])}
+        else:
+            require_legacy_pickle(path, allow_pickle)
+            with open(Path(path), "rb") as f:
+                d = pickle.load(f)
         inst = cls(**d["params"])
         inst.U = d["U"]; inst.V = d["V"]; inst.R = d["R"]
         inst.user_map = d["user_map"]; inst.item_map = d["item_map"]
