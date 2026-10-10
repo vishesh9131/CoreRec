@@ -8,8 +8,10 @@ Every export has one output, ``scores`` [batch, n_items]: column j is the score
 of ``item_ids[j]``, the same scores ``model.recommend()`` ranks. The input is
 
 - ``user_index`` int64 [batch]           TwoTower, DCN, DeepFM
-- ``history``    int64 [batch, max_len]  SASRec: item indices (1-based,
+- ``history``    int64 [batch, max_len]  SASRec, HSTU: item indices (1-based,
   ``item_ids[k-1]``), oldest first, left-padded with 0
+- ``timestamps`` float32 [batch, max_len]  HSTU trained with timestamps only:
+  each event's time, aligned with ``history`` (padding positions are ignored)
 - ``interactions`` float32 [batch, n_items]  MultVAE, MultiDAE: the user's
   row, column j = how many times they interacted with ``item_ids[j]`` (the
   model trains on counts, so a repeat is 2, not 1)
@@ -81,6 +83,24 @@ class _SASRecScores(nn.Module):
         return (h @ self.net.item_emb.weight.t())[:, 1:] - self.pop
 
 
+class _HSTUScores(nn.Module):
+    def __init__(self, net, use_time):
+        super().__init__()
+        self.net, self.use_time = net, use_time
+
+    def forward(self, history, timestamps=None):
+        # Take history left-padded, like SASRec's export, but HSTU's net wants it
+        # right-padded: rotate each row so the padding moves to the end.
+        n = history.size(1)
+        pad = (history == 0).sum(1, keepdim=True)
+        src = (torch.arange(n, device=history.device).unsqueeze(0) + pad) % n
+        ts = timestamps.gather(1, src) if self.use_time else None
+        h = self.net.encode(history.gather(1, src), ts)
+        # the user vector is the newest event's output, as in HSTU._user_vectors
+        last = (n - 1 - pad).clamp(min=0).unsqueeze(-1).expand(-1, -1, h.size(-1))
+        return h.gather(1, last).squeeze(1) @ self.net.item_vectors()[1:].t()
+
+
 class _VAEScores(nn.Module):
     def __init__(self, net):
         super().__init__()
@@ -148,6 +168,16 @@ def _wrap(model):
         ex[:, -1] = 1
         return _SASRecScores(model.model, pop), ex, "history", {
             "item_ids": items, "max_seq_length": model.max_seq_length}
+    if name == "HSTU":
+        # the fitted window, not max_seq_length: attention is scaled by it
+        n = model.window
+        ex = torch.zeros(2, n, dtype=torch.long)  # batch of 2, as for SASRec
+        ex[:, -1] = 1
+        meta = {"item_ids": model.index_to_item[1:], "max_seq_length": n}
+        if model.has_time:
+            return (_HSTUScores(model.model, True), (ex, torch.zeros(2, n)),
+                    ("history", "timestamps"), meta)
+        return _HSTUScores(model.model, False), ex, "history", meta
     if name in ("MultVAE", "MultiDAE"):
         # these score from the user's interaction row, not a user index, so a
         # user unseen at fit time can still be scored from their history
@@ -155,7 +185,7 @@ def _wrap(model):
         ex[:, 0] = 1
         return _VAEScores(model.model), ex, "interactions", {"item_ids": _ordered(model.item_map)}
     raise NotImplementedError(
-        f"ONNX export supports TwoTower, DCN, DeepFM, SASRec, MultVAE, MultiDAE and corerec.nn.Recommender, not {name}. Classic models "
+        f"ONNX export supports TwoTower, DCN, DeepFM, SASRec, HSTU, MultVAE, MultiDAE and corerec.nn.Recommender, not {name}. Classic models "
         "(ALS, EASE, ItemKNN, ...) are a matrix lookup; serve them with ModelServer.")
 
 
@@ -166,6 +196,8 @@ def to_onnx(model: Any, path: Union[str, Path], opset: int = 17) -> Path:
     if not getattr(model, "is_fitted", False):
         raise ValueError("fit the model before exporting it")
     mod, example, input_name, meta = _wrap(model)
+    names = [input_name] if isinstance(input_name, str) else list(input_name)
+    examples = example if isinstance(example, tuple) else (example,)
     mod = mod.cpu().eval()
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -174,9 +206,9 @@ def to_onnx(model: Any, path: Union[str, Path], opset: int = 17) -> Path:
     kw = {"dynamo": False} if "dynamo" in inspect.signature(torch.onnx.export).parameters else {}
     with torch.no_grad():
         torch.onnx.export(
-            mod, (example.cpu(),), str(path), input_names=[input_name], output_names=["scores"],
-            dynamic_axes={input_name: {0: "batch"}, "scores": {0: "batch"}}, opset_version=opset,
-            **kw)
+            mod, tuple(e.cpu() for e in examples), str(path), input_names=names,
+            output_names=["scores"], opset_version=opset,
+            dynamic_axes={**{n: {0: "batch"} for n in names}, "scores": {0: "batch"}}, **kw)
     # The export moved the model to CPU; put it back where it was trained.
     model.model.to(model.device)
 

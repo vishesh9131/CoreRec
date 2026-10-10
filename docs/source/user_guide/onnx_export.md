@@ -13,7 +13,8 @@ pip install "corerec[onnx]"
 | Model | Input | Output |
 |---|---|---|
 | `TwoTower`, `DCN`, `DeepFM` | `user_index` int64 `[batch]` | `scores` float `[batch, n_items]` |
-| `SASRec` | `history` int64 `[batch, max_seq_length]` | `scores` float `[batch, n_items]` |
+| `SASRec`, `HSTU` | `history` int64 `[batch, max_seq_length]` | `scores` float `[batch, n_items]` |
+| `HSTU` fit with timestamps | `history` as above, plus `timestamps` float32 `[batch, max_seq_length]` | `scores` float `[batch, n_items]` |
 | `MultVAE`, `MultiDAE` | `interactions` float32 `[batch, n_items]` | `scores` float `[batch, n_items]` |
 
 Column `j` of `scores` is the score of `item_ids[j]`, the same scores
@@ -72,6 +73,18 @@ seq = [index[i] for i in history][-max_len:]
 x = np.zeros((1, max_len), dtype=np.int64)
 x[0, -len(seq):] = seq
 scores = sess.run(None, {"history": x})[0][0]
+```
+
+HSTU takes `history` the same way. Its `max_seq_length` in the metadata is the
+window fitted to the data, which can be shorter than the constructor's
+`max_seq_length`, so always read it from the metadata. If the model was fit
+with `timestamps`, also pass each event's time in the same positions (padding
+positions can be anything):
+
+```python
+t = np.zeros((1, max_len), dtype=np.float32)
+t[0, -len(seq):] = times[-max_len:]   # same units as the timestamps given to fit()
+scores = sess.run(None, {"history": x, "timestamps": t})[0][0]
 ```
 
 ## MultVAE / MultiDAE input
