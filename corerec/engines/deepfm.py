@@ -346,54 +346,45 @@ class DeepFM(BaseRecommender):
 
         return self
 
-    def predict(self, user_id: Any, item_id: Any, **kwargs) -> float:
-        """
-        Predict the probability of interaction between user and item.
-
-        Args:
-            user_id: User ID
-            item_id: Item ID
-
-        Returns:
-            Predicted probability of interaction
-        """
-        validate_model_fitted(self.is_fitted, self.name)
-
-        if user_id not in self.feature_map["user"]:
-            return 0.0
-        if item_id not in self.feature_map["item"]:
-            return 0.0
-
-        # Create feature vector
+    def _prediction_features(self, user_id, item_id):
+        if user_id not in self.feature_map["user"] or item_id not in self.feature_map["item"]:
+            return None
         x = [self.feature_map["user"][user_id], self.feature_map["item"][item_id]]
+        for kind, identifier, features, types in (
+            ("user", user_id, self.user_features, self.user_feature_types),
+            ("item", item_id, self.item_features, self.item_feature_types),
+        ):
+            values = (features or {}).get(identifier, {})
+            for feature_type in types:
+                x.append(self.feature_map[f"{kind}_{feature_type}"].get(values.get(feature_type), 0))
+        return x
 
-        # Add user features
-        if self.user_features and user_id in self.user_features:
-            for feature_type in self.user_feature_types:
-                if feature_type in self.user_features[user_id]:
-                    value = self.user_features[user_id][feature_type]
-                    x.append(self.feature_map[f"user_{feature_type}"].get(value, 0))
-                else:
-                    x.append(0)
+    def predict(self, user_id: Any, item_id: Any, **kwargs) -> float:
+        """Predict a score for one user-item pair."""
+        return self.batch_predict([(user_id, item_id)], **kwargs)[0]
 
-        # Add item features
-        if self.item_features and item_id in self.item_features:
-            for feature_type in self.item_feature_types:
-                if feature_type in self.item_features[item_id]:
-                    value = self.item_features[item_id][feature_type]
-                    x.append(self.feature_map[f"item_{feature_type}"].get(value, 0))
-                else:
-                    x.append(0)
-
-        # Convert to tensor
-        x_tensor = torch.LongTensor([x]).to(self.device)
-
-        # Get prediction
+    def batch_predict(self, pairs, **kwargs) -> List[float]:
+        """Score pairs in bounded batches, preserving order and unknown-ID zeros."""
+        validate_model_fitted(self.is_fitted, self.name)
+        pairs = list(pairs)
+        scores = [0.0] * len(pairs)
         self.model.eval()
         with torch.no_grad():
-            prediction = self.model(x_tensor).item()
-
-        return float(prediction)
+            for start in range(0, len(pairs), self.batch_size):
+                rows, positions = [], []
+                for position, (user_id, item_id) in enumerate(
+                    pairs[start:start + self.batch_size], start
+                ):
+                    row = self._prediction_features(user_id, item_id)
+                    if row is not None:
+                        rows.append(row)
+                        positions.append(position)
+                if rows:
+                    inputs = torch.tensor(rows, dtype=torch.long, device=self.device)
+                    predictions = self.model(inputs).reshape(-1).cpu().tolist()
+                    for position, score in zip(positions, predictions):
+                        scores[position] = score
+        return scores
 
     def _score_all_items(self, user_id) -> np.ndarray:
         """Score every item for a user in one batched forward pass.
