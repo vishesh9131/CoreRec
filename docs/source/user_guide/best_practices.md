@@ -74,6 +74,31 @@ server.start()
 # GET  /health      -> health check
 ```
 
+### Concurrency and torch threads
+
+`/predict`, `/recommend` and the other endpoints that run the model are served
+from FastAPI's threadpool (40 threads by default), so a slow request doesn't
+hold up the others, and `/health` and `/info` answer straight from the event
+loop even while inference runs.
+
+PyTorch models also use torch's own intra-op threads, one per core by
+default. With many requests in flight at once, each request's matrix ops then
+compete for the same cores and latency gets worse, not better. For a server
+under concurrent load, cap torch to a few threads per request before starting
+it:
+
+```python
+import torch
+
+torch.set_num_threads(2)   # or set OMP_NUM_THREADS=2 in the environment
+server = ModelServer(model=my_model, port=8000)
+```
+
+and scale out with more processes (`uvicorn --workers N`, or replicas behind a
+load balancer) rather than more torch threads. Classic models (ALS, EASE,
+ItemKNN) are numpy/scipy and release the GIL in their matrix ops, so they
+benefit from the threadpool directly.
+
 ## Demo Frontends
 
 Quickly demo your model with themed UIs:

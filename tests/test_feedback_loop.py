@@ -183,3 +183,55 @@ def test_no_tokens_keeps_endpoints_open(good, tmp_path):
     client = TestClient(server.app)
     assert client.post("/feedback", json={"user_id": 0, "item_id": 1}).status_code == 200
     assert client.post("/reload").status_code == 200
+
+
+def _write_log(path, n_requests, seed=0):
+    """A feedback log written directly (log.impression() per event is slow at 100k)."""
+    rng = np.random.default_rng(seed)
+    with open(path, "w") as f:
+        for n in range(n_requests):
+            items = rng.integers(0, 3000, 10).tolist()
+            f.write(json.dumps({"type": "impression", "request_id": f"r{n}", "ts": float(n),
+                                "user_id": n % 5000, "items": items,
+                                "variant": "a" if n % 2 else "b", "source": "model"}) + "\n")
+            if n % 4 == 0:
+                f.write(json.dumps({"type": "feedback", "request_id": f"r{n}", "ts": n + 0.5,
+                                    "user_id": n % 5000, "item_id": items[n % 10],
+                                    "event": "click"}) + "\n")
+
+
+def test_metrics_on_a_100k_request_log(tmp_path):
+    """/metrics re-read and re-joined the whole log on every call (#40)."""
+    path = tmp_path / "fb.jsonl"
+    _write_log(path, 100_000)
+    log = FeedbackLog(path)
+    m = log.metrics()["all"]
+    assert m["requests"] == 100_000 and m["impressions"] == 1_000_000
+    assert m["clicks"] >= 25_000  # one click per 4th request, more when the item repeats
+    assert log._offset == path.stat().st_size
+
+    log.feedback(1, 2, request_id=log.impression(1, [2, 3]))
+    m2 = log.metrics()["all"]
+    assert (m2["requests"], m2["clicks"]) == (100_001, m["clicks"] + 1)
+    assert log.drift(recent=1000)["recent"]["requests"] == 1000
+
+
+def test_metrics_follow_appends_partial_lines_and_rotation(tmp_path):
+    path = tmp_path / "fb.jsonl"
+    writer, reader = FeedbackLog(path), FeedbackLog(path)  # e.g. server and a monitoring job
+    rid = writer.impression(1, ["x", "y"])
+    assert reader.metrics()["all"]["clicks"] == 0
+
+    line = json.dumps({"type": "feedback", "request_id": rid, "ts": 1.0, "user_id": 1,
+                       "item_id": "y", "event": "click"}) + "\n"
+    with open(path, "a") as f:
+        f.write(line[:20])  # writer caught mid-line
+    assert reader.metrics()["all"]["clicks"] == 0
+    with open(path, "a") as f:
+        f.write(line[20:])
+    m = reader.metrics()["all"]
+    assert m["clicks"] == 1 and m["mrr"] == 0.5
+
+    path.write_text("")  # rotated
+    writer.impression(2, ["z"])
+    assert reader.metrics()["all"]["requests"] == 1

@@ -12,6 +12,7 @@ Models:
 """
 from __future__ import annotations
 
+import inspect
 import logging
 import pickle
 from pathlib import Path
@@ -36,6 +37,15 @@ class _EmbeddingCFBase(BaseRecommender):
         # **kwargs below and be silently ignored
         if "epochs" in kwargs:
             iterations = kwargs.pop("epochs")
+        # subclasses pass their own parameters (alpha, num_negatives, ...) up
+        # through **kwargs; anything no __init__ in the hierarchy declares is a
+        # typo, which used to become a stray attribute and train on defaults
+        known = {name for cls in type(self).__mro__ if issubclass(cls, _EmbeddingCFBase)
+                 for name in inspect.signature(cls.__init__).parameters}
+        unknown = sorted(set(kwargs) - known)
+        if unknown:
+            raise TypeError(f"{type(self).__name__}() got unexpected keyword argument(s): "
+                            f"{', '.join(unknown)}")
         self.factors = factors; self.reg = reg; self.iterations = iterations
         self.seed = seed
         for k, v in kwargs.items():

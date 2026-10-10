@@ -9,7 +9,7 @@ scores [B, K] -- and add score_all() so recommend() is one matmul.
 import torch
 import torch.nn as nn
 
-from corerec.nn.layers import SASRecBlock, causal_mask
+from corerec.nn.layers import HSTUBlock, SASRecBlock, causal_mask
 
 
 class MatrixFactorization(nn.Module):
@@ -65,4 +65,41 @@ class SequentialTransformer(nn.Module):
         return self.encode(history) @ self.items.weight.t()
 
 
-__all__ = ["MatrixFactorization", "SequentialTransformer"]
+class HSTUTransformer(nn.Module):
+    """Causal HSTU blocks over the history (Zhai et al., 2024).  Use with inputs="history".
+
+    SequentialTransformer with HSTUBlock in place of SASRecBlock: pointwise SiLU
+    attention and a learned relative-position bias, so there's no position table.
+    """
+
+    def __init__(self, n_items: int, max_len: int, dim: int = 64, num_blocks: int = 2,
+                 heads: int = 1, dropout: float = 0.2):
+        super().__init__()
+        if dim % heads:
+            raise ValueError("dim must be divisible by heads")
+        self.items = nn.Embedding(n_items + 1, dim, padding_idx=0)
+        # use_time=False: Recommender doesn't pass timestamps to the module
+        self.blocks = nn.ModuleList(
+            HSTUBlock(dim, heads, dim // heads, dim // heads, dropout, max_len, 1, False)
+            for _ in range(num_blocks))
+        self.norm = nn.LayerNorm(dim)
+        self.dropout = nn.Dropout(dropout)
+
+    def encode(self, history: torch.Tensor) -> torch.Tensor:
+        """[B, L] left-padded history -> [B, d], the state after the newest item."""
+        valid = (history > 0).unsqueeze(-1)
+        x = self.dropout(self.items(history)) * valid
+        mask = causal_mask(history.shape[1], history.device)
+        for block in self.blocks:
+            x = block(x, mask, None) * valid
+        return self.norm(x[:, -1])
+
+    def forward(self, history: torch.Tensor, items: torch.Tensor) -> torch.Tensor:
+        h = self.encode(history).unsqueeze(1)                   # [B, 1, d]
+        return (h * self.items(items)).sum(-1)
+
+    def score_all(self, history: torch.Tensor) -> torch.Tensor:
+        return self.encode(history) @ self.items.weight.t()
+
+
+__all__ = ["MatrixFactorization", "SequentialTransformer", "HSTUTransformer"]

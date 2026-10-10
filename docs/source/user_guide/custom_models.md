@@ -63,6 +63,18 @@ print(rec.recommend(0, top_k=10))
 print(rec.history_)       # training loss per epoch
 ```
 
+Pass held-out data to watch a ranking metric while training and stop when it
+stops improving:
+
+```python
+rec = Recommender(DotModel, {"dim": 32}, loss="bpr", epochs=50, lr=0.01)
+rec.fit(train, validation=test, patience=3)
+print(rec.val_history_)   # NDCG@10 on `test` after each epoch
+```
+
+Training stops after `patience` epochs without a better NDCG@10, and the
+model keeps the weights from its best epoch.
+
 `fit` takes a DataFrame (`user_id`, `item_id`, optional `rating` and
 `timestamp`) or parallel lists. Rows with `rating <= 0` are dropped, and a
 `timestamp` column sets event order.
@@ -106,10 +118,12 @@ seq.fit(train)
 | `FMInteraction()` | Factorization-machine pairwise term over `[B, F, d]` |
 | `MLP(dims, dropout)` | Linear/ReLU/Dropout stack |
 | `bpr_loss`, `bce_loss`, `sampled_softmax_loss` | Losses over `[B, 1 + K]` scores, positive in column 0 |
+| `MatrixFactorization`, `SequentialTransformer`, `HSTUTransformer` | Complete template models to copy (below) |
 
 These are the same blocks CoreRec's `HSTU`, `SASRec` and `DCN` models use.
-`corerec.nn.models` has two complete templates, `MatrixFactorization` and
-`SequentialTransformer`. A custom loss is any `callable(scores) -> loss` over
+`corerec.nn.models` has three complete templates: `MatrixFactorization`
+(`inputs="user"`), and `SequentialTransformer` and `HSTUTransformer`
+(`inputs="history"`, built from `SASRecBlock` and `HSTUBlock`). A custom loss is any `callable(scores) -> loss` over
 the `[B, 1 + K]` matrix: `Recommender(MyModel, loss=my_loss)`.
 
 ## Everything else works
@@ -121,7 +135,7 @@ from corerec.evaluation import Evaluator
 from corerec.serving import ModelLoader, ModelServer
 
 truth = test.groupby("user_id").item_id.apply(list).to_dict()
-print(Evaluator(metrics=["ndcg@10", "recall@10"]).evaluate(rec, truth))
+print(Evaluator(metrics=["NDCG@10", "Recall@10"]).evaluate(rec, truth))
 
 rec.save("dot.pt")
 same = ModelLoader().load("dot.pt")     # rebuilds DotModel from its import path

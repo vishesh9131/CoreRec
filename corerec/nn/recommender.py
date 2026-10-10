@@ -83,6 +83,7 @@ class Recommender(BaseRecommender):
         self.device, self.seed = resolve_device(device), seed
         self.model: Optional[nn.Module] = None
         self.history_: List[float] = []
+        self.val_history_: List[float] = []
 
     # -- data ----------------------------------------------------------- #
     def _index(self, user_ids, item_ids, ratings, timestamps):
@@ -146,10 +147,16 @@ class Recommender(BaseRecommender):
         return torch.cat(chunks, dim=1)
 
     # -- contract: fit ---------------------------------------------------- #
-    def fit(self, user_ids, item_ids, ratings=None, timestamps=None, **kwargs) -> "Recommender":
+    def fit(self, user_ids, item_ids, ratings=None, timestamps=None, validation=None,
+            patience: Optional[int] = None, **kwargs) -> "Recommender":
         """One row per interaction; rows with rating <= 0 are dropped.
 
         Events are taken in the order given, or sorted by ``timestamps``.
+
+        validation: held-out interactions (DataFrame with user_id/item_id, or
+            (user, item) pairs). NDCG@10 on it goes in ``val_history_`` after
+            each epoch, and the best epoch's weights are kept.
+        patience: stop after this many epochs without a better NDCG@10.
         """
         torch.manual_seed(self.seed)
         rng = np.random.default_rng(self.seed)
@@ -171,7 +178,8 @@ class Recommender(BaseRecommender):
             raise ValueError("no training examples: need at least two events per user for "
                              "inputs='history', or one interaction for inputs='user'")
 
-        self.history_ = []
+        self.history_, self.val_history_ = [], []
+        best_state, stale = None, 0
         for epoch in range(self.epochs):
             self.model.train()
             perm = rng.permutation(n)
@@ -200,6 +208,22 @@ class Recommender(BaseRecommender):
             if self.verbose:
                 logger.info("%s epoch %d/%d loss %.4f", self.name, epoch + 1, self.epochs,
                             self.history_[-1])
+            if validation is not None:
+                from corerec.evaluation.evaluate import evaluate
+
+                self.model.eval()
+                self.is_fitted = True  # evaluate() goes through recommend()
+                ndcg = evaluate(self, validation, k=10)["NDCG@10"]
+                self.val_history_.append(ndcg)
+                if ndcg > max(self.val_history_[:-1], default=-1.0):
+                    best_state = {k: v.detach().clone() for k, v in self.model.state_dict().items()}
+                    stale = 0
+                else:
+                    stale += 1
+                if patience is not None and stale >= patience:
+                    break
+        if best_state is not None:
+            self.model.load_state_dict(best_state)
         self.model.eval()
         self.is_fitted = True
         return self

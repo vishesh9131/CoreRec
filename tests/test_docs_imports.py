@@ -44,11 +44,7 @@ PLACEHOLDERS = {"corerec.engines.your_model"}
 # Recorded rather than rewritten: an attempt to fix these in-place was reverted
 # at the author's request. The listing keeps the problem visible and stops new
 # breakage being added; fixing a page means deleting its entry here.
-KNOWN_STALE = {
-    "engines/collaborative/index.md",
-    "examples/index.md",
-    "utilities/index.md",
-}
+KNOWN_STALE = set()
 
 _cache: dict = {}
 

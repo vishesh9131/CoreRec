@@ -83,6 +83,17 @@ def test_read_merges_duplicate_pairs(tmp_path):
     assert df.set_index(["user", "item"]).loc[("a", "x"), "rating"] == 2.0
 
 
+@pytest.mark.parametrize("text,enc", [("Renée,café", "latin-1"), ("Renée,€5 café", "cp1252")])
+def test_read_non_utf8_files(tmp_path, text, enc):
+    """Excel exports in Latin-1/Windows-1252 crashed with UnicodeDecodeError (#87)."""
+    path = tmp_path / "excel.csv"
+    path.write_bytes(f"user_id,item_id\n{text}\nbob,tea\n".encode(enc))
+    with pytest.warns(UserWarning, match="not UTF-8"):
+        df, _ = read_interactions(path)
+    assert set(df["user"]) == {"Renée", "bob"}
+    assert text.split(",")[1] in set(df["item"])
+
+
 def test_read_parses_date_strings(tmp_path):
     path = tmp_path / "dated.csv"
     pd.DataFrame({"user_id": ["a", "a"], "item_id": ["x", "y"],
@@ -199,3 +210,48 @@ def test_cli_train_writes_a_servable_artifact(events_csv, tmp_path, monkeypatch,
     assert cli.main() == 0
     server = started["server"]
     assert server.port == 9999 and server.metadata["model"] == "ALS"
+
+
+def test_repeated_ratings_keep_the_latest_not_the_sum(tmp_path):
+    """u1 rated i1 5 then 4: summing gave 9, outside the 1-5 scale (#84)."""
+    from corerec.serving.from_csv import read_interactions
+
+    f = tmp_path / "r.csv"
+    # file order is not time order: the 4 is newer
+    f.write_text("user_id,item_id,rating,timestamp\nu1,i1,4,200\nu1,i1,5,100\nu2,i1,3,50\n")
+    df, _ = read_interactions(f)
+    assert df.attrs["rating_merge"] == "last"
+    got = dict(zip(zip(df["user"], df["item"]), df["rating"]))
+    assert got == {("u1", "i1"): 4.0, ("u2", "i1"): 3.0}
+
+    df, _ = read_interactions(f, rating_merge="mean")
+    assert dict(zip(df["user"], df["rating"]))["u1"] == 4.5
+    df, _ = read_interactions(f, rating_merge="sum")
+    assert dict(zip(df["user"], df["rating"]))["u1"] == 9.0
+    with pytest.raises(ValueError, match="rating merge"):
+        read_interactions(f, rating_merge="max")
+
+
+def test_counts_are_still_summed(tmp_path):
+    from corerec.serving.from_csv import read_interactions
+
+    f = tmp_path / "plays.csv"
+    f.write_text("user_id,item_id,plays\nu1,i1,2\nu1,i1,3\n")
+    df, _ = read_interactions(f)
+    assert df.attrs["rating_merge"] == "sum" and df["rating"].tolist() == [5.0]
+
+    f.write_text("user_id,item_id\nu1,i1\nu1,i1\n")  # no weight column: 1 per row
+    assert read_interactions(f)[0]["rating"].tolist() == [2.0]
+
+
+def test_merge_policy_is_recorded_and_reported(tmp_path):
+    from corerec.serving.from_csv import train_from_csv
+
+    f = tmp_path / "r.csv"
+    f.write_text("user_id,item_id,rating\n" + "".join(
+        f"u{u},i{(u * 7 + k) % 40},{1 + k % 5}\n" for u in range(30) for k in range(6)))
+    r = train_from_csv(f, model="ItemKNN", evaluate=False)
+    assert r.manifest()["rating_merge"] == "last"
+    assert "rating last" in r.report()
+    r = train_from_csv(f, model="ItemKNN", evaluate=False, rating_merge="mean")
+    assert r.manifest()["rating_merge"] == "mean"
