@@ -63,6 +63,18 @@ print(rec.recommend(0, top_k=10))
 print(rec.history_)       # training loss per epoch
 ```
 
+Pass held-out data to watch a ranking metric while training and stop when it
+stops improving:
+
+```python
+rec = Recommender(DotModel, {"dim": 32}, loss="bpr", epochs=50, lr=0.01)
+rec.fit(train, validation=test, patience=3)
+print(rec.val_history_)   # NDCG@10 on `test` after each epoch
+```
+
+Training stops after `patience` epochs without a better NDCG@10, and the
+model keeps the weights from its best epoch.
+
 `fit` takes a DataFrame (`user_id`, `item_id`, optional `rating` and
 `timestamp`) or parallel lists. Rows with `rating <= 0` are dropped, and a
 `timestamp` column sets event order.

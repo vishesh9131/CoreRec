@@ -195,3 +195,23 @@ def test_trains_on_mps():
     rec = Recommender(MatrixFactorization, {"dim": 8}, epochs=1, device="mps").fit(_groups())
     assert rec.device.type == "mps"
     assert len(rec.recommend(_groups().user_id.iloc[0], top_k=5)) == 5
+
+
+def test_validation_tracks_ndcg_and_stops_early():
+    df = _groups()
+    test = df.groupby("user_id").tail(2)
+    train = df.drop(test.index)
+    rec = Recommender(MatrixFactorization, {"dim": 16}, epochs=40, batch_size=256, lr=0.05,
+                      device="cpu")
+    rec.fit(train, validation=test, patience=2)
+    v = rec.val_history_
+    assert len(v) == len(rec.history_) < 40, "should have stopped early"
+    assert all(x < max(v) for x in v[-2:]), "stopped after 2 epochs without improvement"
+    # best epoch's weights are kept, not the last epoch's
+    from corerec.evaluation.evaluate import evaluate
+    assert evaluate(rec, test, k=10)["NDCG@10"] == pytest.approx(max(v))
+
+
+def test_no_validation_keeps_old_behaviour():
+    rec = Recommender(MatrixFactorization, {"dim": 8}, epochs=3, device="cpu").fit(_groups())
+    assert len(rec.history_) == 3 and rec.val_history_ == []
