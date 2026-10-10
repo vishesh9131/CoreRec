@@ -6,11 +6,27 @@ CoreRec provides a comprehensive set of utility functions and tools to support t
 
 Utilities in CoreRec are organized into several categories:
 
-- **Evaluation Metrics**: Measure model performance
-- **Visualization**: Visualize graphs and results
-- **Serialization**: Save and load models
-- **Configuration**: Manage model configurations
-- **Device Management**: Handle CPU/GPU devices
+- **Evaluation Metrics**: Measure model performance (`corerec.evaluation`)
+- **Visualization**: Plot training curves and embeddings (with matplotlib)
+- **Serialization**: Save and load models (`model.save` / `load`, `corerec.serialization`)
+- **Configuration**: Load YAML/JSON configs (`corerec.utils.load_config`)
+- **Device Management**: Pick CUDA, Apple MPS or CPU (`corerec.device`)
+
+The examples on this page share this setup:
+
+```python
+import numpy as np
+from corerec.engines import ALS
+
+rng = np.random.default_rng(0)
+users = rng.integers(0, 50, 2000).tolist()
+items = rng.integers(0, 200, 2000).tolist()
+train = list(zip(users, items))[:1600]
+test = list(zip(users, items))[1600:]
+
+model = ALS(factors=16, iterations=10)
+model.fit([u for u, _ in train], [i for _, i in train])
+```
 
 ## Evaluation Metrics
 
@@ -18,56 +34,46 @@ Comprehensive metrics for evaluating recommendation quality.
 
 ### Rating Prediction Metrics
 
-For explicit feedback (ratings):
+For explicit feedback (ratings). CoreRec's models rank items rather than
+predict ratings, so there are no RMSE/MAE helpers; compute them from
+`predict()` with numpy:
 
 ```python
-from corerec.metrics import rmse, mae, mse
+true_ratings = np.array([4.0, 3.0, 5.0])
+predicted_ratings = np.array([3.5, 3.0, 4.5])  # e.g. [model.predict(u, i) for u, i in pairs]
 
-# Calculate RMSE (Root Mean Squared Error)
-rmse_score = rmse(true_ratings, predicted_ratings)
-print(f"RMSE: {rmse_score:.4f}")
-
-# Calculate MAE (Mean Absolute Error)
-mae_score = mae(true_ratings, predicted_ratings)
-print(f"MAE: {mae_score:.4f}")
-
-# Calculate MSE (Mean Squared Error)
-mse_score = mse(true_ratings, predicted_ratings)
-print(f"MSE: {mse_score:.4f}")
+rmse_score = np.sqrt(np.mean((true_ratings - predicted_ratings) ** 2))
+mae_score = np.mean(np.abs(true_ratings - predicted_ratings))
+mse_score = np.mean((true_ratings - predicted_ratings) ** 2)
+print(f"RMSE: {rmse_score:.4f}  MAE: {mae_score:.4f}  MSE: {mse_score:.4f}")
 ```
 
 ### Ranking Metrics
 
-For implicit feedback (clicks, views):
+For implicit feedback (clicks, views). `evaluate()` runs them all through
+`model.recommend()`, excluding each user's training items:
 
 ```python
-from corerec.metrics import (
-    precision_at_k,
-    recall_at_k,
-    ndcg_at_k,
-    map_at_k,
-    hit_rate_at_k
-)
+from corerec.evaluation import evaluate
 
-# Precision@K
-precision = precision_at_k(true_items, recommended_items, k=10)
-print(f"Precision@10: {precision:.4f}")
+print(evaluate(model, test, train_interactions=train, k=10))
+# {'NDCG@10': ..., 'MAP@10': ..., 'MRR@10': ..., 'Precision@10': ...,
+#  'Recall@10': ..., 'HitRate@10': ..., 'n_users': ..., 'n_errors': 0}
+```
 
-# Recall@K
-recall = recall_at_k(true_items, recommended_items, k=10)
-print(f"Recall@10: {recall:.4f}")
+For one list at a time, use `RankingMetrics` directly:
 
-# NDCG@K (Normalized Discounted Cumulative Gain)
-ndcg = ndcg_at_k(true_items, recommended_items, k=10)
-print(f"NDCG@10: {ndcg:.4f}")
+```python
+from corerec.evaluation import RankingMetrics as M
 
-# MAP@K (Mean Average Precision)
-map_score = map_at_k(true_items, recommended_items, k=10)
-print(f"MAP@10: {map_score:.4f}")
+recommended_items = model.recommend(users[0], top_k=10)
+true_items = [i for u, i in test if u == users[0]]
 
-# Hit Rate@K
-hit_rate = hit_rate_at_k(true_items, recommended_items, k=10)
-print(f"Hit Rate@10: {hit_rate:.4f}")
+print(f"Precision@10: {M.precision_at_k(recommended_items, true_items, k=10):.4f}")
+print(f"Recall@10:    {M.recall_at_k(recommended_items, true_items, k=10):.4f}")
+print(f"NDCG@10:      {M.ndcg_at_k(recommended_items, true_items, k=10):.4f}")
+print(f"MAP@10:       {M.map_at_k(recommended_items, true_items, k=10):.4f}")
+print(f"Hit Rate@10:  {M.hit_rate_at_k(recommended_items, true_items, k=10):.4f}")
 ```
 
 ### Diversity Metrics
@@ -75,23 +81,20 @@ print(f"Hit Rate@10: {hit_rate:.4f}")
 Measure recommendation diversity:
 
 ```python
-from corerec.evaluation import (
-    intra_list_similarity,
-    coverage,
-    diversity
-)
+from collections import Counter
+from corerec.evaluation import DiversityMetrics as D
 
-# Intra-list similarity (lower is more diverse)
-ils = intra_list_similarity(recommendations, item_features)
-print(f"Intra-list Similarity: {ils:.4f}")
+recommendations = list(model.batch_recommend(sorted(set(users)), top_k=10).values())
 
-# Catalog coverage
-cov = coverage(recommendations, total_items)
-print(f"Coverage: {cov:.4f}")
+# Catalog coverage: share of all items that were recommended to anyone
+print(f"Coverage: {D.coverage(recommendations, total_items=len(set(items))):.4f}")
 
-# Diversity
-div = diversity(recommendations)
-print(f"Diversity: {div:.4f}")
+# Gini over how often each item was recommended (0 = even, 1 = concentrated)
+counts = Counter(i for recs in recommendations for i in recs)
+print(f"Gini: {D.gini_coefficient(counts):.4f}")
+
+# Share of unique items within each list, averaged
+print(f"Intra-list diversity: {D.intra_list_diversity(recommendations):.4f}")
 ```
 
 
@@ -101,48 +104,31 @@ Visualize recommendation systems and results.
 
 ### Graph Visualization (VishGraphs)
 
-```python
-import corerec.vish_graphs as vg
-
-# Generate random graph
-graph_file = vg.generate_random_graph(100, "graph.csv")
-
-# Read adjacency matrix
-adj_matrix = vg.bipartite_matrix_maker(graph_file)
-
-# 2D visualization
-vg.draw_graph(
-    adj_matrix,
-    top_nodes=[1, 2, 3, 4, 5],
-    recommended_nodes=[10, 11, 12],
-    node_labels={1: 'User A', 10: 'Item X'}
-)
-
-# 3D visualization
-vg.draw_graph_3d(
-    adj_matrix,
-    top_nodes=[1, 2, 3, 4, 5],
-    recommended_nodes=[10, 11, 12]
-)
-
-# Bipartite graph visualization
-vg.show_bipartite_relationship(adj_matrix)
-```
+The `vish_graphs` module was removed in 0.7. To draw the user-item graph, build
+it from your interactions with a graph library such as `networkx`.
 
 ### Training Visualization
 
-```python
-import matplotlib.pyplot as plt
+Models built with `corerec.nn.Recommender` record the training loss per epoch
+in `history_`, and validation NDCG@10 in `val_history_` when you pass
+`validation=`:
 
-# Plot training history
-history = model.history
+```python
+import matplotlib
+matplotlib.use("Agg")  # no window needed; drop this line in a notebook
+import matplotlib.pyplot as plt
+import pandas as pd
+from corerec.nn import Recommender, MatrixFactorization
+
+df = pd.DataFrame(train, columns=["user_id", "item_id"])
+val = pd.DataFrame(test, columns=["user_id", "item_id"])
+rec = Recommender(MatrixFactorization, {"dim": 16}, epochs=10).fit(df, validation=val)
 
 plt.figure(figsize=(12, 4))
 
 # Loss plot
 plt.subplot(1, 2, 1)
-plt.plot(history['train_loss'], label='Train Loss')
-plt.plot(history['val_loss'], label='Val Loss')
+plt.plot(rec.history_, label='Train Loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend()
@@ -150,8 +136,7 @@ plt.title('Training Loss')
 
 # Metrics plot
 plt.subplot(1, 2, 2)
-plt.plot(history['train_ndcg'], label='Train NDCG')
-plt.plot(history['val_ndcg'], label='Val NDCG')
+plt.plot(rec.val_history_, label='Val NDCG@10')
 plt.xlabel('Epoch')
 plt.ylabel('NDCG')
 plt.legend()
@@ -159,19 +144,16 @@ plt.title('NDCG Score')
 
 plt.tight_layout()
 plt.savefig('training_history.png')
-plt.show()
 ```
 
 ### Embedding Visualization
 
 ```python
-from corerec.visualization import plot_embeddings
-import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 
-# Get embeddings from model
-user_embeddings = model.get_user_embeddings()
-item_embeddings = model.get_item_embeddings()
+# Get embeddings from the model (here, the MatrixFactorization template above)
+user_embeddings = rec.model.users.weight.detach().cpu().numpy()
+item_embeddings = rec.model.items.weight.detach().cpu().numpy()[1:]  # row 0 is padding
 
 # Reduce to 2D with PCA
 pca = PCA(n_components=2)
@@ -186,7 +168,7 @@ plt.legend()
 plt.title('User and Item Embeddings')
 plt.xlabel('PC1')
 plt.ylabel('PC2')
-plt.show()
+plt.savefig('embeddings.png')
 ```
 
 
@@ -196,62 +178,47 @@ Save and load models efficiently.
 
 ### Basic Serialization
 
+Every model has `save()` and a `load()` classmethod:
+
 ```python
-from corerec.serialization import ModelSerializer
+model.save('models/my_model')
+loaded_model = ALS.load('models/my_model')
+assert loaded_model.recommend(users[0], top_k=5) == model.recommend(users[0], top_k=5)
+```
 
-# Initialize serializer
-serializer = ModelSerializer()
+To load a file without knowing which class wrote it, use
+`corerec.serving.ModelLoader`. For plain Python objects such as metadata,
+`corerec.serialization` has `save_to_file` / `load_from_file`:
 
-# Save model
-serializer.save(
-    model,
-    'models/my_model.pkl',
-    metadata={'version': '1.0', 'date': '2024-01-01'}
-)
+```python
+from corerec.serialization import save_to_file, load_from_file
 
-# Load model
-loaded_model = serializer.load('models/my_model.pkl')
-
-# Get metadata
-metadata = serializer.get_metadata('models/my_model.pkl')
-print(metadata)
+save_to_file({'version': '1.0', 'trained_on': '2026-10-01'}, 'models/my_model_meta.json')
+print(load_from_file('models/my_model_meta.json'))
 ```
 
 ### Format-Specific Serialization
 
+`save()` takes no `format=` argument: each model writes its own format (the
+classic models a safe npz + JSON bundle, the PyTorch models a checkpoint). For
+deployment without Python, export the PyTorch models to ONNX:
+
 ```python
-# Save as pickle (default)
-model.save('model.pkl', format='pickle')
+from corerec.engines import TwoTower
+from corerec.export import to_onnx
 
-# Save as PyTorch checkpoint
-model.save('model.pth', format='torch')
-
-# Save as JSON (metadata only)
-model.save('model.json', format='json')
-
-# Save as ONNX (for deployment)
-model.save('model.onnx', format='onnx')
+tt = TwoTower(embedding_dim=16, epochs=2, verbose=False).fit(users, items)
+to_onnx(tt, 'model.onnx')  # needs pip install "corerec[onnx]"
 ```
 
 ### Versioned Serialization
 
+There is no versioning class; put the version in the path and keep the old
+directories:
+
 ```python
-from corerec.serialization import VersionedSerializer
-
-serializer = VersionedSerializer(base_path='models/')
-
-# Save with version
-serializer.save(model, version='v1.0.0')
-
-# Load latest version
-model = serializer.load_latest()
-
-# Load specific version
-model = serializer.load(version='v1.0.0')
-
-# List all versions
-versions = serializer.list_versions()
-print(f"Available versions: {versions}")
+model.save('models/als/v1.0.0')
+model = ALS.load('models/als/v1.0.0')
 ```
 
 
@@ -261,25 +228,29 @@ Manage model configurations easily.
 
 ### YAML Configuration
 
+`load_config` reads YAML or JSON into a plain dict, so a model is built with
+`**`:
+
 ```python
-from corerec.config import ConfigManager
+from corerec.engines import DCN
+from corerec.utils import load_config
 
-# Load from YAML
-config = ConfigManager.from_yaml('config.yaml')
+with open('config.yaml', 'w') as f:  # the example config below
+    f.write("model:\n  embedding_dim: 64\n  num_cross_layers: 3\n  deep_layers: [128, 64, 32]\n"
+            "  dropout: 0.2\ntraining:\n  epochs: 20\n  batch_size: 256\n"
+            "  learning_rate: 0.001\n  device: auto\n")
 
-# Access nested config
-print(config.model.embedding_dim)
-print(config.training.batch_size)
+config = load_config('config.yaml')
+print(config['model']['embedding_dim'])
+print(config['training']['batch_size'])
 
-# Save config
-config.to_yaml('config_backup.yaml')
+dcn = DCN(**config['model'], **config['training'])
 ```
 
 Example `config.yaml`:
 
 ```yaml
 model:
-  name: DCN
   embedding_dim: 64
   num_cross_layers: 3
   deep_layers: [128, 64, 32]
@@ -289,40 +260,37 @@ training:
   epochs: 20
   batch_size: 256
   learning_rate: 0.001
-  device: cuda
-
-data:
-  train_path: data/train.csv
-  val_path: data/val.csv
-  test_path: data/test.csv
+  device: auto
 ```
 
 ### JSON Configuration
 
 ```python
+import json
+from corerec.utils import merge_configs
+
+with open('config.json', 'w') as f:
+    json.dump(config, f)
+
 # Load from JSON
-config = ConfigManager.from_json('config.json')
+config = load_config('config.json')
 
-# Convert to dict
-config_dict = config.to_dict()
-
-# Update config
-config.update({'model.embedding_dim': 128})
+# Update config: nested keys are merged, not replaced
+config = merge_configs(config, {'model': {'embedding_dim': 128}})
+print(config['model'])
 ```
 
 ### Environment Variables
 
+There is no environment-variable loader; read overrides yourself and merge
+them in:
+
 ```python
 import os
 
-# Use environment variables
-config = ConfigManager.from_env(
-    prefix='COREREC_',
-    defaults={'model.embedding_dim': 64}
-)
-
-# Set environment variable
-os.environ['COREREC_MODEL_EMBEDDING_DIM'] = '128'
+os.environ['COREREC_EMBEDDING_DIM'] = '128'
+override = {'model': {'embedding_dim': int(os.environ.get('COREREC_EMBEDDING_DIM', 64))}}
+config = merge_configs(config, override)
 ```
 
 
@@ -333,49 +301,48 @@ Handle CPU/GPU devices efficiently.
 ### Basic Device Management
 
 ```python
-from corerec.engines.unionizedFilterEngine.device_manager import DeviceManager
+import torch
+from corerec.device import resolve_device, mps_available
 
-# Initialize device manager
-device_manager = DeviceManager()
-
-# Get available device
-device = device_manager.get_device()
+# 'auto' picks CUDA, then Apple MPS, then CPU
+device = resolve_device('auto')
 print(f"Using device: {device}")
 
-# Check CUDA availability
-if device_manager.is_cuda_available():
+# Check availability
+if torch.cuda.is_available():
     print("CUDA is available")
-    print(f"Number of GPUs: {device_manager.get_num_gpus()}")
+    print(f"Number of GPUs: {torch.cuda.device_count()}")
+print(f"Apple MPS available: {mps_available()}")
 
-# Move model to device
-model = model.to(device)
+# PyTorch models take the device directly
+tt = TwoTower(embedding_dim=16, epochs=1, device='auto', verbose=False)
 ```
 
 ### Multi-GPU Support
 
+The built-in models train on one device. To pick a specific GPU, pass it as
+the device:
+
 ```python
-# Use specific GPU
-device_manager = DeviceManager(gpu_id=0)
-
-# Use multiple GPUs
-device_manager = DeviceManager(gpu_ids=[0, 1, 2])
-
-# Distribute model across GPUs
-model = torch.nn.DataParallel(model, device_ids=[0, 1, 2])
+# Use specific GPU (only on a machine with CUDA)
+if torch.cuda.is_available():
+    dcn = DCN(device='cuda:0')
 ```
 
 ### Memory Management
 
+These are plain PyTorch calls:
+
 ```python
-# Monitor GPU memory
-memory_used = device_manager.get_memory_usage()
-print(f"GPU Memory Used: {memory_used:.2f} GB")
+if torch.cuda.is_available():
+    # Monitor GPU memory
+    print(f"GPU Memory Used: {torch.cuda.memory_allocated() / 1e9:.2f} GB")
 
-# Clear cache
-device_manager.clear_cache()
+    # Clear cache
+    torch.cuda.empty_cache()
 
-# Set memory limit
-device_manager.set_memory_limit(max_memory_gb=8)
+    # Set memory limit (fraction of the device's memory)
+    torch.cuda.set_per_process_memory_fraction(0.5)
 ```
 
 
@@ -383,28 +350,16 @@ device_manager.set_memory_limit(max_memory_gb=8)
 
 Generate sample data for testing.
 
+Real datasets come from `cr_learn` (`pip install cr_learn`), for example
+`from cr_learn import ml_1m` and `ml_1m.load()`. For a quick synthetic set:
+
 ```python
-from corerec.utils.example_data import (
-    get_sample_data,
-    generate_synthetic_data
-)
+num_users, num_items, num_interactions = 1000, 500, 10000
+rng = np.random.default_rng(42)
 
-# Get built-in sample data
-netflix_data = get_sample_data('netflix')
-spotify_data = get_sample_data('spotify')
-youtube_data = get_sample_data('youtube')
-
-# Generate synthetic data
-synthetic_data = generate_synthetic_data(
-    num_users=1000,
-    num_items=500,
-    num_interactions=10000,
-    rating_range=(1, 5)
-)
-
-user_ids = synthetic_data['user_ids']
-item_ids = synthetic_data['item_ids']
-ratings = synthetic_data['ratings']
+user_ids = rng.integers(0, num_users, num_interactions).tolist()
+item_ids = rng.integers(0, num_items, num_interactions).tolist()
+ratings = rng.integers(1, 6, num_interactions).astype(float).tolist()  # rating_range (1, 5)
 ```
 
 ## Logging and Debugging
@@ -413,16 +368,13 @@ ratings = synthetic_data['ratings']
 
 ```python
 import logging
-from corerec.utils.logger import setup_logger
+from corerec.utils import setup_logging, get_logger
 
-# Setup logger
-logger = setup_logger(
-    name='corerec',
-    level=logging.INFO,
-    log_file='corerec.log'
-)
+# Setup logging (console, plus a file if log_file is given)
+setup_logging(log_file='corerec.log', console_level=logging.INFO)
 
 # Use logger
+logger = get_logger('corerec')
 logger.info("Training started")
 logger.debug("Batch size: 256")
 logger.warning("Low GPU memory")
@@ -432,54 +384,50 @@ logger.error("Training failed")
 ### Debug Mode
 
 ```python
-# Enable debug mode
-model = DCN(verbose=True, debug=True)
+# Print training progress
+dcn = DCN(epochs=2, verbose=True)
 
-# This will print:
-# - Architecture summary
-# - Training progress
-# - Memory usage
-# - Timing information
+# Versions, BLAS backend and devices, for bug reports
+from corerec.utils import print_system_info
+print_system_info()
 ```
 
 ## Performance Profiling
 
 ### Profile Training
 
+CoreRec has no profiler of its own; the standard library's works:
+
 ```python
-from corerec.utils.profiler import Profiler
+import cProfile
+import pstats
 
-# Create profiler
-profiler = Profiler()
-
-# Start profiling
-profiler.start()
-
-# Train model
-model.fit(user_ids, item_ids, ratings)
-
-# Stop profiling
-stats = profiler.stop()
+# Profile training
+with cProfile.Profile() as profiler:
+    ALS(factors=16).fit(user_ids, item_ids, ratings)
 
 # Print statistics
-print(stats.summary())
+stats = pstats.Stats(profiler).sort_stats('cumulative')
+stats.print_stats(10)
 
 # Save profile
-stats.save('profile.txt')
+stats.dump_stats('profile.prof')
 ```
 
 ### Memory Profiling
 
 ```python
-from corerec.utils.memory_profiler import memory_profile
+import tracemalloc
 
-@memory_profile
 def train_model():
-    model = DCN(embedding_dim=64)
-    model.fit(user_ids, item_ids, ratings)
+    m = ALS(factors=16)
+    m.fit(user_ids, item_ids, ratings)
 
-# This will print memory usage
+tracemalloc.start()
 train_model()
+current, peak = tracemalloc.get_traced_memory()
+tracemalloc.stop()
+print(f"Peak memory: {peak / 1e6:.1f} MB")
 ```
 
 ## Utility Functions
@@ -487,61 +435,49 @@ train_model()
 ### Data Processing
 
 ```python
-from corerec.utils import (
-    train_test_split,
-    normalize_ratings,
-    create_interaction_matrix
-)
+import pandas as pd
+from scipy.sparse import csr_matrix
+from corerec.utils import validate_fit_inputs
+
+data = pd.DataFrame({'user_id': user_ids, 'item_id': item_ids, 'rating': ratings})
+
+# Check inputs the way fit() does (raises ValidationError on bad input)
+validate_fit_inputs(user_ids, item_ids, ratings)
 
 # Train/test split
-train_data, test_data = train_test_split(
-    data,
-    test_size=0.2,
-    random_state=42
-)
+test_data = data.sample(frac=0.2, random_state=42)
+train_data = data.drop(test_data.index)
 
-# Normalize ratings
-normalized_ratings = normalize_ratings(
-    ratings,
-    method='min-max'  # or 'z-score'
-)
+# Normalize ratings (min-max)
+r = data['rating']
+normalized_ratings = (r - r.min()) / (r.max() - r.min())
 
 # Create interaction matrix
-interaction_matrix = create_interaction_matrix(
-    user_ids,
-    item_ids,
-    ratings
-)
+interaction_matrix = csr_matrix((data['rating'], (data['user_id'], data['item_id'])))
 ```
 
 ### Negative Sampling
 
-```python
-from corerec.utils import negative_sampling
+Each deep model samples negatives inside `fit()` (see `num_negatives` on
+`DCN`, `TwoTower`, `corerec.nn.Recommender`). To draw them yourself:
 
-# Sample negative items
-negative_items = negative_sampling(
-    user_id=123,
-    positive_items=[1, 2, 3],
-    all_items=list(range(1, 1000)),
-    num_negatives=10
-)
+```python
+positive_items = {1, 2, 3}
+candidates = np.setdiff1d(np.arange(1, 1000), list(positive_items))
+negative_items = rng.choice(candidates, size=10, replace=False)
 ```
 
 ### Batch Processing
 
 ```python
-from corerec.utils import batch_iterator
+# Recommend for many users at once: {user_id: [items]}
+recs = model.batch_recommend(sorted(set(users))[:256], top_k=10)
 
-# Iterate in batches
-for batch in batch_iterator(data, batch_size=256):
-    # Process batch
-    model.train_step(batch)
+# Score many (user, item) pairs
+scores = model.batch_predict(list(zip(users[:256], items[:256])))
 ```
 
 ## Next Steps
 
 - Explore detailed utility documentation:
 - See [Examples](../examples/index.md) for usage examples
-
-

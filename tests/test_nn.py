@@ -8,8 +8,8 @@ import pytest
 import torch
 import torch.nn as nn
 
-from corerec.nn import (HSTUBlock, MatrixFactorization, Recommender, SequentialTransformer,
-                        causal_mask)
+from corerec.nn import (HSTUBlock, HSTUTransformer, MatrixFactorization, Recommender,
+                        SequentialTransformer, causal_mask)
 
 
 class PlainDot(nn.Module):
@@ -116,6 +116,15 @@ def test_sequential_transformer_learns_next_item():
     assert np.mean(hits) > 0.9
 
 
+def test_hstu_transformer_learns_next_item():
+    df, nxt = _chains()
+    rec = Recommender(HSTUTransformer, {"dim": 32, "num_blocks": 1}, inputs="history",
+                      loss="sampled_softmax", num_negatives=20, epochs=15, batch_size=128,
+                      lr=0.005, max_len=20, device="cpu").fit(df)
+    hits = [nxt[u] in rec.recommend(u, top_k=1) for u in nxt if nxt[u] < 48]
+    assert np.mean(hits) > 0.9
+
+
 def test_custom_block_model_trains():
     df, _ = _chains(100)
     rec = Recommender(HSTUEncoder, inputs="history", epochs=1, max_len=10, device="cpu").fit(df)
@@ -186,3 +195,23 @@ def test_trains_on_mps():
     rec = Recommender(MatrixFactorization, {"dim": 8}, epochs=1, device="mps").fit(_groups())
     assert rec.device.type == "mps"
     assert len(rec.recommend(_groups().user_id.iloc[0], top_k=5)) == 5
+
+
+def test_validation_tracks_ndcg_and_stops_early():
+    df = _groups()
+    test = df.groupby("user_id").tail(2)
+    train = df.drop(test.index)
+    rec = Recommender(MatrixFactorization, {"dim": 16}, epochs=40, batch_size=256, lr=0.05,
+                      device="cpu")
+    rec.fit(train, validation=test, patience=2)
+    v = rec.val_history_
+    assert len(v) == len(rec.history_) < 40, "should have stopped early"
+    assert all(x < max(v) for x in v[-2:]), "stopped after 2 epochs without improvement"
+    # best epoch's weights are kept, not the last epoch's
+    from corerec.evaluation.evaluate import evaluate
+    assert evaluate(rec, test, k=10)["NDCG@10"] == pytest.approx(max(v))
+
+
+def test_no_validation_keeps_old_behaviour():
+    rec = Recommender(MatrixFactorization, {"dim": 8}, epochs=3, device="cpu").fit(_groups())
+    assert len(rec.history_) == 3 and rec.val_history_ == []
