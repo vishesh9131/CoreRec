@@ -522,6 +522,8 @@ class TwoTower(BaseRecommender):
             )
             instance.user_map = maps["user_map"]
             instance.item_map = maps["item_map"]
+            instance.users_index = IdIndex.from_dict(instance.user_map)
+            instance.items_index = IdIndex.from_dict(instance.item_map)
             instance.reverse_item_map = maps["reverse_item_map"]
             instance.is_fitted = state.get("is_fitted", True)
             instance._seen_by_user = {
@@ -577,6 +579,8 @@ class TwoTower(BaseRecommender):
         )
         instance.user_map = state["user_map"]
         instance.item_map = state["item_map"]
+        instance.users_index = IdIndex.from_dict(instance.user_map)
+        instance.items_index = IdIndex.from_dict(instance.item_map)
         instance.reverse_item_map = state["reverse_item_map"]
         instance.item_embeddings_cache = state["item_embeddings_cache"]
         instance.is_fitted = state["is_fitted"]
