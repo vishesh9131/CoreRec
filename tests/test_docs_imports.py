@@ -83,13 +83,7 @@ def _broken_imports(rel_path: str):
 
 # docs/source pages that still import removed modules (corerec.engines.gnnrec,
 # the sandbox, corerec.torch_nn). Fixing a page means deleting its entry here.
-KNOWN_STALE_SOURCE = {
-    "examples/advanced_usage.md",
-    "models/bayesian.md",
-    "models/graph_based.md",
-    "quickstart.md",
-    "torch_nn_vendored.md",
-}
+KNOWN_STALE_SOURCE = set()
 
 SOURCE = DOCS / "source"
 SOURCE_PAGES = sorted(p.relative_to(SOURCE).as_posix() for p in SOURCE.rglob("*.md")

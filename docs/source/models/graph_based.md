@@ -1,59 +1,34 @@
 # Graph-Based Models
 
-Models that treat users and items as nodes in a bipartite interaction graph.
+LightGCN learns user and item embeddings by propagating them over a bipartite
+interaction graph. It uses implicit feedback: a positive rating means an observed
+interaction, rather than a target star rating.
 
-## Production models (CI-tested)
-
-| Model | Import | Tutorial |
-|-------|--------|----------|
-| **LightGCN** | `from corerec.engines.collaborative import LightGCN` | [LightGCN](../tutorials/lightgcn_tutorial.md) |
-
-### GNNRec
-
-Graph neural message passing on the user–item bipartite graph. Uses BCE loss — pass **0/1 labels** (or normalize explicit ratings to [0, 1]).
+## Train and recommend
 
 ```python
-from corerec.engines.gnnrec import GNNRec
+from corerec.engines import LightGCN
 
-model = GNNRec(
-    embedding_dim=64,
-    num_gnn_layers=3,
-    epochs=20,
-    batch_size=256,
-    verbose=True,
-)
-model.fit(user_ids=user_ids, item_ids=item_ids, ratings=binary_ratings)
-recs = model.recommend(user_id=1, top_k=10)
+users = [1, 1, 2, 2, 3, 3]
+items = [10, 20, 20, 30, 10, 30]
+model = LightGCN(n_factors=8, n_layers=1, epochs=2, batch_size=4,
+                 device="cpu", verbose=False)
+model.fit(users, items)
+assert model.recommend(1, top_k=1) == [30]
 ```
 
-### LightGCN
+Training stores the interaction graph sparsely, while user and item embeddings
+use memory proportional to `(users + items) * n_factors`. Increasing the number
+of graph layers increases propagation work. Start with one layer and a small
+embedding size before measuring a larger catalog.
 
-Simplified graph convolution for collaborative filtering.
+## Historical implementations
 
-```python
-from corerec.engines.collaborative import LightGCN
-
-model = LightGCN(n_factors=64, n_layers=3, epochs=100, verbose=True)
-model.fit(user_ids, item_ids, ratings)  # triplet implicit feedback
-recs = model.recommend(user_id=1, top_k=10)
-```
-
-## Sandbox models (experimental)
-
-| Model | Import | Tutorial |
-|-------|--------|----------|
-| GeoIMC | sandbox graph_based | [GeoIMC](../tutorials/removed_models.md) |
-| LightGCN-Base | `corerec.sandbox.collaborative_full.graph_based_base.lightgcn_base` | [LightGCN Base](../tutorials/removed_models.md) |
-| GNN-Base | `corerec.sandbox.collaborative_full.graph_based_base.GNN_base` | [GNN Base](../tutorials/removed_models.md) |
-
-## When to use
-
-- Rich user–item interaction graphs
-- Social or knowledge-graph extensions (sandbox)
-- When CF matrix methods underperform on link structure
+GNNRec and the former sandbox graph models are unavailable in this release.
+Their older examples cannot be imported. See [removed models](../tutorials/removed_models.md).
 
 ## See also
 
-- [Deep learning models](deep_learning.md) (GNNRec)
+- [LightGCN tutorial](../tutorials/lightgcn_tutorial.md)
 - [Matrix factorization](matrix_factorization.md)
 - [Model index](models_index.md)
