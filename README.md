@@ -96,6 +96,46 @@ pip install --upgrade corerec
 pip install cr_learn          # dataset companion (optional but recommended)
 ```
 
+### Google Colab / Jupyter
+
+Install into the running kernel with `%pip`. For the MovieLens example, include
+`datasets`; the base install does not include `cr_learn`:
+
+```text
+%pip install --upgrade "corerec[datasets]"
+```
+
+To use the cloned source in Colab, run these in separate cells:
+
+```text
+!git clone --depth 1 https://github.com/vishesh9131/CoreRec.git
+```
+
+```text
+%pip install "/content/CoreRec[datasets]"
+```
+
+Use a regular install here: an editable install (`-e`) creates a `.pth` file/import
+hook that an already-running kernel may not have loaded. If you already installed
+with `-e`, restart the session/kernel, then rerun the import and training cells.
+`!pip show corerec` succeeding only confirms that shell pip sees the package.
+If imports still fail, compare `sys.executable` with the interpreter used to
+install; `%pip` targets the current kernel. Restart after upgrading dependencies
+that were already imported, too.
+
+```python
+import corerec
+from corerec.engines import DCN
+from cr_learn import ml_1m
+print(corerec.__version__)
+```
+
+The [Colab quickstart notebook](https://github.com/vishesh9131/CoreRec/blob/main/examples/colab_quickstart.ipynb)
+trains on a small MovieLens sample. Run HTTP serving separately in a terminal:
+install `corerec[serving]` first, then use `ModelServer(model).start()` in a script.
+This blocking server call uses Uvicorn's event loop and is not part of the notebook
+training cell; a Colab port is also not your computer's `localhost`.
+
 ### Requirements
 - Python 3.10 to 3.13
 - PyTorch ≥ 2.0
