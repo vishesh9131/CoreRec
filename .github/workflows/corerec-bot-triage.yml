@@ -1,0 +1,32 @@
+name: corerec-bot triage
+
+# Checklist, labels and the welcome note. pull_request_target runs with the
+# base repo's workflow and secrets, so this job must never check out or run the
+# PR's code: it only reads PR metadata through the API.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: corerec-bot-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4  # base branch only, for bot.py
+
+      - id: token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.COREREC_BOT_APP_ID }}
+          private-key: ${{ secrets.COREREC_BOT_PRIVATE_KEY }}
+
+      - name: Check the PR
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: python .github/corerec_bot/bot.py triage
