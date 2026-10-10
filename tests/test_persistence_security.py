@@ -1,4 +1,5 @@
 """Untrusted artifacts cannot authorize Python execution during model loading."""
+from contextlib import nullcontext
 import importlib
 import json
 import pickle
@@ -116,7 +117,10 @@ def test_symlink_component_cannot_escape_directory(tmp_path):
 def test_legacy_opt_in_cannot_be_bypassed_by_a_serving_cache_hit(tmp_path):
     model = engines.ItemKNN().fit([1, 1, 2, 2], [10, 20, 20, 30])
     path = tmp_path / "old.pkl"
-    model.save(path, safe=False)
+    import pickle
+    with path.open("wb") as stream:
+        pickle.dump({"cls": "ItemKNN", "params": {}, "user_map": model.user_map,
+                     "item_map": model.item_map, "R": model.R, "state": model._state()}, stream)
     loader = ModelLoader()
     with pytest.warns(UserWarning, match="execute"):
         loaded = loader.load(path, allow_pickle=True)
@@ -125,16 +129,21 @@ def test_legacy_opt_in_cannot_be_bypassed_by_a_serving_cache_hit(tmp_path):
         loader.load(path)
 
 
-@pytest.mark.parametrize("failure", ["arrays", "metadata"])
+@pytest.mark.parametrize("failure", ["weights", "arrays", "metadata"])
 def test_failed_bundle_save_preserves_previous_generation(failure, tmp_path, monkeypatch):
     path = tmp_path / "model.v1"
     save_bundle(path, model_class="test.Model", config={"version": 1}, state={},
                 arrays={"x": np.array([1])}, state_dict={"weight": torch.ones(1)})
     original = {p.name: p.read_bytes() for p in tmp_path.iterdir()}
+    original_save = np.savez_compressed
+    calls = 0
     def fail(*args, **kwargs):
-        raise OSError("injected failure")
-    target = {"arrays": "numpy.savez_compressed", "weights": "torch.save",
-              "metadata": "os.replace"}[failure]
+        nonlocal calls
+        calls += 1
+        if failure == "metadata" or calls == (1 if failure == "weights" else 2):
+            raise OSError("injected failure")
+        return original_save(*args, **kwargs)
+    target = "os.replace" if failure == "metadata" else "numpy.savez_compressed"
     with monkeypatch.context() as patch:
         patch.setattr(target, fail)
         with pytest.raises(OSError, match="injected"):
@@ -207,7 +216,7 @@ def test_new_safe_models_preserve_string_ids_and_sparse_state(name, params, tmp_
     assert set(loaded.item_map) == {"010", "020", "030"}
     assert loaded.predict("01", "010") == pytest.approx(model.predict("01", "010"))
     arrays = load_bundle(path)["arrays"]
-    assert "R__indptr" in arrays and "R" not in arrays
+    assert any(key in arrays for key in ("R.indptr", "R_indptr")) and "R" not in arrays
     assert all(not array.dtype.hasobject for array in arrays.values())
 
 
@@ -242,7 +251,52 @@ def test_existing_fixed_filename_bundle_remains_readable(tmp_path):
         "arrays_file": "old.arrays.npz", "weights_file": "old.weights.pt",
     }))
     assert is_safe_bundle(path)
-    with pytest.warns(UserWarning, match="execute") if tuple(map(int, torch.__version__.split(".")[:2])) < (2, 10) else __import__("contextlib").nullcontext():
+    with pytest.warns(UserWarning, match="execute") if tuple(map(int, torch.__version__.split(".")[:2])) < (2, 10) else nullcontext():
         loaded = load_bundle(path, allow_pickle=True)
     assert loaded["arrays"]["x"].tolist() == [1, 2]
     assert loaded["state_dict"]["weight"].item() == 1
+
+
+@pytest.mark.parametrize("dtype", [torch.float32, torch.bfloat16, torch.int64, torch.bool])
+def test_numeric_weights_roundtrip_without_torch_load(dtype, tmp_path, monkeypatch):
+    from collections import OrderedDict
+    from corerec.api.safe_persistence import save_artifact, load_artifact
+    weights = OrderedDict(scalar=torch.tensor(1, dtype=dtype),
+                          empty=torch.empty((0, 2), dtype=dtype))
+    weights._metadata = {"": {"version": 1}}
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Numeric bundles must not use torch.load")
+    monkeypatch.setattr(torch, "load", forbidden)
+    for save, load in ((lambda path: save_bundle(path, model_class="test.Model", config={},
+                                                state={}, state_dict=weights), load_bundle),
+                       (lambda path: save_artifact(path, state_dict=weights,
+                                                   metadata={"version": 1}), load_artifact)):
+        path = tmp_path / "weights"
+        save(path)
+        restored = load(path)["state_dict"]
+        assert restored._metadata == weights._metadata
+        for key in weights:
+            assert torch.equal(restored[key], weights[key])
+            assert restored[key].dtype == dtype
+
+
+def test_numeric_weights_refuse_callable_map_location(tmp_path):
+    path = tmp_path / "weights"
+    save_bundle(path, model_class="test.Model", config={}, state={},
+                state_dict={"x": torch.ones(1)})
+    with pytest.raises(SaveLoadError, match="device map_location"):
+        load_bundle(path, map_location=lambda storage, location: storage)
+
+
+@pytest.mark.parametrize("filename", ["artifact", "artifact.pt"])
+def test_mixed_numeric_weights_and_python_payload_require_trust(filename, tmp_path):
+    from corerec.api.safe_persistence import save_artifact, load_artifact
+    path = tmp_path / filename
+    save_artifact(path, state_dict={"weight": torch.ones(1)},
+                  sklearn_payload={"value": 2}, allow_pickle=True)
+    with pytest.raises(SaveLoadError, match="allow_pickle=True"):
+        load_artifact(path)
+    with pytest.warns(UserWarning, match="execute"):
+        restored = load_artifact(path, allow_pickle=True)
+    assert restored["sklearn_payload"] == {"value": 2}
+    assert restored["state_dict"]["weight"].item() == 1

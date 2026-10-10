@@ -150,13 +150,13 @@ def read_interactions(
     else:
         sep = "\t" if suffix in (".tsv", ".tab") else None
         # Excel exports are often Windows-1252; latin-1 decodes any byte, so it's last
-        for enc in ("utf-8", "cp1252", "latin-1"):
+        for enc in ("utf-8-sig", "cp1252", "latin-1"):
             try:
                 raw = pd.read_csv(path, sep=sep, engine="python", encoding=enc)
                 break
             except UnicodeDecodeError:
                 continue
-        if enc != "utf-8":
+        if enc != "utf-8-sig":
             warnings.warn(f"{path.name} is not UTF-8; read it as {enc}", stacklevel=2)
     cols = detect_columns(list(raw.columns), user=user_col, item=item_col,
                           rating=rating_col, timestamp=timestamp_col)

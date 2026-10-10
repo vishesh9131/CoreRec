@@ -17,6 +17,7 @@ from pathlib import Path
 import pickle
 import logging
 
+from corerec.api.id_index import IdIndex
 from corerec.api.base_recommender import BaseRecommender, normalize_interactions
 from corerec.device import resolve_device
 from corerec.api.exceptions import ModelNotFittedError
@@ -206,10 +207,11 @@ class TwoTower(BaseRecommender):
             user_ids, item_ids, interactions
         )
 
-        # build mappings
-        self.user_map = {uid: idx for idx, uid in enumerate(user_ids)}
-        self.item_map = {iid: idx for idx, iid in enumerate(item_ids)}
-        self.reverse_item_map = {idx: iid for iid, idx in self.item_map.items()}
+        # build mappings (#76: one id index; the public dicts are unchanged)
+        self.users_index, self.items_index = IdIndex(user_ids), IdIndex(item_ids)
+        self.user_map = self.users_index.as_dict()
+        self.item_map = self.items_index.as_dict()
+        self.reverse_item_map = dict(enumerate(self.items_index.ids))
 
         # What each user interacted with, by item index, so recommend(exclude_seen=True)
         # has something to exclude.

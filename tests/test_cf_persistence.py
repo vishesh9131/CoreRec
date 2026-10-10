@@ -12,16 +12,21 @@ USERS = [1, 1, 2, 2]
 ITEMS = [10, 20, 20, 30]
 
 
+def _snapshot(directory):
+    """Every file save() wrote (a safe bundle is several), by name."""
+    return {p.name: p.read_bytes() for p in sorted(directory.iterdir()) if p.is_file()}
+
+
 @pytest.mark.parametrize("model_class", [ItemKNN, ALS, Item2Vec])
 def test_unfitted_save_preserves_existing_artifact(model_class, tmp_path):
     path = tmp_path / "model.pkl"
     model = model_class().fit(USERS, ITEMS)
-    model.save(path, safe=False)
-    original = path.read_bytes()
+    model.save(path)
+    original = _snapshot(tmp_path)
     with pytest.raises(ModelNotFittedError):
         model_class().save(path)
-    assert path.read_bytes() == original
-    assert model_class.load(path, allow_pickle=True).predict(1, 10) == pytest.approx(model.predict(1, 10))
+    assert _snapshot(tmp_path) == original
+    assert model_class.load(path).predict(1, 10) == pytest.approx(model.predict(1, 10))
     new_path = tmp_path / "new" / "model.pkl"
     with pytest.raises(ModelNotFittedError):
         model_class().save(new_path)
@@ -33,20 +38,19 @@ def test_unfitted_save_preserves_existing_artifact(model_class, tmp_path):
 def test_failed_save_preserves_artifact_and_removes_temporary_file(model_class, failure, tmp_path):
     path = tmp_path / "model.pkl"
     model = model_class().fit(USERS, ITEMS)
-    model.save(path, safe=False)
-    original = path.read_bytes()
+    model.save(path)
+    original = _snapshot(tmp_path)
     if failure == "serialization":
-        def fail_dump(payload, stream, **kwargs):
+        def fail_dump(stream, *args, **kwargs):
             stream.write(b"partial output")
             raise OSError("write failed")
-        target, effect = "pickle.dump", fail_dump
+        target, effect = "numpy.savez_compressed", fail_dump
     else:
         target, effect = "os.replace", OSError("replace failed")
     with patch(target, side_effect=effect), pytest.raises(OSError):
-        model.save(path, safe=False)
-    assert path.read_bytes() == original
-    assert list(tmp_path.iterdir()) == [path]
-    assert model_class.load(path, allow_pickle=True).predict(1, 10) == pytest.approx(model.predict(1, 10))
+        model.save(path)
+    assert _snapshot(tmp_path) == original  # same files, same bytes, no temp left
+    assert model_class.load(path).predict(1, 10) == pytest.approx(model.predict(1, 10))
 
 
 @pytest.mark.parametrize("model_class,params", [
@@ -87,3 +91,42 @@ def test_older_embedding_artifacts_load_with_constructor_defaults(model_class, t
     loaded = model_class.load(path, allow_pickle=True)
     assert loaded.seed == 42
     assert loaded.predict(1, 10) == pytest.approx(model.predict(1, 10))
+
+
+@pytest.mark.parametrize("name", ["ItemKNN", "UserKNN", "EASE", "SLIM", "ALS", "Item2Vec"])
+def test_saves_a_safe_bundle_that_loads_without_pickle(name, tmp_path, monkeypatch):
+    """These six pickled their whole state, so loading a shared file ran code (#75)."""
+    import json
+
+    import corerec.engines as engines
+    from corerec.serving.model_loader import ModelLoader
+
+    cls = getattr(engines, name)
+    users, items = ["a", "a", "b", "b", "c", "c"], ["x", "y", "y", "z", "x", "z"]
+    model = cls(name="custom").fit(users, items)
+    model.save(tmp_path / "m.pkl")
+    assert json.loads((tmp_path / "m.meta.json").read_text())["format"] == "corerec_safe_v1"
+
+    def refuse(*a, **k):
+        raise AssertionError("loading a safe bundle must not unpickle")
+    monkeypatch.setattr(pickle, "load", refuse)
+    monkeypatch.setattr(pickle, "loads", refuse)
+    for loaded in (cls.load(tmp_path / "m.pkl"), ModelLoader().load(str(tmp_path / "m.pkl"))):
+        assert type(loaded) is cls and loaded.name == "custom"
+        assert loaded.user_map == model.user_map and loaded.item_map == model.item_map
+        assert loaded.recommend("a", top_k=2) == model.recommend("a", top_k=2)
+
+
+def test_legacy_pickles_still_load_with_a_warning(tmp_path):
+    from corerec.engines import ItemKNN
+
+    model = ItemKNN().fit(USERS, ITEMS)
+    payload = {"cls": "ItemKNN", "user_map": model.user_map, "item_map": model.item_map,
+               "R": model.R, "state": {"S": model.S},
+               "params": {"top_k_neighbors": model.top_k_neighbors, "reg": model.reg,
+                          "shrink": model.shrink, "name": model.name}}
+    path = tmp_path / "old.pkl"
+    with path.open("wb") as stream:
+        pickle.dump(payload, stream)
+    with pytest.warns(UserWarning, match="execute"):
+        assert ItemKNN.load(path, allow_pickle=True).recommend(1, top_k=2) == model.recommend(1, top_k=2)

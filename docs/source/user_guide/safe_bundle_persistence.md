@@ -11,7 +11,7 @@ For the base path `production/dcn`, CoreRec writes:
 | File | Contents |
 |------|----------|
 | `dcn.meta.json` | Constructor settings, fitted state, model class, component filenames |
-| `dcn.<generation>.weights.pt` | PyTorch `state_dict`, loaded with `weights_only=True` |
+| `dcn.<generation>.weights.npz` | Tensor bytes with JSON dtype and shape metadata |
 | `dcn.<generation>.arrays.npz` | Numeric arrays, loaded with `allow_pickle=False` |
 
 `<generation>` is a generated identifier. Only the components needed by the model
@@ -28,7 +28,7 @@ still the default. Dotted base names, such as `model.v1`, remain distinct.
 
 ## ID maps and sparse matrices
 
-User and item maps are stored as JSON pair lists so integer keys survive a round
+User and item maps are stored as JSON lists so integer keys survive a round
 trip. Classic CF, embedding CF, VAE, and the PyTorch wrapper store sparse matrices
 as CSR `data`, `indices`, `indptr`, and `shape` arrays. Saving these matrices does
 not allocate a dense user-by-item or item-by-item matrix.
@@ -48,7 +48,7 @@ with TemporaryDirectory() as directory:
     assert is_safe_bundle(path)
     bundle = load_bundle(path)
     assert bundle["metadata"]["model_class"] == "corerec.engines.matrix_factorization.ALS"
-    assert "R__indptr" in bundle["arrays"]
+    assert "R.indptr" in bundle["arrays"]
 ```
 
 ## Legacy migration
@@ -67,7 +67,9 @@ legacy saving for models that support it.
 ## Loading boundaries
 
 Bundle component paths must remain inside the artifact directory. NumPy object
-arrays are rejected, and PyTorch weights use its restricted loader.
+arrays are rejected. New tensor weights load without `torch.load()`. Older
+`.weights.pt` components require PyTorch 2.10 or newer, or explicit
+`allow_pickle=True` for a trusted artifact.
 `ModelLoader` selects registered CoreRec classes from metadata. Custom classes
 must be passed explicitly; custom PyTorch modules require `module_cls=`.
 

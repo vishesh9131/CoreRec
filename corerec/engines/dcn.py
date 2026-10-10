@@ -72,6 +72,7 @@ class DCN(BaseRecommender):
         device: str = "auto",
         task: str = "auto",
         num_negatives: int = 4,
+        seed: Optional[int] = 42,
     ):
         super().__init__(name=name, trainable=trainable, verbose=verbose)
 
@@ -112,6 +113,9 @@ class DCN(BaseRecommender):
         #   auto     -> implicit (top-K recommendation is the primary path)
         self.task = task
         self.num_negatives = num_negatives
+        # weight init and shuffling used torch's global RNG unseeded, so two fits
+        # on the same data recommended differently. None = unseeded.
+        self.seed = seed
         self._fit_task = None  # resolved task after fit
 
         self.embedding_dim = embedding_dim
@@ -284,7 +288,7 @@ class DCN(BaseRecommender):
             seen[u].add(it)
         all_item_ids = list(unique_items)
         n_items_total = len(all_item_ids)
-        rng = np.random.RandomState(42)
+        rng = np.random.RandomState(self.seed)
 
         def build_feat(uid, iid):
             fi = [self.user_map[uid], self.item_map[iid]]
@@ -333,6 +337,8 @@ class DCN(BaseRecommender):
         num_features = len(feature_values) + 1  # +1 for padding/unknown
         self._num_features = num_features
         self._max_features = max_features
+        if self.seed is not None:
+            torch.manual_seed(self.seed)  # weight init, dropout, shuffling
         self.model = self._build_model(num_features, max_features, use_sigmoid=(task != "rating"))
 
         # Convert to tensors
@@ -509,6 +515,7 @@ class DCN(BaseRecommender):
             "device": self.device,
             "task": self.task,
             "num_negatives": self.num_negatives,
+            "seed": self.seed,
         }
         state = {
             "_num_features": self._num_features,
@@ -614,6 +621,7 @@ class DCN(BaseRecommender):
             device=cfg["device"],
             task=cfg.get("task", "auto"),
             num_negatives=cfg.get("num_negatives", 4),
+            seed=cfg.get("seed"),
         )
         instance._fit_task = checkpoint.get("_fit_task", cfg.get("task", "implicit"))
         if instance._fit_task == "auto":

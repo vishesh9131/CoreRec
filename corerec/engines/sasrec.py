@@ -1,3 +1,4 @@
+from corerec.api.id_index import IdIndex
 import numpy as np
 import torch
 from corerec.device import resolve_device
@@ -385,22 +386,18 @@ class SASRec(BaseRecommender):
                 init_cfg["epochs"] = init_cfg.pop("num_epochs")
             return cls(device=dev, **init_cfg)
 
-        def _coerce_id(key):
-            if isinstance(key, str) and key.lstrip("-").isdigit():
-                return int(key)
-            return key
-
         def _restore(instance, config, state, arrays, bundle):
             maps = load_map_state(
-                state, "item_to_index", "index_to_item", int_key_names=("index_to_item",)
+                state, "item_to_index", "index_to_item", int_key_names=("index_to_item",),
+                coerce_numeric=False
             )
-            instance.item_to_index = maps["item_to_index"]
-            instance.index_to_item = maps["index_to_item"]
+            instance._set_items(IdIndex(
+                sorted(maps["item_to_index"], key=maps["item_to_index"].get), offset=1))
             instance.user_sequences = {
-                _coerce_id(k): [int(i) for i in v]
+                k: [int(i) for i in v]
                 for k, v in nested_dict_from_lists(state.get("user_sequences_pairs")).items()
             }
-            instance.user_cooling_weights = dict_from_pairs(state.get("user_cooling_weights_pairs"))
+            instance.user_cooling_weights = dict_from_pairs(state.get("user_cooling_weights_pairs"), coerce_numeric=False)
             instance.is_fitted = state.get("is_fitted", True)
             if arrays and arrays.get("item_popularity") is not None:
                 instance.item_popularity = arrays["item_popularity"]
@@ -507,6 +504,11 @@ class SASRec(BaseRecommender):
         with open(filepath, 'wb') as f:
             pickle.dump(export_data, f)
         self.logger.info(f"Item embeddings exported to {filepath}")
+
+    def _set_items(self, index: IdIndex) -> None:
+        self.items_index = index
+        self.item_to_index = index.as_dict()
+        self.index_to_item = {code: item for item, code in self.item_to_index.items()}
 
     def _score_items(self, last_emb: torch.Tensor, item_indices: Optional[torch.LongTensor] = None) -> torch.Tensor:
         """
@@ -676,12 +678,7 @@ class SASRec(BaseRecommender):
         if interaction_matrix.shape[1] != len(item_ids):
             raise ValueError(f"interaction_matrix shape[1] ({interaction_matrix.shape[1]}) must match len(item_ids) ({len(item_ids)})")
 
-        # build mappings
-        self.item_to_index = {}
-        self.index_to_item = {}
-        for idx, item_id in enumerate(item_ids):
-            self.item_to_index[item_id] = idx + 1  # reserve 0 for padding
-            self.index_to_item[idx + 1] = item_id
+        self._set_items(IdIndex(item_ids, offset=1))
 
         n_items = len(item_ids)
         # item popularity
@@ -801,27 +798,53 @@ class SASRec(BaseRecommender):
         except Exception as e:
             self.logger.warning(f"Model forward test failed: {e}. Continuing anyway.")
 
-        # prepare training sequences
-        train_sequences = []
-        train_targets = []
-        train_users = []
-
+        # training instances: one per user (a long history is cut into
+        # max_seq_length windows from the end), input seq[:-1], target seq[1:].
+        # The causal encoder predicts every position at once, so each event is
+        # a target in one forward pass. Before, every event was its own padded
+        # instance and only the last position was used: ~max_seq_length times
+        # the compute for the same targets.
+        L = self.max_seq_length
+        uidx_of = {u: k for k, u in enumerate(self.user_sequences)}
+        rows_x, rows_y, rows_u = [], [], []
         for user_id, seq in self.user_sequences.items():
             if len(seq) < 2:
                 continue
-            for i in range(1, len(seq)):
-                input_seq = seq[:i]
-                target = seq[i]
-                if len(input_seq) > self.max_seq_length:
-                    input_seq = input_seq[-self.max_seq_length:]
-                else:
-                    input_seq = [0] * (self.max_seq_length - len(input_seq)) + input_seq
-                train_sequences.append(input_seq)
-                train_targets.append(target)
-                train_users.append(user_id)
+            x, y = list(seq[:-1]), list(seq[1:])
+            for end in range(len(x), 0, -L):
+                xs, ys = x[max(0, end - L):end], y[max(0, end - L):end]
+                pad = [0] * (L - len(xs))
+                rows_x.append(pad + xs)
+                rows_y.append(pad + ys)
+                rows_u.append(uidx_of[user_id])
+        train_x = np.asarray(rows_x, dtype=np.int64).reshape(-1, L)
+        train_y = np.asarray(rows_y, dtype=np.int64).reshape(-1, L)
+        train_u = np.asarray(rows_u, dtype=np.int64)
+        # (user, item) pairs seen in training, for rejecting sampled negatives
+        seen_keys = np.unique(np.concatenate(
+            [uidx_of[u] * (n_items + 1) + np.asarray(seq, dtype=np.int64)
+             for u, seq in self.user_sequences.items() if len(seq)] or [np.zeros(0, np.int64)]))
+        cooling = np.array([self.user_cooling_weights.get(u, 1.0) for u in self.user_sequences],
+                           dtype=np.float32) if self.user_cooling else None
 
-        n_train = len(train_sequences)
-        self.logger.info(f"Created {n_train} training instances")
+        n_train = len(train_x)
+        self.logger.info(f"Created {n_train} training sequences "
+                         f"({int((train_y > 0).sum())} target positions)")
+
+        def sample_negatives(u, shape):
+            """Uniform negatives, redrawn where the user has seen the item.
+
+            A user who has seen every item can't get a clean draw; the 100-round
+            cap stops that from hanging fit()."""
+            neg = self._rng.integers(1, n_items + 1, size=shape)
+            for _ in range(100):
+                keys = u.reshape(-1, *([1] * (len(shape) - 1))) * (n_items + 1) + neg
+                pos = np.searchsorted(seen_keys, keys)
+                hit = (pos < len(seen_keys)) & (seen_keys[np.minimum(pos, len(seen_keys) - 1)] == keys)
+                if not hit.any():
+                    break
+                neg[hit] = self._rng.integers(1, n_items + 1, size=int(hit.sum()))
+            return neg
 
         best_loss = float('inf')
         patience_counter = 0
@@ -846,223 +869,65 @@ class SASRec(BaseRecommender):
             processed = 0
 
             for i in range(0, n_train, self.batch_size):
-                batch_indices = indices[i:min(i + self.batch_size, n_train)]
-                batch_sequences = [train_sequences[idx] for idx in batch_indices]
-                batch_targets = [train_targets[idx] for idx in batch_indices]
-                batch_users = [train_users[idx] for idx in batch_indices]
-                batch_size = len(batch_indices)
-
-                # negatives: sample neg_samples negatives per positive
-                batch_negatives = []
-                for _ in range(self.neg_samples):
-                    negatives = []
-                    for user_id, target in zip(batch_users, batch_targets):
-                        user_seq = self.user_sequences.get(user_id, [])
-                        # sample until not in seq -- unless the user has seen
-                        # every item, where that loop never ended and fit() hung
-                        for _ in range(100):
-                            neg = int(self._rng.integers(1, n_items + 1))
-                            if neg not in user_seq:
-                                break
-                        negatives.append(neg)
-                    batch_negatives.append(negatives)
-
-                batch_sequences_t = torch.LongTensor(batch_sequences).to(self.device)
-                batch_targets_t = torch.LongTensor(batch_targets).to(self.device)
-                batch_negatives_t = [torch.LongTensor(negs).to(self.device) for negs in batch_negatives]
-
-                # Validate input sequences - ensure all indices are valid (0 to n_items)
-                if (batch_sequences_t < 0).any() or (batch_sequences_t > n_items).any():
-                    self.logger.warning(f"Invalid sequence indices at epoch {epoch+1}, batch {i//self.batch_size}. Clamping values.")
-                    batch_sequences_t = torch.clamp(batch_sequences_t, 0, n_items)
-                
-                if (batch_targets_t < 1).any() or (batch_targets_t > n_items).any():
-                    self.logger.warning(f"Invalid target indices at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
+                idx = indices[i:i + self.batch_size]
+                x = torch.as_tensor(train_x[idx], device=self.device)
+                y = torch.as_tensor(train_y[idx], device=self.device)
+                mask = y > 0                                     # [B, L] real targets
+                n_pos = int(mask.sum())
+                if n_pos == 0:
                     continue
-
-                padding_mask = (batch_sequences_t == 0)  # [batch, seq_len]
-                # MultiheadAttention expects key_padding_mask where True means ignore
-                # Our padding_mask is already correct (True = padding = ignore)
+                neg = torch.as_tensor(
+                    sample_negatives(train_u[idx], (len(idx), L, self.neg_samples)),
+                    device=self.device)                          # [B, L, N]
 
                 self.optimizer.zero_grad()
-                
-                # Check inputs before forward pass
-                if torch.isnan(batch_sequences_t).any() or (batch_sequences_t < 0).any() or (batch_sequences_t > n_items).any():
-                    self.logger.warning(f"Invalid input sequences at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
-                    continue
-                
-                try:
-                    with torch.cuda.amp.autocast(enabled=False):  # Disable mixed precision to avoid NaN issues
-                        seq_emb = self.model(batch_sequences_t, padding_mask)  # [batch, seq_len, hidden]
-                except Exception as e:
-                    self.logger.warning(f"Error in model forward pass at epoch {epoch+1}, batch {i//self.batch_size}: {e}. Skipping batch.")
-                    continue
-                
-                # Check for NaN in model output
-                if torch.isnan(seq_emb).any() or torch.isinf(seq_emb).any():
-                    # Log which part of the model produced NaN
-                    self.logger.warning(f"NaN/Inf in model output at epoch {epoch+1}, batch {i//self.batch_size}. "
-                                      f"Input range: [{batch_sequences_t.min().item()}, {batch_sequences_t.max().item()}]. "
-                                      f"Output stats: min={seq_emb.min().item():.4f}, max={seq_emb.max().item():.4f}, "
-                                      f"mean={seq_emb.mean().item():.4f}, std={seq_emb.std().item():.4f}. Skipping batch.")
-                    continue
-                
-                last_emb = seq_emb[:, -1, :]  # [batch, hidden]
-                
-                # Check for NaN in last embedding
-                if torch.isnan(last_emb).any() or torch.isinf(last_emb).any():
-                    self.logger.warning(f"NaN/Inf in last embedding at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
-                    continue
+                h = self.model(x, x == 0)                        # [B, L, H]
+                emb = self.model.item_emb
 
-                # Check model parameters for NaN before computing loss
-                has_nan_params = False
-                for param in self.model.parameters():
-                    if torch.isnan(param).any() or torch.isinf(param).any():
-                        has_nan_params = True
-                        break
-                
-                if has_nan_params:
-                    self.logger.warning(f"NaN/Inf in model parameters at epoch {epoch+1}, batch {i//self.batch_size}. Reinitializing model.")
-                    # Reinitialize model
-                    self.model = SASRecModel(
-                        n_items=n_items,
-                        hidden_units=self.hidden_units,
-                        num_blocks=self.num_blocks,
-                        num_heads=self.num_heads,
-                        dropout_rate=self.dropout_rate,
-                        max_seq_length=self.max_seq_length,
-                        position_encoding=self.position_encoding,
-                        attention_type=self.attention_type,
-                        activation=self.activation,
-                        item_embedding_init=None
-                    ).to(self.device)
-                    self.optimizer = torch.optim.Adam(
-                        self.model.parameters(),
-                        lr=self.learning_rate,
-                        weight_decay=self.l2_reg
-                    )
-                    continue
+                if self.loss_type == 'ce':
+                    logits = h @ emb.weight.t()                  # [B, L, n_items+1]
+                    per_pos = F.cross_entropy(logits[mask], y[mask], reduction="none")
+                else:
+                    pos_s = (h * emb(y)).sum(-1).clamp(-50, 50)                      # [B, L]
+                    neg_s = (h.unsqueeze(2) * emb(neg)).sum(-1).clamp(-50, 50)       # [B, L, N]
+                    if self.loss_type == 'bpr':
+                        lp = -F.logsigmoid(pos_s.unsqueeze(-1) - neg_s).mean(-1)
+                    else:  # 'bce'
+                        lp = (F.softplus(-pos_s) + F.softplus(neg_s).sum(-1)) / (1 + self.neg_samples)
+                    per_pos = lp[mask]
 
-                if self.loss_type == 'bpr':
-                    # Get full scores for all items
-                    full_scores = self._score_items(last_emb, item_indices=None)  # [batch, n_items+1]
-                    
-                    # Check for NaN in scores
-                    if torch.isnan(full_scores).any() or torch.isinf(full_scores).any():
-                        self.logger.warning(f"NaN/Inf in prediction scores at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
-                        continue
-                    
-                    # Extract positive scores
-                    pos_idx = batch_targets_t.unsqueeze(1)  # [batch,1]
-                    pos_scores = full_scores.gather(1, pos_idx).squeeze(1)  # [batch]
-                    loss = 0.0
-                    for negs in batch_negatives_t:
-                        # negs is [batch] - one negative per example
-                        # Use gather to extract scores for each negative item
-                        neg_idx = negs.unsqueeze(1)  # [batch, 1]
-                        neg_scores = full_scores.gather(1, neg_idx).squeeze(1)  # [batch]
-                        # Clamp difference to prevent numerical issues
-                        diff = pos_scores - neg_scores
-                        diff = torch.clamp(diff, min=-50, max=50)  # Prevent extreme values
-                        loss += -torch.log(torch.sigmoid(diff) + 1e-8).mean()
-                    loss = loss / self.neg_samples
+                if cooling is not None:
+                    w = torch.as_tensor(cooling[train_u[idx]], device=self.device)
+                    per_pos = per_pos * w.unsqueeze(1).expand_as(mask)[mask]
+                loss = per_pos.mean()
 
-                elif self.loss_type == 'ce':
-                    logits = self._score_items(last_emb)  # [batch, n_items+1]
-                    
-                    # Check for NaN in logits
-                    if torch.isnan(logits).any() or torch.isinf(logits).any():
-                        self.logger.warning(f"NaN/Inf in logits at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
-                        continue
-                    
-                    # cross entropy expects [batch, C] and targets in 0..C-1
-                    # our padding 0 is present; target is in 1..n_items
-                    loss = F.cross_entropy(logits, batch_targets_t)
-
-                else:  # 'bce' default
-                    # Get full scores for all items
-                    full_scores = self._score_items(last_emb, item_indices=None)  # [batch, n_items+1]
-                    
-                    # Check for NaN in scores
-                    if torch.isnan(full_scores).any() or torch.isinf(full_scores).any():
-                        self.logger.warning(f"NaN/Inf in prediction scores at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
-                        continue
-                    
-                    # Extract positive scores
-                    pos_idx = batch_targets_t.unsqueeze(1)  # [batch,1]
-                    pos_scores = full_scores.gather(1, pos_idx).squeeze(1)  # [batch]
-                    
-                    # Clamp scores to prevent extreme values
-                    pos_scores = torch.clamp(pos_scores, min=-50, max=50)
-                    
-                    pos_loss = F.binary_cross_entropy_with_logits(pos_scores, torch.ones_like(pos_scores))
-                    
-                    neg_loss = 0.0
-                    for negs in batch_negatives_t:
-                        # negs is [batch] - one negative per example
-                        neg_idx = negs.unsqueeze(1)  # [batch, 1]
-                        neg_scores = full_scores.gather(1, neg_idx).squeeze(1)  # [batch]
-                        
-                        # Clamp scores to prevent extreme values
-                        neg_scores = torch.clamp(neg_scores, min=-50, max=50)
-                        
-                        neg_loss += F.binary_cross_entropy_with_logits(neg_scores, torch.zeros_like(neg_scores))
-                    loss = (pos_loss + neg_loss) / (1 + self.neg_samples)
-
-                # user cooling weights
-                if self.user_cooling:
-                    cooling_weights = torch.tensor(
-                        [self.user_cooling_weights.get(u, 1.0) for u in batch_users],
-                        dtype=loss.dtype,
-                        device=self.device
-                    )
-                    loss = (loss * cooling_weights).mean()
-
-                # Check for NaN loss
-                if torch.isnan(loss) or torch.isinf(loss):
-                    self.logger.warning(f"NaN/Inf loss detected at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
-                    self.optimizer.zero_grad()  # Clear gradients
+                if not torch.isfinite(loss):
+                    self.logger.warning(f"Non-finite loss at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
+                    self.optimizer.zero_grad()
                     continue
 
                 loss.backward()
-                # Clip gradients to prevent exploding gradients
                 grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
-                
-                # Check for NaN gradients
-                has_nan_grad = False
-                for param in self.model.parameters():
-                    if param.grad is not None and (torch.isnan(param.grad).any() or torch.isinf(param.grad).any()):
-                        has_nan_grad = True
-                        break
-                
-                if has_nan_grad or torch.isnan(grad_norm) or torch.isinf(grad_norm):
-                    self.logger.warning(f"NaN/Inf gradients detected at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
+                if not torch.isfinite(grad_norm):
+                    self.logger.warning(f"Non-finite gradients at epoch {epoch+1}, batch {i//self.batch_size}. Skipping batch.")
                     self.optimizer.zero_grad()
                     continue
-                
                 self.optimizer.step()
-                
-                # Check for NaN parameters after update
-                has_nan_param = False
-                for param in self.model.parameters():
-                    if torch.isnan(param).any() or torch.isinf(param).any():
-                        has_nan_param = True
-                        break
-                
-                if has_nan_param:
-                    self.logger.error(f"NaN/Inf parameters detected after update at epoch {epoch+1}, batch {i//self.batch_size}. Training may be unstable.")
-                    # Try to recover by reloading best model state if available
-                    if self.best_model_state is not None:
-                        self.logger.info("Attempting to recover by reloading best model state.")
-                        self.model.load_state_dict(self.best_model_state)
-                        self.optimizer.zero_grad()
-                    continue
 
-                epoch_loss += loss.item() * batch_size
-                processed += batch_size
+                epoch_loss += loss.item() * n_pos
+                processed += n_pos
 
                 if (i // self.batch_size) % self.log_interval == 0:
                     self.logger.info(f"Epoch {epoch+1}/{self.epochs} Batch {i//self.batch_size} Loss: {loss.item():.4f}")
+
+            # once per epoch rather than on every batch: a full parameter scan per
+            # step was a measurable share of training time
+            if any(not torch.isfinite(p).all() for p in self.model.parameters()):
+                self.logger.error(f"Non-finite parameters after epoch {epoch+1}.")
+                if self.best_model_state is not None:
+                    self.logger.info("Reloading best model state.")
+                    self.model.load_state_dict({k: v.to(self.device) for k, v in self.best_model_state.items()})
+                break
 
             # Check if we processed any batches
             if processed == 0:
@@ -1187,7 +1052,8 @@ class SASRec(BaseRecommender):
             scores[1:] = scores[1:] - self.item_popularity
 
         top_indices = np.argsort(scores)[::-1][:top_k]
-        recommendations = [self.index_to_item.get(int(idx), None) for idx in top_indices]
+        recommendations = [self.index_to_item[int(idx)] for idx in top_indices
+                           if np.isfinite(scores[idx]) and int(idx) in self.index_to_item]
         return recommendations
 
     def evaluate(self, eval_data: Dict[Any, Tuple[List[int], List[int]]], metrics: Optional[List[str]] = None, cutoffs: Optional[List[int]] = None) -> Dict[str, float]:

@@ -1,6 +1,6 @@
 # Model Persistence
 
-Registered production models save safe bundles by default: JSON metadata, numeric NumPy arrays, and PyTorch weights loaded with `weights_only=True`.
+Registered production models save safe bundles by default: JSON metadata, numeric NumPy arrays, and tensor bytes stored in NumPy archives without pickle.
 
 ## Save and load a model
 
@@ -33,16 +33,18 @@ To migrate a model you created yourself:
 ```python
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from corerec.engines import ItemKNN
+from corerec.engines import DCN
 
-model = ItemKNN().fit([1, 1, 2, 2], [10, 20, 20, 30])
+model = DCN(epochs=1, embedding_dim=4, deep_layers=[4], device="cpu")
+model.fit([1, 1, 2, 2], [10, 20, 20, 30], [1., 1., 1., 1.])
 with TemporaryDirectory() as directory:
-    legacy_path = Path(directory) / "legacy.pkl"
+    legacy_path = Path(directory) / "legacy.pt"
     model.save(legacy_path, safe=False)
-    legacy = ItemKNN.load(legacy_path, allow_pickle=True)
+    legacy = DCN.load(legacy_path, allow_pickle=True)
     safe_path = Path(directory) / "production"
     legacy.save(safe_path)
-    assert ItemKNN.load(safe_path).predict(1, 10) == model.predict(1, 10)
+    assert DCN.load(safe_path).predict(1, 10) == model.predict(1, 10)
+
 ```
 
 `ModelLoader.load()` and the CSV artifact loader also accept `allow_pickle=True`.

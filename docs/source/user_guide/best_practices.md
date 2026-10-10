@@ -101,11 +101,11 @@ benefit from the threadpool directly.
 
 ## Demo Frontends
 
-Quickly demo your model with themed UIs:
+The themed demo UIs (`corerec.imshow`) were removed in 0.7.0. To click
+through a model's recommendations, serve it and open the interactive API page
+FastAPI generates:
 
-```python
-from corerec.imshow import connector
-
-demo = connector(my_recommender, frontend="spotify")
-demo.run()  # Opens browser with Spotify-themed UI
+```bash
+corerec serve sample_data/events.csv --port 8000
+# then open http://localhost:8000/docs and try POST /recommend
 ```

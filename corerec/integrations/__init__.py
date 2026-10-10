@@ -1,15 +1,9 @@
-"""
-CoreRec MLOps Integrations
+"""Moved to ``corerec.experimental.integrations`` (#79): untested and unused by CoreRec."""
 
-Integrations with popular ML experiment tracking and deployment tools.
+import warnings
 
-Author: Vishesh Yadav (mail: sciencely98@gmail.com)
-"""
+warnings.warn("corerec.integrations moved to corerec.experimental.integrations, which is untested; "
+              "import it from there", DeprecationWarning, stacklevel=2)
 
-from corerec.integrations.mlflow_integration import MLflowTracker
-from corerec.integrations.wandb_integration import WandBTracker
-
-__all__ = [
-    "MLflowTracker",
-    "WandBTracker",
-]
+from corerec.experimental.integrations import *  # noqa: E402,F401,F403
+from corerec.experimental.integrations import __all__  # noqa: E402,F401

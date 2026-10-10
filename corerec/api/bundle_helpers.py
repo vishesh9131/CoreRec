@@ -115,28 +115,3 @@ def load_feature_map(state: Dict[str, Any]) -> Dict[str, Dict[Any, Any]]:
     if isinstance(legacy, dict):
         return legacy
     return {}
-
-
-def pack_sparse_arrays(values: Dict[str, Any]) -> Dict[str, np.ndarray]:
-    """Store sparse matrices as CSR components instead of densifying them."""
-    arrays = {}
-    for name, value in values.items():
-        if sparse.issparse(value):
-            value = value.tocsr()
-            for field in ("data", "indices", "indptr", "shape"):
-                arrays[f"{name}__{field}"] = np.asarray(getattr(value, field))
-        else:
-            arrays[name] = np.asarray(value)
-    return arrays
-
-
-def unpack_sparse_arrays(arrays: Dict[str, np.ndarray]) -> Dict[str, Any]:
-    values = {name: value for name, value in arrays.items() if "__" not in name}
-    for name in arrays:
-        if name.endswith("__indptr"):
-            key = name[:-len("__indptr")]
-            values[key] = sparse.csr_matrix(
-                (arrays[f"{key}__data"], arrays[f"{key}__indices"], arrays[name]),
-                shape=tuple(arrays[f"{key}__shape"]),
-            )
-    return values

@@ -120,7 +120,7 @@ class BaseRecommender(ABC):
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        if "fit" in cls.__dict__:
+        if "fit" in cls.__dict__ and not cls.__dict__.get("_uses_interactions_adapter", False):
             cls.fit = _accept_datasets(cls.__dict__["fit"])
 
     def __init__(self, name: Optional[str] = None, trainable: bool = True, verbose: bool = False):
