@@ -278,3 +278,23 @@ def test_num_epochs_alias_warns_and_applies(cls_name):
         model = getattr(engines, cls_name)(num_epochs=3)
     assert model.epochs == 3
 
+
+
+@pytest.mark.parametrize("name", sorted(REGISTRY))
+def test_misspelled_constructor_argument_raises(name):
+    """ALS(factor=8) used to become a stray attribute and train with factors=64,
+    so `corerec train --param factor=8` was silently ignored (#85)."""
+    import corerec.engines as engines
+
+    with pytest.raises(TypeError):
+        getattr(engines, name)(definitely_not_a_param=1)
+
+
+def test_embedding_cf_still_takes_its_own_parameters(tmp_path):
+    from corerec.engines import ALS, Item2Vec
+
+    assert ALS(factors=8, alpha=2.0, epochs=3, seed=1).iterations == 3
+    assert Item2Vec(num_negatives=2, learning_rate=0.1).num_negatives == 2
+    m = ALS(factors=8, iterations=2).fit([0, 0, 1, 2], [1, 2, 2, 3])
+    m.save(str(tmp_path / "als.pkl"))
+    assert ALS.load(str(tmp_path / "als.pkl")).factors == 8
