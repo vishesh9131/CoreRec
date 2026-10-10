@@ -37,6 +37,7 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 
 import numpy as np
 import torch
+from corerec.api.id_index import IdIndex
 from corerec.device import resolve_device
 import torch.nn as nn
 import torch.nn.functional as F
@@ -263,12 +264,7 @@ class HSTU(BaseRecommender):
             torch.manual_seed(self.seed)
         rng = np.random.default_rng(self.seed)
 
-        self.item_to_index = {}
-        self.index_to_item = [None]
-        for it in items:
-            if it not in self.item_to_index:
-                self.item_to_index[it] = len(self.index_to_item)
-                self.index_to_item.append(it)
+        self._set_items(IdIndex(items, offset=1))  # first-appearance order, 0 = padding
         n_items = len(self.index_to_item) - 1
 
         order = np.arange(len(users)) if times is None else np.argsort(times, kind="stable")
@@ -353,6 +349,12 @@ class HSTU(BaseRecommender):
         return F.cross_entropy(logits, torch.zeros(len(y), dtype=torch.long, device=self.device))
 
     # ------------------------------------------------------------ inference
+
+    def _set_items(self, items: "IdIndex") -> None:
+        # the attributes the rest of HSTU (and its ONNX export) read, unchanged (#76)
+        self.items_index = items
+        self.item_to_index = items.as_dict()
+        self.index_to_item = [None] + items.ids
 
     def _user_vectors(self, users: Sequence[Any]) -> torch.Tensor:
         """Encode each user's latest window; returns [len(users), d] on the model's device."""
@@ -459,8 +461,7 @@ class HSTU(BaseRecommender):
             return cls(device=device, **cfg)
 
         def _restore(inst, cfg, state, arrays, bundle):
-            inst.index_to_item = [None] + list(state["items"])
-            inst.item_to_index = {it: i for i, it in enumerate(inst.index_to_item) if i}
+            inst._set_items(IdIndex(state["items"], offset=1))
             inst.has_time = bool(state["has_time"])
             inst.window = int(state["window"])
             bounds = np.concatenate([[0], np.cumsum(arrays["seq_lengths"])])
