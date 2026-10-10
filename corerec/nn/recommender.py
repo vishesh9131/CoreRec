@@ -284,7 +284,7 @@ class Recommender(BaseRecommender):
             "config": {k: getattr(self, k) for k in (
                 "inputs", "num_negatives", "epochs", "batch_size", "lr", "weight_decay",
                 "max_len", "seed", "name")},
-            "loss": self.loss if isinstance(self.loss, str) else "bpr",
+            "loss": self.loss if isinstance(self.loss, str) else None,
             "user_ids": self._users, "item_ids": self._items,
             "seen": (self._seen.data, self._seen.indices, self._seen.indptr),
             "sequences": self._sequences,
@@ -302,7 +302,8 @@ class Recommender(BaseRecommender):
 
     @classmethod
     def load(cls, path: Union[str, Path], module_cls: Optional[type] = None,
-             device: str = "auto", *, allow_pickle: bool = False, **kwargs) -> "Recommender":
+             device: str = "auto", *, allow_pickle: bool = False,
+             loss: Optional[Union[str, Callable]] = None, **kwargs) -> "Recommender":
         from corerec.api.model_bundle import is_safe_bundle, load_bundle, require_legacy_pickle
         if is_safe_bundle(path):
             from corerec.api.model_bundle import unpack_arrays
@@ -329,8 +330,11 @@ class Recommender(BaseRecommender):
                     raise ValueError(
                         f"can't find {qual} in {mod}; it was defined in a script or notebook "
                         "when saved. Pass Recommender.load(path, module_cls=...)")
+        restored_loss = d["loss"] if loss is None else loss
+        if restored_loss is None:
+            raise ValueError("Custom loss requires loss= explicitly when loading")
         cfg = dict(d["config"])
-        inst = cls(module_cls, d["module_kwargs"], loss=d["loss"], device=device, **cfg)
+        inst = cls(module_cls, d["module_kwargs"], loss=restored_loss, device=device, **cfg)
         inst._set_index(IdIndex(d["user_ids"]), IdIndex(d["item_ids"], offset=1))
         data, indices, indptr = d["seen"]
         inst._seen = sp.csr_matrix((data, indices, indptr),

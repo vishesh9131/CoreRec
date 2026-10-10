@@ -56,6 +56,10 @@ Newly trained artifacts use safe bundles and need no trust option.
 
 For `corerec.nn.Recommender`, built-in modules load automatically. Supply a custom
 module class explicitly with `Recommender.load(path, module_cls=MyModule)`.
+Custom loss functions also require an explicit `loss=my_loss` argument on load;
+the artifact records that a custom loss is needed and never substitutes BPR.
+Artifacts created before this check may already have lost their custom loss;
+pass the original `loss=` explicitly when loading those artifacts.
 An artifact's metadata cannot authorize importing arbitrary Python modules.
 
 ## Model information
