@@ -9,6 +9,7 @@ from scipy.sparse import csr_matrix
 from tqdm import tqdm
 
 from corerec.api.id_index import IdIndex
+from corerec.api.interactions import to_interactions
 from corerec.api.base_recommender import BaseRecommender
 from corerec.api.exceptions import ModelNotFittedError, InvalidParameterError
 from corerec.utils.validation import (
@@ -221,12 +222,11 @@ class DCN(BaseRecommender):
         item_features: Optional[Dict[int, Dict[str, Any]]] = None,
     ) -> "DCN":
         """Train the DCN model."""
-        (user_ids, item_ids, ratings), _ = self._unpack_fit_args(
-            user_ids, item_ids, ratings, supported_modes=("triplet",)
-        )
-
-        # Validate inputs
+        # Validate inputs (the model's own messages first), then read every input
+        # form through the one adapter (#78); ratings keep their full precision
         validate_fit_inputs(user_ids, item_ids, ratings)
+        user_ids, item_ids, _ = to_interactions(user_ids, item_ids, ratings).triple()
+        ratings = np.asarray(ratings, dtype=float).tolist()
 
         # Create mappings
         unique_users = IdIndex.fit(user_ids)[0].ids
