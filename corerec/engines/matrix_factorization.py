@@ -22,7 +22,10 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 from corerec.api.base_recommender import BaseRecommender
-from corerec.api.model_bundle import atomic_pickle_dump
+from corerec.api.model_bundle import (
+    is_safe_bundle, load_bundle, ordered_ids, pack_arrays, save_bundle, unpack_arrays,
+    warn_legacy_pickle,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -124,15 +127,25 @@ class _EmbeddingCFBase(BaseRecommender):
         for key in ("alpha", "num_negatives", "learning_rate"):
             if hasattr(self, key):
                 params[key] = getattr(self, key)
-        atomic_pickle_dump(path, {
-            "cls": type(self).__name__, "U": self.U, "V": self.V, "R": self.R,
-            "user_map": self.user_map, "item_map": self.item_map, "params": params,
-        })
+        # corerec_safe_v1: a pickle here ran arbitrary code on load (#75)
+        arrays, sparse = pack_arrays({"U": self.U, "V": self.V, "R": self.R})
+        save_bundle(path, model_class=f"{type(self).__module__}.{type(self).__name__}",
+                    config=params,
+                    state={"users": ordered_ids(self.user_map), "items": ordered_ids(self.item_map),
+                           "sparse": sparse},
+                    arrays=arrays)
 
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs) -> "_EmbeddingCFBase":
-        with open(Path(path), "rb") as f:
-            d = pickle.load(f)
+        if is_safe_bundle(path):
+            b = load_bundle(path)
+            d = {"params": b["config"], **unpack_arrays(b["arrays"], b["state"]["sparse"]),
+                 "user_map": {x: k for k, x in enumerate(b["state"]["users"])},
+                 "item_map": {x: k for k, x in enumerate(b["state"]["items"])}}
+        else:
+            warn_legacy_pickle(path)
+            with open(Path(path), "rb") as f:
+                d = pickle.load(f)
         inst = cls(**d["params"])
         inst.U = d["U"]; inst.V = d["V"]; inst.R = d["R"]
         inst.user_map = d["user_map"]; inst.item_map = d["item_map"]
