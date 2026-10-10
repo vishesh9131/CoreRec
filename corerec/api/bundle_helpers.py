@@ -25,7 +25,7 @@ def dict_from_pairs(
     pairs_list: Optional[List[List[Any]]],
     *,
     int_keys: bool = False,
-    coerce_numeric: bool = True,
+    coerce_numeric: bool = False,
 ) -> Dict[Any, Any]:
     if not pairs_list:
         return {}
@@ -88,7 +88,7 @@ def load_map_state(
     state: Dict[str, Any],
     *names: str,
     int_key_names: Optional[tuple] = None,
-    coerce_numeric: bool = True,
+    coerce_numeric: bool = False,
 ) -> Dict[str, Dict[Any, Any]]:
     int_key_names = int_key_names or ()
     loaded: Dict[str, Dict[Any, Any]] = {}
@@ -110,7 +110,7 @@ def save_feature_map(feature_map: Optional[Dict[str, Dict[Any, Any]]]) -> Dict[s
 def load_feature_map(state: Dict[str, Any]) -> Dict[str, Dict[Any, Any]]:
     entries = state.get("feature_map_entries")
     if entries:
-        return {k: dict_from_pairs(v, coerce_numeric=True) for k, v in entries}
+        return {k: dict_from_pairs(v, coerce_numeric=False) for k, v in entries}
     legacy = state.get("feature_map")
     if isinstance(legacy, dict):
         return legacy
