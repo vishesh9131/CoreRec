@@ -686,31 +686,18 @@ def normalize_interactions(user_ids, item_ids, interactions):
     if arr is not None and arr.ndim == 2 and arr.shape == (len(users), len(items)):
         return users, items, arr
 
-    # Triple form: user_ids/item_ids are parallel, one entry per interaction.
-    if len(users) != len(items):
-        raise ValueError(
-            "fit expects either a [n_users, n_items] interaction matrix, or "
-            "parallel user_ids/item_ids with one entry per interaction; got "
-            f"{len(users)} user_ids and {len(items)} item_ids."
-        )
-    if arr is None:
-        ratings = np.ones(len(users), dtype=np.float32)  # implicit feedback
-    else:
-        ratings = arr.astype(np.float32).ravel()
-        if len(ratings) != len(users):
-            raise ValueError(
-                f"Got {len(ratings)} ratings for {len(users)} interactions."
-            )
+    # Triple form: one entry per interaction. Read through the one adapter (#78),
+    # so lengths and NaN/inf ratings fail the same way as for every other model.
+    from corerec.api.interactions import to_interactions
 
-    # first-appearance order, same as dict.fromkeys
-    u_codes, uniq_users = pd.factorize(pd.Series(users, dtype=object))
-    i_codes, uniq_items = pd.factorize(pd.Series(items, dtype=object))
+    events = to_interactions(users, items, interactions)
     # a repeated (user, item) keeps its last rating, as the dense version did
-    last = ~pd.DataFrame({"u": u_codes, "i": i_codes}).duplicated(keep="last").to_numpy()
+    last = ~pd.DataFrame({"u": events.user_codes, "i": events.item_codes}) \
+        .duplicated(keep="last").to_numpy()
     matrix = sp.csr_matrix(
-        (ratings[last], (u_codes[last], i_codes[last])),
-        shape=(len(uniq_users), len(uniq_items)), dtype=np.float32)
-    return list(uniq_users), list(uniq_items), matrix
+        (events.ratings[last], (events.user_codes[last], events.item_codes[last])),
+        shape=(len(events.users), len(events.items)), dtype=np.float32)
+    return events.users.ids, events.items.ids, matrix
 
 
 def _reject_non_finite(ratings) -> None:
