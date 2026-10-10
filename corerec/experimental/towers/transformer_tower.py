@@ -19,7 +19,7 @@ from transformers import (
     PreTrainedTokenizer,  # initionally not used
 )
 
-from corerec.towers.base_tower import AbstractTower
+from corerec.experimental.towers.base_tower import AbstractTower
 
 
 class TransformerTower(AbstractTower):
