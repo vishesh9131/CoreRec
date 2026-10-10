@@ -41,3 +41,14 @@ def test_matches_the_mapping_models_build_today():
     idx, got = IdIndex.fit(items, offset=1)
     assert got.tolist() == (codes + 1).tolist()
     assert idx.ids == list(uniques)
+
+
+def test_two_tower_builds_its_maps_from_id_index():
+    """Stage 2 of #76: TwoTower's maps come from IdIndex; public dicts unchanged."""
+    from corerec.engines import TwoTower
+
+    m = TwoTower(embedding_dim=4, epochs=1, verbose=False, device="cpu").fit(
+        ["u2", "u1", "u2"], [30, 10, 20])
+    assert m.user_map == m.users_index.as_dict()
+    assert m.item_map == m.items_index.as_dict()
+    assert m.reverse_item_map == {v: k for k, v in m.item_map.items()}
