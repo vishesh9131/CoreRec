@@ -122,9 +122,14 @@ class _ClassicCFBase(BaseRecommender):
             raise ModelNotFittedError()
         # corerec_safe_v1: a pickle here ran arbitrary code on load (#75)
         arrays, sparse = pack_arrays({"R": self.R, **self._state()})
+        config = {"top_k_neighbors": self.top_k_neighbors, "reg": self.reg,
+                  "shrink": self.shrink, "name": self.name,
+                  "verbose": self.verbose, "trainable": self.trainable}
+        for key in ("l1_ratio", "alpha", "max_iter"):
+            if hasattr(self, key):
+                config[key] = getattr(self, key)
         save_bundle(path, model_class=f"{type(self).__module__}.{type(self).__name__}",
-                    config={"top_k_neighbors": self.top_k_neighbors, "reg": self.reg,
-                            "shrink": self.shrink, "name": self.name},
+                    config=config,
                     state={"users": ordered_ids(self.user_map), "items": ordered_ids(self.item_map),
                            "sparse": sparse},
                     arrays=arrays)

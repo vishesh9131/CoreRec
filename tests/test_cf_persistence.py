@@ -130,3 +130,23 @@ def test_legacy_pickles_still_load_with_a_warning(tmp_path):
         pickle.dump(payload, stream)
     with pytest.warns(UserWarning, match="execute"):
         assert ItemKNN.load(path, allow_pickle=True).recommend(1, top_k=2) == model.recommend(1, top_k=2)
+
+
+@pytest.mark.parametrize("name", ["ItemKNN", "UserKNN", "EASE", "SLIM"])
+def test_classic_constructor_settings_and_refit_survive_safe_load(name, tmp_path):
+    import corerec.engines as engines
+    cls = getattr(engines, name)
+    params = {"name": "custom", "top_k_neighbors": 2, "reg": 4., "shrink": .5,
+              "verbose": True, "trainable": False}
+    if name == "SLIM":
+        params.update(alpha=.02, l1_ratio=.7, max_iter=12)
+    model = cls(**params).fit(USERS, ITEMS)
+    path = tmp_path / name
+    model.save(path)
+    restored = cls.load(path)
+    for key, value in params.items():
+        assert getattr(restored, key) == value
+    restored.fit(USERS, ITEMS)
+    for user in model.user_map:
+        for item in model.item_map:
+            assert restored.predict(user, item) == pytest.approx(model.predict(user, item))
