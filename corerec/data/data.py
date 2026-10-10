@@ -49,16 +49,14 @@ class BaseDataset:
 
     def save(self, fpath):
         """Save the dataset to a file."""
-        # Ensure the directory exists if a directory is specified
-        dirname = os.path.dirname(fpath)
-        if dirname:  # Only create directories if a directory is provided
-            os.makedirs(dirname, exist_ok=True)
-        with open(fpath, "wb") as f:
-            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+        from corerec.api.model_bundle import atomic_pickle_dump
+        atomic_pickle_dump(fpath, self)
 
     @staticmethod
-    def load(fpath):
-        """Load a dataset from a file."""
+    def load(fpath, *, allow_pickle=False):
+        """Load a trusted pickle dataset only with explicit permission."""
+        from corerec.api.model_bundle import require_legacy_pickle
+        require_legacy_pickle(fpath, allow_pickle)
         with open(fpath, "rb") as f:
             dataset = pickle.load(f)
         return dataset

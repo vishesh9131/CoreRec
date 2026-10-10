@@ -2,7 +2,7 @@
 Core Serialization/Deserialization Engine
 
 Handles conversion between objects and various formats (JSON, YAML, Pickle).
-Uses reflection and dynamic imports for class reconstruction.
+Reconstructs explicitly registered classes.
 
 Author: Vishesh Yadav (mail: sciencely98@gmail.com)
 """
@@ -42,12 +42,11 @@ def serialize(obj: Any) -> Dict[str, Any]:
         return obj
 
 
-def deserialize(data: Union[Dict[str, Any], str, Path]) -> Any:
+def deserialize(data: Union[Dict[str, Any], str, Path], *, allow_pickle: bool = False) -> Any:
     """
     Deserialize an object from dictionary or file.
 
-    Uses reflection and dynamic imports to reconstruct objects
-    without hardcoded class imports.
+    Reconstructs only classes explicitly registered by the application.
 
     Args:
         data: Dictionary, file path, or JSON string
@@ -57,14 +56,14 @@ def deserialize(data: Union[Dict[str, Any], str, Path]) -> Any:
 
     Example:
         model_dict = {'_type': 'NCF', '_module': 'corerec.engines.nn_base.ncf', ...}
-        model = deserialize(model_dict)  # Automatically imports and creates NCF!
+        model = deserialize(model_dict)  # Requires an explicitly registered class.
 
     Author: Vishesh Yadav (mail: sciencely98@gmail.com)
     """
     # Handle file paths
     if isinstance(data, (str, Path)):
         if os.path.exists(data):
-            return load_from_file(data)
+            return load_from_file(data, allow_pickle=allow_pickle)
         else:
             # Try parsing as JSON string
             try:
@@ -85,11 +84,12 @@ def deserialize(data: Union[Dict[str, Any], str, Path]) -> Any:
     class_name = data["_type"]
     module_name = data["_module"]
 
-    # Get class from registry or via dynamic import
-    klass = SerializableRegistry.get_by_module(class_name, module_name)
+    # The file cannot authorize importing or constructing an arbitrary class.
+    klass = SerializableRegistry.get(class_name)
 
-    if klass is None:
-        raise ValueError(f"Cannot deserialize {class_name} from {module_name}")
+    if klass is None or klass.__module__ != module_name:
+        raise ValueError(f"Cannot deserialize unregistered class {class_name} from {module_name}; "
+                         "register the intended class explicitly first")
 
     # Use from_dict if available, otherwise use constructor
     if hasattr(klass, "from_dict"):
@@ -146,7 +146,7 @@ def save_to_file(obj: Any, file_path: str, format: str = "json"):
             f"Unsupported format: {format}. Use 'json', 'yaml', or 'pickle'")
 
 
-def load_from_file(file_path: str) -> Any:
+def load_from_file(file_path: str, *, allow_pickle: bool = False) -> Any:
     """
     Load object from file.
 
@@ -181,6 +181,8 @@ def load_from_file(file_path: str) -> Any:
             raise ImportError(
                 "PyYAML not installed. Install with: pip install pyyaml")
     elif file_ext in [".pkl", ".pickle"]:
+        from corerec.api.model_bundle import require_legacy_pickle
+        require_legacy_pickle(file_path, allow_pickle)
         with open(file_path, "rb") as f:
             return pickle.load(f)
     else:
