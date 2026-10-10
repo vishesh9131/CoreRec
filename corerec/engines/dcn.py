@@ -8,6 +8,7 @@ from typing import List, Dict, Optional, Tuple, Any, Union
 from scipy.sparse import csr_matrix
 from tqdm import tqdm
 
+from corerec.api.id_index import IdIndex
 from corerec.api.base_recommender import BaseRecommender
 from corerec.api.exceptions import ModelNotFittedError, InvalidParameterError
 from corerec.utils.validation import (
@@ -228,8 +229,8 @@ class DCN(BaseRecommender):
         validate_fit_inputs(user_ids, item_ids, ratings)
 
         # Create mappings
-        unique_users = sorted(set(user_ids))
-        unique_items = sorted(set(item_ids))
+        unique_users = IdIndex.fit(user_ids)[0].ids
+        unique_items = IdIndex.fit(item_ids)[0].ids
 
         self.user_map = {user: idx for idx, user in enumerate(unique_users)}
         self.item_map = {item: idx + len(unique_users) for idx, item in enumerate(unique_items)}
