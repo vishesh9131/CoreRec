@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from tests.test_model_contract import MODELS, _build
@@ -15,7 +17,9 @@ def test_classic_scores_and_seen_controls_survive_persistence(model_id, module_p
     for candidate in (model, type(model).load(path)):
         ids = candidate.recommend('01', top_k=4)
         assert set(ids) == {'c', 'd'}
-        scored = candidate.recommend('01', top_k=4, return_scores=True)
+        with patch.object(candidate, '_score_all_items', wraps=candidate._score_all_items) as score_pass:
+            scored = candidate.recommend('01', top_k=4, return_scores=True)
+            assert score_pass.call_count == 1
         assert [item for item, score in scored] == ids
         for item, score in scored:
             assert isinstance(score, float)
