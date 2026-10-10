@@ -106,10 +106,12 @@ seq.fit(train)
 | `FMInteraction()` | Factorization-machine pairwise term over `[B, F, d]` |
 | `MLP(dims, dropout)` | Linear/ReLU/Dropout stack |
 | `bpr_loss`, `bce_loss`, `sampled_softmax_loss` | Losses over `[B, 1 + K]` scores, positive in column 0 |
+| `MatrixFactorization`, `SequentialTransformer`, `HSTUTransformer` | Complete template models to copy (below) |
 
 These are the same blocks CoreRec's `HSTU`, `SASRec` and `DCN` models use.
-`corerec.nn.models` has two complete templates, `MatrixFactorization` and
-`SequentialTransformer`. A custom loss is any `callable(scores) -> loss` over
+`corerec.nn.models` has three complete templates: `MatrixFactorization`
+(`inputs="user"`), and `SequentialTransformer` and `HSTUTransformer`
+(`inputs="history"`, built from `SASRecBlock` and `HSTUBlock`). A custom loss is any `callable(scores) -> loss` over
 the `[B, 1 + K]` matrix: `Recommender(MyModel, loss=my_loss)`.
 
 ## Everything else works

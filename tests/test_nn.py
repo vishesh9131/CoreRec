@@ -8,8 +8,8 @@ import pytest
 import torch
 import torch.nn as nn
 
-from corerec.nn import (HSTUBlock, MatrixFactorization, Recommender, SequentialTransformer,
-                        causal_mask)
+from corerec.nn import (HSTUBlock, HSTUTransformer, MatrixFactorization, Recommender,
+                        SequentialTransformer, causal_mask)
 
 
 class PlainDot(nn.Module):
@@ -110,6 +110,15 @@ def test_wrong_output_shape_is_reported():
 def test_sequential_transformer_learns_next_item():
     df, nxt = _chains()
     rec = Recommender(SequentialTransformer, {"dim": 32, "num_blocks": 1}, inputs="history",
+                      loss="sampled_softmax", num_negatives=20, epochs=15, batch_size=128,
+                      lr=0.005, max_len=20, device="cpu").fit(df)
+    hits = [nxt[u] in rec.recommend(u, top_k=1) for u in nxt if nxt[u] < 48]
+    assert np.mean(hits) > 0.9
+
+
+def test_hstu_transformer_learns_next_item():
+    df, nxt = _chains()
+    rec = Recommender(HSTUTransformer, {"dim": 32, "num_blocks": 1}, inputs="history",
                       loss="sampled_softmax", num_negatives=20, epochs=15, batch_size=128,
                       lr=0.005, max_len=20, device="cpu").fit(df)
     hits = [nxt[u] in rec.recommend(u, top_k=1) for u in nxt if nxt[u] < 48]
