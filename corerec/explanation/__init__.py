@@ -12,12 +12,13 @@ Usage:
 """
 
 from .base import BaseExplainer, Explanation
-from .feature_based import FeatureExplainer
+from .feature_based import FeatureExplainer, HistoryExplainer
 from .generative import GenerativeExplainer
 
 __all__ = [
     "BaseExplainer",
     "Explanation",
     "FeatureExplainer",
+    "HistoryExplainer",
     "GenerativeExplainer",
 ]
