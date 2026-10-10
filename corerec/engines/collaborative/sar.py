@@ -116,6 +116,8 @@ class SAR(BaseRecommender):
         >>> recs = model.recommend_k_items(test_df, top_k=10)
     """
 
+    _requires_explicit_ratings = True
+
     def __init__(
         self,
         col_user: str = DEFAULT_USER_COL,

@@ -27,6 +27,29 @@ model = DeepFM(
 model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
 ```
 
+## Required ratings
+
+SAR, DCN, and DeepFM require explicit ratings in every input form: lists,
+DataFrames, and `RecommenderDataset`. Missing ratings raise `InvalidDataError`
+before changing the fitted model. DataFrames must contain the rating column
+configured for that model (normally `rating`).
+
+For positive implicit feedback, supply the positive labels explicitly:
+
+```python
+from corerec.engines import DCN
+
+users = [1, 1, 2, 2]
+items = [10, 11, 11, 12]
+ratings = [1.0] * len(users)
+model = DCN(epochs=1, batch_size=4, device="cpu")
+model.fit(users, items, ratings)
+print(model.recommend(1, top_k=1))
+```
+
+Other interaction models that support omitted ratings continue to interpret
+those interactions as positive feedback.
+
 ## Choosing the task: implicit ranking vs. rating prediction
 
 The deep CTR/graph models (`DCN`, `DeepFM`, `GNNRec`) accept a `task` argument that

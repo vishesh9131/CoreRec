@@ -12,15 +12,7 @@ import pytest
 
 from tests.test_model_contract import MODELS, _interactions
 
-# (model id, input form) -> why it can't match yet; xfail until fixed
-_NEEDS_RATINGS = "ratings are required for this model; #74 decides whether they're optional"
-DIVERGENT = {
-    ("sar", "no_ratings"): _NEEDS_RATINGS,
-    ("sar", "frame_no_rating"): _NEEDS_RATINGS,
-    # a frame without a rating column works (the adapter fills 1.0); fit(users, items) doesn't
-    ("dcn", "no_ratings"): _NEEDS_RATINGS,
-    ("deepfm", "no_ratings"): _NEEDS_RATINGS,
-}
+REQUIRES_RATINGS = {"sar", "dcn", "deepfm"}
 
 FORMS = ["kwargs", "no_ratings", "frame", "frame_no_rating"]
 
@@ -38,19 +30,45 @@ def _fit(model, form, users, items, ratings):
 
 @pytest.mark.parametrize("form", FORMS)
 @pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS, ids=[m[0] for m in MODELS])
-def test_every_input_form_trains_the_same_model(model_id, module_path, cls_name, kwargs, form,
-                                                request):
-    if (model_id, form) in DIVERGENT:
-        # strict: once fixed, the entry must come off DIVERGENT
-        request.node.add_marker(pytest.mark.xfail(reason=DIVERGENT[(model_id, form)], strict=True))
+def test_every_input_form_trains_the_same_model(model_id, module_path, cls_name, kwargs, form):
     if model_id == "sasrec":
         # GPU gradient accumulation varies even for identical inputs; compare parsing on CPU.
         kwargs = {**kwargs, "device": "cpu"}
     cls = getattr(importlib.import_module(module_path), cls_name)
     users, items, _ = _interactions()
-    ratings = [1.0] * len(users)  # implicit: "no ratings" must mean all ones
+    ratings = [1.0] * len(users)  # explicit positives for models that require ratings
 
     expected = cls(**kwargs).fit(users, items, ratings).recommend(users[0], top_k=5)
     model = cls(**kwargs)
+    if model_id in REQUIRES_RATINGS and form in {"no_ratings", "frame_no_rating"}:
+        from corerec.api.exceptions import InvalidDataError
+        with pytest.raises(InvalidDataError, match="Explicit ratings are required"):
+            _fit(model, form, users, items, ratings)
+        assert not model.is_fitted
+        return
     _fit(model, form, users, items, ratings)
     assert model.recommend(users[0], top_k=5) == expected
+
+
+@pytest.mark.parametrize("model_id,module_path,cls_name,kwargs",
+                         [m for m in MODELS if m[0] in REQUIRES_RATINGS],
+                         ids=[m[0] for m in MODELS if m[0] in REQUIRES_RATINGS])
+@pytest.mark.parametrize("form", ["triplet_dataset", "frame_dataset", "kwargs"])
+def test_missing_dataset_ratings_preserves_fitted_model(model_id, module_path, cls_name, kwargs, form):
+    from corerec.api.dataset import RecommenderDataset
+    from corerec.api.exceptions import InvalidDataError
+
+    cls = getattr(importlib.import_module(module_path), cls_name)
+    users, items, ratings = _interactions()
+    model = cls(**kwargs).fit(users, items, ratings)
+    before = model.recommend(users[0], top_k=5)
+    with pytest.raises(InvalidDataError, match="Explicit ratings are required"):
+        if form == "triplet_dataset":
+            model.fit(RecommenderDataset.from_triplet(users, items))
+        elif form == "frame_dataset":
+            model.fit(RecommenderDataset.from_dataframe(
+                pd.DataFrame({"user_id": users, "item_id": items})))
+        else:
+            model.fit(user_ids=users, item_ids=items, ratings=None)
+    assert model.is_fitted
+    assert model.recommend(users[0], top_k=5) == before
