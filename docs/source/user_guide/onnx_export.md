@@ -13,7 +13,8 @@ pip install "corerec[onnx]"
 | Model | Input | Output |
 |---|---|---|
 | `TwoTower`, `DCN`, `DeepFM` | `user_index` int64 `[batch]` | `scores` float `[batch, n_items]` |
-| `SASRec` | `history` int64 `[batch, max_seq_length]` | `scores` float `[batch, n_items]` |
+| `SASRec`, `HSTU` | `history` int64 `[batch, max_seq_length]` | `scores` float `[batch, n_items]` |
+| `HSTU` fit with timestamps | `history` as above, plus `timestamps` float32 `[batch, max_seq_length]` | `scores` float `[batch, n_items]` |
 | `MultVAE`, `MultiDAE` | `interactions` float32 `[batch, n_items]` | `scores` float `[batch, n_items]` |
 
 Column `j` of `scores` is the score of `item_ids[j]`, the same scores
@@ -74,13 +75,25 @@ x[0, -len(seq):] = seq
 scores = sess.run(None, {"history": x})[0][0]
 ```
 
+HSTU takes `history` the same way. Its `max_seq_length` in the metadata is the
+window fitted to the data, which can be shorter than the constructor's
+`max_seq_length`, so always read it from the metadata. If the model was fit
+with `timestamps`, also pass each event's time in the same positions (padding
+positions can be anything):
+
+```python
+t = np.zeros((1, max_len), dtype=np.float32)
+t[0, -len(seq):] = times[-max_len:]   # same units as the timestamps given to fit()
+scores = sess.run(None, {"history": x, "timestamps": t})[0][0]
+```
+
 ## MultVAE / MultiDAE input
 
 These score from what the user has interacted with, not from a user index, so
-the metadata has `item_ids` only. Column `j` is how many times the user
-interacted with `item_ids[j]`: the model trains on counts, so an item seen
-twice is 2, not 1. A user who wasn't in the training data can be scored the
-same way.
+the metadata has `item_ids` only. Column `j` is 1 if the user interacted with
+`item_ids[j]` and 0 otherwise. A model fit with `binarize=False` trained on
+repeat counts, so pass counts instead (an item seen twice is 2). A user who
+wasn't in the training data can be scored the same way.
 
 ```python
 from corerec.engines import MultVAE
@@ -94,7 +107,7 @@ item_ids = json.loads(sess.get_modelmeta().custom_metadata_map["item_ids"])
 col = {item: j for j, item in enumerate(item_ids)}
 history = [i for u, i in zip(users, items) if u == users[0]]
 x = np.zeros((1, len(item_ids)), dtype=np.float32)
-np.add.at(x[0], [col[i] for i in history], 1)  # repeats add up
+x[0, [col[i] for i in history]] = 1  # binarize=False: np.add.at(...) for counts
 scores = sess.run(None, {"interactions": x})[0][0]
 ```
 

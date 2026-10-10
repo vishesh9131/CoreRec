@@ -709,6 +709,23 @@ def normalize_interactions(user_ids, item_ids, interactions):
     return list(uniq_users), list(uniq_items), matrix
 
 
+def _reject_non_finite(ratings) -> None:
+    """One NaN rating turned every ALS/EASE/KNN score into NaN, silently (#83)."""
+    if ratings is None or hasattr(ratings, "toarray"):  # absent, or a sparse matrix
+        return
+    try:
+        arr = np.asarray(ratings, dtype=float)
+    except (TypeError, ValueError):
+        return  # not numbers; the model's own validation reports it
+    if arr.ndim != 1:
+        return  # an interaction matrix (SASRec's legacy form), not per-event ratings
+    bad = int((~np.isfinite(arr)).sum())
+    if bad:
+        raise InvalidDataError(
+            f"{bad} of {len(arr)} ratings are NaN or infinite. "
+            "Drop or fill those rows before calling fit().")
+
+
 def _accept_datasets(fit):
     """Let fit(dataset) work on every model, whatever its fit() signature.
 
@@ -745,6 +762,12 @@ def _accept_datasets(fit):
                             kwargs["timestamps"] = frame["timestamp"].tolist()
                     args = (frame["user_id"].tolist(), frame["item_id"].tolist(),
                             frame["rating"].astype(float).tolist())
+        if args and isinstance(args[0], pd.DataFrame):  # SAR: fit(df)
+            col = getattr(self, "col_rating", "rating")
+            _reject_non_finite(args[0][col] if col in args[0].columns else None)
+        else:
+            third = args[2] if len(args) > 2 else kwargs.get("ratings", kwargs.get("interactions"))
+            _reject_non_finite(third)
         return fit(self, *args, **kwargs)
 
     return wrapper

@@ -11,6 +11,23 @@ from typing import List, Set, Dict, Any
 from collections import defaultdict
 
 
+_REPEAT = object()  # stands in for a repeated item: never relevant
+
+
+def _top_k(predictions: List, k: int) -> List:
+    """The first k recommendations, a repeat of an earlier item counting as a miss.
+
+    Without this, [7, 7, 7] against relevant {7} scored recall 3.0 and NDCG
+    2.1: a model could beat a correct one by repeating its best guess. The
+    repeat keeps its slot, so later items keep the rank they were shown at.
+    """
+    seen, out = set(), []
+    for p in list(predictions)[:k]:
+        out.append(_REPEAT if p in seen else p)
+        seen.add(p)
+    return out
+
+
 class RankingMetrics:
     """
     Ranking metrics for recommendation evaluation.
@@ -35,7 +52,7 @@ class RankingMetrics:
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
-        predictions = predictions[:k]
+        predictions = _top_k(predictions, k)
         ground_truth_set = set(ground_truth)
 
         # Calculate DCG
@@ -47,7 +64,7 @@ class RankingMetrics:
         )
 
         # Calculate IDCG
-        ideal_length = min(k, len(ground_truth))
+        ideal_length = min(k, len(ground_truth_set))
         idcg = sum([1 / np.log2(i + 2) for i in range(ideal_length)])
 
         return dcg / idcg if idcg > 0 else 0.0
@@ -59,7 +76,7 @@ class RankingMetrics:
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
-        predictions = predictions[:k]
+        predictions = _top_k(predictions, k)
         ground_truth_set = set(ground_truth)
 
         score = 0.0
@@ -70,7 +87,7 @@ class RankingMetrics:
                 num_hits += 1.0
                 score += num_hits / (i + 1.0)
 
-        return score / min(len(ground_truth), k) if ground_truth else 0.0
+        return score / min(len(ground_truth_set), k) if ground_truth_set else 0.0
 
     @staticmethod
     def mrr_at_k(predictions: List, ground_truth: List, k: int = 10) -> float:
@@ -79,7 +96,7 @@ class RankingMetrics:
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
-        predictions = predictions[:k]
+        predictions = _top_k(predictions, k)
         ground_truth_set = set(ground_truth)
 
         for i, pred in enumerate(predictions):
@@ -95,7 +112,7 @@ class RankingMetrics:
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
-        predictions = predictions[:k]
+        predictions = _top_k(predictions, k)
         ground_truth_set = set(ground_truth)
 
         hits = sum(1 for pred in predictions if pred in ground_truth_set)
@@ -108,11 +125,11 @@ class RankingMetrics:
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
-        predictions = predictions[:k]
+        predictions = _top_k(predictions, k)
         ground_truth_set = set(ground_truth)
 
         hits = sum(1 for pred in predictions if pred in ground_truth_set)
-        return hits / len(ground_truth) if ground_truth else 0.0
+        return hits / len(ground_truth_set) if ground_truth_set else 0.0
 
     @staticmethod
     def hit_rate_at_k(predictions: List, ground_truth: List, k: int = 10) -> float:
@@ -121,7 +138,7 @@ class RankingMetrics:
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
-        predictions = predictions[:k]
+        predictions = _top_k(predictions, k)
         ground_truth_set = set(ground_truth)
 
         return 1.0 if any(pred in ground_truth_set for pred in predictions) else 0.0

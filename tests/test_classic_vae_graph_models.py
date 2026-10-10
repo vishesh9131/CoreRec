@@ -104,3 +104,26 @@ def test_model_loader_still_reads_vae_files_saved_before_cls_was_written(tmp_pat
     torch.save(ckpt, path)
 
     assert type(ModelLoader().load(str(path))) is MultiDAE
+
+
+@pytest.mark.parametrize("cls_name", ["MultVAE", "MultiDAE"])
+def test_vae_trains_on_a_binary_matrix_unless_told_not_to(cls_name, tmp_path):
+    """Repeat events used to sum into the cell (#42); the paper's input is 0/1."""
+    import torch
+
+    import corerec.engines as engines
+
+    cls = getattr(engines, cls_name)
+    u, i = [0, 0, 0, 0, 1, 1, 2], [1, 1, 1, 2, 2, 3, 1]  # user 0 saw item 1 three times
+    assert cls(epochs=1, hidden_dim=16, latent_dim=4).fit(u, i).R.max() == 1
+    counts = cls(epochs=1, hidden_dim=16, latent_dim=4, binarize=False).fit(u, i)
+    assert counts.R.max() == 3
+
+    path = tmp_path / "v.pt"
+    counts.save(str(path))
+    assert cls.load(str(path)).binarize is False
+    # bundles written before binarize existed trained on counts
+    ckpt = torch.load(path, map_location="cpu", weights_only=False)
+    del ckpt["cfg"]["binarize"]
+    torch.save(ckpt, path)
+    assert cls.load(str(path)).binarize is False
