@@ -6,7 +6,7 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/vishesh9131/corerec)](https://github.com/vishesh9131/CoreRec)
 
 <div align="center">
-  <img src="docs/images/corerec-icon.svg" alt="CoreRec" width="84" height="88" style="margin-bottom: 16px;" /><br/>
+  <img src="docs/images/corerec-icon-spin.gif" alt="CoreRec" width="120" height="120" /><br/>
   <h1>CoreRec</h1>
   <p><strong>Recommendation systems framework for PyTorch.<br/>16 models, including generative HSTU · One fit/recommend API · Train to a live HTTP endpoint in one object.</strong></p>
   <br/>
