@@ -175,7 +175,10 @@ def _build_retriever(cfg: Dict) -> Optional[Any]:
         from corerec.retrieval import PopularityRetriever
         return PopularityRetriever(name=cfg.get('name', 'popularity'))
     
-    return None
+    raise ValueError(
+        f"pipeline.retrieval.sources[].type {rtype!r} is unsupported; "
+        "expected collaborative, semantic, or popularity"
+    )
 
 
 def _build_ranker(cfg: Dict) -> Optional[Any]:
@@ -193,7 +196,9 @@ def _build_ranker(cfg: Dict) -> Optional[Any]:
             name=cfg.get('name', 'feature_cross'),
         )
     
-    return None
+    raise ValueError(
+        f"pipeline.ranking.type {rtype!r} is unsupported; expected pointwise or feature_cross"
+    )
 
 
 def _build_reranker(cfg: Dict) -> Optional[Any]:
@@ -208,9 +213,10 @@ def _build_reranker(cfg: Dict) -> Optional[Any]:
         )
     
     elif rtype == 'fairness':
-        from corerec.reranking import FairnessReranker
-        # need group_fn which can't be in config
-        return None
+        raise ValueError(
+            "pipeline.reranking[].type 'fairness' requires a group_fn callback; "
+            "construct FairnessReranker directly and use pipeline.add_reranker()"
+        )
     
     elif rtype == 'business':
         from corerec.reranking import BusinessRulesReranker
@@ -226,4 +232,6 @@ def _build_reranker(cfg: Dict) -> Optional[Any]:
         
         return reranker
     
-    return None
+    raise ValueError(
+        f"pipeline.reranking[].type {rtype!r} is unsupported; expected diversity or business"
+    )

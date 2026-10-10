@@ -212,6 +212,24 @@ def test_cli_train_writes_a_servable_artifact(events_csv, tmp_path, monkeypatch,
     assert server.port == 9999 and server.metadata["model"] == "ALS"
 
 
+def test_reads_latin1_and_bom_csv(tmp_path):
+    """Excel exports: Latin-1 bytes crashed with UnicodeDecodeError (#87), and a
+    UTF-8 byte-order mark ends up in the first column name."""
+    from corerec.serving.from_csv import read_interactions
+
+    rows = "user_id,item_id,rating\nJosé,café,5\nRenée,crème,4\n"
+    latin = tmp_path / "latin.csv"
+    latin.write_bytes(rows.encode("latin-1"))
+    with pytest.warns(UserWarning, match="not UTF-8"):
+        df, cols = read_interactions(latin)
+    assert set(df["user"]) == {"José", "Renée"} and set(df["item"]) == {"café", "crème"}
+
+    bom = tmp_path / "bom.csv"
+    bom.write_bytes(rows.encode("utf-8-sig"))
+    df, cols = read_interactions(bom)
+    assert cols["user"] == "user_id" and set(df["user"]) == {"José", "Renée"}
+
+
 def test_repeated_ratings_keep_the_latest_not_the_sum(tmp_path):
     """u1 rated i1 5 then 4: summing gave 9, outside the 1-5 scale (#84)."""
     from corerec.serving.from_csv import read_interactions

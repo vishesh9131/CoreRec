@@ -50,13 +50,13 @@ score = model.predict(user_id=0, item_id=10)
 
 | Model | Import | Tutorial |
 |-------|--------|----------|
-| ALS | `corerec.sandbox.collaborative_full.mf_base.als_base` | [ALS](../tutorials/als_tutorial.md) |
-| SVD | `corerec.sandbox.collaborative_full.mf_base.svd_base` | [SVD](../tutorials/svd_tutorial.md) |
-| A2SVD | `corerec.sandbox.collaborative_full.mf_base.a2svd_base` | [A2SVD](../tutorials/a2svd_tutorial.md) |
-| MF-Base | `corerec.sandbox.collaborative_full.mf_base.matrix_factorization_base` | [MF Base](../tutorials/mf_base_tutorial.md) |
-| FM-Base | `corerec.sandbox.collaborative_full.nn_base.FM_base` | [FM Base](../tutorials/fm_base_tutorial.md) |
-| Matrix Factorization | `corerec.sandbox.collaborative_full.mf_base.matrix_factorization_base` | [Matrix Factorization](../tutorials/matrixfactorization_tutorial.md) |
-| User-Based CF | `corerec.sandbox.collaborative_full.mf_base.user_based_base` | [User-Based](../tutorials/userbased_tutorial.md) |
+| ALS | `corerec.sandbox.collaborative_full.mf_base.als_base` | [ALS](../tutorials/removed_models.md) |
+| SVD | `corerec.sandbox.collaborative_full.mf_base.svd_base` | [SVD](../tutorials/removed_models.md) |
+| A2SVD | `corerec.sandbox.collaborative_full.mf_base.a2svd_base` | [A2SVD](../tutorials/removed_models.md) |
+| MF-Base | `corerec.sandbox.collaborative_full.mf_base.matrix_factorization_base` | [MF Base](../tutorials/removed_models.md) |
+| FM-Base | `corerec.sandbox.collaborative_full.nn_base.FM_base` | [FM Base](../tutorials/removed_models.md) |
+| Matrix Factorization | `corerec.sandbox.collaborative_full.mf_base.matrix_factorization_base` | [Matrix Factorization](../tutorials/removed_models.md) |
+| User-Based CF | `corerec.sandbox.collaborative_full.mf_base.user_based_base` | [User-Based](../tutorials/removed_models.md) |
 
 ```{admonition} Legacy paths
 :class: note
