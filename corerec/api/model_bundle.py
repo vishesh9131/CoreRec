@@ -76,6 +76,10 @@ def save_bundle(
     """
     Write a safe v1 model bundle. Returns the bundle base path.
     """
+    import os
+    import tempfile
+    import uuid
+
     base = artifact_base(path)
     base.parent.mkdir(parents=True, exist_ok=True)
 
@@ -87,26 +91,55 @@ def save_bundle(
         "state": _jsonify(state),
     }
 
-    if state_dict is not None:
-        try:
-            import torch
-        except ImportError as e:
-            raise SaveLoadError("torch required to save state_dict bundle") from e
-        weights_path = base.with_suffix(".weights.pt")
-        torch.save(state_dict, weights_path)
-        meta["weights_file"] = weights_path.name
+    # Publish the metadata pointer last; replacing components in place could
+    # corrupt the previous bundle if a later replacement fails.
+    generation = uuid.uuid4().hex
+    staged = []  # (temporary, final)
+    published = []
+    committed = False
 
-    if arrays:
-        try:
-            import numpy as np
-        except ImportError as e:
-            raise SaveLoadError("numpy required to save array bundle") from e
-        npz_path = base.with_suffix(".arrays.npz")
-        np.savez_compressed(npz_path, **arrays)
-        meta["arrays_file"] = npz_path.name
+    def stage(final: Path, write) -> None:
+        with tempfile.NamedTemporaryFile(dir=base.parent, prefix=f".{final.name}.",
+                                         delete=False) as f:
+            staged.append((Path(f.name), final))
+            write(f)
+            f.flush()
+            os.fsync(f.fileno())
 
-    meta_path = base.with_suffix(".meta.json")
-    meta_path.write_text(json.dumps(meta, indent=2, default=str), encoding="utf-8")
+    try:
+        if state_dict is not None:
+            try:
+                import torch
+            except ImportError as e:
+                raise SaveLoadError("torch required to save state_dict bundle") from e
+            weights_path = base.with_name(f"{base.name}.{generation}.weights.pt")
+            stage(weights_path, lambda f: torch.save(state_dict, f))
+            meta["weights_file"] = weights_path.name
+
+        if arrays:
+            try:
+                import numpy as np
+            except ImportError as e:
+                raise SaveLoadError("numpy required to save array bundle") from e
+            npz_path = base.with_name(f"{base.name}.{generation}.arrays.npz")
+            stage(npz_path, lambda f: np.savez_compressed(f, **arrays))
+            meta["arrays_file"] = npz_path.name
+
+        meta_path = base.with_suffix(".meta.json")
+        text = json.dumps(meta, indent=2, default=str).encode("utf-8")
+        stage(meta_path, lambda f: f.write(text))
+        for temporary, final in staged:
+            os.replace(temporary, final)
+            published.append(final)
+        committed = True
+    finally:
+        for temporary, _ in staged:
+            temporary.unlink(missing_ok=True)
+        if not committed:
+            for final in published:
+                final.unlink(missing_ok=True)
+    # shortcut: old generations stay readable for concurrent loaders; add
+    # explicit artifact cleanup when frequent checkpointing needs reclamation.
     return base
 
 
@@ -147,6 +180,50 @@ def load_bundle(path: Union[str, Path], *, map_location: Any = None) -> Dict[str
             result["arrays"] = {k: npz[k] for k in npz.files}
 
     return result
+
+
+def pack_arrays(values: Dict[str, Any]):
+    """Split ndarrays and scipy sparse matrices into npz-safe arrays.
+
+    Returns ``(arrays, sparse_names)``: a sparse ``X`` becomes ``X.data``,
+    ``X.indices``, ``X.indptr`` and ``X.shape`` (CSR), so loading needs no pickle.
+    """
+    import numpy as np
+
+    arrays, sparse = {}, []
+    for name, v in values.items():
+        if hasattr(v, "tocsr"):
+            m = v.tocsr()
+            arrays.update({f"{name}.data": m.data, f"{name}.indices": m.indices,
+                           f"{name}.indptr": m.indptr, f"{name}.shape": np.asarray(m.shape)})
+            sparse.append(name)
+        else:
+            arrays[name] = np.asarray(v)
+    return arrays, sparse
+
+
+def unpack_arrays(arrays: Dict[str, Any], sparse_names) -> Dict[str, Any]:
+    """Inverse of pack_arrays."""
+    from scipy.sparse import csr_matrix
+
+    out = {k: v for k, v in arrays.items() if "." not in k}
+    for name in sparse_names:
+        out[name] = csr_matrix((arrays[f"{name}.data"], arrays[f"{name}.indices"],
+                                arrays[f"{name}.indptr"]), shape=tuple(arrays[f"{name}.shape"]))
+    return out
+
+
+def ordered_ids(id_map: Dict[Any, int]) -> list:
+    """Ids of a ``{id: code}`` map in code order, for JSON."""
+    return sorted(id_map, key=id_map.get)
+
+
+def warn_legacy_pickle(path: Union[str, Path]) -> None:
+    import warnings
+
+    warnings.warn(f"{path} is a legacy pickle, which can run code when loaded. Load it only "
+                  "if you trust it, then save() it again to convert it to the safe format.",
+                  DeprecationWarning, stacklevel=3)
 
 
 def save_legacy_pickle(path: Union[str, Path], payload: Any) -> None:
