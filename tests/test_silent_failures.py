@@ -123,3 +123,35 @@ def test_tfidf_recommend_by_text_takes_top_k_like_recommend():
     m.fit([1, 2, 3, 4], {1: "red apple", 2: "green apple", 3: "red car", 4: "blue sky"})
     assert len(m.recommend_by_text("apple", top_k=2)) == 2
     assert m.recommend_by_text("apple", top_n=2) == m.recommend_by_text("apple", top_k=2)
+
+
+def test_evaluator_and_evaluate_agree():
+    """Two evaluation APIs reported different keys and could differ in protocol (#46)."""
+    from corerec.engines import ItemKNN
+    from corerec.evaluation import Evaluator, evaluate
+
+    rng = np.random.default_rng(0)
+    u, i = rng.integers(0, 60, 1500).tolist(), rng.integers(0, 90, 1500).tolist()
+    train = list(zip(u[:1200], i[:1200]))
+    test = list(zip(u[1200:], i[1200:]))
+    model = ItemKNN().fit(u[:1200], i[:1200])
+    truth = {}
+    for a, b in test:
+        truth.setdefault(a, []).append(b)
+
+    ref = evaluate(model, test, train_interactions=train, k=[5, 20])
+    out = Evaluator(metrics=["ndcg@5", "Recall@20", "hit_rate@5"]).evaluate(
+        model, truth, train_interactions=train)
+    for key in ("NDCG@5", "Recall@20", "HitRate@5"):
+        assert out[key] == pytest.approx(ref[key])
+    # the requested spelling works too
+    assert out["ndcg@5"] == out["NDCG@5"] and out["hit_rate@5"] == out["HitRate@5"]
+    # one k or several: same numbers
+    assert evaluate(model, test, train_interactions=train, k=5)["NDCG@5"] == pytest.approx(ref["NDCG@5"])
+
+
+def test_evaluator_rejects_unknown_metric():
+    from corerec.evaluation import Evaluator
+
+    with pytest.raises(ValueError, match="unknown metric"):
+        Evaluator(metrics=["ndgc@10"])

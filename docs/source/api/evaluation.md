@@ -26,9 +26,15 @@ For finer control (cross-validation, custom metric sets) use the `Evaluator` cla
 ```python
 from corerec.evaluation import Evaluator
 
-evaluator = Evaluator(metrics=["ndcg@10", "map@10", "recall@20"])
-results = evaluator.evaluate(model, test_data)
+evaluator = Evaluator(metrics=["NDCG@10", "MAP@10", "Recall@20"])
+results = evaluator.evaluate(model, test_data)   # test_data: {user: [items]}
 ```
+
+`Evaluator` calls `evaluate()` underneath, so the numbers match what
+`corerec train`, `serve` and `retrain` report. Pass
+`train_interactions=` to remove seen items the same way; without it, that is
+left to the model. Results use the keys above (`NDCG@10`, ...), and also the
+spelling you asked for, so `"ndcg@10"` works too.
 
 ## API Reference
 
