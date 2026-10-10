@@ -180,7 +180,9 @@ class RecommendationPipeline:
         context = context or {}
         context['query'] = query
         
-        top_k = top_k or self.config.final_k
+        top_k = self.config.final_k if top_k is None else top_k
+        if top_k < 0:
+            raise ValueError("top_k must be non-negative")
         stage_results = {}
         
         # Stage 1: Retrieval
@@ -225,8 +227,10 @@ class RecommendationPipeline:
         reranking_start = time.perf_counter()
         current_result = ranking_result
         
-        for reranker in self._rerankers:
-            current_result = reranker.rerank(current_result, context, top_k=top_k)
+        for index, reranker in enumerate(self._rerankers):
+            # Later filters need the full candidate pool to fill the requested result.
+            limit = top_k if index == len(self._rerankers) - 1 else len(current_result)
+            current_result = reranker.rerank(current_result, context, top_k=limit)
         
         reranking_ms = (time.perf_counter() - reranking_start) * 1000
         

@@ -183,7 +183,22 @@ class TFIDFRecommender(BaseRecommender):
         # New API: recommend based on user (content-based without user history)
         exclude_items = exclude_items or []
         exclude_set = set(exclude_items)
-        
+
+        if self.item_to_index:
+            # an item id: the items whose text is most similar to it. Anything
+            # else (e.g. a user id) is unknown to a content model -> [], so
+            # callers like ModelServer fall back as they do for unknown users
+            if user_id_or_indices not in self.item_to_index:
+                return []
+            idx = self.item_to_index[user_id_or_indices]
+            scores = np.asarray(self.similarity_matrix[idx], dtype=float).copy()
+            scores[idx] = -np.inf
+            for item in exclude_set:
+                if item in self.item_to_index:
+                    scores[self.item_to_index[item]] = -np.inf
+            order = np.argsort(-scores, kind="stable")
+            return [self.index_to_item[int(j)] for j in order[:top_n] if np.isfinite(scores[j])]
+
         # If we have similarity matrix (old API mode), use it
         if self.similarity_matrix is not None:
             # Return items sorted by average similarity (simple heuristic)

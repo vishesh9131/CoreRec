@@ -51,7 +51,17 @@ jobs:
         run: |
           python -m pytest tests/ -v --tb=short --strict-markers \
             -m "not docs_build" \
-            --cov=corerec --cov-fail-under=40
+            --cov=corerec --cov-fail-under=40 \
+            --junitxml=test-results.xml
+
+      # corerec-bot reads this to list failing tests on the PR
+      - name: Upload test results
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: test-results.xml
+          retention-days: 7
 
   # ------------------------------------------------------------------ #
   # Lint – fast feedback on code quality                                #
