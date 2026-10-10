@@ -11,8 +11,8 @@ of ``item_ids[j]``, the same scores ``model.recommend()`` ranks. The input is
 - ``history``    int64 [batch, max_len]  SASRec: item indices (1-based,
   ``item_ids[k-1]``), oldest first, left-padded with 0
 - ``interactions`` float32 [batch, n_items]  MultVAE, MultiDAE: the user's
-  row, column j = how many times they interacted with ``item_ids[j]`` (the
-  model trains on counts, so a repeat is 2, not 1)
+  row, column j = 1 if they interacted with ``item_ids[j]``, else 0 (with
+  ``binarize=False`` it's the count instead, as the model trained on counts)
 
 The raw ids live in the file's metadata (``user_ids``, ``item_ids`` as JSON, in
 index order), so the .onnx is all a server needs:

@@ -70,12 +70,15 @@ class _VAEBase(BaseRecommender):
                  epochs: int = 50, beta: float = 0.2, reg: float = 0.0,
                  verbose: bool = False,
                  device: str = "auto",
-                 seed: int = 42, trainable: bool = True):
+                 seed: int = 42, trainable: bool = True, binarize: bool = True):
         super().__init__(name=name or self.MODEL, trainable=trainable, verbose=verbose)
         self.hidden_dim = hidden_dim; self.latent_dim = latent_dim
         self.dropout = dropout; self.learning_rate = learning_rate
         self.batch_size = batch_size; self.epochs = epochs; self.beta = beta
         self.reg = reg; self.device = str(resolve_device(device)); self.seed = seed
+        # Mult-VAE/DAE are defined on a 0/1 click matrix (Liang et al., 2018);
+        # binarize=False keeps repeat counts, which is what fit() did before
+        self.binarize = binarize
         self.model = None; self.user_map = {}; self.item_map = {}
 
     def fit(self, user_ids, item_ids, ratings=None, **kwargs) -> "_VAEBase":
@@ -94,6 +97,8 @@ class _VAEBase(BaseRecommender):
         iidx = np.fromiter((self.item_map[x] for x in it.tolist()), dtype=np.int64)
         self.R = csr_matrix((np.ones(len(uidx), np.float32), (uidx, iidx)),
                             shape=(self.num_users, self.num_items))
+        if self.binarize:
+            self.R.data[:] = 1.0  # csr_matrix summed the duplicate (user, item) events
 
         dev = resolve_device(self.device)
         self.model = _VAENet(self.num_items, self.hidden_dim, self.latent_dim,
@@ -168,7 +173,7 @@ class _VAEBase(BaseRecommender):
                             "latent_dim": self.latent_dim, "dropout": self.dropout,
                             "learning_rate": self.learning_rate, "batch_size": self.batch_size,
                             "epochs": self.epochs, "beta": self.beta, "reg": self.reg,
-                            "device": self.device, "seed": self.seed},
+                            "device": self.device, "seed": self.seed, "binarize": self.binarize},
                     "user_map": self.user_map, "item_map": self.item_map,
                     "num_users": self.num_users, "num_items": self.num_items,
                     "R": self.R, "state_dict": self.model.state_dict() if self.model else None}, p)
@@ -176,7 +181,8 @@ class _VAEBase(BaseRecommender):
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs) -> "_VAEBase":
         ckpt = torch.load(Path(path), map_location="cpu", weights_only=False)
-        inst = cls(**ckpt["cfg"])
+        # bundles from before binarize existed were trained on counts
+        inst = cls(**{"binarize": False, **ckpt["cfg"]})
         inst.user_map = ckpt["user_map"]; inst.item_map = ckpt["item_map"]
         inst.uid_map = inst.user_map; inst.iid_map = inst.item_map
         inst.reverse_item_map = {k: x for x, k in inst.item_map.items()}
