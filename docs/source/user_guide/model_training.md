@@ -170,7 +170,7 @@ Use `model.recommend(user_id, top_k=10, exclude_seen=False)` to include them.
 New DCN artifacts preserve this history in both safe and legacy formats. Older
 artifacts did not store history; refit those models to restore seen-item filtering.
 
-DCN, DeepFM, and SAR support `return_scores=True` to return `(item_id, score)`
+DCN, DeepFM, SAR, ItemKNN, UserKNN, EASE, SLIM, ALS, and Item2Vec support `return_scores=True` to return `(item_id, score)`
 pairs in recommendation order. These are the model's ranking scores, not
 necessarily calibrated probabilities. Other models' scored-output support
 remains model-specific.
@@ -182,3 +182,6 @@ model = DeepFM(embedding_dim=4, hidden_layers=[8], epochs=1, device="cpu")
 model.fit([1, 1, 2, 2], [10, 11, 11, 12], [1.0] * 4)
 print(model.recommend(1, top_k=3, return_scores=True))
 ```
+
+The six classic collaborative models also honor `exclude_seen=False`. Their
+scored output reuses the same ranking pass and retains explicit exclusions.

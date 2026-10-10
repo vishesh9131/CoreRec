@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import pickle
 from pathlib import Path
-from typing import Any, List, Union
+from typing import Any, List, Tuple, Union
 
 import numpy as np
 import scipy.sparse as sp
@@ -91,7 +91,9 @@ class _ClassicCFBase(BaseRecommender):
             return 0.0
         return float(self._score_all_items(user_id)[self.item_map[item_id]])
 
-    def recommend(self, user_id, top_k: int = 10, exclude_items=None, **kwargs) -> List[Any]:
+    def recommend(self, user_id, top_k: int = 10, exclude_items=None, *,
+                  exclude_seen: bool = True, return_scores: bool = False,
+                  **kwargs) -> Union[List[Any], List[Tuple[Any, float]]]:
         if not self.is_fitted:
             from corerec.api.exceptions import ModelNotFittedError
             raise ModelNotFittedError()
@@ -102,7 +104,8 @@ class _ClassicCFBase(BaseRecommender):
         exclude = set(exclude_items or [])
         uidx = self.user_map[user_id]
         scores = self._score_all_items(user_id).copy()
-        scores[self.R[uidx].indices] = -np.inf          # exclude already seen
+        if exclude_seen:
+            scores[self.R[uidx].indices] = -np.inf
         out = []
         for idx in np.argsort(-scores):
             if not np.isfinite(scores[idx]):
@@ -110,7 +113,7 @@ class _ClassicCFBase(BaseRecommender):
             iid = self.reverse_item_map[int(idx)]
             if iid in exclude:
                 continue
-            out.append(iid)
+            out.append((iid, float(scores[idx])) if return_scores else iid)
             if len(out) >= top_k:
                 break
         return out
