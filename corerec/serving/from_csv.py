@@ -93,6 +93,31 @@ def detect_columns(columns: Sequence[str], **explicit: Optional[str]) -> Dict[st
     return found
 
 
+# Rating columns on a fixed scale: a repeat is a re-rating, so the latest one
+# stands. Everything else (plays, clicks, quantity, weights, 1 per row) counts up.
+_SCALE_RATINGS = {"rating", "stars", "score"}
+MERGE_POLICIES = ("auto", "sum", "last", "mean")
+
+
+def merge_policy(policy: str, rating_col: Optional[str]) -> str:
+    """Resolve ``auto`` to ``last`` for a rating scale column, else ``sum``."""
+    if policy not in MERGE_POLICIES:
+        raise ValueError(f"rating merge must be one of {', '.join(MERGE_POLICIES)}, got {policy!r}")
+    if policy != "auto":
+        return policy
+    return "last" if rating_col and _norm(rating_col) in _SCALE_RATINGS else "sum"
+
+
+def merge_rows(df: pd.DataFrame, how: str) -> pd.DataFrame:
+    """One row per (user, item): rating merged by *how*, latest timestamp kept."""
+    if how == "last" and "timestamp" in df:
+        df = df.sort_values("timestamp", kind="stable")  # "last" = newest, not lowest row
+    agg = {"rating": how}
+    if "timestamp" in df:
+        agg["timestamp"] = "max"
+    return df.groupby(["user", "item"], as_index=False, sort=False).agg(agg)
+
+
 def read_interactions(
     path: Union[str, Path],
     user_col: Optional[str] = None,
@@ -100,11 +125,15 @@ def read_interactions(
     rating_col: Optional[str] = None,
     timestamp_col: Optional[str] = None,
     merge: bool = True,
+    rating_merge: str = "auto",
 ):
     """Read a CSV/TSV/Parquet file into a frame with columns user, item, rating[, timestamp].
 
-    Duplicate (user, item) rows are merged: weights are summed (so repeated
-    plays or clicks count up), and the latest timestamp is kept. With
+    Duplicate (user, item) rows are merged, keeping the latest timestamp. The
+    rating follows *rating_merge*: ``sum`` (repeated plays or clicks count up),
+    ``last`` (a re-rating replaces the old one), ``mean``, or ``auto``, which is
+    ``last`` for a column named rating/stars/score and ``sum`` otherwise. The
+    policy used is in ``frame.attrs["rating_merge"]``. With
     ``merge=False`` every row is kept, with its position in the file in ``row``.
     ``frame.attrs["source_rows"]`` is the number of rows in the file.
 
@@ -139,13 +168,12 @@ def read_interactions(
     if df.empty:
         raise ValueError(f"{path} has no usable rows after dropping missing values")
 
+    how = merge_policy(rating_merge, cols["rating"])
     if merge:
-        agg = {"rating": "sum"}
-        if "timestamp" in df:
-            agg["timestamp"] = "max"
-        df = df.groupby(["user", "item"], as_index=False, sort=False).agg(agg)
+        df = merge_rows(df, how)
     df = df.reset_index(drop=True)
     df.attrs["source_rows"] = len(raw)
+    df.attrs["rating_merge"] = how
     return df, cols
 
 
@@ -244,6 +272,8 @@ class TrainResult:
             # log grows past this) and the newest feedback event it saw
             "trained_rows": self.extra.get("trained_rows"),
             "feedback_through": self.extra.get("feedback_through"),
+            # how repeated (user, item) rows were combined; retrain reuses it
+            "rating_merge": self.extra.get("rating_merge"),
         }
 
     def report(self) -> str:
@@ -251,6 +281,7 @@ class TrainResult:
         cols = ", ".join(f"{role}={name}" for role, name in self.columns.items() if name)
         lines = [
             f"Data      {s['rows']:,} interactions, {s['users']:,} users, {s['items']:,} items ({cols})",
+            f"Merged    repeated (user, item) rows: rating {self.extra.get('rating_merge', 'sum')}",
             f"Model     {self.model_name} {self.params or ''}".rstrip(),
             f"Trained   in {self.fit_seconds:.1f}s",
         ]
@@ -283,6 +314,7 @@ def train_from_csv(
     k: int = 10,
     seed: int = 42,
     refit: bool = True,
+    rating_merge: str = "auto",
     **columns: Optional[str],
 ) -> TrainResult:
     """Read *path*, measure *model* on a holdout, then train it on everything.
@@ -296,7 +328,8 @@ def train_from_csv(
 
     _model_class(model)  # fail on a bad name before reading a large file
     params = dict(params or {})
-    df, cols = read_interactions(path, **{f"{r}_col": v for r, v in columns.items()})
+    df, cols = read_interactions(path, rating_merge=rating_merge,
+                                 **{f"{r}_col": v for r, v in columns.items()})
     stats = {"rows": len(df), "users": int(df["user"].nunique()), "items": int(df["item"].nunique()),
              "test_rows": 0}
 
@@ -327,6 +360,7 @@ def train_from_csv(
         extra = {"trained_through": float(df["timestamp"].max())}
     else:
         extra = {"trained_rows": df.attrs["source_rows"]}
+    extra["rating_merge"] = df.attrs["rating_merge"]
     return TrainResult(model=final, model_name=model, params=params, columns=cols, stats=stats,
                        popular=popular_items(df), fit_seconds=fit_seconds, k=k,
                        metrics=metrics, baseline=baseline, source=str(path), extra=extra)
@@ -393,7 +427,9 @@ def retrain_artifact(
     cols = manifest.get("columns") or {}
     df, cols = read_interactions(source, user_col=cols.get("user"), item_col=cols.get("item"),
                                  rating_col=cols.get("rating"), timestamp_col=cols.get("timestamp"),
-                                 merge=by_time)  # row order needs every row where it sits
+                                 merge=by_time,  # row order needs every row where it sits
+                                 rating_merge=manifest.get("rating_merge") or "sum")
+    how = df.attrs["rating_merge"]
     source_rows = df.attrs["source_rows"]
     if by_time and "timestamp" not in df:
         raise ValueError(f"{source} has no timestamp column, but the artifact was trained on "
@@ -432,8 +468,7 @@ def retrain_artifact(
         return decision
 
     def merged(frame):
-        agg = {"rating": "sum", "timestamp": "max"}
-        return frame.groupby(["user", "item"], as_index=False, sort=False).agg(agg)
+        return merge_rows(frame, how)
 
     half = len(new) // 2
     train = merged(pd.concat([old, new.iloc[:half]]))
@@ -469,6 +504,7 @@ def retrain_artifact(
                              extra={"trained_through": float(everything["timestamp"].max())}
                              if by_time else {"trained_rows": source_rows,
                                               "feedback_through": feedback_through})
+        result.extra["rating_merge"] = how
         save_artifact(result, artifact)
         m = json.loads((artifact / MANIFEST).read_text())
         m["retrain"] = {k_: v for k_, v in decision.items() if k_ != "promoted"}
