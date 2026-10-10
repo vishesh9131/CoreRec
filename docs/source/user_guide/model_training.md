@@ -164,3 +164,8 @@ For interaction models, `recommend(user_id, top_k=...)` returns an empty list
 when the user was not observed during training. Choose a popularity or other
 cold-start fallback in your application when that list is empty. This applies
 to recommendations; pairwise `predict()` can still reject unknown IDs.
+
+DCN recommendations exclude the user's observed training items by default.
+Use `model.recommend(user_id, top_k=10, exclude_seen=False)` to include them.
+New DCN artifacts preserve this history in both safe and legacy formats. Older
+artifacts did not store history; refit those models to restore seen-item filtering.
