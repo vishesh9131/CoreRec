@@ -245,13 +245,21 @@ class CrossValidator:
 
         Returns:
             {'mean': float, 'std': float, 'folds': [per-fold score]}
+
+        Raises:
+            ValueError: a supplied instance or factory result is already fitted.
         """
         import copy
+
+        if getattr(model, "is_fitted", False):
+            raise ValueError("Cross-validation requires an unfitted model; pass a fresh model factory")
 
         evaluator = Evaluator(metrics=[metric])
         scores = []
         for train, test in self.split(data):
             m = model() if isinstance(model, type) or not hasattr(model, "fit") else copy.deepcopy(model)
+            if getattr(m, "is_fitted", False):
+                raise ValueError("Cross-validation requires an unfitted model from each factory call")
             m.fit(
                 train[user_col].tolist(),
                 train[item_col].tolist(),
