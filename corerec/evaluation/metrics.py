@@ -7,11 +7,17 @@ Author: Vishesh Yadav (mail: sciencely98@gmail.com)
 """
 
 import numpy as np
+from numbers import Integral
 from typing import List, Set, Dict, Any
 from collections import defaultdict
 
 
 _REPEAT = object()  # stands in for a repeated item: never relevant
+
+
+def _validate_k(k: int) -> None:
+    if isinstance(k, bool) or not isinstance(k, Integral) or k < 1:
+        raise ValueError("k must be a positive integer")
 
 
 def _top_k(predictions: List, k: int) -> List:
@@ -21,6 +27,7 @@ def _top_k(predictions: List, k: int) -> List:
     2.1: a model could beat a correct one by repeating its best guess. The
     repeat keeps its slot, so later items keep the rank they were shown at.
     """
+    _validate_k(k)
     seen, out = set(), []
     for p in list(predictions)[:k]:
         out.append(_REPEAT if p in seen else p)
