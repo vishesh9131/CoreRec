@@ -56,6 +56,11 @@ def test_onnx_ranks_like_the_model(name, data, tmp_path):
         if name in ("DCN", "DeepFM", "MultVAE", "MultiDAE"):
             # VAE recommend() always drops seen items, so compare raw scores
             np.testing.assert_allclose(scores, m._score_all_items(user), atol=1e-4)
+            if inp == "interactions":
+                # The graph returns logits; callers mask seen items before ranking.
+                scores[x[0] > 0] = -np.inf
+                top = [items[j] for j in np.argsort(-scores)[:5]]
+                assert top == m.recommend(user, top_k=5)
         else:
             top = [items[j] for j in np.argsort(-scores)[:5]]
             assert top == m.recommend(user, top_k=5, exclude_seen=False)
