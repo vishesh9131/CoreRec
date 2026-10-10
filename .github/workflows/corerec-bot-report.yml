@@ -1,0 +1,40 @@
+name: corerec-bot report
+
+# After CI finishes on a PR: post the test results and approve when everything
+# is green. Runs from the base branch; the only PR-derived input is the junit
+# XML that CI uploaded, which is parsed as data.
+on:
+  workflow_run:
+    workflows: ["CoreRec CI"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  report:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4  # base branch only, for bot.py
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        continue-on-error: true  # cancelled runs upload nothing
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: test-results-*
+          path: results
+
+      - id: token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.COREREC_BOT_APP_ID }}
+          private-key: ${{ secrets.COREREC_BOT_PRIVATE_KEY }}
+
+      - name: Report on the PR
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: python .github/corerec_bot/bot.py report results
