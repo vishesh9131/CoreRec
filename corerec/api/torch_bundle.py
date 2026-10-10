@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
-from corerec.api.model_bundle import is_safe_bundle, load_bundle, save_bundle
+from corerec.api.model_bundle import is_safe_bundle, load_bundle, require_legacy_pickle, save_bundle
 
 T = TypeVar("T")
 
@@ -45,11 +45,13 @@ def load_torch_production(
         Callable[[T, Dict[str, Any], Dict[str, Any], Optional[Dict[str, Any]], Dict[str, Any]], None]
     ] = None,
     map_location: Any = None,
+    allow_pickle: bool = False,
 ) -> Optional[T]:
     """Load from safe bundle if present. Returns None to fall back to legacy loader."""
     if not is_safe_bundle(path):
+        require_legacy_pickle(path, allow_pickle)
         return None
-    bundle = load_bundle(path, map_location=map_location)
+    bundle = load_bundle(path, map_location=map_location, allow_pickle=allow_pickle)
     cfg = bundle["config"]
     instance = factory(cfg) if factory else cls(**cfg)
     if restore is not None:
@@ -91,10 +93,12 @@ def load_numpy_production(
     *,
     restore: Callable[[T, Dict[str, Any], Dict[str, Any], Optional[Dict[str, Any]]], None],
     factory: Optional[Callable[[Dict[str, Any]], T]] = None,
+    allow_pickle: bool = False,
 ) -> Optional[T]:
     if not is_safe_bundle(path):
+        require_legacy_pickle(path, allow_pickle)
         return None
-    bundle = load_bundle(path)
+    bundle = load_bundle(path, allow_pickle=allow_pickle)
     instance = factory(bundle["config"]) if factory else cls(**bundle["config"])
     restore(instance, bundle["config"], bundle["state"], bundle.get("arrays"))
     return instance

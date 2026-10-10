@@ -69,7 +69,7 @@ class ModelPersistenceMixin:
             raise SaveLoadError(f"Failed to save model to {path}: {e}") from e
 
     @classmethod
-    def load(cls, path: str) -> "ModelPersistenceMixin":
+    def load(cls, path: str, *, allow_pickle: bool = False) -> "ModelPersistenceMixin":
         """
         Load model from disk.
 
@@ -82,6 +82,9 @@ class ModelPersistenceMixin:
         Raises:
             SaveLoadError: If load operation fails
         """
+        from corerec.api.model_bundle import require_legacy_pickle
+        require_legacy_pickle(path, allow_pickle)
+
         try:
             with open(path, "rb") as f:
                 model = pickle.load(f)

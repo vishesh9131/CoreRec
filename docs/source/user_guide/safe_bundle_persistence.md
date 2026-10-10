@@ -1,89 +1,81 @@
 # Safe Model Bundles (`corerec_safe_v1`)
 
-Production models default to **safe bundles** instead of pickle or full PyTorch checkpoints.
-
-```python
-model.save("/artifacts/dcn")          # safe=True (default)
-loaded = DCN.load("/artifacts/dcn")   # auto-detects format
-```
+Registered production models default to safe bundles. Loading a legacy pickle or
+full PyTorch checkpoint requires `allow_pickle=True` and emits a warning.
+For a runnable save/load example, see {doc}`model_persistence`.
 
 ## Bundle layout
 
-Given base path `/artifacts/dcn`, CoreRec writes:
+For the base path `production/dcn`, CoreRec writes:
 
 | File | Contents |
 |------|----------|
-| `dcn.meta.json` | Config, JSON-safe state (maps as pairs), format version |
-| `dcn.weights.pt` | Torch `state_dict` (loaded with `weights_only=True`) |
-| `dcn.arrays.npz` | Numeric arrays only (loaded with `allow_pickle=False`) |
+| `dcn.meta.json` | Constructor settings, fitted state, model class, component filenames |
+| `dcn.<generation>.weights.npz` | Tensor bytes with JSON dtype and shape metadata |
+| `dcn.<generation>.arrays.npz` | Numeric arrays, loaded with `allow_pickle=False` |
 
-Torch-only models use `.meta.json` + `.weights.pt`.  
-Numpy/sparse models (SAR, FAST, LightGCN, TFIDF) use `.meta.json` + `.arrays.npz`.
+`<generation>` is a generated identifier. Only the components needed by the model
+are written. Use the path passed to `save()` when calling `load()`; the metadata
+records the component filenames.
 
-Metadata header:
+New components are written before metadata is replaced atomically. A failed save
+preserves the previous bundle. Successful saves remove the previous generated
+components, and readers retry if a concurrent save replaced their generation.
+Older bundles with fixed component filenames remain readable.
 
-```json
-{
-  "format": "corerec_safe_v1",
-  "corerec_save_version": "1.0",
-  "model_class": "corerec.engines.dcn.DCN",
-  "config": { "...": "constructor kwargs" },
-  "state": { "...": "fitted state, maps as *_pairs lists" }
-}
+A `.pkl` or `.pt` suffix on the path does not select the format: `safe=True` is
+still the default. Dotted base names, such as `model.v1`, remain distinct.
+
+## ID maps and sparse matrices
+
+User and item maps are stored as JSON lists so integer keys survive a round
+trip. Classic CF, embedding CF, VAE, and the PyTorch wrapper store sparse matrices
+as CSR `data`, `indices`, `indptr`, and `shape` arrays. Saving these matrices does
+not allocate a dense user-by-item or item-by-item matrix.
+
+## Detect and inspect a bundle
+
+```python
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from corerec.api.model_bundle import is_safe_bundle, load_bundle
+from corerec.engines import ALS
+
+model = ALS(factors=3, iterations=1).fit([1, 1, 2, 2], [10, 20, 20, 30])
+with TemporaryDirectory() as directory:
+    path = Path(directory) / "als"
+    model.save(path)
+    assert is_safe_bundle(path)
+    bundle = load_bundle(path)
+    assert bundle["metadata"]["model_class"] == "corerec.engines.matrix_factorization.ALS"
+    assert "R.indptr" in bundle["arrays"]
 ```
-
-## ID maps and JSON
-
-User/item IDs are stored as **pair lists** (`user_map_pairs`) so integer IDs survive JSON round-trip. Do not store raw dicts with integer keys in `state` — JSON stringifies keys and breaks `predict(0, item)`.
 
 ## Legacy migration
 
-### Detect format
+Use `Model.load(legacy_path, allow_pickle=True)` only for a trusted file, then
+`model.save(new_path)` to write a safe bundle. `safe=False` explicitly selects
+legacy saving for models that support it.
 
-```python
-from corerec.api.model_bundle import is_safe_bundle
+| Model group | Safe components |
+|-------------|-----------------|
+| DCN, DeepFM, SASRec, TwoTower, HSTU | Metadata and weights; optional arrays |
+| MultVAE, MultiDAE, `nn.Recommender` | Metadata, weights, and CSR arrays |
+| ItemKNN, UserKNN, EASE, SLIM, ALS, Item2Vec | Metadata and numeric/CSR arrays |
+| SAR, LightGCN, TFIDFRecommender | Metadata and arrays |
 
-is_safe_bundle("/artifacts/dcn")       # True → safe bundle
-is_safe_bundle("/artifacts/legacy.pt") # False → legacy
-```
+## Loading boundaries
 
-### Re-save to safe format
-
-```python
-model = SAR.load("legacy.pkl")   # legacy still loads
-model.save("production/sar", safe=True)
-```
-
-### Opt-in legacy save (discouraged)
-
-```python
-model.save("legacy.pkl", safe=False)  # pickle or torch checkpoint
-```
-
-**Security:** Only load legacy artifacts from trusted sources. Pickle and `torch.load(weights_only=False)` can execute arbitrary code.
-
-### Format by model
-
-| Model group | Safe files | Legacy fallback |
-|-------------|------------|-----------------|
-| DCN, DeepFM, GNNRec, MIND, NASRec, TwoTower, BERT4Rec, SASRec, NCF | `.meta.json` + `.weights.pt` | `.pt` checkpoint |
-| SAR, FAST, FASTRecommender, LightGCN, TFIDF | `.meta.json` + `.arrays.npz` | `.pkl` / `.npy` |
-
-## Verification after load
-
-Always verify inference, not just `is_fitted`:
-
-```python
-score_before = model.predict(user_id, item_id)
-loaded = Model.load(path)
-score_after = loaded.predict(user_id, item_id)
-assert abs(score_before - score_after) < 1e-2
-```
+Bundle component paths must remain inside the artifact directory. NumPy object
+arrays are rejected. New tensor weights load without `torch.load()`. Older
+`.weights.pt` components require PyTorch 2.10 or newer, or explicit
+`allow_pickle=True` for a trusted artifact.
+`ModelLoader` selects registered CoreRec classes from metadata. Custom classes
+must be passed explicitly; custom PyTorch modules require `module_cls=`.
 
 ## API reference
 
 - `corerec.api.model_bundle.save_bundle` / `load_bundle`
 - `corerec.api.torch_bundle.save_torch_production` / `load_torch_production`
+- `corerec.api.bundle_helpers.pack_sparse_arrays` / `unpack_sparse_arrays`
 - `corerec.api.bundle_helpers.save_map_state` / `load_map_state`
-
-See also: {doc}`model_persistence`.
