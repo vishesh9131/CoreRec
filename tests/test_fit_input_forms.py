@@ -43,6 +43,9 @@ def test_every_input_form_trains_the_same_model(model_id, module_path, cls_name,
     if (model_id, form) in DIVERGENT:
         # strict: once fixed, the entry must come off DIVERGENT
         request.node.add_marker(pytest.mark.xfail(reason=DIVERGENT[(model_id, form)], strict=True))
+    if model_id == "sasrec":
+        # GPU gradient accumulation varies even for identical inputs; compare parsing on CPU.
+        kwargs = {**kwargs, "device": "cpu"}
     cls = getattr(importlib.import_module(module_path), cls_name)
     users, items, _ = _interactions()
     ratings = [1.0] * len(users)  # implicit: "no ratings" must mean all ones
