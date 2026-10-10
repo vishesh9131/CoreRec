@@ -47,7 +47,6 @@ PLACEHOLDERS = {"corerec.engines.your_model"}
 KNOWN_STALE = {
     "engines/collaborative/index.md",
     "engines/index.md",
-    "examples/index.md",
     "utilities/index.md",
 }
 
