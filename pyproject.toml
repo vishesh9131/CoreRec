@@ -160,16 +160,6 @@ omit = [
 
 [tool.coverage.report]
 fail_under = 40
-include = [
-    "corerec/api/*",
-    "corerec/engines/*",
-    "corerec/pipelines/*",
-    "corerec/serving/*",
-    "corerec/retrieval/*",
-    "corerec/ranking/*",
-    "corerec/reranking/*",
-    "corerec/utils/*",
-]
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
