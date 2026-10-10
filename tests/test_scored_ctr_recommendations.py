@@ -39,3 +39,13 @@ def test_deepfm_legacy_checkpoint_restores_history(tmp_path):
         restored = DeepFM.load(path, allow_pickle=True)
     assert restored.recommend("01", top_k=3) == [12]
     assert set(restored.recommend("01", top_k=3, exclude_seen=False)) == {10, 11, 12}
+
+
+def test_deepfm_interleaved_exclusions_keep_scores_aligned():
+    model = DeepFM(embedding_dim=4, hidden_layers=[8], epochs=1, device="cpu")
+    model.fit([1, 1, 2, 2, 2], [10, 12, 11, 13, 14], [1.] * 5)
+    scored = model.recommend(1, top_k=5, exclude_seen=False,
+                             exclude_items=[10, 12], return_scores=True)
+    assert {item for item, score in scored} == {11, 13, 14}
+    for item, score in scored:
+        assert score == pytest.approx(model.predict(1, item), rel=1e-5, abs=1e-6)

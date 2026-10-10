@@ -567,7 +567,6 @@ class DeepFM(BaseRecommender):
         checkpoint = {
             "config": config,
             "model_state_dict": self.model.state_dict(),
-            "feature_map": self.feature_map,
             **state,
         }
 
@@ -639,7 +638,8 @@ class DeepFM(BaseRecommender):
         if instance._fit_task == "auto":
             instance._fit_task = "implicit"
 
-        instance.feature_map = checkpoint["feature_map"]
+        instance.feature_map = (checkpoint["feature_map"] if "feature_map" in checkpoint
+                                else load_feature_map(checkpoint))
         instance._user_item_interactions = {u: set(items) for u, items in checkpoint.get("user_item_interactions", [])}
         instance.field_dims = checkpoint["field_dims"]
         instance.user_features = checkpoint.get("user_features")
