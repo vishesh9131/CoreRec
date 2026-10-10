@@ -69,23 +69,38 @@ class PopularityRetriever(BaseRetriever):
         
         Provide either scores or interaction_counts.
         """
-        self.item_ids = list(item_ids)
-        
+        items = list(item_ids)
+        n = len(items)
+
+        def vector(name, values):
+            # a score list misaligned with item_ids (e.g. from a bad join) used
+            # to fit fine, then drop items or raise IndexError at retrieve()
+            arr = np.asarray(values, dtype=float)
+            if arr.ndim != 1 or len(arr) != n:
+                raise ValueError(f"{name} must be a flat list with one value per item_id "
+                                 f"({n}); got shape {arr.shape}")
+            bad = int((~np.isfinite(arr)).sum())
+            if bad:
+                raise ValueError(f"{name} has {bad} NaN/inf value(s); drop or fill those items first")
+            return arr
+
         if scores is not None:
-            self.popularity_scores = np.asarray(scores, dtype=float)
+            popularity = vector("scores", scores)
         elif interaction_counts is not None:
-            self.popularity_scores = np.asarray(interaction_counts, dtype=float)
+            popularity = vector("interaction_counts", interaction_counts)
         else:
             # default: uniform popularity
-            self.popularity_scores = np.ones(len(item_ids))
-        
+            popularity = np.ones(n)
+
         # apply time decay if configured
-        if self.time_decay is not None and timestamps is not None:
-            ts = np.asarray(timestamps)
-            max_ts = ts.max()
-            decay = np.exp(-self.time_decay * (max_ts - ts))
-            self.popularity_scores = self.popularity_scores * decay
-        
+        if timestamps is not None:
+            ts = vector("timestamps", timestamps)
+            if self.time_decay is not None and n:
+                popularity = popularity * np.exp(-self.time_decay * (ts.max() - ts))
+
+        # nothing is published until the inputs are known to be good
+        self.item_ids = items
+        self.popularity_scores = popularity
         # pre-sort for fast retrieval
         self._sorted_indices = np.argsort(self.popularity_scores)[::-1]
         

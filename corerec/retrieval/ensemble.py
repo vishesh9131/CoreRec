@@ -167,16 +167,22 @@ class EnsembleRetriever(BaseRetriever):
         self, 
         results: List[Tuple[str, float, RetrievalResult]]
     ) -> List[Candidate]:
-        """Simple union - keep candidate with highest score."""
+        """Union: each item keeps its highest *weighted* score (score * weight).
+
+        Both sides of the comparison are weighted; comparing a raw score with a
+        stored weighted one made the result depend on the order of the sources.
+        On an exact tie the source listed first is kept.
+        """
         item_to_candidate: Dict[Any, Candidate] = {}
         
         for name, weight, result in results:
             for c in result.candidates:
+                weighted = c.score * weight
                 existing = item_to_candidate.get(c.item_id)
-                if existing is None or c.score > existing.score:
+                if existing is None or weighted > existing.score:
                     item_to_candidate[c.item_id] = Candidate(
                         item_id=c.item_id,
-                        score=c.score * weight,
+                        score=weighted,
                         source=name,
                         metadata=c.metadata,
                     )
