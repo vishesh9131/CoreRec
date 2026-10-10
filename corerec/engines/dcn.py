@@ -454,7 +454,7 @@ class DCN(BaseRecommender):
     def recommend(
         self, user_id: int, top_k: int = 10, exclude_items: Optional[List[int]] = None,
         *, exclude_seen: bool = True, return_scores: bool = False, **kwargs
-    ) -> List[int]:
+    ) -> Union[List[Any], List[Tuple[Any, float]]]:
         """Generate top-K recommendations for a user."""
         if not self.is_fitted:
             raise ModelNotFittedError()

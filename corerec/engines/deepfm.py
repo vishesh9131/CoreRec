@@ -438,7 +438,7 @@ class DeepFM(BaseRecommender):
         exclude_seen: bool = True,
         return_scores: bool = False,
         **kwargs,
-    ) -> List[Any]:
+    ) -> Union[List[Any], List[Tuple[Any, float]]]:
         """Recommend top-K items for a user."""
         top_k, exclude_items, _ = self._normalize_recommend(
             top_k=top_k,

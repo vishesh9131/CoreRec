@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import logging
 import warnings
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any, Union, Tuple
 from scipy import sparse
 import os
 import pickle
@@ -631,7 +631,7 @@ class SAR(BaseRecommender):
         exclude_items: Optional[List[Any]] = None,
         *, exclude_seen: bool = True, return_scores: bool = False,
         **kwargs
-    ) -> List[Any]:
+    ) -> Union[List[Any], List[Tuple[Any, float]]]:
         """
         Get top-k recommendations for a single user.
         
