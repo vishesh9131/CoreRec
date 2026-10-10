@@ -7,13 +7,12 @@ renamed or deleted. When this was first measured, 74 of the 117 corerec modules
 referenced across the docs were not importable -- most of them still using the
 pre-rename ``contentFilterEngine`` / ``unionizedFilterEngine`` namespaces.
 
-Scope is deliberately the pages mkdocs actually publishes. docs/source/ is a
-second, Sphinx-shaped tree that the docs workflow builds but never deploys
-(only ``mkdocs gh-deploy`` publishes), so its ~54 stale pages are a separate
-cleanup and are not gated here.
+Two trees are checked: the mkdocs pages in mkdocs.yml, and docs/source/, the
+Sphinx tree that corerec.online serves.
 
-KNOWN_STALE lists the pages that still reference removed APIs, so the backlog is
-visible and cannot grow: a page not on the list must have working imports.
+KNOWN_STALE / KNOWN_STALE_SOURCE list the pages that still reference removed
+APIs, so the backlog is visible and cannot grow: a page not on the list must
+have working imports.
 """
 
 import importlib
@@ -80,6 +79,46 @@ def _broken_imports(rel_path: str):
     text = (DOCS / rel_path).read_text(errors="ignore")
     modules = {m.group(1) or m.group(2) for m in IMPORT_RE.finditer(text)}
     return sorted(m for m in modules - PLACEHOLDERS if not _importable(m))
+
+
+# docs/source pages that still import removed modules (corerec.engines.gnnrec,
+# the sandbox, corerec.torch_nn). Fixing a page means deleting its entry here.
+KNOWN_STALE_SOURCE = {
+    "examples/advanced_usage.md",
+    "models/bayesian.md",
+    "models/graph_based.md",
+    "quickstart.md",
+    "torch_nn_vendored.md",
+}
+
+SOURCE = DOCS / "source"
+SOURCE_PAGES = sorted(p.relative_to(SOURCE).as_posix() for p in SOURCE.rglob("*.md")
+                      if "_build" not in p.parts)
+
+
+def _broken_source_imports(rel_path: str):
+    text = (SOURCE / rel_path).read_text(errors="ignore")
+    modules = {m.group(1) or m.group(2) for m in IMPORT_RE.finditer(text)}
+    return sorted(m for m in modules - PLACEHOLDERS if not _importable(m))
+
+
+@pytest.mark.parametrize("rel_path", SOURCE_PAGES, ids=SOURCE_PAGES)
+def test_sphinx_page_imports_resolve(rel_path):
+    broken = _broken_source_imports(rel_path)
+    if rel_path in KNOWN_STALE_SOURCE:
+        if not broken:
+            pytest.fail(f"{rel_path} is in KNOWN_STALE_SOURCE but its imports resolve - remove it.")
+        pytest.xfail(f"{rel_path} still documents removed APIs: {broken}")
+    assert not broken, (
+        f"docs/source/{rel_path} documents modules that cannot be imported: {broken}. "
+        "Either fix the import path or drop the example."
+    )
+
+
+def test_known_stale_source_only_names_real_pages():
+    missing = [p for p in KNOWN_STALE_SOURCE if not (SOURCE / p).is_file()]
+    assert not missing, f"KNOWN_STALE_SOURCE names pages that do not exist: {missing}"
+    assert len(SOURCE_PAGES) > 20, f"only found {len(SOURCE_PAGES)} docs/source pages"
 
 
 def test_docs_are_actually_published():
