@@ -5,7 +5,7 @@ import warnings
 
 from corerec.api.base_recommender import BaseRecommender
 from corerec.api.dataset import RecommenderDataset
-from corerec.api.exceptions import ModelNotFittedError, RecommendationError
+from corerec.api.exceptions import ModelNotFittedError
 from corerec.engines import MODELS
 from corerec.engines.collaborative import SAR
 from corerec.engines.dcn import DCN
@@ -41,7 +41,7 @@ class TestAPIUniformity(unittest.TestCase):
         with self.assertRaises(ModelNotFittedError):
             model.predict(0, 0)
 
-    def test_sar_unknown_user_raises(self):
+    def test_sar_unknown_user_returns_empty(self):
         import pandas as pd
 
         df = pd.DataFrame(
@@ -49,8 +49,7 @@ class TestAPIUniformity(unittest.TestCase):
         )
         model = SAR()
         model.fit(df)
-        with self.assertRaises(RecommendationError):
-            model.recommend(99999, top_k=3)
+        self.assertEqual(model.recommend(99999, top_k=3), [])
 
     def test_sar_custom_column_names(self):
         """col_user/col_item used to be renamed away before fit() looked for them."""

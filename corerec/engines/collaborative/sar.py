@@ -650,11 +650,7 @@ class SAR(BaseRecommender):
         if not self.is_fitted:
             raise ModelNotFittedError()
 
-        cold_start = kwargs.pop("cold_start", False)
-        mapped = self._validate_user_in_map(
-            user_id, self.user2index, cold_start=cold_start
-        )
-        if mapped is None:
+        if user_id not in self.user2index:
             return []
 
         user_idx = self.user2index[user_id]
@@ -670,8 +666,7 @@ class SAR(BaseRecommender):
 
         # mask seen items
         if exclude_seen:
-            seen = user_affinity.toarray().flatten() > 0
-            scores[seen] = -np.inf
+            scores[user_affinity.indices] = -np.inf
 
         # mask additional exclusions
         if exclude_items:
