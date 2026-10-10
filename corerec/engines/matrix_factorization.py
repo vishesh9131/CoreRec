@@ -22,7 +22,8 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 from corerec.api.base_recommender import BaseRecommender
-from corerec.api.id_index import IdIndex
+from corerec.api.exceptions import InvalidDataError
+from corerec.api.interactions import to_interactions
 from corerec.api.model_bundle import (
     is_safe_bundle, load_bundle, ordered_ids, pack_arrays, save_bundle, unpack_arrays,
     require_legacy_pickle,
@@ -62,11 +63,13 @@ class _EmbeddingCFBase(BaseRecommender):
         return self.iterations
 
     def fit(self, user_ids, item_ids, ratings=None, **kwargs) -> "_EmbeddingCFBase":
-        (user_ids, item_ids, ratings), _ = self._unpack_fit_args(
-            user_ids, item_ids, ratings if ratings is not None else np.ones(len(user_ids)),
-            supported_modes=("triplet",))
-        users_index, uidx = IdIndex.fit(user_ids)
-        items_index, iidx = IdIndex.fit(item_ids)
+        # one adapter for every input form (#78); it also rejects NaN/inf ratings
+        events = to_interactions(user_ids, item_ids, ratings)
+        if not len(events):
+            raise InvalidDataError("Interactions must not be empty")
+        users_index, uidx = events.users, events.user_codes
+        items_index, iidx = events.items, events.item_codes
+        ratings = events.ratings
         self.user_map = users_index.as_dict()
         self.item_map = items_index.as_dict()
         self.uid_map = self.user_map; self.iid_map = self.item_map
