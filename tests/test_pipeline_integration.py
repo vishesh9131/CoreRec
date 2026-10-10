@@ -92,3 +92,33 @@ class TestBuildPipelineFromConfig(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             build_pipeline_from_config(self.config, fit={"populrity": {}})
+
+
+class TestConfigRejectsUnknownStages(unittest.TestCase):
+    """A misspelled stage used to vanish, so a blocklist stopped applying (#103)."""
+
+    fit = {"popularity": {"item_ids": [10, 20, 30], "interaction_counts": [10, 5, 1]}}
+
+    def _build(self, **stages):
+        from corerec.pipelines import build_pipeline_from_config
+
+        config = {"retrieval": {"sources": [{"type": "popularity"}]}, **stages}
+        return build_pipeline_from_config(config, fit=self.fit)
+
+    def test_valid_blocklist_still_applies(self):
+        pipe = self._build(reranking=[{"type": "business", "blocklist": [10]}])
+        self.assertEqual([i for i, _ in pipe.recommend(query=1, top_k=3).to_list()], [20, 30])
+
+    def test_misspelled_stages_raise(self):
+        from corerec.pipelines import build_pipeline_from_config
+
+        for stages, word in [({"reranking": [{"type": "buisness", "blocklist": [10]}]}, "buisness"),
+                             ({"ranking": {"type": "pointwize"}}, "pointwize")]:
+            with self.assertRaisesRegex(ValueError, f"'{word}' is not supported"):
+                self._build(**stages)
+        with self.assertRaisesRegex(ValueError, "'popularty' is not supported"):
+            build_pipeline_from_config({"retrieval": {"sources": [{"type": "popularty"}]}})
+
+    def test_fairness_says_what_it_needs(self):
+        with self.assertRaisesRegex(ValueError, "group_fn"):
+            self._build(reranking=[{"type": "fairness"}])

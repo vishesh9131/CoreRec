@@ -156,6 +156,11 @@ def build_pipeline_from_config(
     return pipeline
 
 
+def _unknown(stage: str, rtype: Any, supported: str) -> ValueError:
+    # a typo'd stage used to vanish, so a 'buisness' blocklist served blocked items (#103)
+    return ValueError(f"{stage} type {rtype!r} is not supported; use one of: {supported}")
+
+
 def _build_retriever(cfg: Dict) -> Optional[Any]:
     """Build a retriever from config."""
     rtype = cfg.get('type')
@@ -175,7 +180,7 @@ def _build_retriever(cfg: Dict) -> Optional[Any]:
         from corerec.retrieval import PopularityRetriever
         return PopularityRetriever(name=cfg.get('name', 'popularity'))
     
-    return None
+    raise _unknown("retrieval source", rtype, "collaborative, semantic, popularity")
 
 
 def _build_ranker(cfg: Dict) -> Optional[Any]:
@@ -193,7 +198,7 @@ def _build_ranker(cfg: Dict) -> Optional[Any]:
             name=cfg.get('name', 'feature_cross'),
         )
     
-    return None
+    raise _unknown("ranking", rtype, "pointwise, feature_cross")
 
 
 def _build_reranker(cfg: Dict) -> Optional[Any]:
@@ -208,9 +213,10 @@ def _build_reranker(cfg: Dict) -> Optional[Any]:
         )
     
     elif rtype == 'fairness':
-        from corerec.reranking import FairnessReranker
-        # need group_fn which can't be in config
-        return None
+        raise ValueError(
+            "reranking type 'fairness' can't be built from a config: FairnessReranker "
+            "needs a group_fn callable. Build it in Python and add it with "
+            "pipeline.add_reranker(FairnessReranker(group_fn=...)).")
     
     elif rtype == 'business':
         from corerec.reranking import BusinessRulesReranker
@@ -226,4 +232,4 @@ def _build_reranker(cfg: Dict) -> Optional[Any]:
         
         return reranker
     
-    return None
+    raise _unknown("reranking", rtype, "diversity, business (fairness needs Python)")
