@@ -453,7 +453,7 @@ class DCN(BaseRecommender):
 
     def recommend(
         self, user_id: int, top_k: int = 10, exclude_items: Optional[List[int]] = None,
-        *, exclude_seen: bool = True, **kwargs
+        *, exclude_seen: bool = True, return_scores: bool = False, **kwargs
     ) -> List[int]:
         """Generate top-K recommendations for a user."""
         if not self.is_fitted:
@@ -478,7 +478,7 @@ class DCN(BaseRecommender):
             item_id = all_items[idx]
             if item_id in exclude_items:
                 continue
-            out.append(item_id)
+            out.append((item_id, float(scores[idx])) if return_scores else item_id)
             if len(out) >= top_k:
                 break
         return out

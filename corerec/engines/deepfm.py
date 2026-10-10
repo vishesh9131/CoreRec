@@ -75,6 +75,7 @@ class DeepFM(BaseRecommender):
         self.is_fitted = False
         self.user_features = None
         self.item_features = None
+        self._user_item_interactions = {}
         self.user_feature_types = []
         self.item_feature_types = []
 
@@ -338,6 +339,9 @@ class DeepFM(BaseRecommender):
         self.is_fitted = True
         self.user_features = user_features
         self.item_features = item_features
+        self._user_item_interactions = {}
+        for user, item in zip(user_ids, item_ids):
+            self._user_item_interactions.setdefault(user, set()).add(item)
 
         return self
 
@@ -432,6 +436,7 @@ class DeepFM(BaseRecommender):
         *,
         top_n: Optional[int] = None,
         exclude_seen: bool = True,
+        return_scores: bool = False,
         **kwargs,
     ) -> List[Any]:
         """Recommend top-K items for a user."""
@@ -464,6 +469,7 @@ class DeepFM(BaseRecommender):
         for i in range(0, len(all_items), batch_size):
             batch_items = all_items[i : i + batch_size]
             batch_X = []
+            scored_items = []
 
             for item in batch_items:
                 if item in seen_items:
@@ -491,6 +497,7 @@ class DeepFM(BaseRecommender):
                             x.append(0)
 
                 batch_X.append(x)
+                scored_items.append(item)
 
             if not batch_X:
                 continue
@@ -504,15 +511,11 @@ class DeepFM(BaseRecommender):
                 batch_preds = self.model(batch_X).cpu().detach().tolist()
 
             # Add to predictions
-            for j, item in enumerate(batch_items):
-                if item not in seen_items and j < len(batch_preds):
-                    predictions.append((item, batch_preds[j]))
+            predictions.extend((item, float(score)) for item, score in zip(scored_items, batch_preds))
 
         # Sort predictions and get top-N
         predictions.sort(key=lambda x: x[1], reverse=True)
-        top_items = [item for item, _ in predictions[:top_k]]
-
-        return top_items
+        return predictions[:top_k] if return_scores else [item for item, _ in predictions[:top_k]]
 
     def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         """
@@ -545,6 +548,7 @@ class DeepFM(BaseRecommender):
         }
         state = {
             "field_dims": self.field_dims,
+            "user_item_interactions": [[u, list(items)] for u, items in self._user_item_interactions.items()],
             "_fit_task": self._fit_task,  # 'implicit'/'rating' -> sets the head
             "user_features": self.user_features,
             "item_features": self.item_features,
@@ -563,6 +567,7 @@ class DeepFM(BaseRecommender):
         checkpoint = {
             "config": config,
             "model_state_dict": self.model.state_dict(),
+            "feature_map": self.feature_map,
             **state,
         }
 
@@ -587,6 +592,7 @@ class DeepFM(BaseRecommender):
 
         def _restore(instance, config, state, arrays, bundle):
             instance.feature_map = load_feature_map(state)
+            instance._user_item_interactions = {u: set(items) for u, items in state.get("user_item_interactions", [])}
             instance.field_dims = state["field_dims"]
             instance.user_features = state.get("user_features")
             instance.item_features = state.get("item_features")
@@ -634,6 +640,7 @@ class DeepFM(BaseRecommender):
             instance._fit_task = "implicit"
 
         instance.feature_map = checkpoint["feature_map"]
+        instance._user_item_interactions = {u: set(items) for u, items in checkpoint.get("user_item_interactions", [])}
         instance.field_dims = checkpoint["field_dims"]
         instance.user_features = checkpoint.get("user_features")
         instance.item_features = checkpoint.get("item_features")
