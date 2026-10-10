@@ -215,3 +215,28 @@ def test_validation_tracks_ndcg_and_stops_early():
 def test_no_validation_keeps_old_behaviour():
     rec = Recommender(MatrixFactorization, {"dim": 8}, epochs=3, device="cpu").fit(_groups())
     assert len(rec.history_) == 3 and rec.val_history_ == []
+
+
+@pytest.mark.parametrize("safe", [True, False])
+def test_custom_loss_requires_explicit_restore(tmp_path, safe):
+    from corerec.nn.losses import bce_loss
+
+    rec = Recommender(MatrixFactorization, {"dim": 4}, loss=bce_loss,
+                      epochs=1, device="cpu").fit([1, 1, 2, 2], [10, 11, 11, 12])
+    path = tmp_path / "custom-loss"
+    rec.save(path, safe=safe)
+    with pytest.raises(ValueError, match="Custom loss requires loss="):
+        if safe:
+            Recommender.load(path, device="cpu")
+        else:
+            with pytest.warns(UserWarning):
+                Recommender.load(path, device="cpu", allow_pickle=True)
+    if safe:
+        restored = Recommender.load(path, device="cpu", loss=bce_loss)
+    else:
+        with pytest.warns(UserWarning):
+            restored = Recommender.load(path, device="cpu", loss=bce_loss, allow_pickle=True)
+    assert restored.loss is bce_loss
+    assert restored.recommend(1, top_k=2) == rec.recommend(1, top_k=2)
+    restored.fit([1, 1, 2, 2], [10, 11, 11, 12])
+    assert restored.loss is bce_loss
