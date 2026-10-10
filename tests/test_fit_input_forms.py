@@ -31,8 +31,8 @@ def _fit(model, form, users, items, ratings):
 @pytest.mark.parametrize("form", FORMS)
 @pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS, ids=[m[0] for m in MODELS])
 def test_every_input_form_trains_the_same_model(model_id, module_path, cls_name, kwargs, form):
-    if model_id == "sasrec":
-        # GPU gradient accumulation varies even for identical inputs; compare parsing on CPU.
+    if model_id in ("sasrec", "twotower"):
+        # GPU/MPS gradient accumulation varies even for identical inputs; compare parsing on CPU.
         kwargs = {**kwargs, "device": "cpu"}
     cls = getattr(importlib.import_module(module_path), cls_name)
     users, items, _ = _interactions()
