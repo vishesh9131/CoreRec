@@ -344,7 +344,7 @@ class LightGCN(BaseRecommender):
 
         top_indices = np.argsort(scores)[::-1][:top_k]
         return [self.reverse_item_map[int(i)] for i in top_indices
-                if int(i) in self.reverse_item_map]
+                if np.isfinite(scores[i]) and int(i) in self.reverse_item_map]
 
     def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
         """Save model to disk."""

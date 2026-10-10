@@ -173,7 +173,7 @@ class EnsembleRetriever(BaseRetriever):
         for name, weight, result in results:
             for c in result.candidates:
                 existing = item_to_candidate.get(c.item_id)
-                if existing is None or c.score > existing.score:
+                if existing is None or c.score * weight > existing.score:
                     item_to_candidate[c.item_id] = Candidate(
                         item_id=c.item_id,
                         score=c.score * weight,

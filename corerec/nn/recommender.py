@@ -45,6 +45,7 @@ import scipy.sparse as sp
 import torch
 import torch.nn as nn
 
+from corerec.api.id_index import IdIndex
 from corerec.api.base_recommender import BaseRecommender
 from corerec.device import resolve_device
 from corerec.nn.losses import LOSSES
@@ -94,14 +95,9 @@ class Recommender(BaseRecommender):
             order = np.argsort(np.asarray(timestamps), kind="stable")
             u, i, keep = u.iloc[order], i.iloc[order], keep[order]
         u, i = u[keep].reset_index(drop=True), i[keep].reset_index(drop=True)
-        ucodes, users = pd.factorize(u)
-        icodes, items = pd.factorize(i)
-        self._users, self._items = list(users), list(items)
-        self.user_map = {x: k for k, x in enumerate(self._users)}
-        self.item_map = {x: k + 1 for k, x in enumerate(self._items)}  # 0 = padding
-        self.uid_map, self.iid_map = self.user_map, self.item_map
-        self.num_users, self.num_items = len(users), len(items)
-        icodes = icodes + 1
+        users, ucodes = IdIndex.fit(u)
+        items, icodes = IdIndex.fit(i, offset=1)  # 0 = padding
+        self._set_index(users, items)
         self._seen = sp.csr_matrix((np.ones(len(ucodes), np.float32), (ucodes, icodes)),
                                    shape=(self.num_users, self.num_items + 1))
         self._seen.sum_duplicates()
@@ -110,6 +106,14 @@ class Recommender(BaseRecommender):
         bounds = np.searchsorted(ucodes[order], np.arange(self.num_users + 1))
         self._sequences = [icodes[order][bounds[k]:bounds[k + 1]] for k in range(self.num_users)]
         return ucodes, icodes
+
+    def _set_index(self, users: IdIndex, items: IdIndex) -> None:
+        # the dicts and lists other code reads stay as they were (#76)
+        self.users_index, self.items_index = users, items
+        self._users, self._items = users.ids, items.ids
+        self.user_map, self.item_map = users.as_dict(), items.as_dict()
+        self.uid_map, self.iid_map = self.user_map, self.item_map
+        self.num_users, self.num_items = len(users), len(items)
 
     def _histories(self, rows: List[np.ndarray]) -> np.ndarray:
         x = np.zeros((len(rows), self.max_len), dtype=np.int64)
@@ -302,11 +306,7 @@ class Recommender(BaseRecommender):
                         "when saved. Pass Recommender.load(path, module_cls=...)")
         cfg = dict(d["config"])
         inst = cls(module_cls, d["module_kwargs"], loss=d["loss"], device=device, **cfg)
-        inst._users, inst._items = d["user_ids"], d["item_ids"]
-        inst.user_map = {x: k for k, x in enumerate(inst._users)}
-        inst.item_map = {x: k + 1 for k, x in enumerate(inst._items)}
-        inst.uid_map, inst.iid_map = inst.user_map, inst.item_map
-        inst.num_users, inst.num_items = len(inst._users), len(inst._items)
+        inst._set_index(IdIndex(d["user_ids"]), IdIndex(d["item_ids"], offset=1))
         data, indices, indptr = d["seen"]
         inst._seen = sp.csr_matrix((data, indices, indptr),
                                    shape=(inst.num_users, inst.num_items + 1))

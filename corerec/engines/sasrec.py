@@ -1187,7 +1187,8 @@ class SASRec(BaseRecommender):
             scores[1:] = scores[1:] - self.item_popularity
 
         top_indices = np.argsort(scores)[::-1][:top_k]
-        recommendations = [self.index_to_item.get(int(idx), None) for idx in top_indices]
+        recommendations = [self.index_to_item[int(idx)] for idx in top_indices
+                           if np.isfinite(scores[idx]) and int(idx) in self.index_to_item]
         return recommendations
 
     def evaluate(self, eval_data: Dict[Any, Tuple[List[int], List[int]]], metrics: Optional[List[str]] = None, cutoffs: Optional[List[int]] = None) -> Dict[str, float]:

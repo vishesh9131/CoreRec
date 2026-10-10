@@ -150,13 +150,17 @@ class _VAEBase(BaseRecommender):
         if not self.is_fitted:
             from corerec.api.exceptions import ModelNotFittedError
             raise ModelNotFittedError()
-        if user_id not in self.user_map:
+        if top_k < 0:
+            raise ValueError("top_k must be non-negative")
+        if top_k == 0 or user_id not in self.user_map:
             return []
         exclude = set(exclude_items or [])
         scores = self._score_all_items(user_id).copy()
         scores[self.R[self.user_map[user_id]].indices] = -np.inf
         out = []
         for idx in np.argsort(-scores):
+            if not np.isfinite(scores[idx]):
+                continue
             iid = self.reverse_item_map[int(idx)]
             if iid in exclude:
                 continue
@@ -166,33 +170,65 @@ class _VAEBase(BaseRecommender):
         return out
 
     def save(self, path: Union[str, Path], **kwargs) -> None:
-        p = Path(path); p.parent.mkdir(parents=True, exist_ok=True)
-        # "cls" is what ModelLoader reads; cfg["name"] is a display name and may be custom
-        torch.save({"cls": type(self).__name__,
-                    "cfg": {"name": self.name, "hidden_dim": self.hidden_dim,
-                            "latent_dim": self.latent_dim, "dropout": self.dropout,
-                            "learning_rate": self.learning_rate, "batch_size": self.batch_size,
-                            "epochs": self.epochs, "beta": self.beta, "reg": self.reg,
-                            "device": self.device, "seed": self.seed, "binarize": self.binarize},
-                    "user_map": self.user_map, "item_map": self.item_map,
-                    "num_users": self.num_users, "num_items": self.num_items,
-                    "R": self.R, "state_dict": self.model.state_dict() if self.model else None}, p)
+        """Write a corerec_safe_v1 bundle: JSON config and ids, npz arrays, weights
+        that load with weights_only=True. The old torch.save checkpoint ran code on
+        load (#75)."""
+        from corerec.api.model_bundle import save_bundle
+
+        # before any file is touched: an unfitted save used to truncate the old artifact (#101)
+        self._check_fitted()
+        R = self.R.tocsr()
+        save_bundle(
+            path, model_class=f"{type(self).__module__}.{type(self).__name__}",
+            config={"name": self.name, "hidden_dim": self.hidden_dim,
+                    "latent_dim": self.latent_dim, "dropout": self.dropout,
+                    "learning_rate": self.learning_rate, "batch_size": self.batch_size,
+                    "epochs": self.epochs, "beta": self.beta, "reg": self.reg,
+                    "device": self.device, "seed": self.seed, "binarize": self.binarize},
+            state={"users": list(self.user_map), "items": list(self.item_map)},
+            state_dict=self.model.state_dict() if self.model else None,
+            arrays={"R_data": R.data, "R_indices": R.indices, "R_indptr": R.indptr,
+                    "R_shape": np.asarray(R.shape)})
 
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs) -> "_VAEBase":
+        from corerec.api.model_bundle import is_safe_bundle, load_bundle
+
+        if not is_safe_bundle(path):
+            return cls._load_legacy(path)
+        b = load_bundle(path, map_location="cpu")
+        a = b["arrays"]
+        inst = cls(**b["config"])
+        inst._restore(
+            {x: k for k, x in enumerate(b["state"]["users"])},
+            {x: k for k, x in enumerate(b["state"]["items"])},
+            csr_matrix((a["R_data"], a["R_indices"], a["R_indptr"]), shape=tuple(a["R_shape"])),
+            b["state_dict"])
+        return inst
+
+    @classmethod
+    def _load_legacy(cls, path):
+        import warnings
+
+        warnings.warn(f"{path} is a legacy torch.save checkpoint, which can run code when "
+                      "loaded. Load it only if you trust it, then save() it again to "
+                      "convert it to the safe format.", DeprecationWarning, stacklevel=3)
         ckpt = torch.load(Path(path), map_location="cpu", weights_only=False)
         # bundles from before binarize existed were trained on counts
         inst = cls(**{"binarize": False, **ckpt["cfg"]})
-        inst.user_map = ckpt["user_map"]; inst.item_map = ckpt["item_map"]
-        inst.uid_map = inst.user_map; inst.iid_map = inst.item_map
-        inst.reverse_item_map = {k: x for x, k in inst.item_map.items()}
-        inst.num_users = ckpt["num_users"]; inst.num_items = ckpt["num_items"]; inst.R = ckpt["R"]
-        inst.model = _VAENet(inst.num_items, inst.hidden_dim, inst.latent_dim,
-                             inst.dropout, inst.VARIATIONAL)
-        if ckpt["state_dict"] is not None:
-            inst.model.load_state_dict(ckpt["state_dict"])
-        inst.model.eval(); inst._dev = torch.device("cpu"); inst.device = "cpu"; inst.is_fitted = True
+        inst._restore(ckpt["user_map"], ckpt["item_map"], ckpt["R"], ckpt["state_dict"])
         return inst
+
+    def _restore(self, user_map, item_map, R, state_dict):
+        self.user_map = user_map; self.item_map = item_map
+        self.uid_map = self.user_map; self.iid_map = self.item_map
+        self.reverse_item_map = {k: x for x, k in self.item_map.items()}
+        self.num_users = len(user_map); self.num_items = len(item_map); self.R = R
+        self.model = _VAENet(self.num_items, self.hidden_dim, self.latent_dim,
+                             self.dropout, self.VARIATIONAL)
+        if state_dict is not None:
+            self.model.load_state_dict(state_dict)
+        self.model.eval(); self._dev = torch.device("cpu"); self.device = "cpu"; self.is_fitted = True
 
 
 class MultVAE(_VAEBase):

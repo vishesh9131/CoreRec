@@ -112,9 +112,11 @@ class PointwiseRanker(BaseRanker):
 
             # add retrieval score to features
             features['retrieval_score'] = c.score
-            # the item is what is being scored, so a score_fn should always be
-            # able to see it without having to supply a feature_extractor
-            features.setdefault('item_id', c.item_id)
+            # Callable scorers need the ID; estimators must only see model features.
+            if self.model is None or not (
+                hasattr(self.model, 'predict') or hasattr(self.model, 'predict_proba')
+            ):
+                features.setdefault('item_id', c.item_id)
 
             # compute score
             if self.model is not None:
