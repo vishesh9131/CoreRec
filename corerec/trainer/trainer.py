@@ -6,6 +6,7 @@ This module provides a trainer for training recommendation models.
 
 import os
 import torch
+from corerec.api.model_bundle import require_legacy_pickle
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -328,14 +329,16 @@ class Trainer:
 
         self.logger.info(f"Checkpoint saved to {checkpoint_path}")
 
-    def load_checkpoint(self, checkpoint_path: str):
+    def load_checkpoint(self, checkpoint_path: str, *, allow_pickle: bool = False):
         """Load a checkpoint of the model.
 
         Args:
             checkpoint_path (str): Path to checkpoint
+            allow_pickle (bool): Load only explicitly trusted legacy checkpoints.
         """
         # Load checkpoint
-        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        require_legacy_pickle(checkpoint_path, allow_pickle)
+        checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
 
         # Load model state
         self.model.load_state_dict(checkpoint["model_state_dict"])

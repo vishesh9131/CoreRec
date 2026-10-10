@@ -16,6 +16,7 @@ Author: Vishesh Yadav (mail: sciencely98@gmail.com)
 
 import os
 import torch
+from corerec.api.model_bundle import require_legacy_pickle
 import torch.nn as nn
 from typing import Dict, Any, Union, Optional, List, Tuple
 import logging
@@ -105,11 +106,12 @@ class BaseModel(nn.Module):
 
     @classmethod
     def load(cls, path: str,
-             device: Optional[torch.device] = None) -> "BaseModel":
+             device: Optional[torch.device] = None, *, allow_pickle: bool = False) -> "BaseModel":
         """Load model from saved checkpoint.
 
         Args:
             path (str): Path to the saved model file
+            allow_pickle (bool): Load only explicitly trusted legacy checkpoints.
             device (Optional[torch.device]): Device to load the model to
 
         Returns:
@@ -119,7 +121,8 @@ class BaseModel(nn.Module):
             device = torch.device(
                 "cuda" if torch.cuda.is_available() else "cpu")
 
-        checkpoint = torch.load(path, map_location=device)
+        require_legacy_pickle(path, allow_pickle)
+        checkpoint = torch.load(path, map_location=device, weights_only=False)
         config = checkpoint["config"]
         model_name = checkpoint["model_name"]
 

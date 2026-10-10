@@ -6,6 +6,7 @@ which can encode text, sequences, or other data using transformer architectures.
 """
 
 import torch
+from corerec.api.model_bundle import require_legacy_pickle
 import torch.nn as nn
 import numpy as np
 from typing import Dict, List, Tuple, Any, Union, Optional, Callable
@@ -262,17 +263,19 @@ class TransformerTower(AbstractTower):
         )
 
     @classmethod
-    def load(cls, path: str) -> "TransformerTower":
+    def load(cls, path: str, *, allow_pickle: bool = False) -> "TransformerTower":
         """Load the tower.
 
         Args:
             path (str): Path to load the tower from
+            allow_pickle (bool): Load only explicitly trusted legacy checkpoints.
 
         Returns:
             TransformerTower: Loaded tower
         """
         # Load config
-        checkpoint = torch.load(path, map_location="cpu")
+        require_legacy_pickle(path, allow_pickle)
+        checkpoint = torch.load(path, map_location="cpu", weights_only=False)
 
         # Create model with loaded config
         model = cls(name=checkpoint["name"], config=checkpoint["config"])
