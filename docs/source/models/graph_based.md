@@ -42,9 +42,9 @@ recs = model.recommend(user_id=1, top_k=10)
 
 | Model | Import | Tutorial |
 |-------|--------|----------|
-| GeoIMC | sandbox graph_based | [GeoIMC](../tutorials/geoimc_tutorial.md) |
-| LightGCN-Base | `corerec.sandbox.collaborative_full.graph_based_base.lightgcn_base` | [LightGCN Base](../tutorials/lightgcn_base_tutorial.md) |
-| GNN-Base | `corerec.sandbox.collaborative_full.graph_based_base.GNN_base` | [GNN Base](../tutorials/gnn_base_tutorial.md) |
+| GeoIMC | sandbox graph_based | [GeoIMC](../tutorials/removed_models.md) |
+| LightGCN-Base | `corerec.sandbox.collaborative_full.graph_based_base.lightgcn_base` | [LightGCN Base](../tutorials/removed_models.md) |
+| GNN-Base | `corerec.sandbox.collaborative_full.graph_based_base.GNN_base` | [GNN Base](../tutorials/removed_models.md) |
 
 ## When to use
 

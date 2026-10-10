@@ -11,9 +11,9 @@ All Bayesian models in CoreRec are **sandbox / experimental**. There is no produ
 
 | Model | Import | Tutorial |
 |-------|--------|----------|
-| **BPR** | `from corerec.sandbox.collaborative_full.cornac_bpr import BPR` | [BPR](../tutorials/bpr_tutorial.md) |
-| **BPR-MF** | `from corerec.sandbox.collaborative_full.bayesian_method_base.bprmf_base import BPRMF_base` | [BPR-MF](../tutorials/bprmf_tutorial.md) |
-| **VMF** | `from corerec.sandbox.collaborative_full.mf_base.vmf_base import VMF_base` | [VMF](../tutorials/vmf_tutorial.md) |
+| **BPR** | `from corerec.sandbox.collaborative_full.cornac_bpr import BPR` | [BPR](../tutorials/removed_models.md) |
+| **BPR-MF** | `from corerec.sandbox.collaborative_full.bayesian_method_base.bprmf_base import BPRMF_base` | [BPR-MF](../tutorials/removed_models.md) |
+| **VMF** | `from corerec.sandbox.collaborative_full.mf_base.vmf_base import VMF_base` | [VMF](../tutorials/removed_models.md) |
 
 ### Example (BPR)
 
