@@ -461,7 +461,7 @@ class DeepFM(BaseRecommender):
         if not self.is_fitted:
             raise ModelNotFittedError(f"{self.name} has not been fitted yet.")
 
-        from corerec.api.bundle_helpers import load_map_state, save_feature_map, save_map_state
+        from corerec.api.bundle_helpers import load_map_state, pairs, save_feature_map, save_map_state
         from corerec.api.torch_bundle import save_torch_production
 
         path_obj = Path(path)
@@ -483,8 +483,8 @@ class DeepFM(BaseRecommender):
             "field_dims": self.field_dims,
             "user_item_interactions": [[u, list(items)] for u, items in self._user_item_interactions.items()],
             "_fit_task": self._fit_task,  # 'implicit'/'rating' -> sets the head
-            "user_features": self.user_features,
-            "item_features": self.item_features,
+            "user_features_pairs": pairs(self.user_features),
+            "item_features_pairs": pairs(self.item_features),
             "user_feature_types": self.user_feature_types,
             "item_feature_types": self.item_feature_types,
             "is_fitted": self.is_fitted,
@@ -519,15 +519,17 @@ class DeepFM(BaseRecommender):
         Returns:
             Loaded DeepFM instance
         """
-        from corerec.api.bundle_helpers import load_feature_map
+        from corerec.api.bundle_helpers import dict_from_pairs, load_feature_map
         from corerec.api.torch_bundle import load_torch_production
 
         def _restore(instance, config, state, arrays, bundle):
             instance.feature_map = load_feature_map(state)
             instance._user_item_interactions = {u: set(items) for u, items in state.get("user_item_interactions", [])}
             instance.field_dims = state["field_dims"]
-            instance.user_features = state.get("user_features")
-            instance.item_features = state.get("item_features")
+            instance.user_features = (dict_from_pairs(state["user_features_pairs"])
+                                      if "user_features_pairs" in state else state.get("user_features"))
+            instance.item_features = (dict_from_pairs(state["item_features_pairs"])
+                                      if "item_features_pairs" in state else state.get("item_features"))
             instance.user_feature_types = state.get("user_feature_types", [])
             instance.item_feature_types = state.get("item_feature_types", [])
             instance.is_fitted = state.get("is_fitted", True)
