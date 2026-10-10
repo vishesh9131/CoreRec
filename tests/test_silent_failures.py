@@ -123,3 +123,17 @@ def test_tfidf_recommend_by_text_takes_top_k_like_recommend():
     m.fit([1, 2, 3, 4], {1: "red apple", 2: "green apple", 3: "red car", 4: "blue sky"})
     assert len(m.recommend_by_text("apple", top_k=2)) == 2
     assert m.recommend_by_text("apple", top_n=2) == m.recommend_by_text("apple", top_k=2)
+
+
+def test_tfidf_recommend_returns_similar_item_ids():
+    """recommend(item) ignored its argument and returned row indices (#70)."""
+    from corerec.engines import TFIDFRecommender
+
+    m = TFIDFRecommender().fit(["a", "b", "c", "d"], {
+        "a": "red running shoes", "b": "blue running shoes",
+        "c": "wireless earbuds", "d": "wireless noise cancelling earbuds"})
+    assert m.recommend("a", top_k=1) == ["b"]
+    assert m.recommend("c", top_k=1) == ["d"]
+    assert "a" not in m.recommend("a", top_k=3)
+    assert "b" not in m.recommend("a", top_k=3, exclude_items=["b"])
+    assert m.recommend("no-such-item", top_k=3) == []
