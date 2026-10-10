@@ -4,12 +4,15 @@ Mirrors what Cornac/RecBole offer out of the box: hand it a fitted model and a
 test set, get back the standard top-K ranking metrics, computed against the
 model's own ``recommend`` path (i.e. the real serving path).
 """
+import logging
 from collections import defaultdict
 from typing import Any, Dict, Iterable, Optional, Union
 
 import numpy as np
 
 from corerec.evaluation.metrics import RankingMetrics
+
+logger = logging.getLogger(__name__)
 
 
 # canonical names, as in every report and the CLI
@@ -91,7 +94,7 @@ def evaluate(
     ks = [k] if isinstance(k, int) else sorted(set(k))
     k_max = ks[-1]
     scores = defaultdict(list)
-    n_eval = n_errors = 0
+    n_eval = n_errors = n_repeats = 0
     for u in users:
         truth = relevant.get(u)
         if not truth:
@@ -111,6 +114,8 @@ def evaluate(
         if u in seen:
             recs = [it for it in recs if it not in seen[u]]
         recs = recs[:k_max]
+        if len(set(recs)) < len(recs):
+            n_repeats += 1  # scored as misses by RankingMetrics
         truth = list(truth)
 
         for kk in ks:  # each metric reads only recs[:kk]
@@ -121,6 +126,9 @@ def evaluate(
     results = {f"{name}@{kk}": float(np.mean(scores[f"{name}@{kk}"])) if n_eval else 0.0
                for kk in ks for name in METRICS}
     results.update(n_users=n_eval, n_errors=n_errors)
+    if n_repeats:
+        logger.warning("%s returned the same item twice in one list for %d of %d users; "
+                       "repeats count as misses", type(model).__name__, n_repeats, n_eval)
     if verbose:
         for key, val in results.items():
             print(f"{key}: {val:.4f}" if isinstance(val, float) else f"{key}: {val}")
