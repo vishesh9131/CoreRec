@@ -509,7 +509,7 @@ class TwoTower(BaseRecommender):
         torch.save(legacy, path)
 
     @classmethod
-    def load(cls, path: Union[str, Path]) -> "TwoTower":
+    def load(cls, path: Union[str, Path], *, allow_pickle: bool = False) -> "TwoTower":
         """Load model from disk."""
         from corerec.api.bundle_helpers import load_map_state
         from corerec.api.torch_bundle import load_torch_production
@@ -554,7 +554,7 @@ class TwoTower(BaseRecommender):
                 seed=cfg.get("seed"),
             )
 
-        loaded = load_torch_production(cls, path, build_model=_build, restore=_restore, factory=_factory)
+        loaded = load_torch_production(cls, path, build_model=_build, restore=_restore, factory=_factory, allow_pickle=allow_pickle)
         if loaded is not None:
             return loaded
 

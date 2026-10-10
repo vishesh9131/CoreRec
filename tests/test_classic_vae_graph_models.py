@@ -83,7 +83,7 @@ def test_model_loader_finds_vae_saved_with_a_custom_name(cls_name, tmp_path):
     path = tmp_path / "v.pt"
     m.save(str(path))
 
-    loaded = ModelLoader().load(str(path))
+    loaded = ModelLoader().load(str(path), allow_pickle=True)
     assert type(loaded) is cls
     assert loaded.name == "my_vae"
     assert loaded.recommend(0, top_k=2) == m.recommend(0, top_k=2)
@@ -115,8 +115,8 @@ def test_model_loader_still_reads_vae_files_saved_before_cls_was_written(tmp_pat
     path = tmp_path / "old.pt"
     _legacy_vae_checkpoint(m, path, with_cls=False)  # what save() wrote before "cls"
 
-    with pytest.warns(DeprecationWarning, match="legacy"):
-        assert type(ModelLoader().load(str(path))) is MultiDAE
+    with pytest.warns(UserWarning, match="execute"):
+        assert type(ModelLoader().load(str(path), allow_pickle=True)) is MultiDAE
 
 
 @pytest.mark.parametrize("cls_name", ["MultVAE", "MultiDAE"])
@@ -137,8 +137,8 @@ def test_vae_trains_on_a_binary_matrix_unless_told_not_to(cls_name, tmp_path):
     assert cls.load(str(path)).binarize is False
     # checkpoints written before binarize existed trained on counts
     _legacy_vae_checkpoint(counts, tmp_path / "old.pt", with_binarize=False)
-    with pytest.warns(DeprecationWarning):
-        assert cls.load(str(tmp_path / "old.pt")).binarize is False
+    with pytest.warns(UserWarning, match="execute"):
+        assert cls.load(str(tmp_path / "old.pt"), allow_pickle=True).binarize is False
 
 
 @pytest.mark.parametrize("cls_name", ["MultVAE", "MultiDAE"])
@@ -167,8 +167,8 @@ def test_vae_saves_a_safe_bundle_that_loads_without_pickle(cls_name, tmp_path, m
         assert (loaded.R != m.R).nnz == 0
 
 
-def test_a_malicious_legacy_vae_file_warns_before_running(tmp_path):
-    """Legacy files still load (no artifact breaks), but only after a warning."""
+def test_a_malicious_legacy_vae_file_is_rejected_before_running(tmp_path):
+    """Reject an untrusted legacy file before its payload can execute."""
     import torch
 
     from corerec.engines import MultVAE
@@ -178,9 +178,11 @@ def test_a_malicious_legacy_vae_file_warns_before_running(tmp_path):
             return (exec, ("import pathlib; pathlib.Path(%r).touch()" % str(tmp_path / "pwned"),))
 
     torch.save({"cfg": {}, "payload": Boom()}, tmp_path / "evil.pt")
-    with pytest.warns(DeprecationWarning, match="can run code"):
-        with pytest.raises(Exception):
-            MultVAE.load(tmp_path / "evil.pt")
+    from corerec.api.exceptions import SaveLoadError
+    with pytest.raises(SaveLoadError, match="allow_pickle=True"):
+        MultVAE.load(tmp_path / "evil.pt")
+    assert not (tmp_path / "pwned").exists()
+
 
 
 @pytest.mark.parametrize("cls_name", ["MultVAE", "MultiDAE"])

@@ -24,7 +24,7 @@ from corerec.api.interactions import to_interactions
 from corerec.api.id_index import IdIndex
 from corerec.api.model_bundle import (
     is_safe_bundle, load_bundle, ordered_ids, pack_arrays, save_bundle, unpack_arrays,
-    warn_legacy_pickle,
+    require_legacy_pickle,
 )
 
 logger = logging.getLogger(__name__)
@@ -130,15 +130,15 @@ class _ClassicCFBase(BaseRecommender):
                     arrays=arrays)
 
     @classmethod
-    def load(cls, path: Union[str, Path], **kwargs) -> "_ClassicCFBase":
+    def load(cls, path: Union[str, Path], *, allow_pickle: bool = False, **kwargs) -> "_ClassicCFBase":
         if is_safe_bundle(path):
-            b = load_bundle(path)
+            b = load_bundle(path, allow_pickle=allow_pickle)
             a = unpack_arrays(b["arrays"], b["state"]["sparse"])
             d = {"params": b["config"], "R": a.pop("R"), "state": a,
                  "user_map": {x: k for k, x in enumerate(b["state"]["users"])},
                  "item_map": {x: k for k, x in enumerate(b["state"]["items"])}}
         else:
-            warn_legacy_pickle(path)
+            require_legacy_pickle(path, allow_pickle)
             with open(Path(path), "rb") as f:
                 d = pickle.load(f)
         inst = cls(**d["params"])

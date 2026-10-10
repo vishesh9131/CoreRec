@@ -1,8 +1,7 @@
 """
 Safe model persistence helpers (production path).
 
-Prefer ``torch.save(state_dict)`` + JSON metadata over raw pickle for
-neural models.  Pickle remains available via ``allow_pickle=True`` for
+Neural weights use numeric bundles without pickle.  Pickle remains available via ``allow_pickle=True`` for
 backward compatibility until CoreRec 1.0.
 """
 
@@ -10,7 +9,6 @@ from __future__ import annotations
 
 import json
 import pickle
-import warnings
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
@@ -35,10 +33,12 @@ def save_artifact(
     Save model artifact in the safe production format.
 
     Layout:
-        ``{path}.pt``       — torch state_dict (if provided)
+        ``{path}.<generation>.weights.npz`` — numeric tensor bytes (if provided)
         ``{path}.skops``    — pickle fallback for sklearn-only models (if allow_pickle)
         ``{path}.meta.json`` — version, class, hyperparams, maps
     """
+    if sklearn_payload is not None and not allow_pickle:
+        raise SaveLoadError("Saving a Python payload requires allow_pickle=True explicitly")
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     meta = {
@@ -47,22 +47,17 @@ def save_artifact(
     }
 
     if state_dict is not None:
-        try:
-            import torch
-
-            torch.save(state_dict, path.with_suffix(".pt"))
-            meta["weights_file"] = str(path.with_suffix(".pt").name)
-        except ImportError as e:
-            raise SaveLoadError("torch is required to save state_dict artifacts") from e
+        from corerec.api.model_bundle import save_bundle
+        save_bundle(path, model_class="corerec.api.safe_persistence.Artifact",
+                    config=meta, state={}, state_dict=state_dict)
+        if sklearn_payload is None:
+            return
+        from corerec.api.model_bundle import bundle_meta_path
+        bundle = json.loads(bundle_meta_path(path).read_text(encoding="utf-8"))
+        meta.update({key: bundle[key] for key in
+                     ("weights_file", "tensor_state", "tensor_metadata")})
 
     if sklearn_payload is not None:
-        if not allow_pickle:
-            warnings.warn(
-                "Saving sklearn payload with pickle. Pass allow_pickle=True explicitly "
-                "or migrate to state_dict format.",
-                UserWarning,
-                stacklevel=2,
-            )
         with open(path.with_suffix(".skops"), "wb") as f:
             pickle.dump(sklearn_payload, f, protocol=pickle.HIGHEST_PROTOCOL)
         meta["sklearn_file"] = str(path.with_suffix(".skops").name)
@@ -75,12 +70,21 @@ def load_artifact(
     path: Union[str, Path],
     *,
     map_location: Any = None,
+    allow_pickle: bool = False,
 ) -> Dict[str, Any]:
     """
     Load saved artifact components.
 
     Returns dict with keys ``state_dict``, ``sklearn_payload``, ``metadata``.
     """
+    from corerec.api.model_bundle import is_safe_bundle, load_bundle
+    sidecar = _meta_path(Path(path))
+    has_python_payload = (sidecar.is_file() and
+                          "sklearn_file" in json.loads(sidecar.read_text(encoding="utf-8")))
+    if is_safe_bundle(path) and not has_python_payload:
+        bundle = load_bundle(path, map_location=map_location, allow_pickle=allow_pickle)
+        return {"metadata": bundle["config"], "state_dict": bundle["state_dict"],
+                "sklearn_payload": None}
     path = Path(path)
     meta_file = _meta_path(path)
     if not meta_file.exists():
@@ -96,14 +100,15 @@ def load_artifact(
 
     weights_name = metadata.get("weights_file")
     if weights_name:
-        import torch
-
-        weights_path = path.parent / weights_name
-        result["state_dict"] = torch.load(weights_path, map_location=map_location, weights_only=True)
+        from corerec.api.model_bundle import _load_bundle_components
+        result["state_dict"] = _load_bundle_components(
+            path, metadata, map_location, allow_pickle)["state_dict"]
 
     skops_name = metadata.get("sklearn_file")
     if skops_name:
-        skops_path = path.parent / skops_name
+        from corerec.api.model_bundle import _bundle_component, require_legacy_pickle
+        skops_path = _bundle_component(path, skops_name)
+        require_legacy_pickle(skops_path, allow_pickle)
         with open(skops_path, "rb") as f:
             result["sklearn_payload"] = pickle.load(f)
 
