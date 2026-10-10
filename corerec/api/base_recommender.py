@@ -488,8 +488,9 @@ class BaseRecommender(ABC):
 
     @abstractmethod
     def recommend(
-        self, user_id: Any, top_k: int = 10, exclude_items: Optional[List[Any]] = None, **kwargs
-    ) -> List[Any]:
+        self, user_id: Any, top_k: int = 10, exclude_items: Optional[List[Any]] = None, *,
+        exclude_seen: bool = True, return_scores: bool = False, **kwargs
+    ) -> Union[List[Any], List[Tuple[Any, float]]]:
         """
         Generate top-K item recommendations for a user.
 
@@ -499,10 +500,13 @@ class BaseRecommender(ABC):
             user_id: User identifier
             top_k: Number of recommendations to generate
             exclude_items: Items to exclude from recommendations
+            exclude_seen: Exclude observed interactions (registered interaction models)
+            return_scores: Return item/score pairs using the actual ranking scores
             **kwargs: Additional recommendation parameters
 
         Returns:
-            List of recommended item IDs (sorted by relevance)
+            Ranked item IDs, or (item, score) pairs when requested. Registered
+            interaction models return [] for users absent from training.
 
         Example:
             recs = model.recommend(user_id=123, top_k=10)

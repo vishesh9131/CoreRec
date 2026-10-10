@@ -33,7 +33,7 @@ from __future__ import annotations
 import logging
 import math
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -387,7 +387,8 @@ class HSTU(BaseRecommender):
         return np.concatenate(out) if out else np.zeros((0, len(self.index_to_item) - 1))
 
     def recommend(self, user_id: Any, top_k: int = 10, exclude_seen: bool = True,
-                  exclude_items: Optional[Sequence[Any]] = None, **kwargs: Any) -> List[Any]:
+                  exclude_items: Optional[Sequence[Any]] = None, *, return_scores: bool = False,
+                  **kwargs: Any) -> Union[List[Any], List[Tuple[Any, float]]]:
         self._check_fitted()
         if user_id not in self.user_sequences:
             return []
@@ -403,7 +404,8 @@ class HSTU(BaseRecommender):
             return []
         top = np.argpartition(-scores, k - 1)[:k]
         top = top[np.argsort(-scores[top], kind="stable")]
-        return [self.index_to_item[i + 1] for i in top]
+        return [(self.index_to_item[i + 1], float(scores[i])) if return_scores
+                else self.index_to_item[i + 1] for i in top]
 
     def predict(self, user_id: Any, item_id: Any, **kwargs: Any) -> float:
         return self.batch_predict([(user_id, item_id)])[0]
