@@ -1,41 +1,9 @@
-"""
-Towers module for CoreRec framework.
+"""Moved to ``corerec.experimental.towers`` (#79): untested and unused by CoreRec."""
 
-This module provides various tower architectures for encoding different types of data
-in recommendation systems.
-"""
+import warnings
 
-from corerec.towers.base_tower import AbstractTower
-from corerec.towers.mlp_tower import MLPTower
-from corerec.towers.transformer_tower import TransformerTower, BERTTower, RoBERTaTower, T5Tower
-from corerec.towers.cnn_tower import CNNTower, AttentionPool2d
-from corerec.towers.fusion_tower import (
-    FusionTower,
-    ConcatFusion,
-    AttentionFusion,
-    GatingFusion,
-    SumFusion,
-    BilinearFusion,
-)
+warnings.warn("corerec.towers moved to corerec.experimental.towers, which is untested; "
+              "import it from there", DeprecationWarning, stacklevel=2)
 
-__all__ = [
-    # Base classes
-    "AbstractTower",
-    # MLP Tower
-    "MLPTower",
-    # Transformer Towers
-    "TransformerTower",
-    "BERTTower",
-    "RoBERTaTower",
-    "T5Tower",
-    # CNN Tower
-    "CNNTower",
-    "AttentionPool2d",
-    # Fusion Tower
-    "FusionTower",
-    "ConcatFusion",
-    "AttentionFusion",
-    "GatingFusion",
-    "SumFusion",
-    "BilinearFusion",
-]
+from corerec.experimental.towers import *  # noqa: E402,F401,F403
+from corerec.experimental.towers import __all__  # noqa: E402,F401
