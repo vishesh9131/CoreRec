@@ -20,6 +20,8 @@ import scipy.sparse as sp
 from scipy.sparse import csr_matrix
 
 from corerec.api.base_recommender import BaseRecommender
+from corerec.api.interactions import to_interactions
+from corerec.api.id_index import IdIndex
 from corerec.api.model_bundle import (
     is_safe_bundle, load_bundle, ordered_ids, pack_arrays, save_bundle, unpack_arrays,
     warn_legacy_pickle,
@@ -30,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 class _ClassicCFBase(BaseRecommender):
     MODEL = "ItemKNN"
+    _uses_interactions_adapter = True
 
     def __init__(self, name: str = None, top_k_neighbors: int = 100,
                  reg: float = 250.0, shrink: float = 0.0, verbose: bool = False,
@@ -42,20 +45,29 @@ class _ClassicCFBase(BaseRecommender):
         self.item_map = {}
 
     # -- contract: fit -------------------------------------------------- #
-    def fit(self, user_ids, item_ids, ratings=None, **kwargs) -> "_ClassicCFBase":
-        (user_ids, item_ids, ratings), _ = self._unpack_fit_args(
-            user_ids, item_ids, ratings if ratings is not None else np.ones(len(user_ids)),
-            supported_modes=("triplet",))
-        u = np.asarray(user_ids); it = np.asarray(item_ids)
-        r = np.asarray(ratings, dtype=float)
-        users = sorted(set(u.tolist())); items = sorted(set(it.tolist()))
-        self.user_map = {x: k for k, x in enumerate(users)}
-        self.item_map = {x: k for k, x in enumerate(items)}
+    def fit(self, user_ids, item_ids=None, ratings=None, **kwargs) -> "_ClassicCFBase":
+        events = (to_interactions(user_ids, **kwargs) if item_ids is None and ratings is None
+                  else to_interactions(user_ids, item_ids, ratings, **kwargs))
+        if not len(events):
+            from corerec.api.exceptions import InvalidDataError
+            raise InvalidDataError("Interactions must not be empty")
+        indexes = []
+        for index in (events.users, events.items):
+            try:
+                ids = sorted(index.ids)
+            except TypeError:
+                ids = index.ids  # mixed ID types retain first-appearance order
+            indexes.append(IdIndex(ids))
+        self.users_index, self.items_index = indexes
+        self.user_map = self.users_index.as_dict()
+        self.item_map = self.items_index.as_dict()
         self.uid_map = self.user_map; self.iid_map = self.item_map
         self.reverse_item_map = {k: x for x, k in self.item_map.items()}
-        self.num_users = len(users); self.num_items = len(items)
-        uidx = np.fromiter((self.user_map[x] for x in u.tolist()), dtype=np.int64)
-        iidx = np.fromiter((self.item_map[x] for x in it.tolist()), dtype=np.int64)
+        self.num_users = len(self.users_index); self.num_items = len(self.items_index)
+        users, items, _ = events.triple()
+        uidx = self.users_index.codes(users)
+        iidx = self.items_index.codes(items)
+        r = events.ratings
         # float32 to match the item-item matrices: a float64 user row against a
         # float32 [I, I] matrix made numpy upcast-copy the whole matrix per call
         self.R = csr_matrix((r, (uidx, iidx)), shape=(self.num_users, self.num_items),
@@ -131,6 +143,8 @@ class _ClassicCFBase(BaseRecommender):
                 d = pickle.load(f)
         inst = cls(**d["params"])
         inst.user_map = d["user_map"]; inst.item_map = d["item_map"]
+        inst.users_index = IdIndex(ordered_ids(inst.user_map))
+        inst.items_index = IdIndex(ordered_ids(inst.item_map))
         inst.uid_map = inst.user_map; inst.iid_map = inst.item_map
         inst.reverse_item_map = {k: x for x, k in inst.item_map.items()}
         inst.num_users = len(inst.user_map); inst.num_items = len(inst.item_map)
