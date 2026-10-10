@@ -98,3 +98,15 @@ def test_rerank_does_not_mutate_its_input():
     for _ in range(3):
         reranker.rerank(ranked)
     assert ranked.candidates[3].score == pytest.approx(0.25)
+
+
+def test_a_later_filter_can_fall_back_to_lower_ranked_candidates():
+    """diversity -> business returned [] when the blocklist hit diversity's top_k (#104)."""
+    from corerec.pipelines import build_pipeline_from_config
+
+    fit = {"popularity": {"item_ids": [1, 2, 3, 4], "interaction_counts": [40, 30, 20, 10]}}
+    for stages in ([{"type": "business", "blocklist": [1, 2]}],
+                   [{"type": "diversity", "lambda": 1.0}, {"type": "business", "blocklist": [1, 2]}]):
+        pipe = build_pipeline_from_config(
+            {"retrieval": {"sources": [{"type": "popularity"}]}, "reranking": stages}, fit=fit)
+        assert [i for i, _ in pipe.recommend(query=1, top_k=2).to_list()] == [3, 4]

@@ -225,8 +225,11 @@ class RecommendationPipeline:
         reranking_start = time.perf_counter()
         current_result = ranking_result
         
-        for reranker in self._rerankers:
-            current_result = reranker.rerank(current_result, context, top_k=top_k)
+        for n, reranker in enumerate(self._rerankers, 1):
+            # only the last stage cuts to top_k: cutting earlier left a later
+            # filter (a blocklist) nothing to fall back on (#104)
+            k = top_k if n == len(self._rerankers) else len(current_result)
+            current_result = reranker.rerank(current_result, context, top_k=k)
         
         reranking_ms = (time.perf_counter() - reranking_start) * 1000
         
