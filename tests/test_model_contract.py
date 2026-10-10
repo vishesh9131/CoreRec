@@ -100,6 +100,23 @@ def test_fit_accepts_ratings_keyword(model_id, module_path, cls_name, kwargs, da
     assert getattr(model, "is_fitted", True), f"{cls_name}.fit left is_fitted False"
 
 
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+@pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS,
+                         ids=[m[0] for m in MODELS])
+def test_fit_rejects_non_finite_ratings(model_id, module_path, cls_name, kwargs, data, bad):
+    """One NaN made every ALS/EASE/KNN score NaN with no error (#83)."""
+    from corerec.api.exceptions import InvalidDataError
+
+    users, items, ratings = data
+    ratings = list(ratings)
+    ratings[3] = bad
+    model = _build(module_path, cls_name, kwargs)
+    with pytest.raises(InvalidDataError, match="1 of .* ratings are NaN or infinite"):
+        model.fit(users, items, ratings)
+    with pytest.raises(InvalidDataError):
+        model.fit(user_ids=users, item_ids=items, ratings=ratings)
+
+
 @pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS,
                          ids=[m[0] for m in MODELS])
 def test_recommend_returns_ranked_ids(model_id, module_path, cls_name, kwargs, data):
