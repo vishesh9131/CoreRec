@@ -161,3 +161,53 @@ def test_bundle_replacement_failure_preserves_all_previous_files(tmp_path, monke
     loaded = load_bundle(base)
     assert loaded["state_dict"]["w"].item() == 1.0
     assert loaded["arrays"]["x"].item() == 2.0
+
+
+class _Marker:
+    """Unpickling this creates a file: stands in for an arbitrary-code payload."""
+
+    def __init__(self, path):
+        self.path = path
+
+    def __reduce__(self):
+        return (open, (self.path, "w"))
+
+
+def test_vector_index_load_never_unpickles_without_trust(tmp_path):
+    """NumpyIndex.load used np.load(allow_pickle=True), so a crafted index file
+    ran code on load (#180)."""
+    import numpy as np
+    import pytest
+
+    from corerec.api.exceptions import SaveLoadError
+    from corerec.retrieval.vector_store import NumpyIndex
+
+    marker = tmp_path / "pwned"
+    evil = tmp_path / "evil.npz"
+    np.savez(evil, vectors=np.zeros((1, 2)), ids=np.array([_Marker(str(marker))], dtype=object),
+             dim=2, metric="dot")
+
+    with pytest.raises(SaveLoadError, match="allow_pickle=True"):
+        NumpyIndex(dim=2).load(str(evil))
+    assert not marker.exists()
+
+    with pytest.warns(UserWarning, match="arbitrary code"):
+        NumpyIndex(dim=2).load(str(evil), allow_pickle=True)  # explicit trust
+    assert marker.exists()
+
+
+def test_vector_index_round_trips_ids_without_pickle(tmp_path):
+    import numpy as np
+
+    from corerec.retrieval.vector_store import NumpyIndex
+
+    for ids in (["a", "b", "c"], [10, 20, 30], [1, None, "x"]):
+        idx = NumpyIndex(dim=2, metric="dot")
+        idx.add(np.eye(3, 2), ids=ids)
+        path = str(tmp_path / "ix.npz")
+        idx.save(path)
+        assert "ids" in np.load(path).files or "ids_json" in np.load(path).files
+        back = NumpyIndex(dim=2)
+        back.load(path)  # no allow_pickle needed for files we write
+        assert list(back.ids) == list(np.asarray(ids).tolist())
+        assert list(back.search(np.array([1.0, 0.0]), k=1)[1]) == [ids[0]]
