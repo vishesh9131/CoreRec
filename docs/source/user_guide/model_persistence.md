@@ -1,63 +1,67 @@
 # Model Persistence
 
-## Saving models (production default)
+Registered production models save safe bundles by default: JSON metadata, numeric NumPy arrays, and tensor bytes stored in NumPy archives without pickle.
 
-All 14 production models support safe bundles (`corerec_safe_v1`):
+## Save and load a model
 
-```python
-model.save("/artifacts/my_model")   # safe=True by default
-```
-
-This writes JSON metadata plus separate weight/array files — no pickle in the default path.
-
-## Loading models
+This example trains, saves, loads, and checks prediction parity:
 
 ```python
-from corerec.engines import DCN
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from corerec.engines import ItemKNN
+from corerec.serving import ModelLoader
 
-loaded = DCN.load("/artifacts/my_model")  # auto-detects safe vs legacy
-recommendations = loaded.recommend(user_id=1, top_k=10)
+model = ItemKNN().fit([1, 1, 2, 2], [10, 20, 20, 30])
+with TemporaryDirectory() as directory:
+    path = Path(directory) / "itemknn"
+    model.save(path)
+    loaded = ModelLoader().load(path)
+    assert loaded.predict(1, 10) == model.predict(1, 10)
+    assert loaded.recommend(1, top_k=1) == [30]
 ```
 
-## Safe bundle specification
-
-See {doc}`safe_bundle_persistence` for file layout, ID map encoding, and migration from legacy `.pkl` / `.pt` artifacts.
+You can also load a bundle with its model class, for example `ItemKNN.load(path)`.
+See {doc}`safe_bundle_persistence` for the layout and sparse matrix representation.
 
 ## Legacy formats
 
-```python
-model.save("legacy.pkl", safe=False)  # pickle/torch — untrusted files are unsafe
-```
+Legacy pickle and full PyTorch checkpoints require explicit trust. Loading them can execute Python code; use the option only for files you trust.
 
-Migrate existing deployments:
+To migrate a model you created yourself:
 
 ```python
-legacy = SAR.load("old/sar.pkl")
-legacy.save("prod/sar", safe=True)
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from corerec.engines import DCN
+
+model = DCN(epochs=1, embedding_dim=4, deep_layers=[4], device="cpu")
+model.fit([1, 1, 2, 2], [10, 20, 20, 30], [1., 1., 1., 1.])
+with TemporaryDirectory() as directory:
+    legacy_path = Path(directory) / "legacy.pt"
+    model.save(legacy_path, safe=False)
+    legacy = DCN.load(legacy_path, allow_pickle=True)
+    safe_path = Path(directory) / "production"
+    legacy.save(safe_path)
+    assert DCN.load(safe_path).predict(1, 10) == model.predict(1, 10)
+
 ```
 
-## Verify round-trip quality
+`ModelLoader.load()` and the CSV artifact loader also accept `allow_pickle=True`.
+For a trusted legacy artifact directory, the equivalent CLI options are
+`corerec serve ARTIFACT --allow-pickle` and `corerec retrain ARTIFACT --allow-pickle`.
+Newly trained artifacts use safe bundles and need no trust option.
 
-```python
-uid, iid = 42, 1001
-assert abs(model.predict(uid, iid) - loaded.predict(uid, iid)) < 1e-2
-recs = loaded.recommend(uid, top_k=10)
-```
+## Custom PyTorch modules
+
+For `corerec.nn.Recommender`, built-in modules load automatically. Supply a custom
+module class explicitly with `Recommender.load(path, module_cls=MyModule)`.
+An artifact's metadata cannot authorize importing arbitrary Python modules.
 
 ## Model information
 
 ```python
 info = model.get_model_info()
-print(f"Model: {info['name']}")
-print(f"Fitted: {info['is_fitted']}")
-```
-
-## Checking model state
-
-```python
-if model.is_fitted:
-    recs = model.recommend(user_id=1, top_k=10)
-
-if model.knows_user(42):
-    score = model.predict(user_id=42, item_id=100)
+assert info["is_fitted"]
+print(info["model_type"], info["num_users"], info["num_items"])
 ```

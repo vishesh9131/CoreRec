@@ -373,7 +373,7 @@ class SASRec(BaseRecommender):
         return logger
 
     @classmethod
-    def load(cls, path: Union[str, Path], device: Optional[torch.device] = None):
+    def load(cls, path: Union[str, Path], device: Optional[torch.device] = None, *, allow_pickle: bool = False):
         from corerec.api.bundle_helpers import dict_from_pairs, load_map_state, nested_dict_from_lists, pairs
         from corerec.api.torch_bundle import load_torch_production
 
@@ -418,7 +418,7 @@ class SASRec(BaseRecommender):
                 activation=instance.activation,
             ).to(instance.device)
 
-        loaded = load_torch_production(cls, path, build_model=_build, factory=_factory, restore=_restore)
+        loaded = load_torch_production(cls, path, build_model=_build, factory=_factory, restore=_restore, allow_pickle=allow_pickle)
         if loaded is not None:
             if device is not None and loaded.model is not None:
                 loaded.device = device

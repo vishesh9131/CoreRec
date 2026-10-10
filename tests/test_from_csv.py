@@ -273,3 +273,32 @@ def test_merge_policy_is_recorded_and_reported(tmp_path):
     assert "rating last" in r.report()
     r = train_from_csv(f, model="ItemKNN", evaluate=False, rating_merge="mean")
     assert r.manifest()["rating_merge"] == "mean"
+
+
+
+def test_cli_legacy_artifact_requires_explicit_trust(events_csv, tmp_path, monkeypatch):
+    from corerec import cli
+    from corerec.api.exceptions import SaveLoadError
+    from corerec.serving.from_csv import MODEL_FILE
+
+    result = train_from_csv(events_csv, model="ItemKNN", evaluate=False)
+    out = save_artifact(result, tmp_path / "artifact")
+    # Reproduce an artifact directory written before safe bundles were the default.
+    for component in out.glob("model.*"):
+        component.unlink()
+    import pickle
+    model = result.model
+    with (out / MODEL_FILE).open("wb") as stream:
+        pickle.dump({"cls": "ItemKNN", "params": {}, "user_map": model.user_map,
+                     "item_map": model.item_map, "R": model.R, "state": model._state()}, stream)
+    with pytest.raises(SaveLoadError, match="allow_pickle=True"):
+        load_artifact(out)
+    started = []
+    monkeypatch.setattr("corerec.serving.model_server.ModelServer.start",
+                        lambda self, reload=False: started.append(self))
+    monkeypatch.setattr(sys, "argv", ["corerec", "serve", str(out), "--allow-pickle"])
+    with pytest.warns(UserWarning, match="execute"):
+        assert cli.main() == 0
+    assert len(started) == 1
+    with pytest.warns(UserWarning, match="execute"):
+        assert started[0].reload_fn().is_fitted

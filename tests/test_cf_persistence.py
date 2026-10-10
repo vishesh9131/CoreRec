@@ -88,7 +88,7 @@ def test_older_embedding_artifacts_load_with_constructor_defaults(model_class, t
     path = tmp_path / "old.pkl"
     with path.open("wb") as stream:
         pickle.dump(payload, stream)
-    loaded = model_class.load(path)
+    loaded = model_class.load(path, allow_pickle=True)
     assert loaded.seed == 42
     assert loaded.predict(1, 10) == pytest.approx(model.predict(1, 10))
 
@@ -128,5 +128,5 @@ def test_legacy_pickles_still_load_with_a_warning(tmp_path):
     path = tmp_path / "old.pkl"
     with path.open("wb") as stream:
         pickle.dump(payload, stream)
-    with pytest.warns(DeprecationWarning, match="legacy pickle"):
-        assert ItemKNN.load(path).recommend(1, top_k=2) == model.recommend(1, top_k=2)
+    with pytest.warns(UserWarning, match="execute"):
+        assert ItemKNN.load(path, allow_pickle=True).recommend(1, top_k=2) == model.recommend(1, top_k=2)

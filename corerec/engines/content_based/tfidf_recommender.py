@@ -298,7 +298,7 @@ class TFIDFRecommender(BaseRecommender):
             print(f"{self.name} saved to {path}")
 
     @classmethod
-    def load(cls, path: Union[str, Path], **kwargs) -> "TFIDFRecommender":
+    def load(cls, path: Union[str, Path], *, allow_pickle: bool = False, **kwargs) -> "TFIDFRecommender":
         """
         Load model from disk.
         
@@ -342,7 +342,7 @@ class TFIDFRecommender(BaseRecommender):
             cls,
             path,
             restore=_restore,
-            factory=lambda cfg: cls(name=cfg.get("name"), verbose=cfg.get("verbose", False)),
+            factory=lambda cfg: cls(name=cfg.get("name"), verbose=cfg.get("verbose", False)), allow_pickle=allow_pickle
         )
         if loaded is not None:
             if loaded.verbose:

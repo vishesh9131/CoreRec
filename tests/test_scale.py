@@ -108,8 +108,8 @@ def test_old_dense_itemknn_pickle_still_loads(tmp_path):
     m.fit(*_cf_data())
     want = m.recommend(0, top_k=10)
     m.S = m.S.toarray()  # what 0.7.0 and earlier pickled
-    m.save(str(tmp_path / "old.pkl"))
-    assert ItemKNN.load(str(tmp_path / "old.pkl")).recommend(0, top_k=10) == want
+    m.save(str(tmp_path / "old.pkl"), safe=False)
+    assert ItemKNN.load(str(tmp_path / "old.pkl"), allow_pickle=True).recommend(0, top_k=10) == want
 
 
 def test_ease_refuses_a_catalogue_it_cannot_invert():

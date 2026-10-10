@@ -24,7 +24,7 @@ from scipy.sparse import csr_matrix
 from corerec.api.base_recommender import BaseRecommender
 from corerec.api.model_bundle import (
     is_safe_bundle, load_bundle, ordered_ids, pack_arrays, save_bundle, unpack_arrays,
-    warn_legacy_pickle,
+    require_legacy_pickle,
 )
 
 logger = logging.getLogger(__name__)
@@ -136,14 +136,14 @@ class _EmbeddingCFBase(BaseRecommender):
                     arrays=arrays)
 
     @classmethod
-    def load(cls, path: Union[str, Path], **kwargs) -> "_EmbeddingCFBase":
+    def load(cls, path: Union[str, Path], *, allow_pickle: bool = False, **kwargs) -> "_EmbeddingCFBase":
         if is_safe_bundle(path):
-            b = load_bundle(path)
+            b = load_bundle(path, allow_pickle=allow_pickle)
             d = {"params": b["config"], **unpack_arrays(b["arrays"], b["state"]["sparse"]),
                  "user_map": {x: k for k, x in enumerate(b["state"]["users"])},
                  "item_map": {x: k for k, x in enumerate(b["state"]["items"])}}
         else:
-            warn_legacy_pickle(path)
+            require_legacy_pickle(path, allow_pickle)
             with open(Path(path), "rb") as f:
                 d = pickle.load(f)
         inst = cls(**d["params"])

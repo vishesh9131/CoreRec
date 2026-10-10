@@ -564,7 +564,7 @@ class DCN(BaseRecommender):
             logger.info(f"Model saved to {path}")
 
     @classmethod
-    def load(cls, path: Union[str, Path]) -> "DCN":
+    def load(cls, path: Union[str, Path], *, allow_pickle: bool = False) -> "DCN":
         """Load model from disk (safe bundle or legacy checkpoint)."""
         from corerec.api.torch_bundle import load_torch_production
         from corerec.api.bundle_helpers import dict_from_pairs, load_map_state
@@ -597,7 +597,7 @@ class DCN(BaseRecommender):
                     use_sigmoid=(getattr(instance, "_fit_task", "implicit") != "rating"),
                 )
 
-        loaded = load_torch_production(cls, path, build_model=_build, restore=_restore)
+        loaded = load_torch_production(cls, path, build_model=_build, restore=_restore, allow_pickle=allow_pickle)
         if loaded is not None:
             if loaded.verbose:
                 logger.info(f"Model loaded (safe bundle) from {path}")
