@@ -55,6 +55,7 @@ class PretrainedEmbeddings:
         path: Union[str, Path],
         ids: Optional[List[Any]] = None,
         normalize: bool = False,
+        *, allow_pickle: bool = False,
     ) -> "PretrainedEmbeddings":
         """
         Load embeddings from file.
@@ -63,6 +64,7 @@ class PretrainedEmbeddings:
             path: path to embedding file
             ids: item identifiers (required for .npy, optional for .npz with 'ids')
             normalize: whether to normalize
+            allow_pickle: explicitly trust Python execution from a .pkl file
         
         Returns:
             PretrainedEmbeddings instance
@@ -75,12 +77,14 @@ class PretrainedEmbeddings:
                 ids = list(range(len(embeddings)))
         
         elif path.suffix == '.npz':
-            data = np.load(path)
-            embeddings = data['embeddings']
-            if ids is None:
-                ids = list(data.get('ids', range(len(embeddings))))
+            with np.load(path, allow_pickle=False) as data:
+                embeddings = data['embeddings']
+                if ids is None:
+                    ids = list(data.get('ids', range(len(embeddings))))
         
         elif path.suffix == '.pkl':
+            from corerec.api.model_bundle import require_legacy_pickle
+            require_legacy_pickle(path, allow_pickle)
             import pickle
             with open(path, 'rb') as f:
                 data = pickle.load(f)

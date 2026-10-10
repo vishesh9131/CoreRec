@@ -120,20 +120,18 @@ class Serializable(ABC):
         data.pop("_type", None)
         data.pop("_module", None)
 
-        # Reconstruct nested Serializable objects
-        for key, value in data.items():
-            if isinstance(
-                    value,
-                    dict) and "_type" in value and "_module" in value:
-                # Dynamically import and reconstruct nested object
-                from corerec.serialization.serializer import deserialize
+        from corerec.serialization.serializer import deserialize
 
-                data[key] = deserialize(value)
-            elif isinstance(value, list) and value:
-                # Handle lists that might contain Serializable objects
-                data[key] = [
-                    deserialize(v) if isinstance(
-                        v, dict) and "_type" in v else v for v in value]
+        def restore(value):
+            if isinstance(value, dict):
+                if "_type" in value and "_module" in value:
+                    return deserialize(value)
+                return {key: restore(child) for key, child in value.items()}
+            if isinstance(value, list):
+                return [restore(child) for child in value]
+            return value
+
+        data = {key: restore(value) for key, value in data.items()}
 
         # Create instance with reconstructed parameters
         return cls(**data)
@@ -153,7 +151,7 @@ class Serializable(ABC):
         save_to_file(self, file_path, format=format)
 
     @classmethod
-    def load(cls, file_path: str) -> "Serializable":
+    def load(cls, file_path: str, *, allow_pickle: bool = False) -> "Serializable":
         """
         Load object from file.
 
@@ -167,4 +165,4 @@ class Serializable(ABC):
         """
         from corerec.serialization.serializer import load_from_file
 
-        return load_from_file(file_path)
+        return load_from_file(file_path, allow_pickle=allow_pickle)
