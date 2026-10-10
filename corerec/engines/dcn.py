@@ -138,6 +138,7 @@ class DCN(BaseRecommender):
         self.reverse_item_map = {}
         self.user_features = {}
         self.item_features = {}
+        self._user_item_interactions = {}
         self.model = None
 
     def _build_model(self, num_features: int, max_features: int = 2, use_sigmoid: bool = True):
@@ -241,6 +242,10 @@ class DCN(BaseRecommender):
 
         self.reverse_user_map = {idx: user for user, idx in self.user_map.items()}
         self.reverse_item_map = {idx: item for item, idx in self.item_map.items()}
+
+        self._user_item_interactions = {}
+        for user, item in zip(user_ids, item_ids):
+            self._user_item_interactions.setdefault(user, set()).add(item)
 
         # Store features
         self.user_features = user_features or {}
@@ -447,16 +452,20 @@ class DCN(BaseRecommender):
         return score
 
     def recommend(
-        self, user_id: int, top_k: int = 10, exclude_items: Optional[List[int]] = None, **kwargs
+        self, user_id: int, top_k: int = 10, exclude_items: Optional[List[int]] = None,
+        *, exclude_seen: bool = True, **kwargs
     ) -> List[int]:
         """Generate top-K recommendations for a user."""
         if not self.is_fitted:
             raise ModelNotFittedError()
 
+        validate_top_k(top_k)
         if user_id not in self.user_map:
             return []
 
         exclude_items = set(exclude_items or [])
+        if exclude_seen:
+            exclude_items.update(self._user_item_interactions.get(user_id, set()))
 
         # Vectorized full ranking: score every item in ONE batched forward pass
         # instead of a Python loop of per-item predict() calls. This is the
@@ -524,6 +533,7 @@ class DCN(BaseRecommender):
             "_max_features": self._max_features,
             "_fit_task": self._fit_task,  # 'implicit'/'rating' -> sets the head
             "feature_map_pairs": pairs(self.feature_map),
+            "user_item_interactions": [[u, list(items)] for u, items in self._user_item_interactions.items()],
             "user_features": self.user_features,
             "item_features": self.item_features,
             "is_fitted": self.is_fitted,
@@ -553,6 +563,7 @@ class DCN(BaseRecommender):
             "user_map": self.user_map,
             "item_map": self.item_map,
             "feature_map": self.feature_map,
+            "user_item_interactions": self._user_item_interactions,
             "reverse_user_map": self.reverse_user_map,
             "reverse_item_map": self.reverse_item_map,
             "user_features": self.user_features,
@@ -585,6 +596,8 @@ class DCN(BaseRecommender):
             instance.reverse_user_map = maps["reverse_user_map"]
             instance.reverse_item_map = maps["reverse_item_map"]
             instance.feature_map = dict_from_pairs(state.get("feature_map_pairs"))
+            instance._user_item_interactions = {u: set(items) for u, items in
+                                                state.get("user_item_interactions", [])}
             instance._num_features = state["_num_features"]
             instance._max_features = state["_max_features"]
             instance.user_features = state.get("user_features")
@@ -632,6 +645,7 @@ class DCN(BaseRecommender):
         instance.user_map = checkpoint["user_map"]
         instance.item_map = checkpoint["item_map"]
         instance.feature_map = checkpoint["feature_map"]
+        instance._user_item_interactions = checkpoint.get("user_item_interactions", {})
         instance.reverse_user_map = checkpoint["reverse_user_map"]
         instance.reverse_item_map = checkpoint["reverse_item_map"]
         instance.user_features = checkpoint["user_features"]
