@@ -27,6 +27,8 @@ def interactions():
 @pytest.mark.parametrize('factory', [False, True])
 def test_pretrained_models_rejected_before_training(factory, interactions):
     model = MemorizingModel().fit([0] * 4, [10, 11, 12, 13], [1.] * 4)
+    if not factory:
+        model.__deepcopy__ = lambda memo: pytest.fail('pretrained model must not be copied')
     supplied = (lambda: model) if factory else model
     with pytest.raises(ValueError, match='unfitted model'):
         CrossValidator(2).cross_validate(supplied, interactions, metric='Recall@4')
