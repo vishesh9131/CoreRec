@@ -371,7 +371,8 @@ class TwoTower(BaseRecommender):
     
     def recommend(self, user_id: Any, top_k: int = 10,
                   exclude_items: Optional[List[Any]] = None,
-                  exclude_seen: bool = True, **kwargs) -> List[Any]:
+                  exclude_seen: bool = True, *, return_scores: bool = False,
+                  **kwargs) -> Union[List[Any], List[Tuple[Any, float]]]:
         """
         Generate recommendations for a user.
 
@@ -416,7 +417,8 @@ class TwoTower(BaseRecommender):
                 break
             if idx in blocked or idx not in self.reverse_item_map:
                 continue
-            recommendations.append(self.reverse_item_map[idx])
+            item = self.reverse_item_map[idx]
+            recommendations.append((item, float(scores[idx])) if return_scores else item)
 
         return recommendations
     

@@ -334,3 +334,19 @@ def test_unknown_user_does_not_hide_unfitted_model(model_id, module_path, cls_na
     model = _build(module_path, cls_name, kwargs)
     with pytest.raises(ModelNotFittedError):
         model.recommend("__unknown_user__", top_k=3)
+
+
+@pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS, ids=[m[0] for m in MODELS])
+def test_recommendation_scores_and_seen_flags_are_uniform(model_id, module_path, cls_name, kwargs):
+    if model_id == "sasrec":
+        kwargs = {**kwargs, "device": "cpu"}
+    model = _build(module_path, cls_name, kwargs)
+    model.fit([0, 0, 1, 1, 2, 2], [0, 1, 1, 2, 2, 3], [1.] * 6)
+    ids = model.recommend(0, top_k=4)
+    scored = model.recommend(0, top_k=4, return_scores=True)
+    assert [item for item, score in scored] == ids
+    assert set(ids) == {2, 3}
+    assert all(isinstance(score, float) and np.isfinite(score) for item, score in scored)
+    assert set(model.recommend(0, top_k=4, exclude_seen=False)) == {0, 1, 2, 3}
+    assert set(model.recommend(0, top_k=4, exclude_seen=False, exclude_items=[3])) == {0, 1, 2}
+    assert model.recommend("__unknown_user__", top_k=4, return_scores=True) == []
