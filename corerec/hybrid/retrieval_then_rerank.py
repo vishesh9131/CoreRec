@@ -7,6 +7,7 @@ sophisticated model.
 """
 
 import torch
+from corerec.api.model_bundle import require_legacy_pickle
 import torch.nn as nn
 import numpy as np
 from typing import Dict, List, Tuple, Any, Union, Optional, Callable
@@ -303,20 +304,22 @@ class RetrievalThenRerank(BaseModel):
         )
 
     @classmethod
-    def load(cls, path: str) -> "RetrievalThenRerank":
+    def load(cls, path: str, *, allow_pickle: bool = False) -> "RetrievalThenRerank":
         """Load the model.
 
         Args:
             path (str): Path to load the model from
+            allow_pickle (bool): Load only explicitly trusted legacy checkpoints.
 
         Returns:
             RetrievalThenRerank: Loaded model
         """
         # Load config
-        checkpoint = torch.load(path, map_location="cpu")
+        require_legacy_pickle(path, allow_pickle)
+        checkpoint = torch.load(path, map_location="cpu", weights_only=False)
 
         # Load retriever and reranker
-        retriever = BaseRetriever.load(checkpoint["retriever_path"])
+        retriever = BaseRetriever.load(checkpoint["retriever_path"], allow_pickle=allow_pickle)
         reranker = BaseRanker.load(checkpoint["reranker_path"])
 
         # Create model

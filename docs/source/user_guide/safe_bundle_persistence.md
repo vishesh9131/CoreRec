@@ -79,3 +79,17 @@ must be passed explicitly; custom PyTorch modules require `module_cls=`.
 - `corerec.api.torch_bundle.save_torch_production` / `load_torch_production`
 - `corerec.api.bundle_helpers.pack_sparse_arrays` / `unpack_sparse_arrays`
 - `corerec.api.bundle_helpers.save_map_state` / `load_map_state`
+
+
+### Low-level legacy checkpoints
+
+`BaseModel.load()` and `Trainer.load_checkpoint()` still read legacy PyTorch
+checkpoints. They reject these files by default, just like the legacy hybrid
+and experimental transformer loaders. For a checkpoint you trust, opt in explicitly:
+
+```python
+trainer.load_checkpoint("checkpoints/model.pt", allow_pickle=True)
+```
+
+This permits Python pickle execution. Production recommendation engines keep
+using safe bundles by default.
