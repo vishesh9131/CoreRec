@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 from typing import List, Dict, Optional, Tuple, Any, Union
 from corerec.api.base_recommender import BaseRecommender
-from corerec.api.exceptions import ModelNotFittedError, InvalidParameterError, RecommendationError
+from corerec.api.exceptions import ModelNotFittedError, InvalidParameterError
 from corerec.utils.validation import (
     validate_fit_inputs,
     validate_user_id,
@@ -445,7 +445,7 @@ class DeepFM(BaseRecommender):
         validate_top_k(top_k)
 
         if user_id not in self.feature_map.get("user", {}):
-            raise RecommendationError(f"Unknown user_id: {user_id!r}")
+            return []
 
         seen_items = set()
         if exclude_seen and hasattr(self, "_user_item_interactions"):
