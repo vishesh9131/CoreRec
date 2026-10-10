@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from typing import List, Dict, Optional, Tuple, Any, Union
+from corerec.api.id_index import IdIndex
 from corerec.api.base_recommender import BaseRecommender
 from corerec.api.exceptions import ModelNotFittedError, InvalidParameterError
 from corerec.utils.validation import (
@@ -175,12 +176,12 @@ class DeepFM(BaseRecommender):
 
         # Create feature mapping
         # First field: user IDs
-        unique_users = sorted(set(user_ids))
+        unique_users = IdIndex.fit(user_ids)[0].ids
         self.feature_map["user"] = {user: idx for idx, user in enumerate(unique_users)}
         self.field_dims.append(len(unique_users))
 
         # Second field: item IDs
-        unique_items = sorted(set(item_ids))
+        unique_items = IdIndex.fit(item_ids)[0].ids
         self.feature_map["item"] = {item: idx for idx, item in enumerate(unique_items)}
         self.field_dims.append(len(unique_items))
 
