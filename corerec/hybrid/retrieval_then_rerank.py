@@ -69,6 +69,10 @@ class RetrievalThenRerank(BaseModel):
         Returns:
             torch.Tensor: Scores for each item
         """
+        return self._score_candidates(batch)[0]
+
+    def _score_candidates(self, batch: Dict[str, Any]) -> Tuple[torch.Tensor, torch.Tensor]:
+        # Keep the candidate set from this exact forward pass for recommendation.
         # Retrieve candidates
         retrieval_scores = self.retriever(batch)
 
@@ -127,7 +131,7 @@ class RetrievalThenRerank(BaseModel):
                 # Update final scores
                 final_scores[i, indices] = rr_scores
 
-        return final_scores
+        return final_scores, candidate_indices
 
     def _prepare_reranker_batch(
         self, batch: Dict[str, Any], candidate_indices: torch.Tensor
@@ -185,10 +189,12 @@ class RetrievalThenRerank(BaseModel):
         batch = {**user_data, **item_data}
 
         # Forward pass
-        scores = self.forward(batch)
+        scores, candidates = self._score_candidates(batch)
 
-        # Get top-k items
-        top_k_scores, top_k_indices = torch.topk(scores[0], k=min(top_k, scores.shape[1]))
+        # Only retrieved items are eligible, even when their scores are negative.
+        candidate_scores = scores[0, candidates[0]]
+        top_k_scores, positions = torch.topk(candidate_scores, k=min(top_k, candidates.shape[1]))
+        top_k_indices = candidates[0, positions]
 
         # Convert to list of (id, score) tuples
         recommendations = []
