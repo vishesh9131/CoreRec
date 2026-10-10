@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import logging
 import warnings
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any, Union, Tuple
 from scipy import sparse
 import os
 import pickle
@@ -629,9 +629,9 @@ class SAR(BaseRecommender):
         user_id: Any,
         top_k: int = 10,
         exclude_items: Optional[List[Any]] = None,
-        *, exclude_seen: bool = True,
+        *, exclude_seen: bool = True, return_scores: bool = False,
         **kwargs
-    ) -> List[Any]:
+    ) -> Union[List[Any], List[Tuple[Any, float]]]:
         """
         Get top-k recommendations for a single user.
         
@@ -643,6 +643,7 @@ class SAR(BaseRecommender):
             top_k: number of items
             exclude_items: additional items to exclude (beyond seen items)
             exclude_seen: whether to exclude observed training items
+            return_scores: return (item_id, score) pairs
         
         Returns:
             list of recommended item IDs
@@ -681,7 +682,8 @@ class SAR(BaseRecommender):
         result = []
         for idx in top_indices:
             if scores[idx] > -np.inf:
-                result.append(self.index2item[idx])
+                item = self.index2item[idx]
+                result.append((item, float(scores[idx])) if return_scores else item)
         
         return result
     
