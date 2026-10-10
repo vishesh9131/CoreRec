@@ -44,14 +44,14 @@ def test_matches_the_mapping_models_build_today():
 
 
 def test_lightgcn_builds_its_maps_from_id_index(tmp_path):
-    """Stage 2 of #76: LightGCN keeps its sorted codes, now via IdIndex."""
+    """LightGCN uses IdIndex first-observed codes and retains them on load."""
     from corerec.engines import LightGCN
 
     m = LightGCN(n_factors=4, n_layers=1, epochs=1, verbose=False, device="cpu").fit(
         [3, 1, 2, 1], ["b", "a", "c", "b"])
-    assert m.user_id_map == m.users_index.as_dict() == {1: 0, 2: 1, 3: 2}
-    assert m.item_id_map == {"a": 0, "b": 1, "c": 2}
-    assert m.reverse_item_map == {0: "a", 1: "b", 2: "c"}
+    assert m.user_id_map == m.users_index.as_dict() == {3: 0, 1: 1, 2: 2}
+    assert m.item_id_map == {"b": 0, "a": 1, "c": 2}
+    assert m.reverse_item_map == {0: "b", 1: "a", 2: "c"}
     m.save(tmp_path / "g")
     back = LightGCN.load(tmp_path / "g")
     assert back.user_id_map == m.user_id_map and back.recommend(1, top_k=2) == m.recommend(1, top_k=2)
