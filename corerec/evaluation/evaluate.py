@@ -10,7 +10,7 @@ from typing import Any, Dict, Iterable, Optional, Union
 
 import numpy as np
 
-from corerec.evaluation.metrics import RankingMetrics
+from corerec.evaluation.metrics import RankingMetrics, _validate_k
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +76,17 @@ def evaluate(
         dict with NDCG@k, MAP@k, MRR@k, Precision@k, Recall@k, HitRate@k and the
         number of users evaluated.
     """
+    try:
+        ks = [k] if np.isscalar(k) else list(k)
+    except TypeError as exc:
+        raise ValueError("k must be a positive integer or a nonempty iterable of cutoffs") from exc
+    if not ks:
+        raise ValueError("k must contain at least one cutoff")
+    for cutoff in ks:
+        _validate_k(cutoff)
+    ks = sorted(set(ks))
+    k_max = ks[-1]
+
     test = _to_triples(test_interactions, user_col, item_col, rating_col)
 
     # ground truth: relevant items per user
@@ -91,8 +102,6 @@ def evaluate(
 
     users = list(relevant.keys()) if user_subset is None else list(user_subset)
 
-    ks = [k] if isinstance(k, int) else sorted(set(k))
-    k_max = ks[-1]
     scores = defaultdict(list)
     n_eval = n_errors = n_repeats = 0
     for u in users:

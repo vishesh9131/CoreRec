@@ -216,28 +216,14 @@ class CrossValidator:
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
-        n_folds = n_folds or self.n_folds
-
-        # Simple implementation - can be enhanced
+        n_folds = self.n_folds if n_folds is None else n_folds
         import pandas as pd
+        from sklearn.model_selection import KFold
 
-        if isinstance(data, pd.DataFrame):
-            data = data.sample(frac=1, random_state=self.random_state)  # Shuffle
-            fold_size = len(data) // n_folds
-
-            folds = []
-            for i in range(n_folds):
-                test_start = i * fold_size
-                test_end = (i + 1) * fold_size if i < n_folds - 1 else len(data)
-
-                test_data = data.iloc[test_start:test_end]
-                train_data = pd.concat([data.iloc[:test_start], data.iloc[test_end:]])
-
-                folds.append((train_data, test_data))
-
-            return folds
-        else:
+        if not isinstance(data, pd.DataFrame):
             raise NotImplementedError("Only DataFrame supported currently")
+        splitter = KFold(n_splits=n_folds, shuffle=True, random_state=self.random_state)
+        return [(data.iloc[train], data.iloc[test]) for train, test in splitter.split(data)]
 
     def cross_validate(
         self,
@@ -269,7 +255,7 @@ class CrossValidator:
             m.fit(
                 train[user_col].tolist(),
                 train[item_col].tolist(),
-                train[rating_col].tolist() if rating_col in train else [1.0] * len(train),
+                train[rating_col].tolist() if rating_col in train else None,
             )
             truth = test.groupby(user_col)[item_col].apply(list).to_dict()
             scores.append(evaluator.evaluate(m, truth)[metric])
