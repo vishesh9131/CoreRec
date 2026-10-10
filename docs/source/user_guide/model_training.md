@@ -105,3 +105,34 @@ model = DeepFM(device='cuda')  # NVIDIA GPU
 model = DeepFM(device='mps')   # Apple Silicon GPU
 model = DeepFM(device='cpu')   # Force CPU
 ```
+
+
+## Classic collaborative filtering inputs
+
+ItemKNN, UserKNN, EASE and SLIM accept event lists, keyword arguments,
+DataFrames and RecommenderDataset objects through the shared interactions
+adapter. Missing ratings mean one interaction.
+
+```python
+import pandas as pd
+from corerec.engines import ItemKNN
+
+events = pd.DataFrame({
+    "user_id": [1, 1, 2, 2, 3, 3],
+    "item_id": [10, 20, 20, 30, 10, 30],
+    "rating": [1.0] * 6,
+})
+model = ItemKNN().fit(events)
+print(model.recommend(1, top_k=2, exclude_seen=True))
+
+same_model = ItemKNN().fit(
+    user_ids=events["user_id"].tolist(),
+    item_ids=events["item_id"].tolist(),
+    ratings=events["rating"].tolist(),
+)
+assert same_model.user_map == model.user_map
+assert same_model.item_map == model.item_map
+```
+
+Malformed lengths, missing IDs and non-finite ratings raise InvalidDataError
+before fitted state is replaced. Integer and string IDs remain distinct.
