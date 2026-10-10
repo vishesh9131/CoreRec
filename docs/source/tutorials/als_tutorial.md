@@ -91,13 +91,10 @@ test_ratings = test_df['rating'].values
 ```python
 model = ALS(
     name="ALS_Model",
-    n_factors=100,
-    regularization=0.01,
+    factors=100,
+    reg=0.01,
     alpha=40,
-    iterations=15,
-    epochs=20,
-    batch_size=256,
-    learning_rate=0.001,
+    iterations=15,  # closed-form ALS: no epochs, batch size or learning rate
     verbose=True
 )
 
