@@ -21,13 +21,15 @@ from sklearn.model_selection import train_test_split
 
 # Load data (cr_learn returns dict with 'ratings' DataFrame)
 data = ml_1m.load()
-ratings_df = data['ratings']
+ratings_df = data['ratings'].head(10_000)
 train_df, test_df = train_test_split(ratings_df, test_size=0.2, random_state=42)
 
 # Create model
 model = DCN(
-    embedding_dim=64,
-    epochs=20,
+    embedding_dim=8,
+    deep_layers=[8],
+    epochs=1,
+    device="cpu",
     verbose=True
 )
 
@@ -55,23 +57,20 @@ loaded_model = DCN.load('artifacts/my_dcn')
 
 ## Available Models
 
-### Production Models (Tested & Stable)
+The installed registry is the authoritative list of available models:
 
-These 14 models are fully tested, CI-enforced, and recommended for production use:
+```python
+from corerec.engines import MODELS
+print(sorted(MODELS))
+```
 
-- **Deep Learning**: DCN, DeepFM, GNNRec, MIND, NASRec, SASRec, TwoTower, BERT4Rec
-- **Collaborative**: SAR, NCF, FAST, FASTRecommender, LightGCN
-- **Content-Based**: TFIDFRecommender
+Classic models include ALS, SAR, ItemKNN, UserKNN, EASE, SLIM, and Item2Vec.
+Neural models include DCN, DeepFM, TwoTower, LightGCN, SASRec, HSTU, MultVAE,
+and MultiDAE. TFIDFRecommender supports item text similarity.
 
-### Sandbox Models (Experimental)
-
-~50 additional models for research and exploration. These are **not production-tested** — see [Model Tiers](models/index.md#model-tiers) for details.
-
-- **Neural Networks**: AFM, AutoInt, DIEN, DIN, DLRM, Wide&Deep, and more
-- **Matrix Factorization**: SVD, ALS, A2SVD, and more
-- **Graph-Based**: GeoIMC, LightGCN-Base, GNN-Base
-- **Sequential**: RBM, SLiRec, SUM
-- **Bayesian**: BPR, BPRMF, VMF
+Historical sandbox engines and GNNRec are unavailable in this release.
+Use [removed models](tutorials/removed_models.md) for migration information.
+Experimental towers and tracking integrations live under `corerec.experimental`.
 
 ## Next Steps
 
@@ -83,52 +82,36 @@ These 14 models are fully tested, CI-enforced, and recommended for production us
 ## Common Workflows
 
 ### Rating Prediction
-```python
-from corerec.engines.deepfm import DeepFM
 
-model = DeepFM()
-model.fit(user_ids=user_ids, item_ids=item_ids, ratings=ratings)
-score = model.predict(user_id=user_id, item_id=item_id)
+```python
+from corerec.engines import DeepFM
+
+model = DeepFM(epochs=1, embedding_dim=8, hidden_layers=[8], device="cpu")
+model.fit([1, 1, 2, 2], [10, 20, 20, 30], [5., 4., 4., 3.])
+score = model.predict(user_id=1, item_id=30)
 ```
 
-### Top-K Recommendation (SASRec — interaction matrix)
+### Sequential Recommendation
 
-SASRec needs a user×item **interaction matrix**, not raw triplets alone:
+SASRec accepts interaction triplets. Event order determines each user's history;
+pass `timestamps=` when the rows are not already chronological.
 
 ```python
-from corerec.engines.sasrec import SASRec
-import numpy as np
+from corerec.engines import SASRec
 
-user_list = sorted(train_df['user_id'].unique())
-item_list = sorted(train_df['movie_id'].unique())
-user_idx = {u: i for i, u in enumerate(user_list)}
-item_idx = {it: j for j, it in enumerate(item_list)}
-
-train_mat = np.zeros((len(user_list), len(item_list)), dtype=np.float32)
-for _, row in train_df.iterrows():
-    train_mat[user_idx[row['user_id']], item_idx[row['movie_id']]] = 1.0
-
-model = SASRec(num_epochs=5, hidden_units=64, max_seq_length=50, verbose=True)
-model.fit(user_list, item_list, train_mat)
-recs = model.recommend(user_id=1, top_k=10)
+model = SASRec(epochs=1, hidden_units=8, num_blocks=1,
+               batch_size=4, device="cpu", verbose=False)
+model.fit([1, 1, 2, 2, 3, 3], [10, 20, 20, 30, 10, 30])
+assert model.recommend(1, top_k=1) == [30]
 ```
 
-### Graph-Based (GNNRec — binarize ratings)
-
-GNNRec uses **BCE loss**; ratings must be in **[0, 1]** (implicit feedback or normalized explicit ratings):
+### Graph-Based Recommendation
 
 ```python
-from corerec.engines.gnnrec import GNNRec
-import numpy as np
+from corerec.engines import LightGCN
 
-# Implicit feedback: rating >= 1 → 1.0, else 0.0
-binary_ratings = (train_df['rating'].values >= 1.0).astype(np.float32)
-
-model = GNNRec(embedding_dim=64, num_gnn_layers=3, epochs=20, verbose=True)
-model.fit(
-    user_ids=train_df['user_id'].values,
-    item_ids=train_df['movie_id'].values,
-    ratings=binary_ratings,
-)
-recs = model.recommend(user_id=1, top_k=10)
+model = LightGCN(n_factors=8, n_layers=1, epochs=1,
+                 batch_size=4, device="cpu", verbose=False)
+model.fit([1, 1, 2, 2, 3, 3], [10, 20, 20, 30, 10, 30])
+assert model.recommend(1, top_k=1) == [30]
 ```

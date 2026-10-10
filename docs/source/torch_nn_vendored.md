@@ -1,41 +1,30 @@
-# Vendored `torch_nn` and `torch_utils`
+# PyTorch Modules in CoreRec
 
-CoreRec ships internal copies of PyTorch utility modules under:
-
-- `corerec/torch_nn/`
-- `corerec/torch_utils/`
-
-## Why they exist
-
-These trees were vendored to:
-
-1. **Stabilize legacy engine code** that imported internal PyTorch paths before PyTorch 2.x API changes
-2. **Support sandbox neural models** (`corerec/sandbox/collaborative_full/nn_base/`) without pinning an old PyTorch fork
-3. **Isolate experimental code** from the production `corerec.engines` tier
-
-## Production guidance
-
-- **Production models** (`corerec/engines/`) should prefer **public PyTorch APIs** (`torch.nn`, `torch.optim`) directly
-- Do **not** import `corerec.torch_nn` in new production code
-- Sandbox / research code may continue using vendored modules until sandbox models graduate or are removed
-
-## Maintenance policy
-
-| Area | Policy |
-|------|--------|
-| `corerec/engines/` | No new dependencies on vendored torch trees |
-| `corerec/sandbox/` | Allowed; migrate on graduation |
-| Type checking | `mypy` ignores vendored paths (see `pyproject.toml`) |
-| Trimming | Long-term goal: shrink vendored surface or gate behind optional extra |
-
-## For framework users
-
-If you only use **production models**, you can ignore `torch_nn/` entirely — it is not part of the public API.
+The historical `corerec.torch_nn` and `corerec.torch_utils` trees are unavailable
+in this release. Use public PyTorch APIs for layers and optimizers.
 
 ```python
-# ✅ Production import
-from corerec.engines import DCN
+import torch
+from torch import nn
 
-# ⚠️ Internal / sandbox only
-from corerec.torch_nn.modules.linear import Linear  # do not use in app code
+layer = nn.Linear(3, 2)
+output = layer(torch.zeros(4, 3))
+assert output.shape == (4, 2)
 ```
+
+CoreRec exposes recommendation modules and a training wrapper through
+`corerec.nn`. For example:
+
+```python
+from corerec.nn import Recommender
+from corerec.nn.models import MatrixFactorization
+
+model = Recommender(MatrixFactorization, {"dim": 8}, epochs=1,
+                    batch_size=4, device="cpu")
+model.fit([1, 1, 2, 2], [10, 20, 20, 30])
+assert model.recommend(1, top_k=1) == [30]
+```
+
+Use [model persistence](user_guide/model_persistence.md) to save the wrapper.
+Custom modules must implement its scoring contract and be supplied explicitly
+when loading an artifact.
