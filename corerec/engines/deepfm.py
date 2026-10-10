@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 from typing import List, Dict, Optional, Tuple, Any, Union
 from corerec.api.id_index import IdIndex
+from corerec.engines.pointwise_training import train_pointwise
 from corerec.api.base_recommender import BaseRecommender
 from corerec.api.exceptions import ModelNotFittedError, InvalidParameterError
 from corerec.utils.validation import (
@@ -267,15 +268,10 @@ class DeepFM(BaseRecommender):
             torch.manual_seed(self.seed)  # weight init, dropout, shuffling
         self.model = self._build_model(self.field_dims, use_sigmoid=(task != "rating"))
 
-        # Define optimizer and loss (BCE for implicit ranking, MSE for rating)
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        criterion = nn.BCELoss() if task != "rating" else nn.MSELoss()
-
         # Precompute the feature matrix ONCE. The previous implementation rebuilt
         # each row's feature vector inside Dataset.__getitem__, i.e. on every
         # access every epoch (millions of Python calls) -- the dominant training
-        # cost. Here we build a single [N, num_fields] tensor and wrap it in a
-        # on-device tensor sliced manually (see training loop below).
+        # cost. Here we build a single [N, num_fields] array once.
         umap = self.feature_map["user"]
         imap = self.feature_map["item"]
         has_feats = (self.user_feature_types or self.item_feature_types) and (
@@ -291,48 +287,9 @@ class DeepFM(BaseRecommender):
             X = np.asarray([self._prediction_features(u, it)
                             for u, it in zip(train_users, train_items)], dtype=np.int64)
 
-        # Move the whole dataset to the device ONCE and slice manually, rather
-        # than streaming via a DataLoader that copies every batch host->device
-        # (that per-batch transfer dominated training, esp. on GPU).
-        X_t = torch.from_numpy(X).long().to(self.device)
-        y_t = torch.as_tensor(np.asarray(train_labels, dtype=np.float32)).to(self.device)
-        n_samples = X_t.shape[0]
-
-        # Train the model
-        self.model.train()
-        bs = self.batch_size
-        n_batches = (n_samples + bs - 1) // bs
-
-        for epoch in range(self.epochs):
-            total_loss = 0.0
-            perm = torch.randperm(n_samples, device=self.device)
-            for b in range(n_batches):
-                idx = perm[b * bs:(b + 1) * bs]
-                if idx.numel() < 2:
-                    continue  # BatchNorm needs >1 sample
-                batch_X = X_t[idx]
-                batch_y = y_t[idx]
-
-                outputs = self.model(batch_X)
-                loss = criterion(outputs, batch_y)
-
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                total_loss += loss.item()
-
-            if self.verbose:
-                logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {total_loss/n_batches:.4f}")
-
-        # Collapse guard: warn if the model produces near-constant scores.
-        self.model.eval()
-        with torch.no_grad():
-            score_std = float(self.model(X_t[: min(2048, n_samples)]).std().item())
-        if score_std < 1e-4:
-            logger.warning(
-                "DeepFM output collapsed (score std=%.2e): predictions are nearly "
-                "constant. Check that labels match the task.", score_std,
-            )
+        train_pointwise(self.model, X, train_labels, task=task, epochs=self.epochs,
+                        batch_size=self.batch_size, learning_rate=self.learning_rate,
+                        device=self.device, verbose=self.verbose, name="DeepFM")
 
         self.is_fitted = True
         self._user_item_interactions = {}
