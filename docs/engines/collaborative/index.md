@@ -4,7 +4,17 @@ The Unionized Filter Engine provides comprehensive collaborative filtering algor
 
 ## Overview
 
-Collaborative filtering is based on the idea that users who agreed in the past will agree in the future. The Unionized Filter Engine implements over 50 state-of-the-art collaborative filtering algorithms organized into seven categories.
+Collaborative filtering is based on the idea that users who agreed in the past will agree in the future. In CoreRec 0.7 the collaborative models all live in `corerec.engines` and share one API: `fit(user_ids, item_ids, ratings)`, `recommend(user_id, top_k)`, `predict`, `save`/`load`.
+
+```python
+import corerec.engines as engines
+
+print(engines.list_models("classic"))      # ['ALS', 'SAR', 'ItemKNN', 'UserKNN', 'EASE', 'SLIM', 'Item2Vec']
+print(engines.list_models("graph"))        # ['LightGCN']
+print(engines.list_models("autoencoder"))  # ['MultVAE', 'MultiDAE']
+```
+
+(`corerec.engines.unionized` is an alias of `corerec.engines.collaborative`, kept for old imports.)
 
 ## Algorithm Categories
 
@@ -14,7 +24,7 @@ Decompose the user-item interaction matrix into latent factors.
 
 **Available Algorithms:**
 
-- **ALS** (Alternating Least Squares)
+- **ALS** (Alternating Least Squares, implicit feedback)
 - **Item2Vec** (skip-gram embeddings over interaction sequences)
 
 [**→ Matrix Factorization Documentation**](matrix-factorization.md)
@@ -25,18 +35,14 @@ Deep learning approaches to collaborative filtering.
 
 **Available Algorithms:**
 
-- **NCF** (Neural Collaborative Filtering)
 - **DeepFM** (Deep Factorization Machines)
 - **DCN** (Deep & Cross Network)
-- **AutoInt** (Automatic Feature Interaction)
-- **AFM** (Attentional Factorization Machines)
-- **DIN** (Deep Interest Network)
-- **DIEN** (Deep Interest Evolution Network)
-- **NFM** (Neural Factorization Machines)
-- **PNN** (Product-based Neural Networks)
-- **WideDeep**, **xDeepFM**, **FiBiNet**
 - **TwoTower** (retrieval)
 
+NCF, AutoInt, AFM, DIN, DIEN, NFM, PNN, Wide&Deep, xDeepFM and FiBiNet were
+experimental sandbox models and were removed in 0.7.0. To try one of those
+architectures, write it as a PyTorch module and wrap it in
+`corerec.nn.Recommender`.
 
 ### 3. Graph-Based
 
@@ -45,10 +51,8 @@ Leverage graph structure in recommendation.
 **Available Algorithms:**
 
 - **LightGCN** (Light Graph Convolutional Network)
-- **NGCF** (Neural Graph Collaborative Filtering)
-- **GNNRec** (graph neural recommender). Check BENCHMARKS.md before using this
-  one: it does not finish training on MovieLens-100K within an hour on a single
-  core, where LightGCN takes 151s.
+
+NGCF and GNNRec were removed in 0.7.0; LightGCN is the graph model that ships.
 
 [**→ Graph-Based Documentation**](graph-based.md)
 
@@ -59,9 +63,9 @@ Attention-based collaborative filtering.
 **Available Algorithms:**
 
 - **SASRec** (Self-Attentive Sequential Recommendation)
-- **BERT4Rec** (bidirectional transformer)
-- **Attention-based Sequential Models**
+- **HSTU** (generative next-item transducer)
 
+BERT4Rec was removed in 0.7.0.
 
 ### 5. Bayesian Methods
 
@@ -69,10 +73,9 @@ Probabilistic approaches to recommendation.
 
 **Available Algorithms:**
 
-- **Bayesian MF** (Bayesian Matrix Factorization)
-- **MultVAE** / **MultiDAE** (multinomial variational autoencoders)
-- **Probabilistic Graphical Models**
+- **MultVAE** (multinomial variational autoencoder)
 
+Bayesian MF and the probabilistic graphical models were removed in 0.7.0.
 
 ### 6. Sequential Models
 
@@ -80,10 +83,10 @@ Time-aware and sequence-aware recommendations.
 
 **Available Algorithms:**
 
-- **LSTM-based Recommenders**
-- **GRU-based Recommenders**
-- **Caser** (Convolutional Sequence Embedding)
+- **SASRec**, **HSTU** (see Attention Mechanisms)
+- **SAR** with time decay (`timedecay_formula=True`)
 
+The LSTM/GRU recommenders and Caser were removed in 0.7.0.
 
 ### 7. Variational Encoders
 
@@ -98,62 +101,69 @@ Generative models for recommendations.
 
 ## Quick Start
 
+All examples below use this toy data:
+
+```python
+import numpy as np
+
+rng = np.random.default_rng(0)
+user_ids = rng.integers(0, 200, 5000).tolist()
+item_ids = rng.integers(0, 500, 5000).tolist()
+ratings = rng.integers(1, 6, 5000).astype(float).tolist()
+timestamps = np.sort(rng.integers(1_700_000_000, 1_710_000_000, 5000)).tolist()
+```
+
 ### Example: Matrix Factorization
 
 ```python
-from corerec.engines.unionizedFilterEngine.mf_base.SVD_base import SVD
+from corerec.engines import ALS
 
-# Initialize SVD model
-model = SVD(
-    n_factors=50,
-    n_epochs=20,
-    learning_rate=0.01,
-    regularization=0.02
+# Initialize ALS model
+model = ALS(
+    factors=50,
+    iterations=20,
+    reg=10.0,
+    alpha=1.0
 )
 
 # Train model
 model.fit(user_ids, item_ids, ratings)
 
 # Get recommendations
-recommendations = model.recommend(user_id=123, top_k=10)
+recommendations = model.recommend(user_id=user_ids[0], top_k=10)
 print(f"Top 10 recommendations: {recommendations}")
 
-# Predict rating
-score = model.predict(user_id=123, item_id=456)
-print(f"Predicted rating: {score:.2f}")
+# Preference score (implicit feedback: not a 1-5 rating)
+score = model.predict(user_id=user_ids[0], item_id=item_ids[0])
+print(f"Score: {score:.3f}")
 ```
 
-### Example: Neural Collaborative Filtering
+### Example: Neighbourhood Models
+
+ItemKNN, UserKNN and EASE are strong baselines and train in seconds:
 
 ```python
-from corerec.engines.unionizedFilterEngine.nn_base.NCF_base import NCF
+from corerec.engines import EASE, ItemKNN
 
-# Initialize NCF model
-model = NCF(
-    embedding_dim=64,
-    layers=[128, 64, 32, 16],
-    dropout=0.2,
-    epochs=20,
-    batch_size=256
-)
+knn = ItemKNN(top_k_neighbors=100, shrink=10.0)
+knn.fit(user_ids, item_ids, ratings)
 
-# Train model
-model.fit(user_ids, item_ids, ratings)
+ease = EASE(reg=250.0)
+ease.fit(user_ids, item_ids, ratings)
 
-# Get recommendations
-recommendations = model.recommend(user_id=123, top_k=10)
+recommendations = ease.recommend(user_id=user_ids[0], top_k=10)
 ```
 
 ### Example: Graph-Based (LightGCN)
 
 ```python
-from corerec.engines.unionizedFilterEngine.graph_based_base.lightgcn import LightGCN
+from corerec.engines import LightGCN
 
 # Initialize LightGCN model
 model = LightGCN(
-    embedding_dim=64,
-    num_layers=3,
-    epochs=100,
+    n_factors=64,
+    n_layers=3,
+    epochs=20,
     learning_rate=0.001
 )
 
@@ -161,34 +171,23 @@ model = LightGCN(
 model.fit(user_ids, item_ids, ratings)
 
 # Get recommendations
-recommendations = model.recommend(user_id=123, top_k=10)
+recommendations = model.recommend(user_id=user_ids[0], top_k=10)
 ```
 
 ## Special Features
 
 ### Fast Recommender
 
-CoreRec provides a FastAI-style fast recommender for quick prototyping:
-
-```python
-from corerec.engines.unionizedFilterEngine.fast import FastRecommender
-
-model = FastRecommender(
-    n_factors=50,
-    n_epochs=20,
-    learning_rate=0.01
-)
-
-model.fit(user_ids, item_ids, ratings)
-recs = model.recommend(user_id=123, top_k=10)
-```
+`FastRecommender` was removed in 0.7.0. For quick prototyping use `EASE` or
+`ItemKNN` (seconds to train, no tuning), or `corerec train` from the command
+line.
 
 ### SAR (Smart Adaptive Recommendations)
 
 Microsoft's SAR algorithm for item-to-item similarity:
 
 ```python
-from corerec.engines.unionizedFilterEngine.sar import SAR
+from corerec.engines import SAR
 
 model = SAR(
     similarity_type='jaccard',
@@ -196,88 +195,56 @@ model = SAR(
     timedecay_formula=True
 )
 
-model.fit(user_ids, item_ids, ratings, timestamps)
-recs = model.recommend(user_id=123, top_k=10)
+model.fit(user_ids, item_ids, ratings, timestamps=timestamps)
+recs = model.recommend(user_id=user_ids[0], top_k=10)
 ```
+
+SAR also takes a DataFrame: `model.fit(df)` with columns `userID`, `itemID`,
+`rating` (and `timestamp`), or the names set by `col_user`, `col_item`, ...
 
 ### RBM (Restricted Boltzmann Machine)
 
-Energy-based collaborative filtering:
-
-```python
-from corerec.engines.unionizedFilterEngine.rbm import RBM
-
-model = RBM(
-    n_hidden=100,
-    n_epochs=30,
-    batch_size=10
-)
-
-model.fit(user_ids, item_ids, ratings)
-recs = model.recommend(user_id=123, top_k=10)
-```
+Removed in 0.7.0. `MultiDAE` is the closest model that ships.
 
 ### RLRMC (Riemannian Low-Rank Matrix Completion)
 
-Geometric approach to matrix completion:
-
-```python
-from corerec.engines.unionizedFilterEngine.rlrmc import RLRMC
-
-model = RLRMC(
-    rank=20,
-    max_iter=100,
-    tol=1e-4
-)
-
-model.fit(user_ids, item_ids, ratings)
-recs = model.recommend(user_id=123, top_k=10)
-```
+Removed in 0.7.0. Use `ALS`.
 
 ### GeoMLC (Geometric Matrix Learning and Completion)
 
-```python
-from corerec.engines.unionizedFilterEngine.geomlc import GeoMLC
-
-model = GeoMLC(
-    embedding_dim=50,
-    num_epochs=50
-)
-
-model.fit(user_ids, item_ids, ratings)
-recs = model.recommend(user_id=123, top_k=10)
-```
+Removed in 0.7.0. Use `ALS`.
 
 ## Factory Pattern
 
-Use the factory to create models from configuration:
+Create models from configuration by name; every registered model takes its
+hyperparameters as keyword arguments:
 
 ```python
-from corerec.engines.unionizedFilterEngine.cr_unionizedFactory import UnionizedRecommenderFactory
+import corerec.engines as engines
 
 config = {
-    'method': 'matrix_factorization',
+    'method': 'ALS',
     'params': {
-        'n_factors': 50,
-        'n_epochs': 20,
-        'learning_rate': 0.01
+        'factors': 50,
+        'iterations': 20,
+        'reg': 10.0
     }
 }
 
-model = UnionizedRecommenderFactory.get_recommender(config)
+model = getattr(engines, config['method'])(**config['params'])
 model.fit(user_ids, item_ids, ratings)
 ```
 
 ## When to Use Unionized Filter Engine
 
-✅ **Use when:**
+**Use when:**
 - You have user-item interaction data (ratings, clicks, purchases)
 - You want to find patterns in user behavior
 - You need collaborative filtering
 - Cold start is not a major issue
 - You have sufficient interaction history
 
-❌ **Avoid when:**
+**Avoid when:**
 - You only have item features (use Content Filter)
 - You have severe cold start problems
 - You need explainable recommendations
@@ -287,51 +254,58 @@ model.fit(user_ids, item_ids, ratings)
 
 1. **Choose the right algorithm:**
    - Small data: ALS, ItemKNN, EASE
-   - Medium data: NCF, DeepFM
-   - Large data: LightGCN, GNN
-   - Sequential: SASRec, LSTM
+   - Medium data: LightGCN, MultVAE
+   - Large data: ALS, ItemKNN (blocked neighbour search), TwoTower
+   - Sequential: SASRec, HSTU
    - Sparse data: MultVAE, SLIM
 
 2. **Optimize hyperparameters:**
    ```python
-   from sklearn.model_selection import GridSearchCV
-   
-   param_grid = {
-       'n_factors': [20, 50, 100],
-       'learning_rate': [0.001, 0.01, 0.1],
-       'regularization': [0.01, 0.02, 0.05]
-   }
-   
-   # Use grid search to find best params
+   from corerec.engines import ALS
+   from corerec.evaluation import evaluate
+
+   train = list(zip(user_ids[:4000], item_ids[:4000]))
+   test = list(zip(user_ids[4000:], item_ids[4000:]))
+
+   best = None
+   for factors in (20, 50, 100):
+       for reg in (1.0, 10.0):
+           m = ALS(factors=factors, reg=reg).fit(user_ids[:4000], item_ids[:4000])
+           ndcg = evaluate(m, test, train_interactions=train, k=10)["NDCG@10"]
+           if best is None or ndcg > best[0]:
+               best = (ndcg, factors, reg)
+   print(best)
    ```
 
 3. **Use GPU for large models:**
    ```python
-   model = NCF(device='cuda')
+   from corerec.engines import LightGCN
+
+   gcn = LightGCN(device='auto')  # CUDA or Apple MPS when available, else CPU
    ```
 
 4. **Batch predictions:**
    ```python
    # More efficient than individual predictions
-   recs = model.batch_recommend(user_ids, top_k=10)
+   recs = ease.batch_recommend(user_ids[:10], top_k=10)  # {user: [items]}
    ```
 
 ## Algorithm Comparison
 
-| Algorithm | Training Speed | Accuracy | Scalability | Best For |
-|-----------|---------------|----------|-------------|----------|
-| ALS | ⚡⚡⚡ | ⭐⭐⭐ | ⭐⭐⭐ | General purpose |
-| ALS | ⚡⚡⚡ | ⭐⭐⭐ | ⭐⭐⭐⭐ | Implicit feedback |
-| NCF | ⚡⚡ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | Deep learning |
-| LightGCN | ⚡⚡ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | Graph structure |
-| SASRec | ⚡ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | Sequential data |
-| BPR | ⚡⚡⚡ | ⭐⭐⭐⭐ | ⭐⭐⭐ | Implicit feedback |
-| MultVAE | ⚡⚡ | ⭐⭐⭐⭐ | ⭐⭐⭐ | Sparse data |
+| Algorithm | Training Speed | Scalability | Best For |
+|-----------|---------------|-------------|----------|
+| ALS | fast | high | Implicit feedback, general purpose |
+| ItemKNN / EASE | fast | high (EASE inverts an items x items matrix) | Strong baselines |
+| SLIM | medium | medium | Sparse data |
+| SAR | fast | high | Item-to-item similarity, time decay |
+| LightGCN | medium | medium | Graph structure |
+| MultVAE / MultiDAE | medium | medium | Sparse implicit feedback |
+| SASRec / HSTU | slow | medium | Sequential data |
+
+Measured numbers on MovieLens are in `BENCHMARKS.md`.
 
 ## See Also
 
 - [Deep Learning Models](../deep-learning/index.md) - For large-scale deep learning
 - [Examples](../../examples/index.md) - Usage examples
 - [API Reference](../../api/index.md) - Detailed API documentation
-
-
