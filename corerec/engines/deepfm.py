@@ -174,6 +174,11 @@ class DeepFM(BaseRecommender):
         if batch_size is not None:
             self.batch_size = batch_size
 
+        self.is_fitted = False
+        self.feature_map = {}
+        self.field_dims = []
+        self.user_feature_types = []
+        self.item_feature_types = []
         self.user_features = user_features
         self.item_features = item_features
 
