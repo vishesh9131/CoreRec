@@ -324,3 +324,13 @@ def test_unknown_users_have_no_personalized_recommendations(model_id, module_pat
     model.fit(users, items, ratings)
     assert model.recommend("__unknown_user__", top_k=3) == []
     assert len(model.recommend(users[0], top_k=3)) <= 3
+
+
+@pytest.mark.parametrize("model_id,module_path,cls_name,kwargs",
+                         [m for m in MODELS if m[0] in {"sar", "deepfm", "sasrec"}])
+def test_unknown_user_does_not_hide_unfitted_model(model_id, module_path, cls_name, kwargs):
+    from corerec.api.exceptions import ModelNotFittedError
+
+    model = _build(module_path, cls_name, kwargs)
+    with pytest.raises(ModelNotFittedError):
+        model.recommend("__unknown_user__", top_k=3)
