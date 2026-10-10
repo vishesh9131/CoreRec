@@ -222,8 +222,11 @@ class ModelServer:
     def _setup_routes(self):
         """Setup API routes."""
 
+        # Handlers that run model code or file I/O are plain `def`: FastAPI runs
+        # them in its threadpool, so one slow recommend() doesn't hold up every
+        # other request (or /health) on the event loop.
         @self.app.post("/predict")
-        async def predict(request: PredictionRequest):
+        def predict(request: PredictionRequest):
             """
             Predict score for a single user-item pair.
 
@@ -254,7 +257,7 @@ class ModelServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.post("/recommend")
-        async def recommend(request: RecommendationRequest):
+        def recommend(request: RecommendationRequest):
             """
             Generate recommendations for a user.
 
@@ -292,7 +295,7 @@ class ModelServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.post("/batch/predict")
-        async def batch_predict(request: BatchPredictionRequest):
+        def batch_predict(request: BatchPredictionRequest):
             """Batch predictions for multiple user-item pairs."""
             try:
                 if len(self.models) == 1 and hasattr(self.model, "batch_predict"):
@@ -312,7 +315,7 @@ class ModelServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.post("/batch/recommend")
-        async def batch_recommend(request: BatchRecommendationRequest):
+        def batch_recommend(request: BatchRecommendationRequest):
             """Batch recommendations for multiple users."""
             try:
                 if len(self.models) == 1 and hasattr(self.model, "batch_recommend"):
@@ -340,7 +343,7 @@ class ModelServer:
                                     headers={"WWW-Authenticate": "Bearer"})
 
         @self.app.post("/feedback")
-        async def feedback(request: FeedbackRequest, http: Request):
+        def feedback(request: FeedbackRequest, http: Request):
             """Record that a user clicked (or bought, ...) an item.
 
             Pass the request_id from the /recommend response so the click is
@@ -355,7 +358,7 @@ class ModelServer:
             return {"status": "recorded"}
 
         @self.app.get("/metrics")
-        async def metrics(recent: int = 1000):
+        def metrics(recent: int = 1000):
             """Online metrics per variant, A/B comparison and drift alerts."""
             if self.feedback_log is None:
                 raise HTTPException(status_code=404, detail="feedback logging is off")
@@ -372,7 +375,7 @@ class ModelServer:
             return _no_nan(out)
 
         @self.app.post("/reload")
-        async def reload(http: Request):
+        def reload(http: Request):
             """Swap in a fresh model from reload_fn without restarting."""
             _check_token(http, self.admin_token)
             if self.reload_fn is None or len(self.models) != 1:

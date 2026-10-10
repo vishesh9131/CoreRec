@@ -100,6 +100,23 @@ def test_fit_accepts_ratings_keyword(model_id, module_path, cls_name, kwargs, da
     assert getattr(model, "is_fitted", True), f"{cls_name}.fit left is_fitted False"
 
 
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+@pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS,
+                         ids=[m[0] for m in MODELS])
+def test_fit_rejects_non_finite_ratings(model_id, module_path, cls_name, kwargs, data, bad):
+    """One NaN made every ALS/EASE/KNN score NaN with no error (#83)."""
+    from corerec.api.exceptions import InvalidDataError
+
+    users, items, ratings = data
+    ratings = list(ratings)
+    ratings[3] = bad
+    model = _build(module_path, cls_name, kwargs)
+    with pytest.raises(InvalidDataError, match="1 of .* ratings are NaN or infinite"):
+        model.fit(users, items, ratings)
+    with pytest.raises(InvalidDataError):
+        model.fit(user_ids=users, item_ids=items, ratings=ratings)
+
+
 @pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS,
                          ids=[m[0] for m in MODELS])
 def test_recommend_returns_ranked_ids(model_id, module_path, cls_name, kwargs, data):
@@ -278,3 +295,23 @@ def test_num_epochs_alias_warns_and_applies(cls_name):
         model = getattr(engines, cls_name)(num_epochs=3)
     assert model.epochs == 3
 
+
+
+@pytest.mark.parametrize("name", sorted(REGISTRY))
+def test_misspelled_constructor_argument_raises(name):
+    """ALS(factor=8) used to become a stray attribute and train with factors=64,
+    so `corerec train --param factor=8` was silently ignored (#85)."""
+    import corerec.engines as engines
+
+    with pytest.raises(TypeError):
+        getattr(engines, name)(definitely_not_a_param=1)
+
+
+def test_embedding_cf_still_takes_its_own_parameters(tmp_path):
+    from corerec.engines import ALS, Item2Vec
+
+    assert ALS(factors=8, alpha=2.0, epochs=3, seed=1).iterations == 3
+    assert Item2Vec(num_negatives=2, learning_rate=0.1).num_negatives == 2
+    m = ALS(factors=8, iterations=2).fit([0, 0, 1, 2], [1, 2, 2, 3])
+    m.save(str(tmp_path / "als.pkl"))
+    assert ALS.load(str(tmp_path / "als.pkl")).factors == 8

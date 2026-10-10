@@ -155,3 +155,38 @@ def test_evaluator_rejects_unknown_metric():
 
     with pytest.raises(ValueError, match="unknown metric"):
         Evaluator(metrics=["ndgc@10"])
+
+
+@pytest.mark.parametrize("recs,truth", [
+    ([1, 1, 1], [1]),
+    ([7, 7, 7, 7, 7], [7]),
+    ([1, 2, 1, 2, 3], [1, 2, 3]),
+    ([1, 2, 3], [1, 1, 2]),          # duplicate ground truth
+])
+def test_ranking_metrics_stay_in_unit_range_with_repeats(recs, truth):
+    """A repeated item counted once per occurrence: NDCG 2.1, recall 3.0 (#82)."""
+    from corerec.evaluation.metrics import RankingMetrics as R
+
+    for fn in (R.ndcg_at_k, R.map_at_k, R.mrr_at_k, R.precision_at_k, R.recall_at_k, R.hit_rate_at_k):
+        assert 0.0 <= fn(recs, truth, 5) <= 1.0, fn.__name__
+
+
+def test_a_repeat_is_a_wasted_slot_not_a_promotion():
+    from corerec.evaluation.metrics import RankingMetrics as R
+
+    # [a, a, b]: b was shown third, so it gets third-place credit
+    assert R.mrr_at_k(["a", "a", "b"], ["b"], 3) == pytest.approx(1 / 3)
+    assert R.precision_at_k([7, 7, 7, 7, 7], [7], 5) == pytest.approx(1 / 5)
+
+
+def test_evaluate_does_not_reward_repeating_the_answer(caplog):
+    from corerec.evaluation import evaluate
+
+    class Repeats:
+        def recommend(self, user_id, top_k=10, **kw):
+            return [7] * top_k
+
+    with caplog.at_level("WARNING"):
+        r = evaluate(Repeats(), [(0, 7)], k=5)
+    assert r["NDCG@5"] == pytest.approx(1.0) and r["Recall@5"] == 1.0 and r["MAP@5"] == 1.0
+    assert "same item twice" in caplog.text

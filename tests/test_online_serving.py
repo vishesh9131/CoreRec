@@ -86,3 +86,47 @@ def test_latency_stats_present(rec):
     s = rec.stats()
     assert s["queries_served"] >= 20
     assert s["latency_ms_p50"] >= 0.0 and s["latency_ms_p99"] >= s["latency_ms_p50"]
+
+
+def test_slow_model_does_not_block_other_requests():
+    """Handlers were async def calling a blocking recommend(), so requests ran
+    one at a time and /health queued behind inference (#73)."""
+    import threading
+    import time
+
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+
+    from corerec.serving import ModelServer
+
+    class Slow:
+        is_fitted = True
+
+        def recommend(self, user_id, top_k=10, **kw):
+            time.sleep(0.5)
+            return list(range(top_k))
+
+    # `with` keeps one event loop for every request, as uvicorn does; without
+    # it TestClient gives each request its own loop and hides the blocking
+    with TestClient(ModelServer(Slow()).app) as client:
+        client.get("/health")
+
+        def call(out, i):
+            out[i] = client.post("/recommend", json={"user_id": i, "top_k": 3}).status_code
+
+        codes = [None] * 4
+        threads = [threading.Thread(target=call, args=(codes, i)) for i in range(4)]
+        start = time.perf_counter()
+        for t in threads:
+            t.start()
+        time.sleep(0.1)  # requests are in flight
+        t0 = time.perf_counter()
+        assert client.get("/health").status_code == 200
+        health = time.perf_counter() - t0
+        for t in threads:
+            t.join()
+        total = time.perf_counter() - start
+
+    assert codes == [200] * 4
+    assert total < 1.5, f"4 requests of 0.5s took {total:.2f}s: served one at a time"
+    assert health < 0.25, f"/health waited {health:.2f}s behind inference"

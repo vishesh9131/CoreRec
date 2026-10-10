@@ -244,8 +244,8 @@ ratings = df['rating'].tolist()
 timestamps = df['timestamp'].tolist() if 'timestamp' in df.columns else None
 ```
 
-From the command line, `corerec train sample_data/events.csv` detects the
-columns itself and reports a holdout score.
+From the command line, `corerec train sample_data/events.csv -o artifacts/m`
+detects the columns itself, reports a holdout score and saves the model.
 
 ### Example: Creating Synthetic Data
 
