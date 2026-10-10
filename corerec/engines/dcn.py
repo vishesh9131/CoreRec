@@ -552,8 +552,8 @@ class DCN(BaseRecommender):
             "_fit_task": self._fit_task,  # 'implicit'/'rating' -> sets the head
             "feature_map_pairs": pairs(self.feature_map),
             "user_item_interactions": [[u, list(items)] for u, items in self._user_item_interactions.items()],
-            "user_features": self.user_features,
-            "item_features": self.item_features,
+            "user_features_pairs": pairs(self.user_features),
+            "item_features_pairs": pairs(self.item_features),
             "is_fitted": self.is_fitted,
             **save_map_state(
                 user_map=self.user_map,
@@ -618,8 +618,10 @@ class DCN(BaseRecommender):
                                                 state.get("user_item_interactions", [])}
             instance._num_features = state["_num_features"]
             instance._max_features = state["_max_features"]
-            instance.user_features = state.get("user_features")
-            instance.item_features = state.get("item_features")
+            instance.user_features = (dict_from_pairs(state["user_features_pairs"])
+                                      if "user_features_pairs" in state else state.get("user_features"))
+            instance.item_features = (dict_from_pairs(state["item_features_pairs"])
+                                      if "item_features_pairs" in state else state.get("item_features"))
             instance.is_fitted = state.get("is_fitted", True)
             instance._fit_task = state.get("_fit_task", "implicit")
 
