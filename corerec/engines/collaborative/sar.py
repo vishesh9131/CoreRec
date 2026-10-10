@@ -629,6 +629,7 @@ class SAR(BaseRecommender):
         user_id: Any,
         top_k: int = 10,
         exclude_items: Optional[List[Any]] = None,
+        *, exclude_seen: bool = True,
         **kwargs
     ) -> List[Any]:
         """
@@ -641,6 +642,7 @@ class SAR(BaseRecommender):
             user_id: user to recommend for
             top_k: number of items
             exclude_items: additional items to exclude (beyond seen items)
+            exclude_seen: whether to exclude observed training items
         
         Returns:
             list of recommended item IDs
@@ -667,8 +669,9 @@ class SAR(BaseRecommender):
             scores = np.asarray(scores).flatten()
 
         # mask seen items
-        seen = user_affinity.toarray().flatten() > 0
-        scores[seen] = -np.inf
+        if exclude_seen:
+            seen = user_affinity.toarray().flatten() > 0
+            scores[seen] = -np.inf
 
         # mask additional exclusions
         if exclude_items:
