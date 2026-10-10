@@ -91,6 +91,8 @@ class Trainer:
         """
         # Callback: training begin
         for cb in self.callbacks:
+            if hasattr(cb, "set_model"):
+                cb.set_model(self.model)
             cb.on_train_begin()
 
         for epoch in range(epochs):
