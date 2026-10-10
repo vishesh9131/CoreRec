@@ -12,7 +12,7 @@ import numpy as np
 from PIL import Image
 from torchvision import models, transforms
 
-from corerec.towers.base_tower import AbstractTower
+from corerec.experimental.towers.base_tower import AbstractTower
 
 
 class CNNTower(AbstractTower):
