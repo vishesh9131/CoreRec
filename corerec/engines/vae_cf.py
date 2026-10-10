@@ -175,6 +175,8 @@ class _VAEBase(BaseRecommender):
         load (#75)."""
         from corerec.api.model_bundle import save_bundle
 
+        # before any file is touched: an unfitted save used to truncate the old artifact (#101)
+        self._check_fitted()
         R = self.R.tocsr()
         save_bundle(
             path, model_class=f"{type(self).__module__}.{type(self).__name__}",

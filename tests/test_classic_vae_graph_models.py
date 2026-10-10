@@ -181,3 +181,19 @@ def test_a_malicious_legacy_vae_file_warns_before_running(tmp_path):
     with pytest.warns(DeprecationWarning, match="can run code"):
         with pytest.raises(Exception):
             MultVAE.load(tmp_path / "evil.pt")
+
+
+@pytest.mark.parametrize("cls_name", ["MultVAE", "MultiDAE"])
+def test_unfitted_vae_save_leaves_the_existing_bundle_intact(cls_name, tmp_path):
+    """The VAE case of #101: fail before writing, so the saved model survives."""
+    import corerec.engines as engines
+    from corerec.api.exceptions import ModelNotFittedError
+
+    cls = getattr(engines, cls_name)
+    m = cls(epochs=1, hidden_dim=16, latent_dim=4).fit([1, 1, 2, 2, 3], [10, 20, 20, 30, 10])
+    m.save(tmp_path / "v")
+    before = {p.name: p.read_bytes() for p in tmp_path.iterdir()}
+    with pytest.raises(ModelNotFittedError):
+        cls(epochs=1).save(tmp_path / "v")
+    assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == before
+    assert cls.load(tmp_path / "v").recommend(1, top_k=2) == m.recommend(1, top_k=2)
