@@ -2,101 +2,104 @@
 
 This section provides comprehensive examples for using CoreRec in various scenarios. All examples are runnable and include complete code.
 
-Runnable scripts live in the repository's [`examples/`](https://github.com/vishesh9131/CoreRec/tree/main/examples) folder.
+Runnable scripts live in the repository's [`examples/`](https://github.com/vishesh9131/CoreRec/tree/main/examples) folder. The code on this page uses `sample_data/events.csv` from the repository (about 33k events with `user_id`, `item_id`, `rating`, `timestamp`), so run it from the repository root, or point `pd.read_csv` at your own file with the same columns.
 
 ## By Use Case
 
 ### E-commerce
 
 ```python
-from corerec.engines.deepfm import DeepFM
+import pandas as pd
+from corerec.engines import DeepFM
+
+events = pd.read_csv('sample_data/events.csv')
 
 # Product recommendations
-model = DeepFM(embedding_dim=128, hidden_layers=[256, 128, 64])
-model.fit(customer_ids, product_ids, purchase_amounts)
+model = DeepFM(embedding_dim=16, hidden_layers=[64, 32], epochs=2)
+model.fit(events['user_id'].tolist(), events['item_id'].tolist(), events['rating'].tolist())
 
 # Get personalized product recommendations
-recommendations = model.recommend(customer_id=12345, top_n=10)
+recommendations = model.recommend(user_id=events['user_id'].iloc[0], top_k=10)
 ```
 
 ### Movie Recommendations
 
 ```python
-from corerec.engines.sasrec import SASRec
-from scipy.sparse import csr_matrix
+import pandas as pd
+from corerec.engines import SASRec
 
-# Sequential movie recommendations
+events = pd.read_csv('sample_data/events.csv').sort_values('timestamp')
+
+# Sequential movie recommendations: events in time order, one row each
 model = SASRec(
     hidden_units=64,
     num_blocks=2,
-    num_heads=4,
-    epochs=50,
-    max_seq_length=20
+    num_heads=1,
+    epochs=2,
+    max_seq_length=20,
+    verbose=False
 )
-
-# Create interaction matrix
-interaction_matrix = csr_matrix(user_item_matrix)
-model.fit(interaction_matrix, user_ids, movie_ids)
+model.fit(events['user_id'].tolist(), events['item_id'].tolist(), events['rating'].tolist())
 
 # Get next movie recommendations
-next_movies = model.recommend(user_id=456, top_n=5)
+next_movies = model.recommend(user_id=events['user_id'].iloc[0], top_k=5)
 ```
 
 ### Music Streaming
 
+`MIND` was removed in 0.7.0. `HSTU` models a listening history as a sequence
+and takes the timestamps directly:
+
 ```python
-from corerec.engines.mind import MIND
+import pandas as pd
+from corerec.engines import HSTU
 
-# Multi-interest music recommendations
-model = MIND(
-    embedding_dim=64,
-    num_interests=4,  # Capture diverse music tastes
-    epochs=30
-)
+events = pd.read_csv('sample_data/events.csv').sort_values('timestamp')
 
-model.fit(user_ids, song_ids, listen_times)
+model = HSTU(embedding_dim=32, epochs=1)
+model.fit(events['user_id'].tolist(), events['item_id'].tolist(),
+          timestamps=events['timestamp'].tolist())
 
-# Get diverse music recommendations
-recommendations = model.recommend(user_id=789, top_n=20)
+# Next tracks for a listener
+recommendations = model.recommend(user_id=events['user_id'].iloc[0], top_k=20)
 ```
 
 ### News Articles
 
 ```python
-from corerec.engines.contentFilterEngine.tfidf_recommender import TFIDFRecommender
 import pandas as pd
+from corerec.engines import TFIDFRecommender
 
-# Content-based news recommendations
-articles = pd.DataFrame({
-    'article_id': [1, 2, 3, 4, 5],
-    'title': [...],
-    'content': [...]
-})
+# Content-based recommendations from text (any id -> text table works)
+articles = pd.read_csv('sample_data/netflix_demo.csv')
+docs = dict(zip(articles['content_id'], articles['title'] + '. ' + articles['description']))
 
-model = TFIDFRecommender(feature_column='content')
-model.fit(articles)
+model = TFIDFRecommender()
+model.fit(list(docs), docs)
 
-# Get similar articles
-similar_articles = model.recommend_similar(article_id=1, top_k=10)
+# Get articles matching a query
+similar_articles = model.recommend_by_text('documentary', top_k=10)
 ```
 
 ### Social Networks
 
+`GNNRec` was removed in 0.7.0. `LightGCN` learns from any bipartite graph, so
+"user follows account" edges work the same way as "user bought item":
+
 ```python
-from corerec.engines.gnnrec import GNNRec
+import numpy as np
+from corerec.engines import LightGCN
 
-# Friend/connection recommendations
-model = GNNRec(
-    embedding_dim=64,
-    num_gnn_layers=3,
-    epochs=50
-)
+# User-user interaction data: who follows whom
+rng = np.random.default_rng(0)
+follower = rng.integers(0, 300, 4000).tolist()
+followed = rng.integers(0, 300, 4000).tolist()
 
-# User-user interaction data
-model.fit(user_ids_from, user_ids_to, interaction_weights)
+model = LightGCN(n_factors=32, n_layers=2, epochs=10)
+model.fit(follower, followed, [1.0] * len(follower))
 
 # Recommend new connections
-friend_suggestions = model.recommend(user_id=123, top_n=10)
+friend_suggestions = model.recommend(user_id=follower[0], top_k=10)
 ```
 
 ## Complete End-to-End Examples
@@ -105,142 +108,117 @@ friend_suggestions = model.recommend(user_id=123, top_n=10)
 
 ```python
 import pandas as pd
-from corerec.engines.dcn import DCN
-from sklearn.model_selection import train_test_split
-from corerec.evaluation import evaluate_model
+from corerec.engines import DCN
+from corerec.evaluation import evaluate
 
 # 1. Load data
-ratings = pd.read_csv('movielens_ratings.csv')
-user_ids = ratings['user_id'].tolist()
-movie_ids = ratings['movie_id'].tolist()
-ratings_values = ratings['rating'].tolist()
+events = pd.read_csv('sample_data/events.csv').sort_values('timestamp')
 
-# 2. Train/test split
-train_users, test_users, train_movies, test_movies, train_ratings, test_ratings = \
-    train_test_split(user_ids, movie_ids, ratings_values, test_size=0.2)
+# 2. Train/test split: the newest 20% of events is the test set
+cut = int(len(events) * 0.8)
+train, test = events.iloc[:cut], events.iloc[cut:]
 
 # 3. Initialize and train model
 model = DCN(
-    embedding_dim=64,
+    embedding_dim=16,
     num_cross_layers=3,
-    deep_layers=[128, 64, 32],
-    epochs=20,
+    deep_layers=[64, 32],
+    epochs=2,
     batch_size=256,
-    device='cuda'
+    device='auto'          # CUDA or Apple MPS when available
 )
+model.fit(train['user_id'].tolist(), train['item_id'].tolist(), train['rating'].tolist())
 
-model.fit(train_users, train_movies, train_ratings)
-
-# 4. Evaluate
-metrics = evaluate_model(
-    model,
-    test_users,
-    test_movies,
-    test_ratings,
-    metrics=['rmse', 'mae', 'precision@10', 'ndcg@10']
-)
-
-print(f"RMSE: {metrics['rmse']:.4f}")
-print(f"Precision@10: {metrics['precision@10']:.4f}")
+# 4. Evaluate: ranking metrics through model.recommend(), seen items removed
+metrics = evaluate(model, test, train_interactions=train, k=10)
+print(f"NDCG@10: {metrics['NDCG@10']:.4f}  Recall@10: {metrics['Recall@10']:.4f}")
 
 # 5. Get recommendations
-user_id = test_users[0]
+user_id = test['user_id'].iloc[0]
 recommendations = model.recommend(user_id=user_id, top_k=10)
 print(f"Top 10 movies for user {user_id}: {recommendations}")
 
 # 6. Save model
-model.save('models/movie_recommender.pkl')
+model.save('models/movie_recommender')
 ```
 
 ### Example 2: E-commerce Product Recommendations
 
 ```python
-from corerec.engines.deepfm import DeepFM
 import pandas as pd
+from corerec.engines import DeepFM
 
 # 1. Load purchase data
-purchases = pd.read_csv('purchase_history.csv')
+purchases = pd.read_csv('sample_data/events.csv')
 
 # 2. Prepare data
-customer_ids = purchases['customer_id'].tolist()
-product_ids = purchases['product_id'].tolist()
-purchase_amounts = purchases['amount'].tolist()
+customer_ids = purchases['user_id'].tolist()
+product_ids = purchases['item_id'].tolist()
+purchase_amounts = purchases['rating'].tolist()
 
 # 3. Initialize DeepFM
 model = DeepFM(
-    embedding_dim=128,
-    hidden_layers=[256, 128, 64],
-    epochs=30,
+    embedding_dim=16,
+    hidden_layers=[64, 32],
+    epochs=2,
     batch_size=512,
     learning_rate=0.001
 )
 
 # 4. Train model
-model.fit(
-    customer_ids,
-    product_ids,
-    purchase_amounts,
-    validation_split=0.2
-)
+model.fit(customer_ids, product_ids, purchase_amounts)
 
 # 5. Batch recommendations for all customers
-all_customer_ids = purchases['customer_id'].unique().tolist()
-batch_recommendations = model.batch_recommend(
-    user_ids=all_customer_ids,
-    top_n=10
-)
+all_customer_ids = purchases['user_id'].unique().tolist()
+batch_recommendations = model.batch_recommend(all_customer_ids[:100], top_k=10)
 
 # 6. Export recommendations
 recommendations_df = pd.DataFrame([
     {'customer_id': uid, 'recommended_products': recs}
     for uid, recs in batch_recommendations.items()
 ])
-
 recommendations_df.to_csv('product_recommendations.csv', index=False)
 ```
 
 ### Example 3: Sequential Music Recommendations
 
 ```python
-from corerec.engines.sasrec import SASRec
-from scipy.sparse import csr_matrix
-import numpy as np
+import pandas as pd
+from corerec.engines import SASRec
 
 # 1. Load listening history
-listens = pd.read_csv('listening_history.csv')
+listens = pd.read_csv('sample_data/events.csv').sort_values('timestamp')
 
-# 2. Create user-item interaction matrix
-user_ids = listens['user_id'].unique()
-song_ids = listens['song_id'].unique()
-
-# Create sparse matrix
-interaction_matrix = csr_matrix(
-    (listens['play_count'], (listens['user_id'], listens['song_id']))
-)
+# 2. SASRec reads the order of the rows: one event per row, oldest first
+user_ids = listens['user_id'].tolist()
+song_ids = listens['item_id'].tolist()
 
 # 3. Initialize SASRec
 model = SASRec(
     hidden_units=64,
     num_blocks=2,
-    num_heads=4,
-    epochs=50,
+    num_heads=1,
+    epochs=3,
     batch_size=128,
-    max_seq_length=20
+    max_seq_length=20,
+    verbose=False
 )
 
 # 4. Train model
-model.fit(interaction_matrix, user_ids.tolist(), song_ids.tolist())
+model.fit(user_ids, song_ids, [1.0] * len(user_ids))
 
 # 5. Get next song recommendations
 user_id = user_ids[0]
-next_songs = model.recommend(user_id=user_id, top_n=20)
+next_songs = model.recommend(user_id=user_id, top_k=20)
 print(f"Next 20 songs for user {user_id}: {next_songs}")
 
 # 6. Visualize training progress
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-history = model.history
-plt.plot(history['train_loss'], label='Train Loss')
+history = model.training_history          # [{'epoch': 1, 'loss': ...}, ...]
+plt.plot([h['epoch'] for h in history], [h['loss'] for h in history], label='Train Loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend()
@@ -255,7 +233,7 @@ plt.savefig('training_history.png')
 import pandas as pd
 
 # Load data
-df = pd.read_csv('interactions.csv')
+df = pd.read_csv('sample_data/events.csv')
 
 # Extract columns
 user_ids = df['user_id'].tolist()
@@ -266,32 +244,42 @@ ratings = df['rating'].tolist()
 timestamps = df['timestamp'].tolist() if 'timestamp' in df.columns else None
 ```
 
+From the command line, `corerec train sample_data/events.csv` detects the
+columns itself and reports a holdout score.
+
 ### Example: Creating Synthetic Data
 
 ```python
 import numpy as np
 
 # Generate synthetic data for testing
+rng = np.random.default_rng(0)
 num_users = 1000
 num_items = 500
 num_interactions = 10000
 
-user_ids = np.random.randint(0, num_users, num_interactions).tolist()
-item_ids = np.random.randint(0, num_items, num_interactions).tolist()
-ratings = np.random.uniform(1, 5, num_interactions).tolist()
+user_ids = rng.integers(0, num_users, num_interactions).tolist()
+item_ids = rng.integers(0, num_items, num_interactions).tolist()
+ratings = rng.uniform(1, 5, num_interactions).tolist()
 ```
 
 ### Example: Using Sample Data
 
+The repository ships small files in `sample_data/`: `events.csv`
+(interactions) and `netflix_demo.csv`, `spotify_demo.csv`, `youtube_demo.csv`
+(item catalogues with text). For MovieLens-1M, install the datasets extra:
+
+```bash
+pip install "corerec[datasets]"
+```
+
 ```python
-from corerec.utils.example_data import get_sample_data
+from cr_learn import ml_1m
 
-# Load built-in sample data
-data = get_sample_data('netflix')
-
-user_ids = data['user_ids']
-item_ids = data['item_ids']
+data = ml_1m.load()          # downloads on first use
 ratings = data['ratings']
+user_ids = ratings['user_id'].tolist()
+item_ids = ratings['movie_id'].tolist()
 ```
 
 ## Evaluation Examples
@@ -299,49 +287,52 @@ ratings = data['ratings']
 ### Example: Complete Evaluation
 
 ```python
-from corerec.evaluation import Evaluator
-from corerec.metrics import (
-    rmse, mae, precision_at_k, recall_at_k, ndcg_at_k
-)
+import numpy as np
+import pandas as pd
+from corerec.engines import ALS
+from corerec.evaluation import Evaluator, evaluate
 
-# Create evaluator
-evaluator = Evaluator(
-    metrics=['rmse', 'mae', 'precision@10', 'recall@10', 'ndcg@10']
-)
+events = pd.read_csv('sample_data/events.csv').sort_values('timestamp')
+cut = int(len(events) * 0.8)
+train, test = events.iloc[:cut], events.iloc[cut:]
+model = ALS(factors=32).fit(train['user_id'].tolist(), train['item_id'].tolist())
 
-# Evaluate model
-results = evaluator.evaluate(model, test_data)
+# Ranking metrics at one or more cutoffs
+results = evaluate(model, test, train_interactions=train, k=10)
 print(results)
 
-# Manual metric calculation
-predictions = model.batch_predict(test_pairs)
-rmse_score = rmse(test_ratings, predictions)
-print(f"RMSE: {rmse_score:.4f}")
+# The same through Evaluator, with test data as {user: [relevant items]}
+test_data = test.groupby('user_id')['item_id'].apply(list).to_dict()
+evaluator = Evaluator(metrics=['Precision@10', 'Recall@10', 'NDCG@10'])
+print(evaluator.evaluate(model, test_data))
+
+# Rating error for a model that predicts ratings, computed directly
+pairs = list(zip(test['user_id'], test['item_id']))[:500]
+predictions = np.array(model.batch_predict(pairs))
+truth = test['rating'].to_numpy()[:500]
+rmse_score = float(np.sqrt(np.mean((truth - predictions) ** 2)))
+print(f"RMSE: {rmse_score:.4f}")   # ALS scores preferences, so this is only illustrative
 ```
 
 ## Visualization Examples
 
 ### Example: Graph Visualization
 
+`corerec.vish_graphs` was removed in 0.7.0. The user-item graph is a sparse
+matrix you can hand to networkx or any plotting tool:
+
 ```python
-import corerec.vish_graphs as vg
+import pandas as pd
+from scipy.sparse import csr_matrix
 
-# Get interaction matrix from model
-adj_matrix = model.get_interaction_matrix()
+events = pd.read_csv('sample_data/events.csv')
+users, user_index = pd.factorize(events['user_id'])
+items, item_index = pd.factorize(events['item_id'])
 
-# 2D visualization
-vg.draw_graph(
-    adj_matrix,
-    top_nodes=[1, 2, 3, 4, 5],
-    node_labels={1: 'User A', 2: 'User B', 3: 'Item X'}
-)
-
-# 3D visualization
-vg.draw_graph_3d(
-    adj_matrix,
-    top_nodes=[1, 2, 3, 4, 5],
-    recommended_nodes=[10, 11, 12]
-)
+# Get interaction matrix (users x items)
+adj_matrix = csr_matrix(([1.0] * len(events), (users, items)),
+                        shape=(len(user_index), len(item_index)))
+print(adj_matrix.shape, adj_matrix.nnz)
 ```
 
 ## Running Examples
@@ -355,34 +346,30 @@ python examples/engines_quickstart.py
 # Run specific engine example
 python examples/engines_dcn_example.py
 python examples/engines_deepfm_example.py
+python examples/engines_sasrec_example.py
 
 # Run unionized filter examples
-python examples/unionized_fast_example.py
 python examples/unionized_sar_example.py
 
 # Run content filter examples
 python examples/content_filter_tfidf_example.py
 
 # Run advanced examples
-python examples/instagram_reels_with_real_data.py
-python examples/dien_example.py
+python examples/pipeline_example.py
+python examples/train_and_serve.py
 
 # Run all tests
-python examples/run_all_algo_tests_example.py
+python -m pytest tests/ -m "not docs_build"
 ```
 
 ## Interactive Examples
 
-Try CoreRec in interactive Jupyter notebooks:
+No notebooks ship with the repository. Every block on this page runs as-is in
+a Jupyter cell (from the repository root):
 
 ```bash
-# Start Jupyter
+pip install jupyter
 jupyter notebook
-
-# Open example notebooks
-examples/notebooks/quickstart.ipynb
-examples/notebooks/deep_learning_models.ipynb
-examples/notebooks/collaborative_filtering.ipynb
 ```
 
 ## Next Steps
@@ -390,5 +377,3 @@ examples/notebooks/collaborative_filtering.ipynb
 - Explore [Engine Documentation](../engines/index.md) for algorithm details
 - Check [API Reference](../api/index.md) for method signatures
 - See [Testing](../testing/index.md) for testing your implementations
-
-
