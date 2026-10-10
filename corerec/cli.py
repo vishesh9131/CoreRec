@@ -204,6 +204,9 @@ def _add_training_args(p):
     p.add_argument("--item-col", help="item column (default: detected)")
     p.add_argument("--rating-col", help="rating/weight column (default: detected, else 1 per row)")
     p.add_argument("--timestamp-col", help="timestamp column (default: detected)")
+    p.add_argument("--merge", default="auto", choices=["auto", "sum", "last", "mean"],
+                   help="how repeated (user, item) rows combine their rating: auto (default) "
+                        "keeps the latest for a rating/stars/score column and sums counts")
     p.add_argument("--test-fraction", type=float, default=0.2,
                    help="share of each user's interactions held out for evaluation (default 0.2)")
     p.add_argument("--k", type=int, default=10, help="cutoff for NDCG@k / Recall@k (default 10)")
@@ -219,7 +222,7 @@ def _train(args):
         args.data, model=args.model, params=parse_params(args.param),
         evaluate=not args.no_eval, test_fraction=args.test_fraction, k=args.k, seed=args.seed,
         user=args.user_col, item=args.item_col, rating=args.rating_col,
-        timestamp=args.timestamp_col,
+        timestamp=args.timestamp_col, rating_merge=args.merge,
     )
     print(result.report())
     return result
