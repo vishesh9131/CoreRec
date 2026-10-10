@@ -109,13 +109,23 @@ class _EmbeddingCFBase(BaseRecommender):
                 break
         return out
 
+    def _params(self) -> dict:
+        """Every constructor argument in the hierarchy, as set on this model.
+
+        Only name/factors/reg/iterations used to be saved, so load() rebuilt
+        alpha, seed, num_negatives, learning_rate... at their defaults (#102).
+        """
+        names = {n for c in type(self).__mro__ if issubclass(c, _EmbeddingCFBase)
+                 for n, p in inspect.signature(c.__init__).parameters.items()
+                 if p.kind is p.POSITIONAL_OR_KEYWORD and n != "self"}
+        return {n: getattr(self, n) for n in sorted(names) if hasattr(self, n)}
+
     def save(self, path: Union[str, Path], **kwargs) -> None:
         p = Path(path); p.parent.mkdir(parents=True, exist_ok=True)
         with open(p, "wb") as f:
             pickle.dump({"U": self.U, "V": self.V, "R": self.R,
                          "user_map": self.user_map, "item_map": self.item_map,
-                         "params": {"name": self.name, "factors": self.factors,
-                                    "reg": self.reg, "iterations": self.iterations}}, f)
+                         "params": self._params()}, f)
 
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs) -> "_EmbeddingCFBase":

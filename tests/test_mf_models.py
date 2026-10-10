@@ -59,3 +59,21 @@ def test_save_load_roundtrip(fitted, tmp_path):
     model.save(base)
     after = type(model).load(base).predict(int(u[0]), int(i[0]))
     assert abs(before - after) < 1e-4, f"{name} save/load mismatch"
+
+
+@pytest.mark.parametrize("cls_name,options", [
+    ("ALS", dict(factors=4, iterations=2, alpha=9, reg=0.5, seed=7)),
+    ("Item2Vec", dict(factors=4, iterations=2, num_negatives=2, learning_rate=0.001, seed=7)),
+])
+def test_save_load_keeps_every_training_setting(cls_name, options, tmp_path):
+    """load() rebuilt alpha, seed, num_negatives, learning_rate at defaults (#102)."""
+    import corerec.engines as engines
+
+    cls = getattr(engines, cls_name)
+    users, items = [1, 1, 2, 2, 3], [10, 20, 20, 30, 10]
+    model = cls(**options).fit(users, items)
+    model.save(tmp_path / "m")
+    loaded = cls.load(tmp_path / "m")
+    assert {k: getattr(loaded, k) for k in options} == options
+    # refitting the loaded object trains the same model as the original config
+    assert loaded.fit(users, items).recommend(1, top_k=2) == cls(**options).fit(users, items).recommend(1, top_k=2)
