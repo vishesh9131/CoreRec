@@ -412,7 +412,7 @@ class LightGCN(BaseRecommender):
             pickle.dump(legacy, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     @classmethod
-    def load(cls, path: Union[str, Path]) -> "LightGCN":
+    def load(cls, path: Union[str, Path], *, allow_pickle: bool = False) -> "LightGCN":
         """Load model from disk."""
         from corerec.api.bundle_helpers import load_map_state, nested_dict_from_lists
         from corerec.api.torch_bundle import load_numpy_production
@@ -442,7 +442,7 @@ class LightGCN(BaseRecommender):
             if arrays.get("item_embedding") is not None:
                 instance.item_embedding = torch.tensor(arrays["item_embedding"]).to(instance.device)
 
-        loaded = load_numpy_production(cls, path, restore=_restore)
+        loaded = load_numpy_production(cls, path, restore=_restore, allow_pickle=allow_pickle)
         if loaded is not None:
             return loaded
 

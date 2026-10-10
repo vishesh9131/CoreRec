@@ -72,7 +72,7 @@ class TestSafePersistence(unittest.TestCase):
             legacy = os.path.join(tmp, "legacy.pt")
             model.save(legacy, safe=False)
             self.assertFalse(is_safe_bundle(legacy))
-            loaded = DCN.load(legacy)
+            loaded = DCN.load(legacy, allow_pickle=True)
             self.assertTrue(loaded.is_fitted)
 
     def test_deepfm_safe_save_load(self):

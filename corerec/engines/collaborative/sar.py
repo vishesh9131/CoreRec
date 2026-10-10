@@ -1057,7 +1057,7 @@ class SAR(BaseRecommender):
         logger.info(f"Model saved to {path}")
     
     @classmethod
-    def load(cls, path: str) -> "SAR":
+    def load(cls, path: str, *, allow_pickle: bool = False) -> "SAR":
         """
         Load model from disk (safe bundle or legacy pickle).
         """
@@ -1095,7 +1095,7 @@ class SAR(BaseRecommender):
                 normalize=cfg["normalize"],
             )
 
-        loaded = load_numpy_production(cls, path, restore=_restore, factory=_factory)
+        loaded = load_numpy_production(cls, path, restore=_restore, factory=_factory, allow_pickle=allow_pickle)
         if loaded is not None:
             logger.info(f"Model loaded (safe bundle) from {path}")
             return loaded

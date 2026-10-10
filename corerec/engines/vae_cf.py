@@ -170,8 +170,7 @@ class _VAEBase(BaseRecommender):
         return out
 
     def save(self, path: Union[str, Path], **kwargs) -> None:
-        """Write a corerec_safe_v1 bundle: JSON config and ids, npz arrays, weights
-        that load with weights_only=True. The old torch.save checkpoint ran code on
+        """Write a corerec_safe_v1 bundle: JSON config and ids, npz arrays, numeric tensor weights. The old torch.save checkpoint ran code on
         load (#75)."""
         from corerec.api.model_bundle import save_bundle
 
@@ -191,12 +190,12 @@ class _VAEBase(BaseRecommender):
                     "R_shape": np.asarray(R.shape)})
 
     @classmethod
-    def load(cls, path: Union[str, Path], **kwargs) -> "_VAEBase":
+    def load(cls, path: Union[str, Path], *, allow_pickle: bool = False, **kwargs) -> "_VAEBase":
         from corerec.api.model_bundle import is_safe_bundle, load_bundle
 
         if not is_safe_bundle(path):
-            return cls._load_legacy(path)
-        b = load_bundle(path, map_location="cpu")
+            return cls._load_legacy(path, allow_pickle=allow_pickle)
+        b = load_bundle(path, map_location="cpu", allow_pickle=allow_pickle)
         a = b["arrays"]
         inst = cls(**b["config"])
         inst._restore(
@@ -207,12 +206,10 @@ class _VAEBase(BaseRecommender):
         return inst
 
     @classmethod
-    def _load_legacy(cls, path):
-        import warnings
+    def _load_legacy(cls, path, *, allow_pickle=False):
+        from corerec.api.model_bundle import require_legacy_pickle
 
-        warnings.warn(f"{path} is a legacy torch.save checkpoint, which can run code when "
-                      "loaded. Load it only if you trust it, then save() it again to "
-                      "convert it to the safe format.", DeprecationWarning, stacklevel=3)
+        require_legacy_pickle(path, allow_pickle)
         ckpt = torch.load(Path(path), map_location="cpu", weights_only=False)
         # bundles from before binarize existed were trained on counts
         inst = cls(**{"binarize": False, **ckpt["cfg"]})

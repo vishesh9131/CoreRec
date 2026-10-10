@@ -243,7 +243,7 @@ def serve_command(args):
 
     artifact = None
     if is_artifact(args.data):
-        model, manifest = load_artifact(args.data)
+        model, manifest = load_artifact(args.data, allow_pickle=args.allow_pickle)
         artifact = args.data
         print(f"Loaded    {manifest['model']} from {args.data}")
     else:
@@ -254,12 +254,13 @@ def serve_command(args):
             print(f"Saved     {save_artifact(result, args.save)}/")
     challenger = None
     if args.challenger:
-        challenger = load_artifact(args.challenger)[0]
+        challenger = load_artifact(args.challenger, allow_pickle=args.allow_pickle)[0]
         print(f"A/B       challenger {args.challenger} gets {args.challenger_share:.0%} of users")
     server = build_server(model, manifest, host=args.host, port=args.port,
                           feedback_log=args.feedback_log, challenger=challenger,
                           challenger_share=args.challenger_share, artifact=artifact,
-                          admin_token=args.admin_token, feedback_token=args.feedback_token)
+                          admin_token=args.admin_token, feedback_token=args.feedback_token,
+                          allow_pickle=args.allow_pickle)
     if args.feedback_log:
         print(f"Feedback  logging to {args.feedback_log}  (POST /feedback, GET /metrics)")
     guarded = [p for p, t in (("/reload", args.admin_token), ("/feedback", args.feedback_token)) if t]
@@ -278,7 +279,8 @@ def retrain_command(args):
     from corerec.serving.from_csv import retrain_artifact
 
     d = retrain_artifact(args.artifact, data=args.data, feedback=args.feedback,
-                         tolerance=args.tolerance, k=args.k, dry_run=args.dry_run)
+                         tolerance=args.tolerance, k=args.k, dry_run=args.dry_run,
+                         allow_pickle=args.allow_pickle)
     print(f"Data      {d['rows']:,} interactions, {d['new_rows']:,} new since the last training "
           f"({d['feedback_rows']:,} from feedback)")
     if d["mode"] == "row order":
@@ -351,6 +353,8 @@ def main():
     serve_parser.add_argument("--host", default="0.0.0.0")
     serve_parser.add_argument("--port", type=int, default=8000)
     serve_parser.add_argument("--save", metavar="DIR", help="also save the trained artifact here")
+    serve_parser.add_argument("--allow-pickle", action="store_true",
+                              help="trust legacy artifacts that can execute Python during loading")
     serve_parser.add_argument("--feedback-log", metavar="FILE",
                               help="log impressions and feedback here; enables /feedback and /metrics")
     serve_parser.add_argument("--challenger", metavar="ARTIFACT",
@@ -378,6 +382,8 @@ def main():
                                 help="promote if candidate NDCG >= current - tolerance (default 0)")
     retrain_parser.add_argument("--k", type=int, default=10)
     retrain_parser.add_argument("--dry-run", action="store_true", help="compare only; change nothing")
+    retrain_parser.add_argument("--allow-pickle", action="store_true",
+                                help="trust a legacy artifact that can execute Python during loading")
     retrain_parser.set_defaults(func=retrain_command)
 
     # Info command
