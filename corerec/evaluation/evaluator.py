@@ -10,8 +10,19 @@ import logging
 from typing import Dict, List, Any, Optional
 import numpy as np
 from corerec.evaluation.metrics import RankingMetrics
+from corerec.evaluation.evaluate import METRICS, evaluate as run_evaluate
 
 logger = logging.getLogger(__name__)
+
+
+def _canonical(metric: str) -> str:
+    """'ndcg@10', 'NDCG@10', 'hit_rate@5' -> the evaluate() key ('NDCG@10', 'HitRate@5')."""
+    name, _, k = metric.partition("@")
+    key = name.lower().replace("_", "")
+    for canon in METRICS:
+        if canon.lower() == key:
+            return f"{canon}@{int(k or 10)}"
+    raise ValueError(f"unknown metric {metric!r}; use one of {', '.join(METRICS)} with @k")
 
 
 class Evaluator:
@@ -24,7 +35,7 @@ class Evaluator:
 
         from corerec.evaluation import Evaluator
 
-        evaluator = Evaluator(metrics=['ndcg@10', 'map@10', 'recall@20'])
+        evaluator = Evaluator(metrics=['NDCG@10', 'MAP@10', 'Recall@20'])
 
         # Single model evaluation
         results = evaluator.evaluate(model, test_data)
@@ -43,80 +54,51 @@ class Evaluator:
         Initialize evaluator.
 
         Args:
-            metrics: List of metrics to compute (e.g., ['ndcg@10', 'map@10'])
+            metrics: List of metrics to compute (e.g., ['NDCG@10', 'MAP@10']); any case
+                works, and hit_rate / HitRate are the same metric
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
-        self.metrics = metrics or ["ndcg@10", "map@10", "precision@10", "recall@10"]
+        self.metrics = metrics or ["NDCG@10", "MAP@10", "Precision@10", "Recall@10"]
+        for m in self.metrics:
+            _canonical(m)  # fail here on a typo, not after scoring every user
         self.ranking_metrics = RankingMetrics()
 
-    def evaluate(self, model, test_data: Dict[Any, List], strict: bool = False) -> Dict[str, float]:
+    def evaluate(self, model, test_data: Dict[Any, List], strict: bool = False,
+                 train_interactions=None) -> Dict[str, float]:
         """
         Evaluate model on test data.
+
+        Same protocol and numbers as :func:`corerec.evaluation.evaluate` (what
+        ``corerec train`` / ``serve`` / ``retrain`` report), which this calls.
 
         Args:
             model: Recommendation model with recommend() method
             test_data: Dict mapping user_id to list of relevant items
             strict: re-raise the first per-user error instead of skipping the user
+            train_interactions: optional (user, item) pairs or DataFrame; those
+                items are removed from each user's list before scoring. Without
+                it, excluding seen items is left to the model.
 
         Returns:
-            Dictionary of metric_name -> score, plus ``n_users`` (users scored)
-            and ``n_errors`` (users skipped because recommend() raised).
-            A metric with no scored users is NaN, not 0.0.
-
-        Author: Vishesh Yadav (mail: sciencely98@gmail.com)
+            Each metric under its canonical name (``NDCG@10``, ``Recall@20``,
+            ...) and also under the spelling it was requested with, plus
+            ``n_users`` (users scored) and ``n_errors`` (users skipped because
+            recommend() raised). A metric with no scored users is NaN, not 0.0.
         """
-        results = {metric: [] for metric in self.metrics}
-        n_errors = 0
-        # ask for as many items as the deepest metric needs; a fixed 20 made
-        # recall@50 count ranks 21..50 as misses
-        max_k = max(int(m.split("@")[1]) if "@" in m else 10 for m in self.metrics)
-
-        for user_id, ground_truth in test_data.items():
-            try:
-                # Get recommendations
-                predictions = model.recommend(user_id, top_k=max_k)
-
-                # Compute each metric
-                for metric_name in self.metrics:
-                    # Parse metric name (e.g., 'ndcg@10')
-                    if "@" in metric_name:
-                        metric, k = metric_name.split("@")
-                        k = int(k)
-                    else:
-                        metric = metric_name
-                        k = 10
-
-                    # Compute metric
-                    if metric == "ndcg":
-                        score = self.ranking_metrics.ndcg_at_k(predictions, ground_truth, k)
-                    elif metric == "map":
-                        score = self.ranking_metrics.map_at_k(predictions, ground_truth, k)
-                    elif metric == "mrr":
-                        score = self.ranking_metrics.mrr_at_k(predictions, ground_truth, k)
-                    elif metric == "precision":
-                        score = self.ranking_metrics.precision_at_k(predictions, ground_truth, k)
-                    elif metric == "recall":
-                        score = self.ranking_metrics.recall_at_k(predictions, ground_truth, k)
-                    elif metric == "hit_rate":
-                        score = self.ranking_metrics.hit_rate_at_k(predictions, ground_truth, k)
-                    else:
-                        continue
-
-                    results[metric_name].append(score)
-
-            except Exception as e:
-                if strict:
-                    raise
-                n_errors += 1
-                logger.warning("Error evaluating user %s: %s", user_id, e)
-
+        wanted = {m: _canonical(m) for m in self.metrics}
+        pairs = [(u, it) for u, items in test_data.items() for it in items]
+        r = run_evaluate(model, pairs, train_interactions=train_interactions,
+                         k=sorted({int(c.split("@")[1]) for c in wanted.values()}), strict=strict)
+        n_users, n_errors = r["n_users"], r["n_errors"]
+        users = len({u for u, _ in pairs})
         if n_errors:
-            logger.warning("%d of %d users failed to evaluate", n_errors, len(test_data))
-        # NaN, not 0.0: a model that crashed on every user must not look like a bad model
-        out = {k: float(np.mean(v)) if v else float("nan") for k, v in results.items()}
-        out["n_users"] = len(test_data) - n_errors
-        out["n_errors"] = n_errors
+            logger.warning("%d of %d users failed to evaluate", n_errors, users)
+        out = {}
+        for asked, canon in wanted.items():
+            # NaN, not 0.0: a model that crashed on every user must not look like a bad model
+            out[canon] = out[asked] = r[canon] if n_users else float("nan")
+        out["n_users"], out["n_errors"] = n_users, n_errors
         return out
 
     def compare_models(
@@ -141,8 +123,8 @@ class Evaluator:
 
             # Results:
             # {
-            #   'NCF': {'ndcg@10': 0.45, 'map@10': 0.38, ...},
-            #   'DeepFM': {'ndcg@10': 0.48, 'map@10': 0.41, ...}
+            #   'NCF': {'NDCG@10': 0.45, 'MAP@10': 0.38, ...},
+            #   'DeepFM': {'NDCG@10': 0.48, 'MAP@10': 0.41, ...}
             # }
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
@@ -202,7 +184,7 @@ class CrossValidator:
     Example::
 
         cv = CrossValidator(n_folds=5)
-        out = cv.cross_validate(lambda: SAR(), df, metric='ndcg@10')
+        out = cv.cross_validate(lambda: SAR(), df, metric='NDCG@10')
         out['mean'], out['folds']
 
     Author: Vishesh Yadav (mail: sciencely98@gmail.com)
@@ -261,7 +243,7 @@ class CrossValidator:
         self,
         model,
         data: Any,
-        metric: str = "ndcg@10",
+        metric: str = "NDCG@10",
         user_col: str = "user_id",
         item_col: str = "item_id",
         rating_col: str = "rating",
@@ -273,7 +255,7 @@ class CrossValidator:
             model: zero-arg factory returning an unfitted model, or an unfitted
                 model instance (deep-copied per fold so folds don't leak)
             data: DataFrame of interactions
-            metric: any metric Evaluator understands, e.g. 'ndcg@10'
+            metric: any metric Evaluator understands, e.g. 'NDCG@10'
 
         Returns:
             {'mean': float, 'std': float, 'folds': [per-fold score]}

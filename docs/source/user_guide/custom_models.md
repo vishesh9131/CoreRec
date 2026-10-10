@@ -121,7 +121,7 @@ from corerec.evaluation import Evaluator
 from corerec.serving import ModelLoader, ModelServer
 
 truth = test.groupby("user_id").item_id.apply(list).to_dict()
-print(Evaluator(metrics=["ndcg@10", "recall@10"]).evaluate(rec, truth))
+print(Evaluator(metrics=["NDCG@10", "Recall@10"]).evaluate(rec, truth))
 
 rec.save("dot.pt")
 same = ModelLoader().load("dot.pt")     # rebuilds DotModel from its import path
