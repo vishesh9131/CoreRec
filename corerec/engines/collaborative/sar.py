@@ -24,6 +24,7 @@ from scipy import sparse
 import os
 import pickle
 
+from corerec.api.id_index import IdIndex
 from corerec.api.base_recommender import BaseRecommender
 from corerec.api.exceptions import ModelNotFittedError, InvalidDataError
 from corerec.constants import (
@@ -231,16 +232,13 @@ class SAR(BaseRecommender):
         Build continuous index mappings from raw user/item IDs.
         This saves memory vs using raw IDs as sparse matrix indices.
         """
-        # using dict(enumerate(...)) to get 0-indexed mappings
-        unique_items = df[self.col_item].unique()
-        unique_users = df[self.col_user].unique()
-        
-        self.index2item = dict(enumerate(unique_items))
-        self.index2user = dict(enumerate(unique_users))
-        
-        # invert for fast lookup
-        self.item2index = {v: k for k, v in self.index2item.items()}
-        self.user2index = {v: k for k, v in self.index2user.items()}
+        # one id index per side (#76); first-appearance order, 0-indexed as before
+        self.items_index = IdIndex(df[self.col_item].unique())
+        self.users_index = IdIndex(df[self.col_user].unique())
+        self.index2item = dict(enumerate(self.items_index.ids))
+        self.index2user = dict(enumerate(self.users_index.ids))
+        self.item2index = self.items_index.as_dict()
+        self.user2index = self.users_index.as_dict()
         
         self.n_items = len(self.item2index)
         self.n_users = len(self.user2index)

@@ -95,3 +95,17 @@ def test_hstu_builds_its_item_map_from_id_index(tmp_path):
     assert back.item_to_index == m.item_to_index and back.index_to_item == m.index_to_item
     assert back.recommend("a", top_k=2) == m.recommend("a", top_k=2)
 
+
+
+def test_sar_builds_its_maps_from_id_index(tmp_path):
+    """Stage 2 of #76: SAR's four maps come from IdIndex, first-appearance order as before."""
+    from corerec.engines import SAR
+
+    m = SAR().fit(["u2", "u1", "u2", "u3"], ["b", "a", "c", "a"], [1.0, 1.0, 1.0, 1.0])
+    assert m.user2index == m.users_index.as_dict() == {"u2": 0, "u1": 1, "u3": 2}
+    assert m.item2index == {"b": 0, "a": 1, "c": 2}
+    assert m.index2item == {0: "b", 1: "a", 2: "c"}
+    m.save(tmp_path / "s")
+    back = SAR.load(tmp_path / "s")
+    assert back.item2index == m.item2index
+    assert back.recommend("u1", top_k=2) == m.recommend("u1", top_k=2)
