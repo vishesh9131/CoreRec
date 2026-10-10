@@ -77,10 +77,10 @@ scores = sess.run(None, {"history": x})[0][0]
 ## MultVAE / MultiDAE input
 
 These score from what the user has interacted with, not from a user index, so
-the metadata has `item_ids` only. Column `j` is how many times the user
-interacted with `item_ids[j]`: the model trains on counts, so an item seen
-twice is 2, not 1. A user who wasn't in the training data can be scored the
-same way.
+the metadata has `item_ids` only. Column `j` is 1 if the user interacted with
+`item_ids[j]` and 0 otherwise. A model fit with `binarize=False` trained on
+repeat counts, so pass counts instead (an item seen twice is 2). A user who
+wasn't in the training data can be scored the same way.
 
 ```python
 from corerec.engines import MultVAE
@@ -94,7 +94,7 @@ item_ids = json.loads(sess.get_modelmeta().custom_metadata_map["item_ids"])
 col = {item: j for j, item in enumerate(item_ids)}
 history = [i for u, i in zip(users, items) if u == users[0]]
 x = np.zeros((1, len(item_ids)), dtype=np.float32)
-np.add.at(x[0], [col[i] for i in history], 1)  # repeats add up
+x[0, [col[i] for i in history]] = 1  # binarize=False: np.add.at(...) for counts
 scores = sess.run(None, {"interactions": x})[0][0]
 ```
 
