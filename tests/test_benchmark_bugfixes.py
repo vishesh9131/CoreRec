@@ -92,8 +92,10 @@ def _seed_data(seed=7, n_users=40, n_items=70, n=400):
 
 @pytest.mark.parametrize("cls_name,kwargs", [
     ("TwoTower", {"embedding_dim": 16, "epochs": 3, "verbose": False}),
+    # cpu: GPU (CUDA/MPS) index-gradient kernels use atomic adds, so the last
+    # float bits vary run to run there whatever the seed
     ("SASRec", {"hidden_units": 16, "num_blocks": 1, "epochs": 2, "batch_size": 32,
-                "max_seq_length": 20, "verbose": False}),
+                "max_seq_length": 20, "verbose": False, "device": "cpu"}),
 ])
 def test_torch_models_are_reproducible_across_runs(cls_name, kwargs):
     """TwoTower and SASRec shuffled and sampled negatives from the unseeded global
