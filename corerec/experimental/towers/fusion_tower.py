@@ -9,7 +9,7 @@ import torch.nn as nn
 from typing import Dict, List, Tuple, Any, Union, Optional
 import logging
 
-from corerec.towers.base_tower import AbstractTower
+from corerec.experimental.towers.base_tower import AbstractTower
 
 
 class FusionTower(AbstractTower):
