@@ -11,9 +11,8 @@ from corerec.engines import ItemKNN, UserKNN, EASE, SLIM
 def test_all_forms_use_native_adapter_and_preserve_predictions(cls, tmp_path, monkeypatch):
     users, items, ratings = [2, 1, 2, 3], [30, 10, 20, 10], [1., 2., 3., 1.]
     df = pd.DataFrame({"user_id": users, "item_id": items, "rating": ratings})
-    def old_path(*args, **kwargs):
-        raise AssertionError("native fit must not call the old unpacker")
-    monkeypatch.setattr(cls, "_unpack_fit_args", old_path)
+    # the old unpacker is gone (#78): every model reads input through to_interactions
+    assert not hasattr(cls, "_unpack_fit_args")
     models = [cls().fit(users, items, ratings), cls().fit(df),
               cls().fit(RecommenderDataset.from_dataframe(df)),
               cls().fit(user_ids=users, item_ids=items, ratings=ratings)]

@@ -379,50 +379,6 @@ class BaseRecommender(ABC):
             )
         return user_map[user_id]
 
-    def _unpack_fit_args(
-        self,
-        *args: Any,
-        supported_modes: tuple,
-        sar_format: bool = False,
-        **kwargs: Any,
-    ) -> tuple:
-        """
-        Unpack :class:`~corerec.api.dataset.RecommenderDataset` or DataFrame
-        into positional args expected by ``fit()``.
-        """
-        from corerec.api.dataset import RecommenderDataset, coerce_dataset
-
-        if not args:
-            return args, kwargs
-
-        ds = coerce_dataset(args[0])
-        if ds is None:
-            return args, kwargs
-
-        mode = ds.infer_mode()
-        if mode not in supported_modes:
-            raise InvalidDataError(
-                f"{self.__class__.__name__} does not support dataset mode '{mode}'. "
-                f"Supported: {supported_modes}"
-            )
-
-        if mode == "triplet":
-            u, i, r = ds.as_triplet()
-            return (u, i, r), kwargs
-        if mode == "dataframe":
-            df = ds.as_sar_dataframe() if sar_format else ds.as_ncf_dataframe()
-            return (df,), kwargs
-        if mode == "matrix":
-            u, i, m = ds.as_matrix()
-            return (u, i, m), kwargs
-        if mode == "content":
-            items, docs = ds.as_content()
-            if isinstance(docs, list):
-                docs = {item: doc for item, doc in zip(items, docs)}
-            return (items, docs), kwargs
-
-        raise InvalidDataError(f"Unhandled dataset mode: {mode}")
-
     def _coerce_fit_dataframe(self, data: Any, *, sar_format: bool = False) -> Any:
         """If *data* is a dataset/DataFrame wrapper, return a concrete DataFrame."""
         from corerec.api.dataset import coerce_dataset
