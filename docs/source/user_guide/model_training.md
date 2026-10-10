@@ -159,3 +159,8 @@ assert same_model.item_map == model.item_map
 
 Malformed lengths, missing IDs and non-finite ratings raise InvalidDataError
 before fitted state is replaced. Integer and string IDs remain distinct.
+
+DCN recommendations exclude the user's observed training items by default.
+Use `model.recommend(user_id, top_k=10, exclude_seen=False)` to include them.
+New DCN artifacts preserve this history in both safe and legacy formats. Older
+artifacts did not store history; refit those models to restore seen-item filtering.
