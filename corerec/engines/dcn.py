@@ -9,6 +9,7 @@ from scipy.sparse import csr_matrix
 from tqdm import tqdm
 
 from corerec.api.id_index import IdIndex
+from corerec.engines.pointwise_training import train_pointwise
 from corerec.api.base_recommender import BaseRecommender
 from corerec.api.exceptions import ModelNotFittedError, InvalidParameterError
 from corerec.utils.validation import (
@@ -349,65 +350,9 @@ class DCN(BaseRecommender):
             torch.manual_seed(self.seed)  # weight init, dropout, shuffling
         self.model = self._build_model(num_features, max_features, use_sigmoid=(task != "rating"))
 
-        # Convert to tensors
-        train_features = torch.LongTensor(train_features).to(self.device)
-        train_labels = torch.FloatTensor(train_labels).to(self.device)
-
-        # Define optimizer and loss (BCE for implicit ranking, MSE for rating)
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        criterion = nn.BCELoss() if task != "rating" else nn.MSELoss()
-
-        # Train the model
-        self.model.train()
-        n_batches = len(train_features) // self.batch_size + (
-            1 if len(train_features) % self.batch_size != 0 else 0
-        )
-
-        for epoch in range(self.epochs):
-            total_loss = 0
-
-            # Shuffle data
-            indices = torch.randperm(len(train_features))
-            train_features = train_features[indices]
-            train_labels = train_labels[indices]
-
-            for i in range(n_batches):
-                start_idx = i * self.batch_size
-                end_idx = min((i + 1) * self.batch_size, len(train_features))
-
-                batch_features = train_features[start_idx:end_idx]
-                batch_labels = train_labels[start_idx:end_idx]
-
-                # Forward pass
-                outputs = self.model(batch_features)
-
-                # Compute loss
-                loss = criterion(outputs, batch_labels)
-
-                # Backward pass
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-
-                total_loss += loss.item()
-
-            if self.verbose:
-                logger.info(f"Epoch {epoch+1}/{self.epochs}, Loss: {total_loss/n_batches:.4f}")
-
-        # Collapse guard: a healthy model produces varied scores across items.
-        # If every score is (near) identical the model has degenerated (e.g. bad
-        # label scale) and any ranking from it is meaningless.
-        self.model.eval()
-        with torch.no_grad():
-            probe = self.model(train_features[: min(2048, len(train_features))])
-            score_std = float(probe.std().item())
-        if score_std < 1e-4:
-            logger.warning(
-                "DCN output collapsed (score std=%.2e): predictions are nearly "
-                "constant, so rankings will be meaningless. Check that labels match "
-                "the task ('implicit' expects relevance, 'rating' expects scores).",
-                score_std,
-            )
+        train_pointwise(self.model, train_features, train_labels, task=task, epochs=self.epochs,
+                        batch_size=self.batch_size, learning_rate=self.learning_rate,
+                        device=self.device, verbose=self.verbose, name="DCN")
 
         self.is_fitted = True
         return self
