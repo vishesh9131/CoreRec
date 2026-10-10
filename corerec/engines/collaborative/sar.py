@@ -573,8 +573,8 @@ class SAR(BaseRecommender):
         # remove seen items if requested
         if remove_seen:
             logger.info("Removing seen items from scores")
-            seen_mask = self.user_affinity[user_indices, :].toarray()
-            scores = np.where(seen_mask > 0, -np.inf, scores)
+            seen = self.user_affinity[user_indices, :].tocoo()
+            scores[seen.row, seen.col] = -np.inf
         
         return scores
     
@@ -629,6 +629,7 @@ class SAR(BaseRecommender):
         user_id: Any,
         top_k: int = 10,
         exclude_items: Optional[List[Any]] = None,
+        *, exclude_seen: bool = True,
         **kwargs
     ) -> List[Any]:
         """
@@ -641,6 +642,7 @@ class SAR(BaseRecommender):
             user_id: user to recommend for
             top_k: number of items
             exclude_items: additional items to exclude (beyond seen items)
+            exclude_seen: whether to exclude observed training items
         
         Returns:
             list of recommended item IDs
@@ -663,8 +665,8 @@ class SAR(BaseRecommender):
             scores = np.asarray(scores).flatten()
 
         # mask seen items
-        seen = user_affinity.toarray().flatten() > 0
-        scores[seen] = -np.inf
+        if exclude_seen:
+            scores[user_affinity.indices] = -np.inf
 
         # mask additional exclusions
         if exclude_items:
@@ -1003,15 +1005,12 @@ class SAR(BaseRecommender):
             "rating_max": self.rating_max,
             "is_fitted": self.is_fitted,
         }
-        arrays = {}
-        for name, value in (
+        from corerec.api.model_bundle import pack_arrays
+        arrays, state["array_specs"] = pack_arrays({name: value for name, value in (
             ("user_affinity", self.user_affinity),
             ("item_similarity", self.item_similarity),
             ("unity_user_affinity", self.unity_user_affinity),
-        ):
-            dense = _sar_to_dense_array(value)
-            if dense is not None:
-                arrays[name] = np.asarray(dense, dtype=np.float64)
+        ) if value is not None})
 
         from corerec.api.torch_bundle import save_numpy_production
 
@@ -1074,6 +1073,9 @@ class SAR(BaseRecommender):
             instance.rating_max = state.get("rating_max")
             instance.is_fitted = state.get("is_fitted", True)
             arrays = arrays or {}
+            if "array_specs" in state:
+                from corerec.api.model_bundle import unpack_arrays
+                arrays = unpack_arrays(arrays, state["array_specs"])
             instance.user_affinity = _sar_to_sparse_matrix(arrays.get("user_affinity"))
             instance.item_similarity = _sar_to_sparse_matrix(arrays.get("item_similarity"))
             instance.unity_user_affinity = _sar_to_sparse_matrix(arrays.get("unity_user_affinity"))
