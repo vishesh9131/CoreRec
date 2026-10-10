@@ -93,3 +93,40 @@ trainer.load_checkpoint("checkpoints/model.pt", allow_pickle=True)
 
 This permits Python pickle execution. Production recommendation engines keep
 using safe bundles by default.
+
+### Neural retrieval-then-rerank models
+
+`RetrievalThenRerank` combines two callable `torch.nn.Module` components. It
+saves their weights together in a safe bundle. Supply the same architectures
+when loading; checkpoint metadata does not import component classes. Candidate
+retrievers and `BaseRanker` implementations use `RecommendationPipeline` instead.
+
+```python
+import torch
+from corerec.hybrid import RetrievalThenRerank
+
+class Retriever(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.scores = torch.nn.Parameter(torch.tensor([[0.2, 0.8, 0.5]]))
+
+    def forward(self, batch):
+        return self.scores
+
+class Reranker(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.scores = torch.nn.Parameter(torch.tensor([[0.7, 0.1, 0.9]]))
+
+    def forward(self, batch):
+        return self.scores.gather(1, batch["candidate_indices"])
+
+model = RetrievalThenRerank("example", {"num_candidates": 2}, Retriever(), Reranker())
+model.eval()
+path = model.save("hybrid_model")
+restored = RetrievalThenRerank.load(path, retriever=Retriever(), reranker=Reranker())
+assert restored.recommend({}, {}, top_k=2) == model.recommend({}, {}, top_k=2)
+```
+
+Older hybrid manifests containing only component paths cannot reconstruct the
+models. Save a new bundle from the original neural components.

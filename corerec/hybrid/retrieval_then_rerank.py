@@ -7,7 +7,8 @@ sophisticated model.
 """
 
 import torch
-from corerec.api.model_bundle import require_legacy_pickle
+from corerec.api.model_bundle import require_legacy_pickle, save_bundle, load_bundle, is_safe_bundle
+from corerec.api.exceptions import SaveLoadError
 import torch.nn as nn
 import numpy as np
 from typing import Dict, List, Tuple, Any, Union, Optional, Callable
@@ -16,8 +17,6 @@ import time
 import os
 
 from corerec.core.base_model import BaseModel
-from corerec.retrieval.model_retriever import BaseRetriever
-from corerec.ranking.base import BaseRanker
 
 
 class RetrievalThenRerank(BaseModel):
@@ -30,12 +29,12 @@ class RetrievalThenRerank(BaseModel):
     Attributes:
         name (str): Name of the model
         config (Dict[str, Any]): Model configuration
-        retriever (BaseRetriever): Retrieval model
-        reranker (BaseRanker): Reranking model
+        retriever (nn.Module): Retrieval model
+        reranker (nn.Module): Reranking model
     """
 
     def __init__(
-        self, name: str, config: Dict[str, Any], retriever: BaseRetriever, reranker: BaseRanker
+        self, name: str, config: Dict[str, Any], retriever: nn.Module, reranker: nn.Module
     ):
         """Initialize the retrieval-then-rerank model.
 
@@ -45,11 +44,13 @@ class RetrievalThenRerank(BaseModel):
                 - retriever_config (Dict[str, Any]): Configuration for the retriever
                 - reranker_config (Dict[str, Any]): Configuration for the reranker
                 - num_candidates (int): Number of candidates to retrieve
-            retriever (BaseRetriever): Retrieval model
-            reranker (BaseRanker): Reranking model
+            retriever (nn.Module): Retrieval model
+            reranker (nn.Module): Reranking model
         """
         super().__init__(name, config)
 
+        if not isinstance(retriever, nn.Module) or not isinstance(reranker, nn.Module):
+            raise TypeError("RetrievalThenRerank requires torch.nn.Module components; use RecommendationPipeline for candidate rankers")
         self.retriever = retriever
         self.reranker = reranker
 
@@ -276,58 +277,40 @@ class RetrievalThenRerank(BaseModel):
             "val_accuracy": accuracy.item(),
         }
 
-    def save(self, path: str):
-        """Save the model.
-
-        Args:
-            path (str): Path to save the model
-        """
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-
-        # Save retriever and reranker separately
-        retriever_path = f"{path}_retriever"
-        reranker_path = f"{path}_reranker"
-
-        self.retriever.save(retriever_path)
-        self.reranker.save(reranker_path)
-
-        # Save config
-        torch.save(
-            {
-                "name": self.name,
-                "config": self.config,
-                "retriever_path": retriever_path,
-                "reranker_path": reranker_path,
-            },
-            path,
-        )
+    def save(self, path: str) -> str:
+        """Save both neural components in one atomic safe bundle."""
+        return str(save_bundle(
+            path, model_class=type(self).__name__, config=self.config,
+            state={"name": self.name, "training": self.training},
+            state_dict=self.state_dict(),
+        ))
 
     @classmethod
-    def load(cls, path: str, *, allow_pickle: bool = False) -> "RetrievalThenRerank":
-        """Load the model.
+    def load(cls, path: str, *, retriever: Optional[nn.Module] = None,
+             reranker: Optional[nn.Module] = None,
+             allow_pickle: bool = False) -> "RetrievalThenRerank":
+        """Restore weights into explicitly supplied neural architectures.
 
-        Args:
-            path (str): Path to load the model from
-            allow_pickle (bool): Load only explicitly trusted legacy checkpoints.
-
-        Returns:
-            RetrievalThenRerank: Loaded model
+        Legacy pickle checkpoints require explicit trust. Component classes
+        are never imported from checkpoint metadata.
         """
-        # Load config
-        require_legacy_pickle(path, allow_pickle)
-        checkpoint = torch.load(path, map_location="cpu", weights_only=False)
-
-        # Load retriever and reranker
-        retriever = BaseRetriever.load(checkpoint["retriever_path"], allow_pickle=allow_pickle)
-        reranker = BaseRanker.load(checkpoint["reranker_path"])
-
-        # Create model
-        model = cls(
-            name=checkpoint["name"],
-            config=checkpoint["config"],
-            retriever=retriever,
-            reranker=reranker,
-        )
-
+        if is_safe_bundle(path):
+            checkpoint = load_bundle(path, map_location="cpu")
+            name = checkpoint["state"]["name"]
+            training = checkpoint["state"].get("training", True)
+            weights = checkpoint["state_dict"]
+        else:
+            require_legacy_pickle(path, allow_pickle)
+            checkpoint = torch.load(path, map_location="cpu", weights_only=False)
+            name = checkpoint.get("model_name", checkpoint.get("name"))
+            training = True
+            weights = checkpoint.get("model_state_dict")
+            if weights is None:
+                raise SaveLoadError("This legacy hybrid checkpoint has no combined weights; save a new bundle from the original components")
+        if retriever is None or reranker is None:
+            raise ValueError("Supply retriever= and reranker= with the original neural architectures")
+        model = cls(name=name, config=checkpoint["config"],
+                    retriever=retriever, reranker=reranker)
+        model.load_state_dict(weights)
+        model.train(training)
         return model
