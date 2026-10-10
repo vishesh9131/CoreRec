@@ -1004,8 +1004,9 @@ class SASRec(BaseRecommender):
         *,
         top_n: Optional[int] = None,
         exclude_seen: bool = True,
+        return_scores: bool = False,
         **kwargs,
-    ) -> List[Any]:
+    ) -> Union[List[Any], List[Tuple[Any, float]]]:
         """Recommend top-K items for a user."""
         top_k, exclude_items, _ = self._normalize_recommend(
             top_k=top_k,
@@ -1052,7 +1053,8 @@ class SASRec(BaseRecommender):
             scores[1:] = scores[1:] - self.item_popularity
 
         top_indices = np.argsort(scores)[::-1][:top_k]
-        recommendations = [self.index_to_item[int(idx)] for idx in top_indices
+        recommendations = [(self.index_to_item[int(idx)], float(scores[idx])) if return_scores
+                           else self.index_to_item[int(idx)] for idx in top_indices
                            if np.isfinite(scores[idx]) and int(idx) in self.index_to_item]
         return recommendations
 

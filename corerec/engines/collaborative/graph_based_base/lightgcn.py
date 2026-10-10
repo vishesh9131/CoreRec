@@ -320,7 +320,8 @@ class LightGCN(BaseRecommender):
         return float(score)
 
     def recommend(self, user_id: Any, top_k: int = 10,
-                  exclude_items: Optional[List] = None, **kwargs) -> List[Any]:
+                  exclude_items: Optional[List] = None, *, exclude_seen: bool = True,
+                  return_scores: bool = False, **kwargs) -> Union[List[Any], List[Tuple[Any, float]]]:
         """Generate top-K recommendations for a user."""
         if self.user_embedding is None or self.item_embedding is None:
             self._check_fitted()
@@ -334,8 +335,9 @@ class LightGCN(BaseRecommender):
             ).cpu().numpy()
 
         seen = self.user_interactions.get(uidx, set())
-        for idx in seen:
-            scores[idx] = -np.inf
+        if exclude_seen:
+            for idx in seen:
+                scores[idx] = -np.inf
 
         if exclude_items:
             for it in exclude_items:
@@ -343,7 +345,8 @@ class LightGCN(BaseRecommender):
                     scores[self.item_id_map[it]] = -np.inf
 
         top_indices = np.argsort(scores)[::-1][:top_k]
-        return [self.reverse_item_map[int(i)] for i in top_indices
+        return [(self.reverse_item_map[int(i)], float(scores[i])) if return_scores
+                else self.reverse_item_map[int(i)] for i in top_indices
                 if np.isfinite(scores[i]) and int(i) in self.reverse_item_map]
 
     def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
