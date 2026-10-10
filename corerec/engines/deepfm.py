@@ -174,6 +174,9 @@ class DeepFM(BaseRecommender):
         if batch_size is not None:
             self.batch_size = batch_size
 
+        self.user_features = user_features
+        self.item_features = item_features
+
         # Create feature mapping
         # First field: user IDs
         unique_users = IdIndex.fit(user_ids)[0].ids
@@ -280,19 +283,8 @@ class DeepFM(BaseRecommender):
             X[:, 0] = [umap[u] for u in train_users]
             X[:, 1] = [imap[it] for it in train_items]
         else:
-            rows = []
-            for u, it in zip(train_users, train_items):
-                x = [umap[u], imap[it]]
-                if user_features and u in user_features:
-                    for ft in self.user_feature_types:
-                        x.append(self.feature_map[f"user_{ft}"].get(user_features[u].get(ft), 0)
-                                 if ft in user_features[u] else 0)
-                if item_features and it in item_features:
-                    for ft in self.item_feature_types:
-                        x.append(self.feature_map[f"item_{ft}"].get(item_features[it].get(ft), 0)
-                                 if ft in item_features[it] else 0)
-                rows.append(x)
-            X = np.asarray(rows, dtype=np.int64)
+            X = np.asarray([self._prediction_features(u, it)
+                            for u, it in zip(train_users, train_items)], dtype=np.int64)
 
         # Move the whole dataset to the device ONCE and slice manually, rather
         # than streaming via a DataLoader that copies every batch host->device
@@ -338,8 +330,6 @@ class DeepFM(BaseRecommender):
             )
 
         self.is_fitted = True
-        self.user_features = user_features
-        self.item_features = item_features
         self._user_item_interactions = {}
         for user, item in zip(user_ids, item_ids):
             self._user_item_interactions.setdefault(user, set()).add(item)
@@ -452,58 +442,9 @@ class DeepFM(BaseRecommender):
 
         all_items = list(self.feature_map["item"].keys())
 
-        # Generate predictions for all items
-        user_idx = self.feature_map["user"][user_id]
-        predictions = []
-
-        # Process in batches for efficiency
-        batch_size = 1024
-        for i in range(0, len(all_items), batch_size):
-            batch_items = all_items[i : i + batch_size]
-            batch_X = []
-            scored_items = []
-
-            for item in batch_items:
-                if item in seen_items:
-                    continue
-
-                # Create feature vector
-                x = [user_idx, self.feature_map["item"][item]]
-
-                # Add user features
-                if self.user_features and user_id in self.user_features:
-                    for feature_type in self.user_feature_types:
-                        if feature_type in self.user_features[user_id]:
-                            value = self.user_features[user_id][feature_type]
-                            x.append(self.feature_map[f"user_{feature_type}"].get(value, 0))
-                        else:
-                            x.append(0)
-
-                # Add item features
-                if self.item_features and item in self.item_features:
-                    for feature_type in self.item_feature_types:
-                        if feature_type in self.item_features[item]:
-                            value = self.item_features[item][feature_type]
-                            x.append(self.feature_map[f"item_{feature_type}"].get(value, 0))
-                        else:
-                            x.append(0)
-
-                batch_X.append(x)
-                scored_items.append(item)
-
-            if not batch_X:
-                continue
-
-            # Convert to tensor
-            batch_X = torch.LongTensor(batch_X).to(self.device)
-
-            # Get predictions
-            self.model.eval()
-            with torch.no_grad():
-                batch_preds = self.model(batch_X).cpu().detach().tolist()
-
-            # Add to predictions
-            predictions.extend((item, float(score)) for item, score in zip(scored_items, batch_preds))
+        candidates = [item for item in all_items if item not in seen_items]
+        scores = self.batch_predict((user_id, item) for item in candidates)
+        predictions = list(zip(candidates, scores))
 
         # Sort predictions and get top-N
         predictions.sort(key=lambda x: x[1], reverse=True)
