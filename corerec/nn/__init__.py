@@ -13,12 +13,12 @@ See corerec.nn.recommender for the contract and corerec.nn.models for templates.
 from corerec.nn.layers import (CrossLayer, FMInteraction, HSTUBlock, MLP, SASRecBlock,
                                causal_mask)
 from corerec.nn.losses import bce_loss, bpr_loss, sampled_softmax_loss
-from corerec.nn.models import MatrixFactorization, SequentialTransformer
+from corerec.nn.models import HSTUTransformer, MatrixFactorization, SequentialTransformer
 from corerec.nn.recommender import Recommender
 
 __all__ = [
     "Recommender",
-    "MatrixFactorization", "SequentialTransformer",
+    "MatrixFactorization", "SequentialTransformer", "HSTUTransformer",
     "HSTUBlock", "SASRecBlock", "CrossLayer", "FMInteraction", "MLP", "causal_mask",
     "bpr_loss", "bce_loss", "sampled_softmax_loss",
 ]
