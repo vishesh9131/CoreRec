@@ -94,8 +94,9 @@ def _seed_data(seed=7, n_users=40, n_items=70, n=400):
     ("TwoTower", {"embedding_dim": 16, "epochs": 3, "verbose": False}),
     ("DCN", {"embedding_dim": 8, "epochs": 2}),
     ("DeepFM", {"embedding_dim": 8, "hidden_layers": [16], "epochs": 2}),
+    # GPU index-gradient kernels use atomic adds; check exact parity on CPU.
     ("SASRec", {"hidden_units": 16, "num_blocks": 1, "epochs": 2, "batch_size": 32,
-                "max_seq_length": 20, "verbose": False}),
+                "max_seq_length": 20, "verbose": False, "device": "cpu"}),
 ])
 def test_torch_models_are_reproducible_across_runs(cls_name, kwargs):
     """TwoTower and SASRec shuffled and sampled negatives from the unseeded global
