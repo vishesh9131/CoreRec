@@ -11,6 +11,7 @@ spec.loader.exec_module(bot)
 
 def test_labels_follow_paths():
     assert bot.labels_for(["corerec/engines/sar.py", "docs/x.md", "README.md"]) == ["documentation", "engines"]
+    assert bot.labels_for(["corerec/api/ids.py"]) == ["api"]
 
 
 def test_code_without_test_or_changelog_blocks_approval():
@@ -43,12 +44,15 @@ class FakeGH:
         self.pr, self.reviews, self.comments, self.writes = pr, list(reviews), list(comments), []
 
     def call(self, method, path, data=None):
+        if method == "GET" and path == f"/pulls/{self.pr['number']}":
+            return self.pr
         self.writes.append((method, path, data))
         return {}
 
     def paged(self, path):
         if path.startswith("/pulls?state=open"):
-            return [self.pr]
+            # like GitHub's list endpoint: no additions/deletions
+            return [{k: v for k, v in self.pr.items() if k not in ("additions", "deletions")}]
         if path.endswith("/files"):
             return [{"filename": f} for f in ("corerec/engines/sar.py", "tests/test_sar.py", "CHANGELOG.md")]
         if path.endswith("/reviews"):
