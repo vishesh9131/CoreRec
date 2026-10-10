@@ -5,10 +5,42 @@ Supports multiple backends: FAISS, Annoy, simple numpy.
 Essential for retrieval stage in production recsys.
 """
 
+import json
 import numpy as np
 from typing import List, Tuple, Optional, Any
 from abc import ABC, abstractmethod
 import logging
+
+
+def _save_npz(path: str, ids, **fields) -> None:
+    """np.savez without pickle: ids numpy can't store natively go in as JSON."""
+    ids = np.asarray(ids)
+    if ids.dtype == object:
+        fields["ids_json"] = np.array(json.dumps([i.item() if hasattr(i, "item") else i
+                                                  for i in ids.tolist()]))
+    else:
+        fields["ids"] = ids
+    np.savez(path, **fields)
+
+
+def _load_npz(path: str, allow_pickle: bool = False):
+    """(fields, ids) from an index file, never unpickling unless trusted.
+
+    Files written before ids were stored as JSON hold an object array, which
+    np.load can only read by unpickling -- that can run arbitrary code, so it
+    needs allow_pickle=True like every other legacy loader in CoreRec.
+    """
+    data = np.load(path, allow_pickle=False)
+    fields = {k: data[k] for k in data.files if k not in ("ids", "ids_json")}
+    if "ids_json" in data.files:
+        return fields, np.array(json.loads(str(data["ids_json"])), dtype=object)
+    try:
+        return fields, data["ids"]
+    except ValueError:  # object array: only readable through pickle
+        from corerec.api.model_bundle import require_legacy_pickle
+
+        require_legacy_pickle(path, allow_pickle)
+        return fields, np.load(path, allow_pickle=True)["ids"]
 
 
 class VectorIndex(ABC):
@@ -39,8 +71,8 @@ class VectorIndex(ABC):
         pass
     
     @abstractmethod
-    def load(self, path: str):
-        """Load index from disk."""
+    def load(self, path: str, *, allow_pickle: bool = False):
+        """Load index from disk. allow_pickle=True only for trusted legacy files."""
         pass
 
 
@@ -111,15 +143,13 @@ class NumpyIndex(VectorIndex):
     
     def save(self, path: str):
         """Save to npz file."""
-        np.savez(path, vectors=self.vectors, ids=self.ids, 
-                 dim=self.dim, metric=self.metric)
+        _save_npz(path, self.ids, vectors=self.vectors, dim=self.dim, metric=self.metric)
         self.log.info(f"Saved index to {path}")
     
-    def load(self, path: str):
+    def load(self, path: str, *, allow_pickle: bool = False):
         """Load from npz file."""
-        data = np.load(path, allow_pickle=True)
+        data, self.ids = _load_npz(path, allow_pickle)
         self.vectors = data['vectors']
-        self.ids = data['ids']
         self.dim = int(data['dim'])
         self.metric = str(data['metric'])
         self.log.info(f"Loaded index from {path}")
@@ -219,15 +249,15 @@ class FAISSIndex(VectorIndex):
     def save(self, path: str):
         """Save FAISS index."""
         self.faiss.write_index(self.index, path)
-        np.savez(path + "_meta.npz", ids=self.ids, dim=self.dim, 
-                 metric=self.metric, index_type=self.index_type)
+        _save_npz(path + "_meta.npz", self.ids, dim=self.dim,
+                  metric=self.metric, index_type=self.index_type)
         self.log.info(f"Saved FAISS index to {path}")
     
-    def load(self, path: str):
+    def load(self, path: str, *, allow_pickle: bool = False):
         """Load FAISS index."""
+        meta, ids = _load_npz(path + "_meta.npz", allow_pickle)
         self.index = self.faiss.read_index(path)
-        meta = np.load(path + "_meta.npz", allow_pickle=True)
-        self.ids = meta['ids']
+        self.ids = ids
         self.dim = int(meta['dim'])
         self.metric = str(meta['metric'])
         self.index_type = str(meta['index_type'])
@@ -311,13 +341,13 @@ class AnnoyIndex(VectorIndex):
             raise ValueError("Must build index before saving")
         
         self.index.save(path)
-        np.savez(path + "_meta.npz", ids=self.ids, dim=self.dim, metric=self.metric)
+        _save_npz(path + "_meta.npz", self.ids, dim=self.dim, metric=self.metric)
         self.log.info(f"Saved Annoy index to {path}")
     
-    def load(self, path: str):
+    def load(self, path: str, *, allow_pickle: bool = False):
         """Load Annoy index."""
-        meta = np.load(path + "_meta.npz", allow_pickle=True)
-        self.ids = meta['ids'].tolist()
+        meta, ids = _load_npz(path + "_meta.npz", allow_pickle)
+        self.ids = ids.tolist()
         self.dim = int(meta['dim'])
         self.metric = str(meta['metric'])
         
