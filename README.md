@@ -101,8 +101,8 @@ pip install cr_learn          # dataset companion (optional but recommended)
 - PyTorch ≥ 2.0
 - NumPy (1.x or 2.x), pandas, SciPy
 
-The text encoders in `corerec.core.encoders` and `corerec.towers` (used by multimodal
-fusion) depend on Hugging Face `transformers`. None of the 16 models need it. Install
+The text encoders in `corerec.core.encoders` and the untested
+`corerec.experimental.towers` depend on Hugging Face `transformers`. None of the 16 models need it. Install
 the extra to use the encoders:
 
 ```bash

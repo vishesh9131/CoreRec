@@ -15,7 +15,7 @@ class WandBTracker:
     Weights & Biases integration for experiment tracking.
 
     Example:
-        from corerec.integrations import WandBTracker
+        from corerec.experimental.integrations import WandBTracker
 
         tracker = WandBTracker(project="corerec-experiments")
         tracker.init(config={'embedding_dim': 64})

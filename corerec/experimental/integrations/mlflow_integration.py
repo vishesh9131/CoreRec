@@ -17,7 +17,7 @@ class MLflowTracker:
     Tracks parameters, metrics, and models with MLflow.
 
     Example:
-        from corerec.integrations import MLflowTracker
+        from corerec.experimental.integrations import MLflowTracker
 
         tracker = MLflowTracker(experiment_name="ncf_experiments")
 

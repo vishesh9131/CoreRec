@@ -10,7 +10,7 @@ from typing import Dict, List, Tuple, Any, Union, Optional
 import logging
 import numpy as np
 
-from corerec.towers.base_tower import AbstractTower
+from corerec.experimental.towers.base_tower import AbstractTower
 
 
 class MLPTower(AbstractTower):
