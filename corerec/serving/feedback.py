@@ -37,6 +37,12 @@ class FeedbackLog:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
+        # joined impressions, built incrementally: /metrics only parses the
+        # bytes appended since the last call instead of the whole file
+        self._read_lock = threading.Lock()
+        self._offset = 0
+        self._imps: Dict[str, Dict[str, Any]] = {}
+        self._orphans: Dict[str, List[str]] = defaultdict(list)  # clicks seen before their impression
 
     # -- writing -------------------------------------------------------- #
     def _write(self, record: Dict[str, Any]) -> None:
@@ -65,26 +71,58 @@ class FeedbackLog:
             return [json.loads(line) for line in f if line.strip()]
 
     @staticmethod
-    def _join(records):
-        """Impressions keyed by request_id, each with the set of items clicked from it."""
-        imps = {r["request_id"]: dict(r, clicked=set()) for r in records if r["type"] == "impression"}
-        for r in records:
-            if r["type"] == "feedback" and r.get("request_id") in imps:
-                imps[r["request_id"]]["clicked"].add(json.dumps(r["item_id"], default=str))
-        return list(imps.values())
+    def _click(imp, key):
+        if key not in imp["clicked"]:
+            imp["clicked"].add(key)
+            imp["hits"].update(k for k, i in enumerate(imp["keys"]) if i == key)
+
+    def _ingest(self, r):
+        if r["type"] == "impression":
+            imp = dict(r, clicked=set(), hits=set(),
+                       keys=[json.dumps(i, default=str) for i in r["items"]])
+            self._imps[r["request_id"]] = imp
+            for key in self._orphans.pop(r["request_id"], ()):
+                self._click(imp, key)
+        elif r["type"] == "feedback" and r.get("request_id") is not None:
+            key = json.dumps(r["item_id"], default=str)
+            imp = self._imps.get(r["request_id"])
+            if imp is None:
+                self._orphans[r["request_id"]].append(key)
+            else:
+                self._click(imp, key)
+
+    def _joined(self) -> List[Dict[str, Any]]:
+        """Impressions in log order, each with the items clicked from it.
+
+        Reads only what was appended since the last call; a file that shrank
+        (rotated or rewritten) is read again from the start.
+        """
+        with self._read_lock:
+            size = self.path.stat().st_size if self.path.exists() else 0
+            if size < self._offset:
+                self._offset, self._imps, self._orphans = 0, {}, defaultdict(list)
+            if size > self._offset:
+                with open(self.path, "rb") as f:
+                    f.seek(self._offset)
+                    chunk = f.read(size - self._offset)
+                end = chunk.rfind(b"\n") + 1  # leave a half-written last line for next time
+                for line in chunk[:end].splitlines():
+                    if line.strip():
+                        self._ingest(json.loads(line))
+                self._offset += end
+            return list(self._imps.values())
 
     @staticmethod
     def _summary(imps) -> Dict[str, Any]:
         shown = clicks = requests_clicked = fallback = 0
         rr, distinct = [], set()
         for imp in imps:
-            items = [json.dumps(i, default=str) for i in imp["items"]]
-            shown += len(items)
-            distinct.update(items)
-            hit = [k for k, i in enumerate(items) if i in imp["clicked"]]
+            shown += len(imp["keys"])
+            distinct.update(imp["keys"])
+            hit = imp["hits"]
             clicks += len(hit)
             requests_clicked += bool(hit)
-            rr.append(1.0 / (hit[0] + 1) if hit else 0.0)
+            rr.append(1.0 / (min(hit) + 1) if hit else 0.0)
             fallback += imp.get("source") == "fallback"
         n = len(imps)
         return {
@@ -105,7 +143,7 @@ class FeedbackLog:
         first clicked item per request (0 if none). Feedback without a
         request_id is kept for retraining but can't be attributed here.
         """
-        imps = [i for i in self._join(self.records()) if since is None or i["ts"] >= since]
+        imps = [i for i in self._joined() if since is None or i["ts"] >= since]
         by_variant = defaultdict(list)
         for imp in imps:
             by_variant[imp.get("variant", "default")].append(imp)
@@ -137,7 +175,7 @@ class FeedbackLog:
         (absolute), or the distribution of clicked items moved by more than
         ``shift`` (total variation distance, 0 = same, 1 = disjoint).
         """
-        imps = sorted(self._join(self.records()), key=lambda i: i["ts"])
+        imps = sorted(self._joined(), key=lambda i: i["ts"])
         if len(imps) < 2 * recent:
             return {"alerts": [], "note": f"need {2 * recent} requests, have {len(imps)}"}
         base, now = self._summary(imps[:-recent]), self._summary(imps[-recent:])
