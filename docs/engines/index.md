@@ -1,6 +1,13 @@
 # Engines Overview
 
-CoreRec provides three main recommendation engines, each containing state-of-the-art algorithms for different recommendation scenarios.
+CoreRec provides three main recommendation engines, each containing state-of-the-art algorithms for different recommendation scenarios. In 0.7 every model is registered in `corerec.engines` and shares one API (`fit`, `recommend`, `predict`, `save`/`load`):
+
+```python
+import corerec.engines as engines
+
+for family, models in engines.get_engine_info().items():
+    print(family, sorted(models))   # e.g. classic ['ALS', 'EASE', ...]
+```
 
 ## Engine Architecture
 
@@ -10,27 +17,17 @@ graph TB
     A --> C[Content Filter Engine]
     A --> D[Deep Learning Models]
     
-    B --> B1[Matrix Factorization]
-    B --> B2[Neural Networks]
-    B --> B3[Graph-Based]
-    B --> B4[Attention Mechanisms]
-    B --> B5[Bayesian Methods]
-    B --> B6[Sequential Models]
-    B --> B7[Variational Encoders]
+    B --> B1[Matrix Factorization: ALS, Item2Vec]
+    B --> B2[Neighbourhood: ItemKNN, UserKNN, EASE, SLIM, SAR]
+    B --> B3[Graph-Based: LightGCN]
+    B --> B7[Variational Encoders: MultVAE, MultiDAE]
     
-    C --> C1[Traditional ML]
-    C --> C2[Neural Networks]
-    C --> C3[Graph-Based]
-    C --> C4[Embedding Learning]
-    C --> C5[Hybrid & Ensemble]
-    C --> C6[Fairness & Explainability]
-    C --> C7[Learning Paradigms]
+    C --> C1[Text: TFIDFRecommender]
     
     D --> D1[DCN]
     D --> D2[DeepFM]
-    D --> D3[GNNRec]
-    D --> D4[MIND]
-    D --> D5[NASRec]
+    D --> D3[TwoTower]
+    D --> D4[HSTU]
     D --> D6[SASRec]
 ```
 
@@ -38,9 +35,24 @@ graph TB
 
 | Engine | Best For | Algorithms | Data Required |
 |--------|----------|------------|---------------|
-| **Unionized Filter** | User-item interactions | 50+ algorithms | Interaction matrix |
-| **Content Filter** | Feature-rich data | 40+ algorithms | Item/user features |
-| **Deep Learning** | Large-scale data | 6 SOTA models | Interaction + features |
+| **Unionized Filter** | User-item interactions | 10 models | Interaction log |
+| **Content Filter** | Item text | 1 model (TF-IDF) | Item descriptions |
+| **Deep Learning** | Large-scale data | 5 models | Interactions (+ optional features) |
+
+The 0.6 sandbox (about 50 more experimental models) was removed in 0.7.0.
+To try an architecture that isn't here, write it as a PyTorch module and wrap
+it in `corerec.nn.Recommender`.
+
+All examples on this page use this toy data:
+
+```python
+import numpy as np
+
+rng = np.random.default_rng(0)
+user_ids = rng.integers(0, 200, 5000).tolist()
+item_ids = rng.integers(0, 500, 5000).tolist()
+ratings = [1.0] * len(user_ids)
+```
 
 ## 1. Unionized Filter Engine
 
@@ -57,41 +69,38 @@ Decompose user-item matrix into latent factors:
 - **Item2Vec** (skip-gram embeddings over interaction sequences)
 
 ```python
-from corerec.engines.unionizedFilterEngine.mf_base.SVD_base import SVD
+from corerec.engines import ALS
 
-model = SVD(n_factors=50, n_epochs=20)
+model = ALS(factors=50, iterations=20)
 model.fit(user_ids, item_ids, ratings)
-recs = model.recommend(user_id=123, top_k=10)
+recs = model.recommend(user_id=user_ids[0], top_k=10)
 ```
 
 #### Neural Network Based
 Deep learning for collaborative filtering:
 
-- **NCF** (Neural Collaborative Filtering)
-- **DeepFM** (Deep Factorization Machines)
-- **AutoInt** (Automatic Feature Interaction)
-- **DCN** (Deep & Cross Network)
-- **AFM** (Attentional Factorization Machines)
-- **DIN** (Deep Interest Network)
-- **DIEN** (Deep Interest Evolution Network)
+- **DeepFM**, **DCN**, **TwoTower**: see [Deep Learning Models](#3-deep-learning-models)
+
+NCF, AutoInt, AFM, DIN and DIEN were removed in 0.7.0. For a quick strong
+baseline without a network, use the neighbourhood models:
 
 ```python
-from corerec.engines.unionizedFilterEngine.nn_base.NCF_base import NCF
+from corerec.engines import EASE
 
-model = NCF(embedding_dim=64, layers=[128, 64, 32])
+model = EASE(reg=250.0)
 model.fit(user_ids, item_ids, ratings)
+recs = model.recommend(user_id=user_ids[0], top_k=10)
 ```
 
 #### Graph-Based
 Leverage graph structure for recommendations:
 
 - **LightGCN** (Light Graph Convolutional Network)
-- **GNN** (Graph Neural Networks)
 
 ```python
-from corerec.engines.unionizedFilterEngine.graph_based_base.lightgcn import LightGCN
+from corerec.engines import LightGCN
 
-model = LightGCN(embedding_dim=64, num_layers=3)
+model = LightGCN(n_factors=64, n_layers=3, epochs=20)
 model.fit(user_ids, item_ids, ratings)
 ```
 
@@ -99,29 +108,44 @@ model.fit(user_ids, item_ids, ratings)
 Attention-based recommendations:
 
 - **SASRec** (Self-Attentive Sequential Recommendation)
-- **Transformer** (Transformer-based recommenders)
+- **HSTU** (generative next-item transducer)
 
 ```python
-from corerec.engines.unionizedFilterEngine.attention_mechanism_base.sasrec import SASRec
+from corerec.engines import SASRec
 
-model = SASRec(hidden_units=64, num_blocks=2, num_heads=4)
-model.fit(user_ids, item_ids, timestamps)
+model = SASRec(hidden_units=64, num_blocks=2, num_heads=1, epochs=2, verbose=False)
+model.fit(user_ids, item_ids, ratings)   # events in time order
 ```
 
 #### Bayesian Methods
 Probabilistic approaches:
 
-- **Bayesian MF** (Bayesian Matrix Factorization)
+- **MultVAE** (multinomial variational autoencoder)
+
+Bayesian MF was removed in 0.7.0.
 
 #### Sequential Models
 Time-aware recommendations:
 
-- **Caser** (Convolutional Sequence Embedding)
+- **SASRec**, **HSTU** (above)
+- **SAR** with time decay (`timedecay_formula=True`)
+
+Caser was removed in 0.7.0.
 
 #### Variational Encoders
 Generative models:
 
+- **MultVAE**, **MultiDAE**
 
+```python
+from corerec.engines import MultVAE
+
+model = MultVAE(hidden_dim=128, latent_dim=32, epochs=10)
+model.fit(user_ids, item_ids)
+recs = model.recommend(user_id=user_ids[0], top_k=10)
+```
+
+[**→ Collaborative models in detail**](collaborative/index.md)
 
 ---
 
@@ -137,75 +161,53 @@ The Content Filter Engine focuses on item and user features for recommendations.
 Classical machine learning algorithms:
 
 - **TF-IDF** (Term Frequency-Inverse Document Frequency)
-- **Decision Trees**
-- **Logistic Regression**
-- **Vowpal Wabbit**
 
 ```python
-from corerec.engines.contentFilterEngine.tfidf_recommender import TFIDFRecommender
+from corerec.engines import TFIDFRecommender
 
-model = TFIDFRecommender(feature_column='description')
-model.fit(items_df)
-similar = model.recommend_similar(item_id=123, top_k=10)
+items = [1, 2, 3, 4]
+docs = {1: "red running shoes", 2: "blue running shoes",
+        3: "wireless earbuds", 4: "noise cancelling headphones"}
+
+model = TFIDFRecommender()
+model.fit(items, docs)
+similar = model.recommend_by_text("running shoes", top_k=2)   # [1, 2] or [2, 1]
 ```
+
+Decision trees, logistic regression and Vowpal Wabbit were removed in 0.7.0.
 
 #### Neural Networks
 Deep learning for content-based filtering:
 
-- **DSSM** (Deep Structured Semantic Model)
-- **MIND** (Multi-Interest Network)
-- **YouTube DNN**
-- **CNN**, **RNN**, **Transformers**
-- **Autoencoders**, **VAE**
-
-```python
-from corerec.engines.contentFilterEngine.nn_based_algorithms.DSSM import DSSM
-
-model = DSSM(embedding_dim=128, hidden_layers=[256, 128])
-model.fit(user_features, item_features, interactions)
-```
+DSSM, MIND, YouTube DNN and the CNN/RNN/autoencoder content models were
+removed in 0.7.0. `TwoTower` covers the same retrieval setup and takes user
+and item feature matrices (`fit(..., user_features=, item_features=)`).
 
 #### Graph-Based
-Graph neural networks for content:
-
-- **GNN** (Graph Neural Networks)
-- **Semantic Models**
-- **Graph Filtering**
+Graph neural networks for content: removed in 0.7.0.
 
 #### Embedding Learning
 Learn feature embeddings:
 
-- **Word2Vec**
-- **Personalized Embeddings**
+- **Item2Vec** learns item embeddings from interaction sequences (Word2Vec was removed in 0.7.0)
 
 ```python
-from corerec.engines.contentFilterEngine.embedding_representation_learning.word2vec import Word2VecRecommender
+from corerec.engines import Item2Vec
 
-model = Word2VecRecommender(vector_size=100)
-model.fit(item_descriptions)
+model = Item2Vec(factors=32, iterations=5)
+model.fit(user_ids, item_ids)
+recs = model.recommend(user_id=user_ids[0], top_k=10)
 ```
 
 #### Hybrid & Ensemble
-Combine multiple models:
-
-- **Attention Mechanisms**
-- **Ensemble Methods**
-- **Hybrid Collaborative-Content**
+Combine multiple models: build a retrieval + ranking pipeline with
+`corerec.pipelines` (see the pipeline tutorial).
 
 #### Fairness & Explainability
-Responsible AI for recommendations:
-
-- **Fair Ranking**
-- **Explainable Recommendations**
-- **Privacy-Preserving Methods**
+Responsible AI for recommendations: removed in 0.7.0.
 
 #### Learning Paradigms
-Advanced learning techniques:
-
-- **Transfer Learning**
-- **Meta Learning**
-- **Few-shot Learning**
-- **Zero-shot Learning**
+Advanced learning techniques (transfer, meta, few- and zero-shot): removed in 0.7.0.
 
 
 ---
@@ -222,13 +224,13 @@ Production-ready implementations of cutting-edge deep learning models.
 Automatic feature crossing with deep networks:
 
 ```python
-from corerec.engines.dcn import DCN
+from corerec.engines import DCN
 
 model = DCN(
-    embedding_dim=64,
+    embedding_dim=16,
     num_cross_layers=3,
-    deep_layers=[128, 64, 32],
-    epochs=20
+    deep_layers=[64, 32],
+    epochs=2
 )
 model.fit(user_ids, item_ids, ratings)
 ```
@@ -238,78 +240,60 @@ model.fit(user_ids, item_ids, ratings)
 Combines factorization machines with deep learning:
 
 ```python
-from corerec.engines.deepfm import DeepFM
+from corerec.engines import DeepFM
 
 model = DeepFM(
-    embedding_dim=64,
-    hidden_layers=[128, 64, 32],
-    epochs=20
+    embedding_dim=16,
+    hidden_layers=[64, 32],
+    epochs=2
 )
 model.fit(user_ids, item_ids, ratings)
 ```
 
 
 #### GNNRec (Graph Neural Network Recommender)
-Graph neural networks for recommendations:
-
-```python
-from corerec.engines.gnnrec import GNNRec
-
-model = GNNRec(
-    embedding_dim=64,
-    num_gnn_layers=3,
-    epochs=20
-)
-model.fit(user_ids, item_ids, ratings)
-```
+Removed in 0.7.0: it didn't finish training on MovieLens-100K within an hour
+on one core. Use `LightGCN` (above).
 
 
 #### MIND (Multi-Interest Network)
-Capture diverse user interests:
-
-```python
-from corerec.engines.mind import MIND
-
-model = MIND(
-    embedding_dim=64,
-    num_interests=4,
-    epochs=20
-)
-model.fit(user_ids, item_ids, timestamps)
-```
+Removed in 0.7.0. For sequence-aware retrieval use `SASRec` or `HSTU`.
 
 
 #### NASRec (Neural Architecture Search)
-Automatically discover optimal architectures:
-
-```python
-from corerec.engines.nasrec import NASRec
-
-model = NASRec(
-    embedding_dim=64,
-    hidden_dims=[128, 64],
-    epochs=20
-)
-model.fit(user_ids, item_ids, ratings)
-```
+Removed in 0.7.0.
 
 
 #### SASRec (Self-Attentive Sequential)
 Self-attention for sequential recommendations:
 
 ```python
-from corerec.engines.sasrec import SASRec
+from corerec.engines import SASRec
 
 model = SASRec(
     hidden_units=64,
     num_blocks=2,
-    num_heads=4,
-    epochs=20
+    num_heads=1,
+    epochs=2,
+    verbose=False
 )
-model.fit(interaction_matrix, user_ids, item_ids)
+model.fit(user_ids, item_ids, ratings)
 ```
 
 [**→ SASRec Documentation**](deep-learning/sasrec.md)
+
+#### TwoTower and HSTU
+Dual-encoder retrieval, and Meta's generative sequential model:
+
+```python
+from corerec.engines import HSTU, TwoTower
+
+retriever = TwoTower(embedding_dim=32, epochs=2, verbose=False)
+retriever.fit(user_ids, item_ids, ratings)
+
+hstu = HSTU(embedding_dim=32, epochs=1)
+hstu.fit(user_ids, item_ids)
+```
 
 ---
 
@@ -320,7 +304,7 @@ model.fit(interaction_matrix, user_ids, item_ids)
 ```mermaid
 graph TD
     A[What data do you have?] --> B{Interactions only}
-    A --> C{Rich features}
+    A --> C{Item text}
     A --> D{Large-scale + Both}
     
     B --> E[Unionized Filter Engine]
@@ -328,45 +312,46 @@ graph TD
     D --> G[Deep Learning Models]
     
     E --> E1{Data size?}
-    E1 --> E2[Small: Matrix Factorization]
-    E1 --> E3[Medium: Neural Networks]
-    E1 --> E4[Large: Graph-Based]
+    E1 --> E2[Small: ALS, EASE, ItemKNN]
+    E1 --> E3[Medium: LightGCN, MultVAE]
+    E1 --> E4[Large: ALS, ItemKNN, TwoTower]
     
     F --> F1{Feature type?}
-    F1 --> F2[Text: TF-IDF, Word2Vec]
-    F1 --> F3[Mixed: Neural Networks]
-    F1 --> F4[Graph: GNN]
+    F1 --> F2[Text: TF-IDF]
+    F1 --> F3[Mixed: TwoTower with features]
     
     G --> G1{Task?}
-    G1 --> G2[General: DCN, DeepFM]
-    G1 --> G3[Sequential: SASRec, MIND]
-    G1 --> G4[Graph: GNNRec]
+    G1 --> G2[Ranking: DCN, DeepFM]
+    G1 --> G3[Sequential: SASRec, HSTU]
+    G1 --> G4[Retrieval: TwoTower]
 ```
 
 ### Use Case Matrix
 
 | Use Case | Recommended Engine | Best Model |
 |----------|-------------------|------------|
-| Movie Recommendations | Unionized Filter | NCF, SASRec |
+| Movie Recommendations | Unionized Filter | EASE, SASRec |
 | Product Recommendations | Deep Learning | DeepFM, DCN |
-| News Articles | Content Filter | TF-IDF, DSSM |
-| Music Playlists | Unionized Filter | MIND, SASRec |
-| Social Network | Unionized Filter | LightGCN, GNN |
-| E-commerce | Deep Learning | DeepFM, DCN |
-| Video Recommendations | Deep Learning | MIND, SASRec |
-| Books | Content Filter | TF-IDF, Word2Vec |
+| News Articles | Content Filter | TF-IDF |
+| Music Playlists | Deep Learning | SASRec, HSTU |
+| Social Network | Unionized Filter | LightGCN |
+| E-commerce | Deep Learning | TwoTower + DeepFM (retrieve, then rank) |
+| Video Recommendations | Deep Learning | SASRec, HSTU |
+| Books | Content Filter | TF-IDF |
 
 ## Performance Comparison
 
-| Model | Training Speed | Inference Speed | Accuracy | Scalability |
-|-------|---------------|-----------------|----------|-------------|
-| SVD | ⚡⚡⚡ | ⚡⚡⚡ | ⭐⭐⭐ | ⭐⭐⭐ |
-| NCF | ⚡⚡ | ⚡⚡ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| LightGCN | ⚡⚡ | ⚡⚡⚡ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| DCN | ⚡⚡ | ⚡⚡ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| DeepFM | ⚡⚡ | ⚡⚡ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| MIND | ⚡ | ⚡⚡ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| SASRec | ⚡ | ⚡⚡ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| Model | Training Speed | Inference Speed | Scalability |
+|-------|---------------|-----------------|-------------|
+| ALS | fast | fast | high |
+| EASE / ItemKNN | fast | fast | high (EASE: dense items x items) |
+| LightGCN | medium | fast | medium |
+| DCN | medium | medium | high |
+| DeepFM | medium | medium | high |
+| TwoTower | medium | fast (embedding lookup) | high |
+| SASRec / HSTU | slow | medium | medium |
+
+Measured accuracy and timings on MovieLens are in `BENCHMARKS.md`.
 
 ## Next Steps
 
@@ -374,5 +359,3 @@ graph TD
   - [Deep Learning Models](deep-learning/index.md)
 - Check out [Examples](../examples/index.md) for usage patterns
 - See [Core Components](../core/index.md) for building blocks
-
-

@@ -43,12 +43,12 @@ recs = model.recommend(user_id=1, top_k=10)
 
 | Model | Import | Tutorial |
 |-------|--------|----------|
-| RBM | `corerec.sandbox.collaborative_full.rbm` | [RBM](../tutorials/rbm_tutorial.md) |
-| RLRMC | sandbox sequential | [RLRMC](../tutorials/rlrmc_tutorial.md) |
-| SLi-Rec | `corerec.sandbox.collaborative_full.sli` | [SLiRec](../tutorials/slirec_tutorial.md) |
-| SUM | `corerec.sandbox.collaborative_full.sum` | [SUM](../tutorials/sum_tutorial.md) |
-| NextItNet | sandbox sequential_model_base | [NextItNet](../tutorials/nextitnet_tutorial.md) |
-| Caser | sandbox nn_base | [Caser](../tutorials/caser_tutorial.md) |
+| RBM | `corerec.sandbox.collaborative_full.rbm` | [RBM](../tutorials/removed_models.md) |
+| RLRMC | sandbox sequential | [RLRMC](../tutorials/removed_models.md) |
+| SLi-Rec | `corerec.sandbox.collaborative_full.sli` | [SLiRec](../tutorials/removed_models.md) |
+| SUM | `corerec.sandbox.collaborative_full.sum` | [SUM](../tutorials/removed_models.md) |
+| NextItNet | sandbox sequential_model_base | [NextItNet](../tutorials/removed_models.md) |
+| Caser | sandbox nn_base | [Caser](../tutorials/removed_models.md) |
 
 ## When to use
 

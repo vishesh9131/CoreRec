@@ -159,15 +159,19 @@ def save_bundle(
             import torch
             tensors, descriptions = {}, {}
             for index, (name, tensor) in enumerate(state_dict.items()):
-                if not isinstance(tensor, torch.Tensor) or tensor.layout != torch.strided:
-                    raise SaveLoadError("Safe weights must be dense tensors")
+                if (not isinstance(tensor, torch.Tensor) or tensor.layout != torch.strided
+                        or tensor.dtype not in (torch.bool, torch.uint8, torch.int8, torch.int16,
+                                                torch.int32, torch.int64, torch.float16,
+                                                torch.bfloat16, torch.float32, torch.float64,
+                                                torch.complex64, torch.complex128)):
+                    raise SaveLoadError("Safe weights must be dense tensors with a supported dtype")
                 key = f"tensor_{index}"
                 tensors[key] = tensor.detach().cpu().contiguous().reshape(-1).view(torch.uint8).numpy()
                 descriptions[name] = {"array": key, "dtype": str(tensor.dtype).removeprefix("torch."),
                                       "shape": list(tensor.shape)}
             weights_path = base.with_name(f"{base.name}.{generation}.weights.npz")
             written.append(weights_path)
-            with weights_path.open("wb") as f:
+            with _atomic_file(weights_path) as f:
                 np.savez_compressed(f, **tensors)
                 f.flush()
                 os.fsync(f.fileno())
@@ -180,7 +184,7 @@ def save_bundle(
                 raise SaveLoadError("Safe bundle arrays cannot contain Python objects")
             npz_path = base.with_name(f"{base.name}.{generation}.arrays.npz")
             written.append(npz_path)
-            with npz_path.open("wb") as f:
+            with _atomic_file(npz_path) as f:
                 np.savez_compressed(f, **arrays)
                 f.flush()
                 os.fsync(f.fileno())
@@ -242,6 +246,8 @@ def _load_bundle_components(base: Path, meta: Dict[str, Any], map_location: Any,
 
         weights_path = _bundle_component(base, weights_name)
         if "tensor_state" in meta:
+            if map_location is not None and not isinstance(map_location, (str, torch.device)):
+                raise SaveLoadError("Numeric tensor bundles require a device map_location")
             import numpy as np
             dtypes = {str(dtype).removeprefix("torch."): dtype for dtype in (
                 torch.bool, torch.uint8, torch.int8, torch.int16, torch.int32, torch.int64,
@@ -257,7 +263,8 @@ def _load_bundle_components(base: Path, meta: Dict[str, Any], map_location: Any,
                     raw = tensors[description["array"]]
                     if raw.dtype != np.uint8 or raw.ndim != 1:
                         raise SaveLoadError("Tensor storage must be a one-dimensional byte array")
-                    tensor = torch.from_numpy(raw.copy()).view(dtype).reshape(description["shape"])
+                    tensor = (torch.from_numpy(raw.copy()).view(dtype) if raw.size
+                              else torch.empty(0, dtype=dtype)).reshape(description["shape"])
                     if map_location is not None and isinstance(map_location, (str, torch.device)):
                         tensor = tensor.to(map_location)
                     state_dict[name] = tensor
@@ -284,6 +291,50 @@ def _load_bundle_components(base: Path, meta: Dict[str, Any], map_location: Any,
             result["arrays"] = {k: npz[k] for k in npz.files}
 
     return result
+
+
+def pack_arrays(values: Dict[str, Any]):
+    """Split ndarrays and scipy sparse matrices into npz-safe arrays.
+
+    Returns ``(arrays, sparse_names)``: a sparse ``X`` becomes ``X.data``,
+    ``X.indices``, ``X.indptr`` and ``X.shape`` (CSR), so loading needs no pickle.
+    """
+    import numpy as np
+
+    arrays, sparse = {}, []
+    for name, v in values.items():
+        if hasattr(v, "tocsr"):
+            m = v.tocsr()
+            arrays.update({f"{name}.data": m.data, f"{name}.indices": m.indices,
+                           f"{name}.indptr": m.indptr, f"{name}.shape": np.asarray(m.shape)})
+            sparse.append(name)
+        else:
+            arrays[name] = np.asarray(v)
+    return arrays, sparse
+
+
+def unpack_arrays(arrays: Dict[str, Any], sparse_names) -> Dict[str, Any]:
+    """Inverse of pack_arrays."""
+    from scipy.sparse import csr_matrix
+
+    out = {k: v for k, v in arrays.items() if "." not in k}
+    for name in sparse_names:
+        out[name] = csr_matrix((arrays[f"{name}.data"], arrays[f"{name}.indices"],
+                                arrays[f"{name}.indptr"]), shape=tuple(arrays[f"{name}.shape"]))
+    return out
+
+
+def ordered_ids(id_map: Dict[Any, int]) -> list:
+    """Ids of a ``{id: code}`` map in code order, for JSON."""
+    return sorted(id_map, key=id_map.get)
+
+
+def warn_legacy_pickle(path: Union[str, Path]) -> None:
+    import warnings
+
+    warnings.warn(f"{path} is a legacy pickle, which can run code when loaded. Load it only "
+                  "if you trust it, then save() it again to convert it to the safe format.",
+                  DeprecationWarning, stacklevel=3)
 
 
 def save_legacy_pickle(path: Union[str, Path], payload: Any) -> None:

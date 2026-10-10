@@ -45,6 +45,7 @@ class DeepFM(BaseRecommender):
         device: str = "auto",
         task: str = "auto",
         num_negatives: int = 4,
+        seed: Optional[int] = 42,
     ):
         super().__init__(name=name, trainable=trainable, verbose=verbose)
         if task not in ("auto", "implicit", "rating"):
@@ -54,6 +55,9 @@ class DeepFM(BaseRecommender):
         # See DCN for the task contract; 'auto' -> implicit with negative sampling.
         self.task = task
         self.num_negatives = num_negatives
+        # weight init and shuffling used torch's global RNG unseeded, so two fits
+        # on the same data recommended differently. None = unseeded.
+        self.seed = seed
         self._fit_task = None
         self.embedding_dim = embedding_dim
         self.hidden_layers = hidden_layers
@@ -233,7 +237,7 @@ class DeepFM(BaseRecommender):
         else:
             all_items = unique_items
             n_it = len(all_items)
-            rng = np.random.RandomState(42)
+            rng = np.random.RandomState(self.seed)
             train_users, train_items, train_labels = [], [], []
             for _u, _it in zip(user_ids, item_ids):
                 train_users.append(_u); train_items.append(_it); train_labels.append(1.0)
@@ -247,6 +251,8 @@ class DeepFM(BaseRecommender):
                     train_users.append(_u); train_items.append(neg); train_labels.append(0.0)
 
         # Build model
+        if self.seed is not None:
+            torch.manual_seed(self.seed)  # weight init, dropout, shuffling
         self.model = self._build_model(self.field_dims, use_sigmoid=(task != "rating"))
 
         # Define optimizer and loss (BCE for implicit ranking, MSE for rating)
@@ -533,6 +539,7 @@ class DeepFM(BaseRecommender):
             "device": self.device,
             "task": self.task,
             "num_negatives": self.num_negatives,
+            "seed": self.seed,
         }
         state = {
             "field_dims": self.field_dims,
@@ -618,6 +625,7 @@ class DeepFM(BaseRecommender):
             device=cfg.get("device", "cpu"),
             task=cfg.get("task", "auto"),
             num_negatives=cfg.get("num_negatives", 4),
+            seed=cfg.get("seed"),
         )
         instance._fit_task = checkpoint.get("_fit_task", cfg.get("task", "implicit"))
         if instance._fit_task == "auto":

@@ -20,14 +20,19 @@ import scipy.sparse as sp
 from scipy.sparse import csr_matrix
 
 from corerec.api.base_recommender import BaseRecommender
-from corerec.api.model_bundle import (atomic_pickle_dump, is_safe_bundle, load_bundle,
-                                      require_legacy_pickle, save_bundle)
+from corerec.api.interactions import to_interactions
+from corerec.api.id_index import IdIndex
+from corerec.api.model_bundle import (
+    is_safe_bundle, load_bundle, ordered_ids, pack_arrays, save_bundle, unpack_arrays,
+    require_legacy_pickle,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class _ClassicCFBase(BaseRecommender):
     MODEL = "ItemKNN"
+    _uses_interactions_adapter = True
 
     def __init__(self, name: str = None, top_k_neighbors: int = 100,
                  reg: float = 250.0, shrink: float = 0.0, verbose: bool = False,
@@ -40,20 +45,29 @@ class _ClassicCFBase(BaseRecommender):
         self.item_map = {}
 
     # -- contract: fit -------------------------------------------------- #
-    def fit(self, user_ids, item_ids, ratings=None, **kwargs) -> "_ClassicCFBase":
-        (user_ids, item_ids, ratings), _ = self._unpack_fit_args(
-            user_ids, item_ids, ratings if ratings is not None else np.ones(len(user_ids)),
-            supported_modes=("triplet",))
-        u = np.asarray(user_ids); it = np.asarray(item_ids)
-        r = np.asarray(ratings, dtype=float)
-        users = sorted(set(u.tolist())); items = sorted(set(it.tolist()))
-        self.user_map = {x: k for k, x in enumerate(users)}
-        self.item_map = {x: k for k, x in enumerate(items)}
+    def fit(self, user_ids, item_ids=None, ratings=None, **kwargs) -> "_ClassicCFBase":
+        events = (to_interactions(user_ids, **kwargs) if item_ids is None and ratings is None
+                  else to_interactions(user_ids, item_ids, ratings, **kwargs))
+        if not len(events):
+            from corerec.api.exceptions import InvalidDataError
+            raise InvalidDataError("Interactions must not be empty")
+        indexes = []
+        for index in (events.users, events.items):
+            try:
+                ids = sorted(index.ids)
+            except TypeError:
+                ids = index.ids  # mixed ID types retain first-appearance order
+            indexes.append(IdIndex(ids))
+        self.users_index, self.items_index = indexes
+        self.user_map = self.users_index.as_dict()
+        self.item_map = self.items_index.as_dict()
         self.uid_map = self.user_map; self.iid_map = self.item_map
         self.reverse_item_map = {k: x for x, k in self.item_map.items()}
-        self.num_users = len(users); self.num_items = len(items)
-        uidx = np.fromiter((self.user_map[x] for x in u.tolist()), dtype=np.int64)
-        iidx = np.fromiter((self.item_map[x] for x in it.tolist()), dtype=np.int64)
+        self.num_users = len(self.users_index); self.num_items = len(self.items_index)
+        users, items, _ = events.triple()
+        uidx = self.users_index.codes(users)
+        iidx = self.items_index.codes(items)
+        r = events.ratings
         # float32 to match the item-item matrices: a float64 user row against a
         # float32 [I, I] matrix made numpy upcast-copy the whole matrix per call
         self.R = csr_matrix((r, (uidx, iidx)), shape=(self.num_users, self.num_items),
@@ -81,7 +95,9 @@ class _ClassicCFBase(BaseRecommender):
         if not self.is_fitted:
             from corerec.api.exceptions import ModelNotFittedError
             raise ModelNotFittedError()
-        if user_id not in self.user_map:
+        if top_k < 0:
+            raise ValueError("top_k must be non-negative")
+        if top_k == 0 or user_id not in self.user_map:
             return []
         exclude = set(exclude_items or [])
         uidx = self.user_map[user_id]
@@ -89,6 +105,8 @@ class _ClassicCFBase(BaseRecommender):
         scores[self.R[uidx].indices] = -np.inf          # exclude already seen
         out = []
         for idx in np.argsort(-scores):
+            if not np.isfinite(scores[idx]):
+                continue
             iid = self.reverse_item_map[int(idx)]
             if iid in exclude:
                 continue
@@ -98,43 +116,35 @@ class _ClassicCFBase(BaseRecommender):
         return out
 
     # -- contract: persistence ----------------------------------------- #
-    def save(self, path: Union[str, Path], safe: bool = True, **kwargs) -> None:
+    def save(self, path: Union[str, Path], **kwargs) -> None:
         if not self.is_fitted:
             from corerec.api.exceptions import ModelNotFittedError
             raise ModelNotFittedError()
-        params = {"top_k_neighbors": self.top_k_neighbors, "reg": self.reg,
-                  "shrink": self.shrink, "name": self.name,
-                  "verbose": self.verbose, "trainable": self.trainable}
-        for key in ("l1_ratio", "alpha", "max_iter"):
-            if hasattr(self, key):
-                params[key] = getattr(self, key)
-        state = self._state()
-        if safe:
-            from corerec.api.bundle_helpers import pack_sparse_arrays
-            save_bundle(path, model_class=f"{type(self).__module__}.{type(self).__name__}",
-                        config=params, state={"user_map_pairs": list(self.user_map.items()),
-                                              "item_map_pairs": list(self.item_map.items())},
-                        arrays=pack_sparse_arrays({"R": self.R, **state}))
-            return
-        atomic_pickle_dump(path, {"cls": type(self).__name__, "user_map": self.user_map,
-                                 "item_map": self.item_map, "R": self.R,
-                                 "state": state, "params": params})
+        # corerec_safe_v1: a pickle here ran arbitrary code on load (#75)
+        arrays, sparse = pack_arrays({"R": self.R, **self._state()})
+        save_bundle(path, model_class=f"{type(self).__module__}.{type(self).__name__}",
+                    config={"top_k_neighbors": self.top_k_neighbors, "reg": self.reg,
+                            "shrink": self.shrink, "name": self.name},
+                    state={"users": ordered_ids(self.user_map), "items": ordered_ids(self.item_map),
+                           "sparse": sparse},
+                    arrays=arrays)
 
     @classmethod
     def load(cls, path: Union[str, Path], *, allow_pickle: bool = False, **kwargs) -> "_ClassicCFBase":
         if is_safe_bundle(path):
-            from corerec.api.bundle_helpers import unpack_sparse_arrays
-            bundle = load_bundle(path, allow_pickle=allow_pickle)
-            arrays = unpack_sparse_arrays(bundle["arrays"])
-            d = {"params": bundle["config"], "user_map": dict(bundle["state"]["user_map_pairs"]),
-                 "item_map": dict(bundle["state"]["item_map_pairs"]), "R": arrays.pop("R"),
-                 "state": arrays}
+            b = load_bundle(path, allow_pickle=allow_pickle)
+            a = unpack_arrays(b["arrays"], b["state"]["sparse"])
+            d = {"params": b["config"], "R": a.pop("R"), "state": a,
+                 "user_map": {x: k for k, x in enumerate(b["state"]["users"])},
+                 "item_map": {x: k for k, x in enumerate(b["state"]["items"])}}
         else:
             require_legacy_pickle(path, allow_pickle)
             with open(Path(path), "rb") as f:
                 d = pickle.load(f)
         inst = cls(**d["params"])
         inst.user_map = d["user_map"]; inst.item_map = d["item_map"]
+        inst.users_index = IdIndex(ordered_ids(inst.user_map))
+        inst.items_index = IdIndex(ordered_ids(inst.item_map))
         inst.uid_map = inst.user_map; inst.iid_map = inst.item_map
         inst.reverse_item_map = {k: x for x, k in inst.item_map.items()}
         inst.num_users = len(inst.user_map); inst.num_items = len(inst.item_map)

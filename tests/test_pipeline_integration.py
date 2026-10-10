@@ -92,3 +92,40 @@ class TestBuildPipelineFromConfig(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             build_pipeline_from_config(self.config, fit={"populrity": {}})
+
+
+class TestPipelineStageContracts(unittest.TestCase):
+    def test_invalid_config_stages_raise(self):
+        from corerec.pipelines import build_pipeline_from_config
+
+        cases = [
+            ({"retrieval": {"sources": [{"type": "popularit"}]}}, "retrieval"),
+            ({"ranking": {"type": "pointwis"}}, "ranking"),
+            ({"reranking": [{"type": "buisness"}]}, "reranking"),
+            ({"reranking": [{"type": "fairness"}]}, "group_fn"),
+        ]
+        for config, message in cases:
+            with self.subTest(config=config):
+                with self.assertRaisesRegex(ValueError, message):
+                    build_pipeline_from_config(config)
+
+    def test_business_filter_can_fill_results_after_diversity(self):
+        from corerec.pipelines import build_pipeline_from_config
+
+        for rerankers in (
+            [{"type": "business", "blocklist": [1, 2]}],
+            [{"type": "diversity", "lambda": 1.0},
+             {"type": "business", "blocklist": [1, 2]}],
+        ):
+            with self.subTest(rerankers=rerankers):
+                pipe = build_pipeline_from_config({
+                    "retrieval": {"sources": [{"type": "popularity"}]},
+                    "reranking": rerankers,
+                }, fit={"popularity": {
+                    "item_ids": [1, 2, 3, 4], "interaction_counts": [40, 30, 20, 10],
+                }})
+                self.assertEqual(pipe.recommend(1, top_k=2).items, [3, 4])
+                self.assertEqual(pipe.recommend(1, top_k=0).items, [])
+                self.assertEqual(pipe.recommend(1, top_k=10).items, [3, 4])
+                with self.assertRaisesRegex(ValueError, "top_k"):
+                    pipe.recommend(1, top_k=-1)
