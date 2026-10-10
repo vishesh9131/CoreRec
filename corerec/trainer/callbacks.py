@@ -10,8 +10,6 @@ import torch
 import numpy as np
 import time
 import logging
-import mlflow
-import wandb
 from typing import Dict, Any, Optional, List, Union, Callable
 from abc import ABC, abstractmethod
 
@@ -363,6 +361,8 @@ class MLflowLogger(Callback):
             tracking_uri (Optional[str]): MLflow tracking URI
             registered_model_name (Optional[str]): Name of the registered model
         """
+        import mlflow
+        self.mlflow = mlflow
         super().__init__()
         self.experiment_name = experiment_name
         self.run_name = run_name
@@ -380,14 +380,14 @@ class MLflowLogger(Callback):
         """
         # Set up MLflow
         if self.tracking_uri:
-            mlflow.set_tracking_uri(self.tracking_uri)
+            self.mlflow.set_tracking_uri(self.tracking_uri)
 
         # Set experiment
         if self.experiment_name:
-            mlflow.set_experiment(self.experiment_name)
+            self.mlflow.set_experiment(self.experiment_name)
 
         # Start run
-        mlflow.start_run(run_name=self.run_name)
+        self.mlflow.start_run(run_name=self.run_name)
 
         # Log model parameters
         params = {}
@@ -396,7 +396,7 @@ class MLflowLogger(Callback):
                 params[f"model.{name}.num_parameters"] = sum(p.numel() for p in module.parameters())
 
         # Log parameters
-        mlflow.log_params(params)
+        self.mlflow.log_params(params)
 
     def on_epoch_end(self, trainer, epoch, train_metrics, val_metrics):
         """Log metrics at the end of an epoch.
@@ -419,7 +419,7 @@ class MLflowLogger(Callback):
         metrics["epoch"] = epoch
 
         # Log metrics
-        mlflow.log_metrics(metrics, step=epoch)
+        self.mlflow.log_metrics(metrics, step=epoch)
 
         return False
 
@@ -431,17 +431,17 @@ class MLflowLogger(Callback):
         """
         # Log model
         if self.log_model:
-            mlflow.pytorch.log_model(
+            self.mlflow.pytorch.log_model(
                 trainer.model, "model", registered_model_name=self.registered_model_name
             )
 
         # Log artifacts
         if self.log_artifacts:
             for path in self.artifact_paths:
-                mlflow.log_artifact(path)
+                self.mlflow.log_artifact(path)
 
         # End run
-        mlflow.end_run()
+        self.mlflow.end_run()
 
 
 class WandbLogger(Callback):
@@ -478,6 +478,8 @@ class WandbLogger(Callback):
             log_freq (int): Frequency of logging in batches
             save_code (bool): Whether to save code
         """
+        import wandb
+        self.wandb = wandb
         super().__init__()
         self.project = project
         self.name = name
@@ -495,13 +497,13 @@ class WandbLogger(Callback):
             trainer: Trainer instance
         """
         # Initialize W&B
-        wandb.init(
+        self.wandb.init(
             project=self.project, name=self.name, config=self.config, save_code=self.save_code
         )
 
         # Watch model
         if self.log_model:
-            wandb.watch(trainer.model)
+            self.wandb.watch(trainer.model)
 
     def on_batch_end(self, trainer, batch_idx, logs):
         """Log metrics at the end of a batch.
@@ -516,7 +518,7 @@ class WandbLogger(Callback):
 
         # Log metrics
         if self.step % self.log_freq == 0:
-            wandb.log(logs, step=self.step)
+            self.wandb.log(logs, step=self.step)
 
     def on_epoch_end(self, trainer, epoch, train_metrics, val_metrics):
         """Log metrics at the end of an epoch.
@@ -539,7 +541,7 @@ class WandbLogger(Callback):
         metrics["epoch"] = epoch
 
         # Log metrics
-        wandb.log(metrics, step=self.step)
+        self.wandb.log(metrics, step=self.step)
 
         return False
 
@@ -550,4 +552,4 @@ class WandbLogger(Callback):
             trainer: Trainer instance
         """
         # Finish W&B run
-        wandb.finish()
+        self.wandb.finish()
