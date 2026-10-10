@@ -24,7 +24,8 @@ def test_bench_path_is_findings_not_under_corerec():
     assert not os.path.isdir(os.path.join(REPO, "corerec", "Findings", "bench"))
 
 
-def test_ml100k_dir_default_resolves_under_repo_root():
+def test_ml100k_dir_default_resolves_under_repo_root(monkeypatch):
+    monkeypatch.delenv("COREC_ML100K_DIR", raising=False)
     d = os.path.abspath(datautil.ml100k_dir())
     # two ups from Findings/bench lands in the repo, not above it
     assert d.startswith(os.path.abspath(REPO))

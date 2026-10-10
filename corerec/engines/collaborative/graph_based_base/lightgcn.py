@@ -133,9 +133,8 @@ class LightGCN(BaseRecommender):
     # ------------------------------------------------------------------
 
     def _create_mappings(self, user_ids: List, item_ids: List) -> None:
-        # sorted, as before, so codes match earlier saves (#76: one id index)
-        self.users_index = IdIndex(sorted(set(user_ids)))
-        self.items_index = IdIndex(sorted(set(item_ids)))
+        self.users_index, _ = IdIndex.fit(user_ids)
+        self.items_index, _ = IdIndex.fit(item_ids)
         self.user_id_map = self.users_index.as_dict()
         self.item_id_map = self.items_index.as_dict()
         self.reverse_user_map = dict(enumerate(self.users_index.ids))

@@ -186,3 +186,9 @@ model.fit([1, 1, 2, 2], [10, 11, 11, 12], [1.0] * 4)
 print(model.recommend(1, top_k=3, return_scores=True))
 ```
 
+
+Integer and string IDs remain distinct, including when mixed in one dataset:
+`1` and `"1"` identify different users. These fit paths use first-observed ID order through `IdIndex`; codes are an
+internal detail and saved ID mappings
+retain their recorded order. For mixed IDs in NumPy inputs, construct arrays
+with `dtype=object` so NumPy does not convert integers into strings before fit.

@@ -22,6 +22,7 @@ import torch.nn.functional as F
 from scipy.sparse import csr_matrix
 
 from corerec.api.base_recommender import BaseRecommender
+from corerec.api.id_index import IdIndex
 
 logger = logging.getLogger(__name__)
 
@@ -86,15 +87,13 @@ class _VAEBase(BaseRecommender):
             user_ids, item_ids, ratings if ratings is not None else np.ones(len(user_ids)),
             supported_modes=("triplet",))
         torch.manual_seed(self.seed); np.random.seed(self.seed)
-        u = np.asarray(user_ids); it = np.asarray(item_ids)
-        users = sorted(set(u.tolist())); items = sorted(set(it.tolist()))
-        self.user_map = {x: k for k, x in enumerate(users)}
-        self.item_map = {x: k for k, x in enumerate(items)}
+        users_index, uidx = IdIndex.fit(user_ids)
+        items_index, iidx = IdIndex.fit(item_ids)
+        self.user_map = users_index.as_dict()
+        self.item_map = items_index.as_dict()
         self.uid_map = self.user_map; self.iid_map = self.item_map
         self.reverse_item_map = {k: x for x, k in self.item_map.items()}
-        self.num_users = len(users); self.num_items = len(items)
-        uidx = np.fromiter((self.user_map[x] for x in u.tolist()), dtype=np.int64)
-        iidx = np.fromiter((self.item_map[x] for x in it.tolist()), dtype=np.int64)
+        self.num_users = len(users_index); self.num_items = len(items_index)
         self.R = csr_matrix((np.ones(len(uidx), np.float32), (uidx, iidx)),
                             shape=(self.num_users, self.num_items))
         if self.binarize:
@@ -127,7 +126,7 @@ class _VAEBase(BaseRecommender):
         self._dev = dev; self.is_fitted = True
         self.model.eval()
         with torch.no_grad():
-            if float(np.std(self._score_all_items(users[0]))) < 1e-5:
+            if float(np.std(self._score_all_items(users_index.ids[0]))) < 1e-5:
                 logger.warning("%s output collapsed (std~0).", self.MODEL)
         return self
 
