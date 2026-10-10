@@ -294,18 +294,22 @@ class Trainer:
         # Log message
         self.logger.info(message)
 
-    def save_checkpoint(self, epoch: int, metrics: Optional[Dict[str, float]] = None):
+    def save_checkpoint(self, epoch: int, metrics: Optional[Dict[str, float]] = None,
+                        path: Optional[str] = None):
         """Save a checkpoint of the model.
 
         Args:
             epoch (int): Current epoch
             metrics (Optional[Dict[str, float]]): Dictionary with metrics
+            path (Optional[str]): Where to write it; default is a timestamped file
+                in ``checkpoint_dir``
         """
         # Create timestamp
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
         # Create checkpoint path
-        checkpoint_path = os.path.join(self.checkpoint_dir, f"model_epoch_{epoch+1}_{timestamp}.pt")
+        checkpoint_path = path or os.path.join(
+            self.checkpoint_dir, f"model_epoch_{epoch+1}_{timestamp}.pt")
 
         # Create checkpoint
         checkpoint = {
