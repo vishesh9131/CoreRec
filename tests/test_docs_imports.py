@@ -46,7 +46,6 @@ PLACEHOLDERS = {"corerec.engines.your_model"}
 # breakage being added; fixing a page means deleting its entry here.
 KNOWN_STALE = {
     "engines/index.md",
-    "utilities/index.md",
 }
 
 _cache: dict = {}
