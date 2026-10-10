@@ -25,7 +25,7 @@ class PretrainedEmbeddings:
         vec = embs.get(item_id=123)
         
         # find similar items
-        similar = embs.most_similar(item_id=123, top_k=10)
+        similar = embs.most_similar(query=123, top_k=10)
     """
     
     def __init__(
@@ -42,7 +42,15 @@ class PretrainedEmbeddings:
         """
         self.embeddings = np.asarray(embeddings, dtype=np.float32)
         self.ids = list(ids)
+        if self.embeddings.ndim != 2 or self.embeddings.shape[1] == 0:
+            raise ValueError("Embeddings must have shape (n_items, dim) with dim > 0")
+        if len(self.ids) != len(self.embeddings):
+            raise ValueError("Each embedding row must have exactly one ID")
+        if not np.isfinite(self.embeddings).all():
+            raise ValueError("Embeddings must contain finite values")
         self._id_to_idx = {id_: i for i, id_ in enumerate(self.ids)}
+        if len(self._id_to_idx) != len(self.ids):
+            raise ValueError("Embedding IDs must be unique")
         
         if normalize:
             norms = np.linalg.norm(self.embeddings, axis=1, keepdims=True)
@@ -113,7 +121,7 @@ class PretrainedEmbeddings:
         with open(path, 'r', encoding='utf-8') as f:
             # first line might be header (num_vectors dim)
             first_line = f.readline().strip().split()
-            if len(first_line) == 2:
+            if len(first_line) == 2 and all(part.isdigit() for part in first_line):
                 # header line, skip
                 pass
             else:
@@ -171,6 +179,8 @@ class PretrainedEmbeddings:
         Returns:
             array of shape (len(item_ids), dim)
         """
+        if not item_ids:
+            return np.empty((0, self.dim), dtype=self.embeddings.dtype)
         result = []
         
         for item_id in item_ids:
@@ -201,6 +211,10 @@ class PretrainedEmbeddings:
         Returns:
             list of (item_id, similarity) tuples
         """
+        if top_k < 0:
+            raise ValueError("top_k must be non-negative")
+        if top_k == 0:
+            return []
         if isinstance(query, np.ndarray):
             query_emb = query
             query_id = None

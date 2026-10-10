@@ -104,3 +104,9 @@ registered explicitly by the application. Import the intended class yourself
 and call `SerializableRegistry.register(MyClass.__name__, MyClass)` before
 loading. Generic pickle files require `load_from_file(path, allow_pickle=True)`;
 `deserialize(path)` and `Serializable.load(path)` enforce the same rule.
+
+Embedding tables require a two-dimensional finite array with one unique ID per
+row. Duplicate IDs and mismatched row counts raise `ValueError` when the table is
+created. `get_batch([])` returns an array of shape `(0, dim)`, and
+`most_similar(query, top_k=0)` returns an empty list. Headerless text files may
+contain one-dimensional vectors; word2vec headers use two integer fields.
