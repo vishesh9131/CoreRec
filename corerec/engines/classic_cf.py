@@ -20,7 +20,10 @@ import scipy.sparse as sp
 from scipy.sparse import csr_matrix
 
 from corerec.api.base_recommender import BaseRecommender
-from corerec.api.model_bundle import atomic_pickle_dump
+from corerec.api.model_bundle import (
+    is_safe_bundle, load_bundle, ordered_ids, pack_arrays, save_bundle, unpack_arrays,
+    warn_legacy_pickle,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -105,17 +108,27 @@ class _ClassicCFBase(BaseRecommender):
         if not self.is_fitted:
             from corerec.api.exceptions import ModelNotFittedError
             raise ModelNotFittedError()
-        atomic_pickle_dump(path, {
-            "cls": self.__class__.__name__, "user_map": self.user_map,
-            "item_map": self.item_map, "R": self.R, "state": self._state(),
-            "params": {"top_k_neighbors": self.top_k_neighbors,
-                       "reg": self.reg, "shrink": self.shrink, "name": self.name},
-        })
+        # corerec_safe_v1: a pickle here ran arbitrary code on load (#75)
+        arrays, sparse = pack_arrays({"R": self.R, **self._state()})
+        save_bundle(path, model_class=f"{type(self).__module__}.{type(self).__name__}",
+                    config={"top_k_neighbors": self.top_k_neighbors, "reg": self.reg,
+                            "shrink": self.shrink, "name": self.name},
+                    state={"users": ordered_ids(self.user_map), "items": ordered_ids(self.item_map),
+                           "sparse": sparse},
+                    arrays=arrays)
 
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs) -> "_ClassicCFBase":
-        with open(Path(path), "rb") as f:
-            d = pickle.load(f)
+        if is_safe_bundle(path):
+            b = load_bundle(path)
+            a = unpack_arrays(b["arrays"], b["state"]["sparse"])
+            d = {"params": b["config"], "R": a.pop("R"), "state": a,
+                 "user_map": {x: k for k, x in enumerate(b["state"]["users"])},
+                 "item_map": {x: k for k, x in enumerate(b["state"]["items"])}}
+        else:
+            warn_legacy_pickle(path)
+            with open(Path(path), "rb") as f:
+                d = pickle.load(f)
         inst = cls(**d["params"])
         inst.user_map = d["user_map"]; inst.item_map = d["item_map"]
         inst.uid_map = inst.user_map; inst.iid_map = inst.item_map
