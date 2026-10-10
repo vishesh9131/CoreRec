@@ -34,6 +34,7 @@ AREAS = [
     ("corerec/serving/", "serving"),
     ("corerec/evaluation/", "evaluation"),
     ("corerec/export.py", "export"),
+    ("corerec/api/", "api"),
     ("corerec/pipelines/", "pipelines"),
     ("corerec/retrieval/", "pipelines"),
     ("corerec/ranking/", "pipelines"),
@@ -44,7 +45,7 @@ AREAS = [
 ]
 LABEL_COLORS = {"engines": "1d76db", "nn": "5319e7", "serving": "0e8a16", "evaluation": "fbca04",
                 "export": "c5def5", "pipelines": "bfdadc", "documentation": "0075ca",
-                "tests": "d4c5f9", "ci": "000000", "first-time contributor": "7057ff"}
+                "tests": "d4c5f9", "ci": "000000", "api": "006b75", "first-time contributor": "7057ff"}
 LARGE_PR = 800  # changed lines
 
 
@@ -225,11 +226,13 @@ def report(gh: GitHub, event: Dict, results_dir: str):
     run = event["workflow_run"]
     sha = run["head_sha"]
     # workflow_run.pull_requests is empty for fork PRs, so match on the head commit
-    pr = next((p for p in gh.paged("/pulls?state=open") if p["head"]["sha"] == sha), None)
-    if pr is None:
+    match = next((p for p in gh.paged("/pulls?state=open") if p["head"]["sha"] == sha), None)
+    if match is None:
         print(f"no open PR at {sha}; nothing to do")
         return
-    n = pr["number"]
+    n = match["number"]
+    # the list endpoint leaves out additions/deletions; read the full PR
+    pr = gh.call("GET", f"/pulls/{n}")
     xmls = {p.parent.name.replace("test-results-", "Python "): p.read_text()
             for p in Path(results_dir).glob("*/*.xml")} if results_dir else {}
     tests = parse_junit(xmls) if xmls else None

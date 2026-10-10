@@ -78,6 +78,7 @@ def save_bundle(
     """
     import os
     import tempfile
+    import uuid
 
     base = artifact_base(path)
     base.parent.mkdir(parents=True, exist_ok=True)
@@ -90,16 +91,20 @@ def save_bundle(
         "state": _jsonify(state),
     }
 
-    # Every file is written to a temp name first and swapped in only once all
-    # of them are complete (meta last), so a failed save leaves the previous
-    # bundle as it was (#101) and no temp files behind.
+    # Publish the metadata pointer last; replacing components in place could
+    # corrupt the previous bundle if a later replacement fails.
+    generation = uuid.uuid4().hex
     staged = []  # (temporary, final)
+    published = []
+    committed = False
 
     def stage(final: Path, write) -> None:
         with tempfile.NamedTemporaryFile(dir=base.parent, prefix=f".{final.name}.",
                                          delete=False) as f:
             staged.append((Path(f.name), final))
             write(f)
+            f.flush()
+            os.fsync(f.fileno())
 
     try:
         if state_dict is not None:
@@ -107,7 +112,7 @@ def save_bundle(
                 import torch
             except ImportError as e:
                 raise SaveLoadError("torch required to save state_dict bundle") from e
-            weights_path = base.with_suffix(".weights.pt")
+            weights_path = base.with_name(f"{base.name}.{generation}.weights.pt")
             stage(weights_path, lambda f: torch.save(state_dict, f))
             meta["weights_file"] = weights_path.name
 
@@ -116,7 +121,7 @@ def save_bundle(
                 import numpy as np
             except ImportError as e:
                 raise SaveLoadError("numpy required to save array bundle") from e
-            npz_path = base.with_suffix(".arrays.npz")
+            npz_path = base.with_name(f"{base.name}.{generation}.arrays.npz")
             stage(npz_path, lambda f: np.savez_compressed(f, **arrays))
             meta["arrays_file"] = npz_path.name
 
@@ -125,9 +130,16 @@ def save_bundle(
         stage(meta_path, lambda f: f.write(text))
         for temporary, final in staged:
             os.replace(temporary, final)
+            published.append(final)
+        committed = True
     finally:
         for temporary, _ in staged:
             temporary.unlink(missing_ok=True)
+        if not committed:
+            for final in published:
+                final.unlink(missing_ok=True)
+    # shortcut: old generations stay readable for concurrent loaders; add
+    # explicit artifact cleanup when frequent checkpointing needs reclamation.
     return base
 
 
