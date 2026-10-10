@@ -315,3 +315,12 @@ def test_embedding_cf_still_takes_its_own_parameters(tmp_path):
     m = ALS(factors=8, iterations=2).fit([0, 0, 1, 2], [1, 2, 2, 3])
     m.save(str(tmp_path / "als.pkl"))
     assert ALS.load(str(tmp_path / "als.pkl")).factors == 8
+
+
+@pytest.mark.parametrize("model_id,module_path,cls_name,kwargs", MODELS, ids=[m[0] for m in MODELS])
+def test_unknown_users_have_no_personalized_recommendations(model_id, module_path, cls_name, kwargs):
+    model = _build(module_path, cls_name, kwargs)
+    users, items, ratings = _interactions()
+    model.fit(users, items, ratings)
+    assert model.recommend("__unknown_user__", top_k=3) == []
+    assert len(model.recommend(users[0], top_k=3)) <= 3

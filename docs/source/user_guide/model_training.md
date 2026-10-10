@@ -159,3 +159,8 @@ assert same_model.item_map == model.item_map
 
 Malformed lengths, missing IDs and non-finite ratings raise InvalidDataError
 before fitted state is replaced. Integer and string IDs remain distinct.
+
+For interaction models, `recommend(user_id, top_k=...)` returns an empty list
+when the user was not observed during training. Choose a popularity or other
+cold-start fallback in your application when that list is empty. This applies
+to recommendations; pairwise `predict()` can still reject unknown IDs.
