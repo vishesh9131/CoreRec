@@ -114,3 +114,28 @@ def test_three_stage_pipeline_end_to_end(fitted):
     assert len(final.candidates) == 5
     ids = [c.item_id for c in final.candidates]
     assert len(set(ids)) == 5, f"duplicate items survived reranking: {ids}"
+
+
+def test_sklearn_model_sees_the_same_features_for_int_and_str_ids():
+    """An integer item_id became an extra sklearn column; a string one didn't (#106)."""
+    from sklearn.linear_model import LinearRegression
+
+    from corerec.retrieval.base import Candidate
+
+    model = LinearRegression().fit(np.array([[0, 0], [1, 0], [0, 1]], dtype=float), [0, 1, 0])
+    seen = []
+
+    class Spy:
+        def predict(self, X):
+            seen.append(X.shape)
+            return model.predict(X)
+
+    scores = []
+    for item_id in ["7", 7]:
+        ranker = PointwiseRanker(
+            model=Spy(),
+            feature_extractor=lambda item, ctx: {"quality": 0.5, "retrieval_score": 0.2},
+        ).fit()
+        scores.append(ranker.rank([Candidate(item_id=item_id, score=0.2)]).candidates[0].score)
+    assert seen == [(1, 2), (1, 2)]
+    assert scores[0] == scores[1] == pytest.approx(0.5)

@@ -175,8 +175,10 @@ class PointwiseRanker(BaseRanker):
     
     def _features_to_array(self, features: Dict[str, Any]) -> np.ndarray:
         """Convert feature dict to array for sklearn-style models."""
-        # simple: just use numeric values in order
-        values = [v for v in features.values() if isinstance(v, (int, float))]
+        # numeric values in order, minus item_id: rank() adds it for score_fn,
+        # and an integer id became an extra column the model never saw (#106)
+        values = [v for k, v in features.items()
+                  if k != "item_id" and isinstance(v, (int, float))]
         return np.array([values])
     
     def rank_batch(
