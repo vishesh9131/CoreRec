@@ -17,16 +17,25 @@ concurrency:
 jobs:
   triage:
     runs-on: ubuntu-latest
+    env:
+      # secrets can't be read in `if:`; expose whether the App key is set
+      HAS_KEY: ${{ secrets.COREREC_BOT_APP_ID != '' && secrets.COREREC_BOT_PRIVATE_KEY != '' }}
     steps:
+      - name: Skip when the bot isn't configured
+        if: env.HAS_KEY != 'true'
+        run: echo "::notice::corerec-bot is not set up (repo secrets COREREC_BOT_APP_ID / COREREC_BOT_PRIVATE_KEY are missing), so this run does nothing."
+
       - uses: actions/checkout@v4  # base branch only, for bot.py
 
       - id: token
+        if: env.HAS_KEY == 'true'
         uses: actions/create-github-app-token@v1
         with:
           app-id: ${{ secrets.COREREC_BOT_APP_ID }}
           private-key: ${{ secrets.COREREC_BOT_PRIVATE_KEY }}
 
       - name: Check the PR
+        if: env.HAS_KEY == 'true'
         env:
           GH_TOKEN: ${{ steps.token.outputs.token }}
         run: python .github/corerec_bot/bot.py triage
