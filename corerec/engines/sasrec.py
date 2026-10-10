@@ -14,7 +14,7 @@ from pathlib import Path
 
 # Project imports (assumed present)
 from corerec.api.base_recommender import BaseRecommender, normalize_interactions
-from corerec.api.exceptions import ModelNotFittedError,  RecommendationError
+from corerec.api.exceptions import ModelNotFittedError
 from corerec.api.versioning import warn_deprecated_arg
 from corerec.utils.validation import (
     validate_fit_inputs,
@@ -1017,7 +1017,7 @@ class SASRec(BaseRecommender):
         validate_top_k(top_k)
 
         if user_id not in self.user_sequences:
-            raise RecommendationError(f"Unknown user_id: {user_id!r}")
+            return []
 
         seq = list(self.user_sequences[user_id])
         if len(seq) > self.max_seq_length:
