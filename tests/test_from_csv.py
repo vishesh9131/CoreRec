@@ -83,6 +83,17 @@ def test_read_merges_duplicate_pairs(tmp_path):
     assert df.set_index(["user", "item"]).loc[("a", "x"), "rating"] == 2.0
 
 
+@pytest.mark.parametrize("text,enc", [("Renée,café", "latin-1"), ("Renée,€5 café", "cp1252")])
+def test_read_non_utf8_files(tmp_path, text, enc):
+    """Excel exports in Latin-1/Windows-1252 crashed with UnicodeDecodeError (#87)."""
+    path = tmp_path / "excel.csv"
+    path.write_bytes(f"user_id,item_id\n{text}\nbob,tea\n".encode(enc))
+    with pytest.warns(UserWarning, match="not UTF-8"):
+        df, _ = read_interactions(path)
+    assert set(df["user"]) == {"Renée", "bob"}
+    assert text.split(",")[1] in set(df["item"])
+
+
 def test_read_parses_date_strings(tmp_path):
     path = tmp_path / "dated.csv"
     pd.DataFrame({"user_id": ["a", "a"], "item_id": ["x", "y"],
