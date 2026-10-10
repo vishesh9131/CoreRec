@@ -453,9 +453,10 @@ class SAR(BaseRecommender):
             raise InvalidDataError("Rating column must be numeric")
         
         # build index mappings
-        if not self.user2index:  # allow pre-setting indices
+        if self.is_fitted or not self.user2index:  # preserve first-fit preconfigured indices
             self._set_index(df)
         
+        self.is_fitted = False
         logger.info(f"Training SAR on {self.n_users} users, {self.n_items} items")
         
         # work with a copy to avoid modifying input
