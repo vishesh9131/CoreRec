@@ -1,3 +1,4 @@
+import pytest
 """Tests for safe model bundle persistence."""
 import os
 import tempfile
@@ -131,3 +132,32 @@ class TestSafePersistence(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@pytest.mark.parametrize("fail_at", [2, 3])
+def test_bundle_replacement_failure_preserves_all_previous_files(tmp_path, monkeypatch, fail_at):
+    import os
+    import torch
+
+    base = tmp_path / "m"
+    save_bundle(base, model_class="test.Model", config={}, state={},
+                state_dict={"w": torch.tensor([1.0])}, arrays={"x": np.array([2.0])})
+    before = {p.name: p.read_bytes() for p in tmp_path.iterdir()}
+    replace = os.replace
+    calls = 0
+
+    def fail_later(src, dst):
+        nonlocal calls
+        calls += 1
+        if calls == fail_at:
+            raise OSError("replacement failed")
+        return replace(src, dst)
+
+    monkeypatch.setattr(os, "replace", fail_later)
+    with pytest.raises(OSError, match="replacement failed"):
+        save_bundle(base, model_class="test.Model", config={}, state={},
+                    state_dict={"w": torch.tensor([9.0])}, arrays={"x": np.array([8.0])})
+    assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == before
+    loaded = load_bundle(base)
+    assert loaded["state_dict"]["w"].item() == 1.0
+    assert loaded["arrays"]["x"].item() == 2.0
