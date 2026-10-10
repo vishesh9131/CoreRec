@@ -72,6 +72,8 @@ def to_interactions(*args: Any, item_offset: int = 0, **kwargs: Any) -> Interact
     if len(users) != len(items):
         raise InvalidDataError(f"{len(users)} user_ids but {len(items)} item_ids")
     r = np.ones(len(users), np.float32) if ratings is None else np.asarray(ratings, np.float64)
+    if r.ndim != 1:
+        raise InvalidDataError("ratings must be one-dimensional")
     if len(r) != len(users):
         raise InvalidDataError(f"{len(r)} ratings for {len(users)} interactions")
     bad = int((~np.isfinite(r)).sum())
@@ -81,9 +83,17 @@ def to_interactions(*args: Any, item_offset: int = 0, **kwargs: Any) -> Interact
     ts = None
     if timestamps is not None:
         ts = np.asarray(timestamps, np.float64)
+        if ts.ndim != 1 or not np.isfinite(ts).all():
+            raise InvalidDataError("timestamps must be a finite one-dimensional array")
         if len(ts) != len(users):
             raise InvalidDataError(f"{len(ts)} timestamps for {len(users)} interactions")
 
-    uix, ucodes = IdIndex.fit(users)
-    iix, icodes = IdIndex.fit(items, offset=item_offset)
-    return Interactions(uix, iix, ucodes, icodes, r.astype(np.float32), ts)
+    r = r.astype(np.float32)
+    if not np.isfinite(r).all():
+        raise InvalidDataError("ratings exceed the finite float32 range")
+    try:
+        uix, ucodes = IdIndex.fit(users)
+        iix, icodes = IdIndex.fit(items, offset=item_offset)
+    except ValueError as exc:
+        raise InvalidDataError(str(exc)) from exc
+    return Interactions(uix, iix, ucodes, icodes, r, ts)

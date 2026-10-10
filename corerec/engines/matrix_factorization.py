@@ -22,6 +22,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 from corerec.api.base_recommender import BaseRecommender
+from corerec.api.model_bundle import atomic_pickle_dump
 
 logger = logging.getLogger(__name__)
 
@@ -94,13 +95,17 @@ class _EmbeddingCFBase(BaseRecommender):
         if not self.is_fitted:
             from corerec.api.exceptions import ModelNotFittedError
             raise ModelNotFittedError()
-        if user_id not in self.user_map:
+        if top_k < 0:
+            raise ValueError("top_k must be non-negative")
+        if top_k == 0 or user_id not in self.user_map:
             return []
         exclude = set(exclude_items or [])
         scores = self._score_all_items(user_id).copy()
         scores[self.R[self.user_map[user_id]].indices] = -np.inf
         out = []
         for idx in np.argsort(-scores):
+            if not np.isfinite(scores[idx]):
+                continue
             iid = self.reverse_item_map[int(idx)]
             if iid in exclude:
                 continue
@@ -110,12 +115,19 @@ class _EmbeddingCFBase(BaseRecommender):
         return out
 
     def save(self, path: Union[str, Path], **kwargs) -> None:
-        p = Path(path); p.parent.mkdir(parents=True, exist_ok=True)
-        with open(p, "wb") as f:
-            pickle.dump({"U": self.U, "V": self.V, "R": self.R,
-                         "user_map": self.user_map, "item_map": self.item_map,
-                         "params": {"name": self.name, "factors": self.factors,
-                                    "reg": self.reg, "iterations": self.iterations}}, f)
+        if not self.is_fitted:
+            from corerec.api.exceptions import ModelNotFittedError
+            raise ModelNotFittedError()
+        params = {"name": self.name, "factors": self.factors, "reg": self.reg,
+                  "iterations": self.iterations, "seed": self.seed,
+                  "verbose": self.verbose, "trainable": self.trainable}
+        for key in ("alpha", "num_negatives", "learning_rate"):
+            if hasattr(self, key):
+                params[key] = getattr(self, key)
+        atomic_pickle_dump(path, {
+            "cls": type(self).__name__, "U": self.U, "V": self.V, "R": self.R,
+            "user_map": self.user_map, "item_map": self.item_map, "params": params,
+        })
 
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs) -> "_EmbeddingCFBase":

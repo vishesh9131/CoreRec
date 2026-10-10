@@ -109,6 +109,10 @@ history = [i for u, i in zip(users, items) if u == users[0]]
 x = np.zeros((1, len(item_ids)), dtype=np.float32)
 x[0, [col[i] for i in history]] = 1  # binarize=False: np.add.at(...) for counts
 scores = sess.run(None, {"interactions": x})[0][0]
+scores[x[0] > 0] = -np.inf
+unseen = np.flatnonzero(x[0] == 0)
+top10 = [item_ids[j] for j in unseen[np.argsort(-scores[unseen])[:10]]]
+print(top10)
 ```
 
 ## Notes

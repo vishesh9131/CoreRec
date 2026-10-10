@@ -151,7 +151,6 @@ def load_bundle(path: Union[str, Path], *, map_location: Any = None) -> Dict[str
 
 def save_legacy_pickle(path: Union[str, Path], payload: Any) -> None:
     """Explicit opt-in legacy pickle (discouraged in production)."""
-    import pickle
     import warnings
 
     warnings.warn(
@@ -161,5 +160,25 @@ def save_legacy_pickle(path: Union[str, Path], payload: Any) -> None:
     )
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    with open(p, "wb") as f:
-        pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
+    atomic_pickle_dump(p, payload)
+
+
+def atomic_pickle_dump(path: Union[str, Path], payload: Any) -> None:
+    """Replace a pickle artifact only after its new contents are fully written."""
+    import os
+    import pickle
+    import tempfile
+
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=p.parent, prefix=f".{p.name}.", delete=False) as f:
+            temporary = Path(f.name)
+            pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temporary, p)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)

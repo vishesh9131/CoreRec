@@ -35,7 +35,7 @@ similar = model.recommend(item_id=101, top_k=5)
 
 | Model | Tutorial |
 |-------|----------|
-| **MIND-Content** | [MIND Content](../tutorials/mind_content_tutorial.md) |
+| **MIND-Content** | [MIND Content](../tutorials/removed_models.md) |
 
 Import path is documented in the tutorial (`corerec.sandbox.*`).
 

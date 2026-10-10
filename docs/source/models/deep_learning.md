@@ -36,39 +36,39 @@ Implementations under `corerec/sandbox/`. Not production-tested.
 
 | Model | Import path | Tutorial |
 |-------|-------------|----------|
-| AFM | `corerec.sandbox.collaborative_full.nn_base.AFM_base` | [AFM](../tutorials/afm_tutorial.md) |
-| AutoInt | `corerec.sandbox.collaborative_full.nn_base.AutoInt_base` | [AutoInt](../tutorials/autoint_tutorial.md) |
-| AutoFI | `corerec.sandbox.collaborative_full.nn_base.AutoFI_base` | [AutoFI](../tutorials/autofi_tutorial.md) |
-| BST | `corerec.sandbox.collaborative_full.nn_base.BST_base` | [BST](../tutorials/bst_tutorial.md) |
-| BiVAE | `corerec.sandbox.collaborative_full.variational_encoder_base.bivae_base` | [BiVAE](../tutorials/bivae_tutorial.md) |
-| Caser | `corerec.sandbox.collaborative_full.nn_base.caser` | [Caser](../tutorials/caser_tutorial.md) |
-| DeepCrossing | sandbox nn_base | [DeepCrossing](../tutorials/deepcrossing_tutorial.md) |
-| DeepRec | `corerec.sandbox.collaborative_full.nn_base.DeepRec_base` | [DeepRec](../tutorials/deeprec_tutorial.md) |
-| DIEN | `corerec.sandbox.collaborative_full.nn_base.DIEN_base` | [DIEN](../tutorials/dien_tutorial.md) |
-| DiFM | sandbox nn_base | [DiFM](../tutorials/difm_tutorial.md) |
-| DIN | `corerec.sandbox.collaborative_full.nn_base.DIN_base` | [DIN](../tutorials/din_tutorial.md) |
-| DLRM | `corerec.sandbox.collaborative_full.nn_base.DLRM_base` | [DLRM](../tutorials/dlrm_tutorial.md) |
-| ENSFM | `corerec.sandbox.collaborative_full.nn_base.ENSFM_base` | [ENSFM](../tutorials/ensfm_tutorial.md) |
-| ESCM2 | `corerec.sandbox.collaborative_full.nn_base.ESCMM_base` | [ESCMM](../tutorials/escmm_tutorial.md) |
-| ESMM | `corerec.sandbox.collaborative_full.nn_base.ESMM_base` | [ESMM](../tutorials/esmm_tutorial.md) |
-| FGCNN | `corerec.sandbox.collaborative_full.nn_base.FGCNN_base` | [FGCNN](../tutorials/fgcnn_tutorial.md) |
-| FFM | `corerec.sandbox.collaborative_full.nn_base.FFM_base` | [FFM](../tutorials/ffm_tutorial.md) |
-| FiBiNet | `corerec.sandbox.collaborative_full.nn_base.Fibinet_base` | [FiBiNet](../tutorials/fibinet_tutorial.md) |
-| FLEN | `corerec.sandbox.collaborative_full.nn_base.FLEN_base` | [FLEN](../tutorials/flen_tutorial.md) |
-| FM | `corerec.sandbox.collaborative_full.nn_base.FM_base` | [FM](../tutorials/fm_tutorial.md) |
-| GAN-Rec | `corerec.sandbox.collaborative_full.nn_base.gan_ufilter_base` | [GAN](../tutorials/gan_tutorial.md) |
-| GateNet | sandbox nn_base | [GateNet](../tutorials/gatenet_tutorial.md) |
-| GRU-CF | `corerec.sandbox.collaborative_full.nn_base.gru_ufilter_base` | [GRU-CF](../tutorials/gru_cf_tutorial.md) |
-| NFM | `corerec.sandbox.collaborative_full.nn_base.NFM_base` | [NFM](../tutorials/nfm_tutorial.md) |
-| NextItNet | `corerec.sandbox.collaborative_full.sequential_model_base.nextitnet_base` | [NextItNet](../tutorials/nextitnet_tutorial.md) |
-| Wide&Deep | `corerec.sandbox.collaborative_full.nn_base.WideDeep_base` | [Wide&Deep](../tutorials/widedeep_tutorial.md) |
-| YouTubeDNN | sandbox content nn | [YouTubeDNN](../tutorials/youtubednn_tutorial.md) |
-| PNN | sandbox nn_base | [PNN](../tutorials/pnn_tutorial.md) |
-| MMoE | `corerec.sandbox.collaborative_full.nn_base.MMoE_base` | [MMoE](../tutorials/mmoe_tutorial.md) |
-| PLE | `corerec.sandbox.collaborative_full.nn_base.PLE_base` | [PLE](../tutorials/ple_tutorial.md) |
-| TDM | `corerec.sandbox.collaborative_full.nn_base.TDM_base` | [TDM](../tutorials/tdm_tutorial.md) |
-| DCN-Base | `corerec.sandbox.collaborative_full.nn_base.DCN` | [DCN Base](../tutorials/dcn_base_tutorial.md) |
-| DeepFM-Base | `corerec.sandbox.collaborative_full.nn_base.DeepFM_base` | [DeepFM Base](../tutorials/deepfm_base_tutorial.md) |
+| AFM | `corerec.sandbox.collaborative_full.nn_base.AFM_base` | [AFM](../tutorials/removed_models.md) |
+| AutoInt | `corerec.sandbox.collaborative_full.nn_base.AutoInt_base` | [AutoInt](../tutorials/removed_models.md) |
+| AutoFI | `corerec.sandbox.collaborative_full.nn_base.AutoFI_base` | [AutoFI](../tutorials/removed_models.md) |
+| BST | `corerec.sandbox.collaborative_full.nn_base.BST_base` | [BST](../tutorials/removed_models.md) |
+| BiVAE | `corerec.sandbox.collaborative_full.variational_encoder_base.bivae_base` | [BiVAE](../tutorials/removed_models.md) |
+| Caser | `corerec.sandbox.collaborative_full.nn_base.caser` | [Caser](../tutorials/removed_models.md) |
+| DeepCrossing | sandbox nn_base | [DeepCrossing](../tutorials/removed_models.md) |
+| DeepRec | `corerec.sandbox.collaborative_full.nn_base.DeepRec_base` | [DeepRec](../tutorials/removed_models.md) |
+| DIEN | `corerec.sandbox.collaborative_full.nn_base.DIEN_base` | [DIEN](../tutorials/removed_models.md) |
+| DiFM | sandbox nn_base | [DiFM](../tutorials/removed_models.md) |
+| DIN | `corerec.sandbox.collaborative_full.nn_base.DIN_base` | [DIN](../tutorials/removed_models.md) |
+| DLRM | `corerec.sandbox.collaborative_full.nn_base.DLRM_base` | [DLRM](../tutorials/removed_models.md) |
+| ENSFM | `corerec.sandbox.collaborative_full.nn_base.ENSFM_base` | [ENSFM](../tutorials/removed_models.md) |
+| ESCM2 | `corerec.sandbox.collaborative_full.nn_base.ESCMM_base` | [ESCMM](../tutorials/removed_models.md) |
+| ESMM | `corerec.sandbox.collaborative_full.nn_base.ESMM_base` | [ESMM](../tutorials/removed_models.md) |
+| FGCNN | `corerec.sandbox.collaborative_full.nn_base.FGCNN_base` | [FGCNN](../tutorials/removed_models.md) |
+| FFM | `corerec.sandbox.collaborative_full.nn_base.FFM_base` | [FFM](../tutorials/removed_models.md) |
+| FiBiNet | `corerec.sandbox.collaborative_full.nn_base.Fibinet_base` | [FiBiNet](../tutorials/removed_models.md) |
+| FLEN | `corerec.sandbox.collaborative_full.nn_base.FLEN_base` | [FLEN](../tutorials/removed_models.md) |
+| FM | `corerec.sandbox.collaborative_full.nn_base.FM_base` | [FM](../tutorials/removed_models.md) |
+| GAN-Rec | `corerec.sandbox.collaborative_full.nn_base.gan_ufilter_base` | [GAN](../tutorials/removed_models.md) |
+| GateNet | sandbox nn_base | [GateNet](../tutorials/removed_models.md) |
+| GRU-CF | `corerec.sandbox.collaborative_full.nn_base.gru_ufilter_base` | [GRU-CF](../tutorials/removed_models.md) |
+| NFM | `corerec.sandbox.collaborative_full.nn_base.NFM_base` | [NFM](../tutorials/removed_models.md) |
+| NextItNet | `corerec.sandbox.collaborative_full.sequential_model_base.nextitnet_base` | [NextItNet](../tutorials/removed_models.md) |
+| Wide&Deep | `corerec.sandbox.collaborative_full.nn_base.WideDeep_base` | [Wide&Deep](../tutorials/removed_models.md) |
+| YouTubeDNN | sandbox content nn | [YouTubeDNN](../tutorials/removed_models.md) |
+| PNN | sandbox nn_base | [PNN](../tutorials/removed_models.md) |
+| MMoE | `corerec.sandbox.collaborative_full.nn_base.MMoE_base` | [MMoE](../tutorials/removed_models.md) |
+| PLE | `corerec.sandbox.collaborative_full.nn_base.PLE_base` | [PLE](../tutorials/removed_models.md) |
+| TDM | `corerec.sandbox.collaborative_full.nn_base.TDM_base` | [TDM](../tutorials/removed_models.md) |
+| DCN-Base | `corerec.sandbox.collaborative_full.nn_base.DCN` | [DCN Base](../tutorials/removed_models.md) |
+| DeepFM-Base | `corerec.sandbox.collaborative_full.nn_base.DeepFM_base` | [DeepFM Base](../tutorials/removed_models.md) |
 
 ```{admonition} Sandbox warning
 :class: warning
