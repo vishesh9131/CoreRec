@@ -43,6 +43,8 @@ def test_matches_the_mapping_models_build_today():
     assert idx.ids == list(uniques)
 
 
+
+
 def test_lightgcn_builds_its_maps_from_id_index(tmp_path):
     """Stage 2 of #76: LightGCN keeps its sorted codes, now via IdIndex."""
     from corerec.engines import LightGCN
@@ -55,3 +57,19 @@ def test_lightgcn_builds_its_maps_from_id_index(tmp_path):
     m.save(tmp_path / "g")
     back = LightGCN.load(tmp_path / "g")
     assert back.user_id_map == m.user_id_map and back.recommend(1, top_k=2) == m.recommend(1, top_k=2)
+
+
+def test_nn_recommender_builds_its_maps_from_id_index(tmp_path):
+    """Stage 2 of #76, first model: same public maps, one source for them."""
+    from corerec.nn import MatrixFactorization, Recommender
+
+    users, items = ["u1", "u2", "u1", "u3"], [10, 20, 30, 10]
+    rec = Recommender(MatrixFactorization, {"dim": 4}, epochs=1, device="cpu").fit(users, items)
+    assert rec.user_map == rec.users_index.as_dict() == {"u1": 0, "u2": 1, "u3": 2}
+    assert rec.item_map == rec.items_index.as_dict() == {10: 1, 20: 2, 30: 3}  # 0 = padding
+    rec.save(tmp_path / "m.pt")
+    back = Recommender.load(tmp_path / "m.pt", device="cpu")
+    assert back.user_map == rec.user_map and back.item_map == rec.item_map
+    assert back.recommend("u1", top_k=2) == rec.recommend("u1", top_k=2)
+
+
