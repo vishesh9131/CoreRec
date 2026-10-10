@@ -412,13 +412,9 @@ class DCN(BaseRecommender):
         self.is_fitted = True
         return self
 
-    def predict(self, user_id: int, item_id: int, **kwargs) -> float:
-        """Predict score for a user-item pair."""
-        if not self.is_fitted:
-            raise ModelNotFittedError()
-
+    def _prediction_features(self, user_id, item_id):
         if user_id not in self.user_map or item_id not in self.item_map:
-            return 0.0
+            return None
 
         # Get indices
         user_idx = self.user_map[user_id]
@@ -444,13 +440,34 @@ class DCN(BaseRecommender):
         max_len = self.model.input_dim // self.embedding_dim
         feature_indices = (feature_indices + [0] * max_len)[:max_len]
 
-        # Predict
-        feature_tensor = torch.LongTensor([feature_indices]).to(self.device)
+        return feature_indices
+
+    def predict(self, user_id: Any, item_id: Any, **kwargs) -> float:
+        """Predict a score for one user-item pair."""
+        return self.batch_predict([(user_id, item_id)], **kwargs)[0]
+
+    def batch_predict(self, pairs, **kwargs) -> List[float]:
+        """Score pairs in bounded batches, preserving order and unknown-ID zeros."""
+        validate_model_fitted(self.is_fitted, self.name)
+        pairs = list(pairs)
+        scores = [0.0] * len(pairs)
         self.model.eval()
         with torch.no_grad():
-            score = self.model(feature_tensor).item()
-
-        return score
+            for start in range(0, len(pairs), self.batch_size):
+                rows, positions = [], []
+                for position, (user_id, item_id) in enumerate(
+                    pairs[start:start + self.batch_size], start
+                ):
+                    row = self._prediction_features(user_id, item_id)
+                    if row is not None:
+                        rows.append(row)
+                        positions.append(position)
+                if rows:
+                    inputs = torch.tensor(rows, dtype=torch.long, device=self.device)
+                    predictions = self.model(inputs).reshape(-1).cpu().tolist()
+                    for position, score in zip(positions, predictions):
+                        scores[position] = score
+        return scores
 
     def recommend(
         self, user_id: int, top_k: int = 10, exclude_items: Optional[List[int]] = None,
