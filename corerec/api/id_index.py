@@ -18,7 +18,9 @@ class IdIndex:
     """
 
     def __init__(self, ids: Iterable[Any] = (), offset: int = 0):
-        self.offset = offset
+        if not isinstance(offset, (int, np.integer)) or isinstance(offset, bool) or offset < 0:
+            raise ValueError("offset must be a nonnegative integer")
+        self.offset = int(offset)
         self.ids: List[Any] = list(dict.fromkeys(ids))
         self._code: Dict[Any, int] = {x: k + offset for k, x in enumerate(self.ids)}
 
@@ -26,6 +28,8 @@ class IdIndex:
     def fit(cls, values: Sequence[Any], offset: int = 0):
         """Index ``values`` and return ``(index, codes)``, codes as an int64 array."""
         codes, uniques = pd.factorize(pd.Series(list(values), dtype=object))
+        if (codes < 0).any():
+            raise ValueError("IDs must not be missing")
         return cls(uniques, offset), codes.astype(np.int64) + offset
 
     def __len__(self) -> int:
@@ -42,6 +46,8 @@ class IdIndex:
         return np.fromiter((self._code[x] for x in values), dtype=np.int64)
 
     def id(self, code: int) -> Any:
+        if not isinstance(code, (int, np.integer)) or not self.offset <= code < self.offset + len(self):
+            raise KeyError(code)
         return self.ids[code - self.offset]
 
     def as_dict(self) -> Dict[Any, int]:
