@@ -20,6 +20,7 @@ import scipy.sparse as sp
 from scipy.sparse import csr_matrix
 
 from corerec.api.base_recommender import BaseRecommender
+from corerec.api.model_bundle import atomic_pickle_dump
 
 logger = logging.getLogger(__name__)
 
@@ -97,14 +98,15 @@ class _ClassicCFBase(BaseRecommender):
 
     # -- contract: persistence ----------------------------------------- #
     def save(self, path: Union[str, Path], **kwargs) -> None:
-        p = Path(path); p.parent.mkdir(parents=True, exist_ok=True)
-        with open(p, "wb") as f:
-            pickle.dump({"cls": self.__class__.__name__, "user_map": self.user_map,
-                         "item_map": self.item_map, "R": self.R,
-                         "state": self._state(),
-                         "params": {"top_k_neighbors": self.top_k_neighbors,
-                                    "reg": self.reg, "shrink": self.shrink,
-                                    "name": self.name}}, f)
+        if not self.is_fitted:
+            from corerec.api.exceptions import ModelNotFittedError
+            raise ModelNotFittedError()
+        atomic_pickle_dump(path, {
+            "cls": self.__class__.__name__, "user_map": self.user_map,
+            "item_map": self.item_map, "R": self.R, "state": self._state(),
+            "params": {"top_k_neighbors": self.top_k_neighbors,
+                       "reg": self.reg, "shrink": self.shrink, "name": self.name},
+        })
 
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs) -> "_ClassicCFBase":
