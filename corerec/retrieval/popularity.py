@@ -69,26 +69,36 @@ class PopularityRetriever(BaseRetriever):
         
         Provide either scores or interaction_counts.
         """
-        self.item_ids = list(item_ids)
-        
-        if scores is not None:
-            self.popularity_scores = np.asarray(scores, dtype=float)
-        elif interaction_counts is not None:
-            self.popularity_scores = np.asarray(interaction_counts, dtype=float)
-        else:
-            # default: uniform popularity
-            self.popularity_scores = np.ones(len(item_ids))
-        
-        # apply time decay if configured
-        if self.time_decay is not None and timestamps is not None:
-            ts = np.asarray(timestamps)
-            max_ts = ts.max()
-            decay = np.exp(-self.time_decay * (max_ts - ts))
-            self.popularity_scores = self.popularity_scores * decay
-        
-        # pre-sort for fast retrieval
-        self._sorted_indices = np.argsort(self.popularity_scores)[::-1]
-        
+        item_ids = list(item_ids)
+        arrays = {}
+        for name, values in (("scores", scores), ("interaction_counts", interaction_counts),
+                             ("timestamps", timestamps)):
+            if values is not None:
+                array = np.asarray(values, dtype=float)
+                if array.ndim != 1 or len(array) != len(item_ids):
+                    raise ValueError(f"{name} must be one-dimensional with one value per item")
+                if not np.isfinite(array).all():
+                    raise ValueError(f"{name} must contain only finite values")
+                arrays[name] = array
+
+        popularity_scores = arrays.get("scores", arrays.get("interaction_counts"))
+        if popularity_scores is None:
+            popularity_scores = np.ones(len(item_ids))
+
+        if self.time_decay is not None:
+            if not np.isfinite(self.time_decay) or self.time_decay < 0:
+                raise ValueError("time_decay must be finite and non-negative")
+            if "timestamps" in arrays and item_ids:
+                ts = arrays["timestamps"]
+                with np.errstate(over="ignore"):
+                    decay = np.exp(-self.time_decay * (ts.max() - ts))
+                popularity_scores = popularity_scores * decay
+
+        # Publish fitted state only after every input has been validated.
+        self.item_ids = item_ids
+        self.popularity_scores = popularity_scores
+        self._sorted_indices = np.argsort(popularity_scores)[::-1]
+
         self._is_fitted = True
         return self
     
@@ -112,6 +122,11 @@ class PopularityRetriever(BaseRetriever):
         """
         self._check_fitted()
         
+        if top_k < 0:
+            raise ValueError("top_k must be non-negative")
+        if top_k == 0:
+            return RetrievalResult(candidates=[], query_id=query, retriever_name=self.name)
+
         start = time.perf_counter()
         
         exclude_set = set(exclude_items) if exclude_items else set()

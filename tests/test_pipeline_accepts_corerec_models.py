@@ -114,3 +114,42 @@ def test_three_stage_pipeline_end_to_end(fitted):
     assert len(final.candidates) == 5
     ids = [c.item_id for c in final.candidates]
     assert len(set(ids)) == 5, f"duplicate items survived reranking: {ids}"
+
+
+@pytest.mark.parametrize("estimator", ["regressor", "classifier"])
+def test_sklearn_features_do_not_depend_on_identifier_type(estimator):
+    from sklearn.linear_model import LinearRegression, LogisticRegression
+    from corerec.retrieval.base import Candidate
+
+    model = LinearRegression() if estimator == "regressor" else LogisticRegression()
+    model.fit(np.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=float), [0, 1, 0, 1])
+    ranker = PointwiseRanker(
+        model=model,
+        feature_extractor=lambda item, context: {"quality": 0.5, "retrieval_score": 0.2},
+    ).fit()
+    ranked = ranker.rank([Candidate("7", 0.2), Candidate(7, 0.2)])
+    assert len(ranked.candidates) == 2
+    expected = (model.predict_proba([[0.5, 0.2]])[0, 1] if estimator == "classifier"
+                else model.predict([[0.5, 0.2]])[0])
+    assert [c.score for c in ranked.candidates] == pytest.approx([expected, expected])
+    assert all(list(c.features) == ["quality", "retrieval_score"] for c in ranked.candidates)
+
+
+def test_callable_model_still_receives_item_id():
+    from corerec.retrieval.base import Candidate
+
+    seen = []
+    ranker = PointwiseRanker(model=lambda features: seen.append(features["item_id"]) or 1).fit()
+    ranker.rank([Candidate(7, 0.2), Candidate("8", 0.3)])
+    assert seen == [7, "8"]
+
+
+def test_explicit_numeric_item_feature_is_preserved():
+    from sklearn.linear_model import LinearRegression
+    from corerec.retrieval.base import Candidate
+
+    model = LinearRegression().fit([[0, 0], [1, 0], [0, 1]], [0, 1, 0])
+    ranker = PointwiseRanker(
+        model=model, feature_extractor=lambda item, context: {"item_id": item},
+    ).fit()
+    assert ranker.rank([Candidate(7, 0.2)]).candidates[0].score == pytest.approx(7)
