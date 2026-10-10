@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 from typing import List, Dict, Optional, Tuple, Any, Union
 from corerec.api.id_index import IdIndex
+from corerec.api.interactions import to_interactions
 from corerec.api.base_recommender import BaseRecommender
 from corerec.api.exceptions import ModelNotFittedError, InvalidParameterError
 from corerec.utils.validation import (
@@ -165,11 +166,11 @@ class DeepFM(BaseRecommender):
             item_features: Dictionary of item features
             batch_size: Batch size for training (overrides init param if provided)
         """
-        (user_ids, item_ids, ratings), _ = self._unpack_fit_args(
-            user_ids, item_ids, ratings, supported_modes=("triplet",)
-        )
-        # Validate inputs
+        # Validate inputs (the model's own messages first), then read every input
+        # form through the one adapter (#78); ratings keep their full precision
         validate_fit_inputs(user_ids, item_ids, ratings)
+        user_ids, item_ids, _ = to_interactions(user_ids, item_ids, ratings).triple()
+        ratings = np.asarray(ratings, dtype=float).tolist()
         
         if batch_size is not None:
             self.batch_size = batch_size
