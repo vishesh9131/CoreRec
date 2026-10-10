@@ -19,7 +19,7 @@ import numpy as np
 import scipy.sparse as sp
 from scipy.sparse import csr_matrix
 
-from corerec.api.base_recommender import BaseRecommender
+from corerec.api.base_recommender import BaseRecommender, atomic_path
 
 logger = logging.getLogger(__name__)
 
@@ -97,8 +97,8 @@ class _ClassicCFBase(BaseRecommender):
 
     # -- contract: persistence ----------------------------------------- #
     def save(self, path: Union[str, Path], **kwargs) -> None:
-        p = Path(path); p.parent.mkdir(parents=True, exist_ok=True)
-        with open(p, "wb") as f:
+        self._check_fitted()
+        with atomic_path(path) as tmp, open(tmp, "wb") as f:
             pickle.dump({"cls": self.__class__.__name__, "user_map": self.user_map,
                          "item_map": self.item_map, "R": self.R,
                          "state": self._state(),

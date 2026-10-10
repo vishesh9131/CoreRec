@@ -726,6 +726,32 @@ def _reject_non_finite(ratings) -> None:
             "Drop or fill those rows before calling fit().")
 
 
+def atomic_path(path):
+    """Context manager: write to the yielded temp path; it replaces *path* only on success.
+
+    A save that failed half-way (an unfitted model, a full disk) used to leave
+    *path* truncated, destroying the artifact that was there (#101).
+    """
+    import contextlib
+    import os
+    import tempfile
+
+    @contextlib.contextmanager
+    def _cm():
+        p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=p.parent, prefix=f".{p.name}.", suffix=".tmp")
+        os.close(fd)
+        try:
+            yield tmp
+            os.replace(tmp, p)
+        finally:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
+
+    return _cm()
+
+
 def _accept_datasets(fit):
     """Let fit(dataset) work on every model, whatever its fit() signature.
 

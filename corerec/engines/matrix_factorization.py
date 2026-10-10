@@ -21,7 +21,7 @@ from typing import Any, List, Union
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from corerec.api.base_recommender import BaseRecommender
+from corerec.api.base_recommender import BaseRecommender, atomic_path
 
 logger = logging.getLogger(__name__)
 
@@ -110,8 +110,8 @@ class _EmbeddingCFBase(BaseRecommender):
         return out
 
     def save(self, path: Union[str, Path], **kwargs) -> None:
-        p = Path(path); p.parent.mkdir(parents=True, exist_ok=True)
-        with open(p, "wb") as f:
+        self._check_fitted()
+        with atomic_path(path) as tmp, open(tmp, "wb") as f:
             pickle.dump({"U": self.U, "V": self.V, "R": self.R,
                          "user_map": self.user_map, "item_map": self.item_map,
                          "params": {"name": self.name, "factors": self.factors,

@@ -21,7 +21,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from scipy.sparse import csr_matrix
 
-from corerec.api.base_recommender import BaseRecommender
+from corerec.api.base_recommender import BaseRecommender, atomic_path
 
 logger = logging.getLogger(__name__)
 
@@ -166,17 +166,18 @@ class _VAEBase(BaseRecommender):
         return out
 
     def save(self, path: Union[str, Path], **kwargs) -> None:
-        p = Path(path); p.parent.mkdir(parents=True, exist_ok=True)
+        self._check_fitted()
         # "cls" is what ModelLoader reads; cfg["name"] is a display name and may be custom
-        torch.save({"cls": type(self).__name__,
-                    "cfg": {"name": self.name, "hidden_dim": self.hidden_dim,
-                            "latent_dim": self.latent_dim, "dropout": self.dropout,
-                            "learning_rate": self.learning_rate, "batch_size": self.batch_size,
-                            "epochs": self.epochs, "beta": self.beta, "reg": self.reg,
-                            "device": self.device, "seed": self.seed, "binarize": self.binarize},
-                    "user_map": self.user_map, "item_map": self.item_map,
-                    "num_users": self.num_users, "num_items": self.num_items,
-                    "R": self.R, "state_dict": self.model.state_dict() if self.model else None}, p)
+        with atomic_path(path) as tmp:
+            torch.save({"cls": type(self).__name__,
+                        "cfg": {"name": self.name, "hidden_dim": self.hidden_dim,
+                                "latent_dim": self.latent_dim, "dropout": self.dropout,
+                                "learning_rate": self.learning_rate, "batch_size": self.batch_size,
+                                "epochs": self.epochs, "beta": self.beta, "reg": self.reg,
+                                "device": self.device, "seed": self.seed, "binarize": self.binarize},
+                        "user_map": self.user_map, "item_map": self.item_map,
+                        "num_users": self.num_users, "num_items": self.num_items,
+                        "R": self.R, "state_dict": self.model.state_dict() if self.model else None}, tmp)
 
     @classmethod
     def load(cls, path: Union[str, Path], **kwargs) -> "_VAEBase":

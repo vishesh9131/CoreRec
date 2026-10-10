@@ -127,3 +127,35 @@ def test_vae_trains_on_a_binary_matrix_unless_told_not_to(cls_name, tmp_path):
     del ckpt["cfg"]["binarize"]
     torch.save(ckpt, path)
     assert cls.load(str(path)).binarize is False
+
+
+@pytest.mark.parametrize("cls_name,kw", [("ItemKNN", {}), ("EASE", {}), ("ALS", {"iterations": 2}),
+                                          ("MultVAE", {"epochs": 1, "hidden_dim": 16, "latent_dim": 4})])
+def test_failed_save_leaves_the_existing_artifact_intact(cls_name, kw, tmp_path, monkeypatch):
+    """Saving an unfitted model truncated the file before failing (#101)."""
+    import pickle
+
+    import torch
+
+    import corerec.engines as engines
+    from corerec.api.exceptions import ModelNotFittedError
+
+    cls = getattr(engines, cls_name)
+    path = tmp_path / "model.bin"
+    trained = cls(**kw).fit([1, 1, 2, 2, 3], [10, 20, 20, 30, 10])
+    trained.save(path)
+    before, recs = path.read_bytes(), trained.recommend(1, top_k=2)
+
+    with pytest.raises(ModelNotFittedError):
+        cls(**kw).save(path)
+
+    def boom(*a, **k):
+        raise OSError("disk full")
+    monkeypatch.setattr(pickle, "dump", boom)
+    monkeypatch.setattr(torch, "save", boom)
+    with pytest.raises(OSError):
+        trained.save(path)
+
+    assert path.read_bytes() == before
+    assert cls.load(path).recommend(1, top_k=2) == recs
+    assert [p.name for p in tmp_path.iterdir()] == ["model.bin"]  # no temp files left
