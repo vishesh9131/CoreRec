@@ -1,221 +1,136 @@
 # Advanced Usage Examples
 
-This guide covers advanced usage patterns and techniques in CoreRec.
+Run the setup first, then the examples below in the same Python session.
+The small dataset makes each example runnable without a download.
+
+```python
+import numpy as np
+from corerec.engines import ItemKNN
+
+users = np.array([1, 1, 2, 2, 3, 3])
+items = np.array([10, 20, 20, 30, 10, 30])
+model = ItemKNN().fit(users, items)
+```
 
 ## Model Ensembles
 
-### Combining Multiple Models
+Combine retrieval sources using reciprocal rank fusion. Fit each source before
+combining them; this merges candidate rankings rather than neural model weights.
 
 ```python
-from corerec.engines.dcn import DCN
-from corerec.engines.deepfm import DeepFM
-from corerec.engines.contentFilterEngine.hybrid_ensemble_methods import EnsembleRecommender
+from corerec.retrieval import CollaborativeRetriever, EnsembleRetriever, PopularityRetriever
 
-# Train individual models
-dcn_model = DCN(embedding_dim=64)
-dcn_model.fit(user_ids, item_ids, ratings)
-
-deepfm_model = DeepFM(embedding_dim=64)
-deepfm_model.fit(user_ids, item_ids, ratings)
-
-# Create ensemble
-ensemble = EnsembleRecommender(ensemble_strategy='weighted_average')
-ensemble.add_model(dcn_model, name="DCN", weight=1.5)
-ensemble.add_model(deepfm_model, name="DeepFM", weight=1.0)
-ensemble.train()
-
-# Get ensemble recommendations
-recommendations = ensemble.recommend(user_id=1, top_k=10)
+collaborative = CollaborativeRetriever(model=model)
+popular = PopularityRetriever().fit([10, 20, 30], interaction_counts=[2, 2, 2])
+ensemble = EnsembleRetriever([("collaborative", collaborative, 1.),
+                              ("popular", popular, .5)], strategy="rrf").fit()
+result = ensemble.retrieve(1, top_k=2)
+assert len(result.candidates) == 2
 ```
+
+Popularity may return items already seen by a known user. Apply your application's
+exclusions when mixing sources if that policy is required.
 
 ## Hyperparameter Tuning
 
-### Grid Search
+Keep validation interactions out of training. This tiny split has one held-out
+item per user; use a chronological split and a larger catalog for an actual
+model comparison.
 
 ```python
 from sklearn.model_selection import ParameterGrid
 
-param_grid = {
-    'embedding_dim': [32, 64, 128],
-    'learning_rate': [0.001, 0.01, 0.1],
-    'epochs': [10, 20, 30]
-}
+validation = {1: {30}, 2: {10}, 3: {20}}
+def hit_rate(candidate):
+    return np.mean([bool(set(candidate.recommend(user, top_k=1)) & relevant)
+                    for user, relevant in validation.items()])
 
-best_score = -np.inf
-best_params = None
-
-for params in ParameterGrid(param_grid):
-    model = DCN(**params)
-    model.fit(train_user_ids, train_item_ids, train_ratings)
-    
-    # Evaluate on validation set
-    score = evaluate(model, val_user_ids, val_item_ids, val_ratings)
-    
+best_score, best_params = -np.inf, None
+for params in ParameterGrid({"top_k_neighbors": [1, 2], "shrink": [0., 1.]}):
+    candidate = ItemKNN(**params).fit(users, items)
+    score = hit_rate(candidate)
     if score > best_score:
-        best_score = score
-        best_params = params
-
-print(f"Best params: {best_params}, Score: {best_score}")
+        best_score, best_params = score, params
+assert best_params is not None
 ```
 
 ## Cross-Validation
 
-### K-Fold Cross-Validation
-
-```python
-from sklearn.model_selection import KFold
-
-kf = KFold(n_splits=5, shuffle=True, random_state=42)
-scores = []
-
-for train_idx, val_idx in kf.split(user_ids):
-    # Split data
-    train_users = user_ids[train_idx]
-    train_items = item_ids[train_idx]
-    train_ratings = ratings[train_idx]
-    
-    val_users = user_ids[val_idx]
-    val_items = item_ids[val_idx]
-    val_ratings = ratings[val_idx]
-    
-    # Train model
-    model = DCN(embedding_dim=64)
-    model.fit(train_users, train_items, train_ratings)
-    
-    # Evaluate
-    score = evaluate(model, val_users, val_items, val_ratings)
-    scores.append(score)
-
-print(f"Mean CV Score: {np.mean(scores):.4f} ± {np.std(scores):.4f}")
-```
+Splitting random rows can leak future interactions into training. For rating
+prediction, keep a validation split separate; for sequential recommendation,
+split each user's history chronologically. The example above defines explicit
+held-out items rather than evaluating the interactions used to fit the model.
 
 ## Custom Evaluation Metrics
 
-### Implementing Custom Metrics
-
-```python
-def precision_at_k(model, user_ids, item_ids, ratings, k=10):
-    """Calculate Precision@K"""
-    precisions = []
-    
-    for user_id in user_ids:
-        # Get recommendations
-        recommendations = model.recommend(user_id, top_k=k)
-        
-        # Get actual relevant items
-        user_items = item_ids[user_ids == user_id]
-        user_ratings = ratings[user_ids == user_id]
-        relevant = user_items[user_ratings >= 4]  # Threshold for relevant
-        
-        # Calculate precision
-        if len(recommendations) > 0:
-            precision = len(set(recommendations) & set(relevant)) / len(recommendations)
-            precisions.append(precision)
-    
-    return np.mean(precisions) if precisions else 0.0
-
-# Use custom metric
-model = DCN(embedding_dim=64)
-model.fit(user_ids, item_ids, ratings)
-precision = precision_at_k(model, test_user_ids, test_item_ids, test_ratings, k=10)
-```
+`hit_rate()` above measures whether the top recommendation contains a held-out
+item. It weights each user once. Count unique users when aggregating metrics;
+iterating interaction rows would overweight users with longer histories.
 
 ## Batch Processing
 
-### Efficient Batch Predictions
+`batch_predict()` takes `(user, item)` pairs. Batch recommendation returns one
+entry per user.
 
 ```python
-from corerec.api.mixins import BatchProcessingMixin
-
-class MyModel(BaseRecommender, BatchProcessingMixin):
-    pass
-
-model = MyModel()
-model.fit(user_ids, item_ids, ratings)
-
-# Batch predictions
-batch_user_ids = [1, 2, 3, 4, 5]
-batch_item_ids = [10, 20, 30, 40, 50]
-predictions = model.batch_predict(batch_user_ids, batch_item_ids)
-
-# Batch recommendations
-recommendations = model.batch_recommend(batch_user_ids, top_k=10)
+scores = model.batch_predict([(1, 30), (2, 10)])
+recommendations = model.batch_recommend([1, 2], top_k=1)
+assert len(scores) == 2
+assert len(recommendations) == 2
 ```
 
 ## Model Persistence
 
-### Saving with Metadata
-
 ```python
-from corerec.api.mixins import ModelPersistenceMixin
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from corerec.serving import ModelLoader
 
-class MyModel(BaseRecommender, ModelPersistenceMixin):
-    pass
-
-model = MyModel()
-model.fit(user_ids, item_ids, ratings)
-
-# Save with metadata
-metadata = {
-    'training_date': '2024-01-01',
-    'dataset': 'movielens-100k',
-    'version': '1.0.0'
-}
-model.save('artifacts/model', metadata=metadata)
+with TemporaryDirectory() as directory:
+    path = Path(directory) / "itemknn"
+    model.save(path)
+    restored = ModelLoader().load(path)
+    assert restored.recommend(1, top_k=1) == model.recommend(1, top_k=1)
 ```
+
+See [model persistence](../user_guide/model_persistence.md) for trusted legacy
+migration and custom neural modules.
 
 ## Handling Cold Start
 
-### New User Recommendations
+Unknown users have no collaborative history. Select a popularity fallback
+explicitly, using counts from training data:
 
 ```python
-# For new users, use content-based or hybrid approaches
-from corerec.engines.contentFilterEngine.hybrid_ensemble_methods import HybridCollaborative
-
-hybrid_model = HybridCollaborative(
-    hybrid_strategy='switching',  # Switch to content for cold users
-    cf_weight=0.6,
-    content_weight=0.4
-)
-
-hybrid_model.train(user_item_matrix, item_features)
-
-# Works for both warm and cold users
-recommendations = hybrid_model.recommend(user_id=new_user_id, top_k=10)
+user_id = 999
+if user_id in model.user_map:
+    recommendations = model.recommend(user_id, top_k=2)
+else:
+    recommendations = [candidate.item_id for candidate
+                       in popular.retrieve(user_id, top_k=2).candidates]
+assert len(recommendations) == 2
 ```
 
 ## Performance Optimization
 
-### Using GPU
+Measure training and serving separately. For neural models, choose a device
+through the model constructor:
 
 ```python
-import torch
+from corerec.engines import DCN
+from corerec.device import resolve_device
 
-# Check GPU availability
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-model = DCN(embedding_dim=64, device=device)
-model.fit(user_ids, item_ids, ratings)
+neural = DCN(embedding_dim=8, deep_layers=[8], epochs=1,
+             device=str(resolve_device("auto")))
+neural.fit(users, items, np.ones(len(users)))
 ```
 
-### Parallel Processing
-
-```python
-from multiprocessing import Pool
-
-def train_model(params):
-    model = DCN(**params)
-    model.fit(user_ids, item_ids, ratings)
-    return evaluate(model, val_user_ids, val_item_ids, val_ratings)
-
-# Train multiple models in parallel
-with Pool(processes=4) as pool:
-    scores = pool.map(train_model, param_configs)
-```
+Keep concurrent training jobs within the memory available on the chosen device.
+Separate processes each allocate their own model and data; more workers can
+increase memory use without improving throughput.
 
 ## See Also
 
-- [Basic Usage](basic_usage.md) - Basic examples
-- [Production Deployment](production_deployment.md) - Deployment guides
-- [Tutorials](../tutorials/index.md) - Model-specific tutorials
-
+- [Basic usage](basic_usage.md)
+- [Production deployment](production_deployment.md)
+- [Tutorials](../tutorials/index.md)
