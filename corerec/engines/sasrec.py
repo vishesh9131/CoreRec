@@ -1,3 +1,4 @@
+from corerec.api.id_index import IdIndex
 import numpy as np
 import torch
 from corerec.device import resolve_device
@@ -385,22 +386,18 @@ class SASRec(BaseRecommender):
                 init_cfg["epochs"] = init_cfg.pop("num_epochs")
             return cls(device=dev, **init_cfg)
 
-        def _coerce_id(key):
-            if isinstance(key, str) and key.lstrip("-").isdigit():
-                return int(key)
-            return key
-
         def _restore(instance, config, state, arrays, bundle):
             maps = load_map_state(
-                state, "item_to_index", "index_to_item", int_key_names=("index_to_item",)
+                state, "item_to_index", "index_to_item", int_key_names=("index_to_item",),
+                coerce_numeric=False
             )
-            instance.item_to_index = maps["item_to_index"]
-            instance.index_to_item = maps["index_to_item"]
+            instance._set_items(IdIndex(
+                sorted(maps["item_to_index"], key=maps["item_to_index"].get), offset=1))
             instance.user_sequences = {
-                _coerce_id(k): [int(i) for i in v]
+                k: [int(i) for i in v]
                 for k, v in nested_dict_from_lists(state.get("user_sequences_pairs")).items()
             }
-            instance.user_cooling_weights = dict_from_pairs(state.get("user_cooling_weights_pairs"))
+            instance.user_cooling_weights = dict_from_pairs(state.get("user_cooling_weights_pairs"), coerce_numeric=False)
             instance.is_fitted = state.get("is_fitted", True)
             if arrays and arrays.get("item_popularity") is not None:
                 instance.item_popularity = arrays["item_popularity"]
@@ -507,6 +504,11 @@ class SASRec(BaseRecommender):
         with open(filepath, 'wb') as f:
             pickle.dump(export_data, f)
         self.logger.info(f"Item embeddings exported to {filepath}")
+
+    def _set_items(self, index: IdIndex) -> None:
+        self.items_index = index
+        self.item_to_index = index.as_dict()
+        self.index_to_item = {code: item for item, code in self.item_to_index.items()}
 
     def _score_items(self, last_emb: torch.Tensor, item_indices: Optional[torch.LongTensor] = None) -> torch.Tensor:
         """
@@ -676,12 +678,7 @@ class SASRec(BaseRecommender):
         if interaction_matrix.shape[1] != len(item_ids):
             raise ValueError(f"interaction_matrix shape[1] ({interaction_matrix.shape[1]}) must match len(item_ids) ({len(item_ids)})")
 
-        # build mappings
-        self.item_to_index = {}
-        self.index_to_item = {}
-        for idx, item_id in enumerate(item_ids):
-            self.item_to_index[item_id] = idx + 1  # reserve 0 for padding
-            self.index_to_item[idx + 1] = item_id
+        self._set_items(IdIndex(item_ids, offset=1))
 
         n_items = len(item_ids)
         # item popularity
