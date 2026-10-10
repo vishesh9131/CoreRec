@@ -71,3 +71,36 @@ from corerec import (
     SIM_MUTUAL_INFORMATION,# Mutual information
 )
 ```
+
+
+## Loading saved datasets and embeddings
+
+`BaseDataset.save()` writes a legacy pickle file. Load it only when you trust
+its source, with `BaseDataset.load(path, allow_pickle=True)`; this emits a
+warning because pickle can execute Python. Failed saves preserve the previous
+file.
+
+For embedding tables, use numeric NumPy archives instead of pickle:
+
+```python
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import numpy as np
+from corerec.embeddings.pretrained import PretrainedEmbeddings
+
+with TemporaryDirectory() as directory:
+    path = Path(directory) / "embeddings.npz"
+    np.savez(path, embeddings=np.ones((2, 3)), ids=np.array(["01", "1"]))
+    table = PretrainedEmbeddings.load(path)
+    assert table.ids == ["01", "1"]
+    assert table.dim == 3
+```
+
+Legacy `.pkl` embeddings require `PretrainedEmbeddings.load(path,
+allow_pickle=True)` for a trusted file.
+
+Generic `corerec.serialization` JSON/YAML loading reconstructs only classes
+registered explicitly by the application. Import the intended class yourself
+and call `SerializableRegistry.register(MyClass.__name__, MyClass)` before
+loading. Generic pickle files require `load_from_file(path, allow_pickle=True)`;
+`deserialize(path)` and `Serializable.load(path)` enforce the same rule.
