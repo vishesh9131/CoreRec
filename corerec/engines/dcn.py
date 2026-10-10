@@ -55,6 +55,8 @@ class DCN(BaseRecommender):
         >>> recommendations = model.recommend(user_id=1, top_k=10)
     """
 
+    _requires_explicit_ratings = True
+
     def __init__(
         self,
         name: str = "DCN",

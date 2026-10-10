@@ -178,7 +178,7 @@ def coerce_dataset(first_arg: Any) -> Optional[RecommenderDataset]:
     return None
 
 
-def as_interaction_frame(obj: Any) -> Optional[pd.DataFrame]:
+def as_interaction_frame(obj: Any, *, require_ratings: bool = False) -> Optional[pd.DataFrame]:
     """
     user_id/item_id/rating DataFrame from any interaction container, or None.
 
@@ -189,14 +189,18 @@ def as_interaction_frame(obj: Any) -> Optional[pd.DataFrame]:
         if obj.dataframe is not None:
             return as_interaction_frame(
                 obj.dataframe.rename(columns={obj.user_col: "user_id", obj.item_col: "item_id",
-                                              obj.rating_col: "rating"}))
+                                              obj.rating_col: "rating"}), require_ratings=require_ratings)
         if obj.user_ids is not None and obj.item_ids is not None:
+            if require_ratings and obj.ratings is None:
+                raise InvalidDataError("Explicit ratings are required for this model")
             r = obj.ratings if obj.ratings is not None else np.ones(len(obj.user_ids))
             return pd.DataFrame({"user_id": obj.user_ids, "item_id": obj.item_ids, "rating": r})
         return None
     if isinstance(obj, pd.DataFrame):
         if not {"user_id", "item_id"} <= set(obj.columns):
             return None
+        if require_ratings and "rating" not in obj.columns:
+            raise InvalidDataError("Explicit ratings are required for this model")
         return obj if "rating" in obj.columns else obj.assign(rating=1.0)
     frame = getattr(obj, "interactions", None)
     if isinstance(frame, pd.DataFrame):
@@ -204,10 +208,12 @@ def as_interaction_frame(obj: Any) -> Optional[pd.DataFrame]:
         return as_interaction_frame(frame.rename(columns={
             getattr(obj, "user_id_col", "user_id"): "user_id",
             getattr(obj, "item_id_col", "item_id"): "item_id",
-            getattr(obj, "rating_col", "rating"): "rating"}))
+            getattr(obj, "rating_col", "rating"): "rating"}), require_ratings=require_ratings)
     rows = getattr(obj, "data", None)
     if isinstance(rows, list) and rows and isinstance(rows[0], (tuple, list)) and len(rows[0]) >= 2:
         # (user, item[, rating, ...]) tuples: ContextualDataset, GraphDataset
+        if require_ratings and any(len(row) < 3 for row in rows):
+            raise InvalidDataError("Explicit ratings are required for this model")
         return pd.DataFrame({"user_id": [t[0] for t in rows], "item_id": [t[1] for t in rows],
                              "rating": [float(t[2]) if len(t) > 2 else 1.0 for t in rows]})
     return None

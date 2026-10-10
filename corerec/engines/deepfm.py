@@ -31,6 +31,8 @@ class DeepFM(BaseRecommender):
     Guo et al. "DeepFM: A Factorization-Machine based Neural Network for CTR Prediction" (IJCAI 2017)
     """
 
+    _requires_explicit_ratings = True
+
     def __init__(
         self,
         name: str = "DeepFM",

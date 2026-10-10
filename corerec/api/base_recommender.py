@@ -743,17 +743,18 @@ def _accept_datasets(fit):
 
     @functools.wraps(fit)
     def wrapper(self, *args, **kwargs):
+        requires_ratings = getattr(self, "_requires_explicit_ratings", False)
         if len(args) == 1 and not kwargs.keys() & {"item_ids", "ratings", "interactions"}:
             from corerec.api.dataset import as_interaction_frame
 
             data = args[0]
             if wants_frame:
                 if not isinstance(data, pd.DataFrame):
-                    frame = as_interaction_frame(data)
+                    frame = as_interaction_frame(data, require_ratings=requires_ratings)
                     if frame is not None:
                         args = (frame,)
             else:
-                frame = as_interaction_frame(data)
+                frame = as_interaction_frame(data, require_ratings=requires_ratings)
                 if frame is not None:
                     if "timestamp" in frame.columns:
                         # sequential models read row order as time order
@@ -762,11 +763,16 @@ def _accept_datasets(fit):
                             kwargs["timestamps"] = frame["timestamp"].tolist()
                     args = (frame["user_id"].tolist(), frame["item_id"].tolist(),
                             frame["rating"].astype(float).tolist())
-        if args and isinstance(args[0], pd.DataFrame):  # SAR: fit(df)
+        frame_arg = args[0] if args else kwargs.get(params[0])
+        if isinstance(frame_arg, pd.DataFrame):  # SAR: fit(df)
             col = getattr(self, "col_rating", "rating")
-            _reject_non_finite(args[0][col] if col in args[0].columns else None)
+            if requires_ratings and col not in frame_arg.columns:
+                raise InvalidDataError("Explicit ratings are required for this model")
+            _reject_non_finite(frame_arg[col] if col in frame_arg.columns else None)
         else:
             third = args[2] if len(args) > 2 else kwargs.get("ratings", kwargs.get("interactions"))
+            if requires_ratings and third is None:
+                raise InvalidDataError("Explicit ratings are required for this model")
             _reject_non_finite(third)
         return fit(self, *args, **kwargs)
 
