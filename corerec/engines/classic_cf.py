@@ -79,7 +79,9 @@ class _ClassicCFBase(BaseRecommender):
         if not self.is_fitted:
             from corerec.api.exceptions import ModelNotFittedError
             raise ModelNotFittedError()
-        if user_id not in self.user_map:
+        if top_k < 0:
+            raise ValueError("top_k must be non-negative")
+        if top_k == 0 or user_id not in self.user_map:
             return []
         exclude = set(exclude_items or [])
         uidx = self.user_map[user_id]
@@ -87,6 +89,8 @@ class _ClassicCFBase(BaseRecommender):
         scores[self.R[uidx].indices] = -np.inf          # exclude already seen
         out = []
         for idx in np.argsort(-scores):
+            if not np.isfinite(scores[idx]):
+                continue
             iid = self.reverse_item_map[int(idx)]
             if iid in exclude:
                 continue

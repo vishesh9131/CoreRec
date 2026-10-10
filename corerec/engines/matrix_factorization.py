@@ -94,13 +94,17 @@ class _EmbeddingCFBase(BaseRecommender):
         if not self.is_fitted:
             from corerec.api.exceptions import ModelNotFittedError
             raise ModelNotFittedError()
-        if user_id not in self.user_map:
+        if top_k < 0:
+            raise ValueError("top_k must be non-negative")
+        if top_k == 0 or user_id not in self.user_map:
             return []
         exclude = set(exclude_items or [])
         scores = self._score_all_items(user_id).copy()
         scores[self.R[self.user_map[user_id]].indices] = -np.inf
         out = []
         for idx in np.argsort(-scores):
+            if not np.isfinite(scores[idx]):
+                continue
             iid = self.reverse_item_map[int(idx)]
             if iid in exclude:
                 continue
