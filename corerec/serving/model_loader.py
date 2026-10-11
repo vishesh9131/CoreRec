@@ -41,7 +41,7 @@ class ModelLoader:
         self.logger = logging.getLogger("ModelLoader")
 
     def load(self, model_path: str, use_cache: bool = True, model_class: Any = None,
-             *, allow_pickle: bool = False) -> Any:
+             *, allow_pickle: bool = False, module_cls: Any = None) -> Any:
         """
         Load a model saved with ``model.save(model_path)``.
 
@@ -56,6 +56,9 @@ class ModelLoader:
             use_cache: Whether to use cached model
             model_class: skip detection and call ``model_class.load(model_path)``
             allow_pickle: explicitly trust legacy files that can execute Python
+            module_cls: the nn.Module class of a custom ``corerec.nn.Recommender``.
+                Saved metadata can't authorize importing it, so pass it here
+                (``Recommender.load(path, module_cls=...)`` does the same).
 
         Returns:
             The reconstructed model
@@ -63,7 +66,7 @@ class ModelLoader:
         from corerec.api.model_bundle import is_safe_bundle, require_legacy_pickle
         if not is_safe_bundle(model_path) and not allow_pickle:
             require_legacy_pickle(model_path)
-        key = (str(model_path), allow_pickle, model_class)
+        key = (str(model_path), allow_pickle, model_class, module_cls)
         if use_cache and key in self.cache:
             self.logger.info(f"Loading model from cache: {key}")
             return self.cache[key]
@@ -71,6 +74,8 @@ class ModelLoader:
         self.logger.info(f"Loading model from disk: {key}")
         cls = model_class or _detect_class(Path(model_path), allow_pickle=allow_pickle)
         load_kwargs = {"allow_pickle": True} if allow_pickle else {}
+        if module_cls is not None:
+            load_kwargs["module_cls"] = module_cls
         model = cls.load(str(model_path), **load_kwargs)
 
         if use_cache:

@@ -237,15 +237,40 @@ def train_command(args):
     print(f"Saved     {out}/  (serve it with: corerec serve {out})")
 
 
+def _import_object(spec: str):
+    """'pkg.module:Name' -> the object. Typed by the user, so it authorizes the import
+    that saved metadata can't (#224)."""
+    import importlib
+
+    mod, sep, qual = spec.partition(":")
+    if not sep or not mod or not qual:
+        raise SystemExit(f"--module wants 'package.module:ClassName', got {spec!r}")
+    obj = importlib.import_module(mod)
+    for part in qual.split("."):
+        obj = getattr(obj, part)
+    return obj
+
+
 def serve_command(args):
     """corerec serve FILE|ARTIFACT"""
     from corerec.serving.from_csv import build_server, is_artifact, load_artifact, save_artifact
+
+    from corerec.api.model_bundle import is_safe_bundle
 
     artifact = None
     if is_artifact(args.data):
         model, manifest = load_artifact(args.data, allow_pickle=args.allow_pickle)
         artifact = args.data
         print(f"Loaded    {manifest['model']} from {args.data}")
+    elif is_safe_bundle(args.data):
+        # a model saved with model.save(path), e.g. a custom corerec.nn.Recommender
+        from corerec.serving import ModelLoader
+
+        module_cls = _import_object(args.module) if args.module else None
+        model = ModelLoader().load(args.data, use_cache=False, allow_pickle=args.allow_pickle,
+                                   module_cls=module_cls)
+        manifest = None
+        print(f"Loaded    {type(model).__name__} from {args.data}")
     else:
         result = _train(args)
         manifest = result.manifest()
@@ -349,7 +374,11 @@ def main():
         "serve", help="Serve recommendations over HTTP from a file or a saved artifact",
         description="Given an interactions file: train, report, then serve. Given a "
                     "directory written by `corerec train`: load and serve it.")
-    serve_parser.add_argument("data", help="interactions file, or artifact directory")
+    serve_parser.add_argument("data", help="interactions file, artifact directory, or a model "
+                                           "saved with model.save(path)")
+    serve_parser.add_argument("--module", metavar="PKG.MOD:CLASS",
+                              help="the nn.Module class of a custom corerec.nn.Recommender, "
+                                   "e.g. mypkg.models:DotModel")
     serve_parser.add_argument("--host", default="0.0.0.0")
     serve_parser.add_argument("--port", type=int, default=8000)
     serve_parser.add_argument("--save", metavar="DIR", help="also save the trained artifact here")

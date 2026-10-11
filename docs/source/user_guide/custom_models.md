@@ -138,14 +138,20 @@ truth = test.groupby("user_id").item_id.apply(list).to_dict()
 print(Evaluator(metrics=["NDCG@10", "Recall@10"]).evaluate(rec, truth))
 
 rec.save("dot.pt")
-same = ModelLoader().load("dot.pt")     # rebuilds DotModel from its import path
-server = ModelServer(same)              # server.run() serves it over HTTP
+# saved metadata can't authorize importing your module, so name the class
+same = ModelLoader().load("dot.pt", module_cls=DotModel)
+server = ModelServer(same)              # server.start() serves it over HTTP
 ```
 
 `corerec.export.to_onnx(rec, "dot.onnx")` exports it for ONNX Runtime (see
 [ONNX Export](onnx_export.md)).
 
-Saving records the module's import path. A module defined in a notebook or
-script reloads fine in that same session; to load it in another process, put
-it in an importable file or pass it explicitly:
-`Recommender.load("dot.pt", module_cls=DotModel)`.
+Saving records the module's import path, but loading never imports a module
+because a file said so: pass the class, in this session or any other, with
+`Recommender.load("dot.pt", module_cls=DotModel)` or
+`ModelLoader().load("dot.pt", module_cls=DotModel)`. To serve it from the
+command line, put `DotModel` in an importable file and name it:
+
+```bash
+corerec serve dot.pt --module mypkg.models:DotModel
+```
