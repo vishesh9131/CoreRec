@@ -283,6 +283,8 @@ def retrain_command(args):
                          allow_pickle=args.allow_pickle)
     print(f"Data      {d['rows']:,} interactions, {d['new_rows']:,} new since the last training "
           f"({d['feedback_rows']:,} from feedback)")
+    if d.get("warning"):
+        print(f"Warning   {d['warning']}")
     if d["mode"] == "row order":
         print("          no timestamps: rows appended to the file since the last training are new")
     if d["candidate"] is None:
@@ -376,7 +378,8 @@ def main():
                     "model and settings, compares against the current model on a recent holdout, "
                     "and swaps it in only when the candidate scores at least as well.")
     retrain_parser.add_argument("artifact", help="artifact directory written by corerec train")
-    retrain_parser.add_argument("--data", help="interactions file (default: the artifact's training file)")
+    retrain_parser.add_argument("--data", help="interactions file with every row, old and new (default: the "
+                                     "artifact's training file, re-read)")
     retrain_parser.add_argument("--feedback", metavar="LOG", help="feedback log from corerec serve --feedback-log")
     retrain_parser.add_argument("--tolerance", type=float, default=0.0,
                                 help="promote if candidate NDCG >= current - tolerance (default 0)")

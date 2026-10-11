@@ -72,8 +72,11 @@ corerec retrain artifacts/m --feedback feedback.jsonl
 ```
 
 Retrain re-reads the training file (append new events to it, or pass
-`--data newer.csv`) and adds clicks and purchases from the feedback log. Rows
-newer than the model's last training are new data, split in time:
+`--data all.csv`) and adds clicks and purchases from the feedback log. `--data`
+replaces the training file, so it must hold every row, old and new: a file of
+only the new rows leaves the candidate a fraction of the data, and retrain
+warns about it. Rows newer than the model's last training are new data, split
+in time:
 
 - the candidate trains on everything old plus the earlier half of the new rows
 - both the candidate and the current model are scored on the later half,
