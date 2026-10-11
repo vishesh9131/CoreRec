@@ -14,7 +14,9 @@ from pathlib import Path
 import pickle
 import json
 import copy
+import contextlib
 import inspect
+import logging
 import warnings
 import warnings
 import numpy as np
@@ -650,6 +652,30 @@ def _reject_non_finite(ratings) -> None:
             "Drop or fill those rows before calling fit().")
 
 
+@contextlib.contextmanager
+def _verbose_logging(verbose: Any):
+    """Show corerec's INFO progress while a verbose=True model fits.
+
+    Progress goes through logger.info, which Python drops when the app never
+    configured logging, so verbose=True printed nothing (#209). An app that
+    did configure logging (any handler on corerec or root) keeps control.
+    """
+    lg = logging.getLogger("corerec")
+    if not verbose or lg.hasHandlers():
+        yield
+        return
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    level = lg.level
+    lg.addHandler(handler)
+    lg.setLevel(logging.INFO)
+    try:
+        yield
+    finally:
+        lg.removeHandler(handler)
+        lg.setLevel(level)
+
+
 def _accept_datasets(fit):
     """Let fit(dataset) work on every model, whatever its fit() signature.
 
@@ -698,6 +724,7 @@ def _accept_datasets(fit):
             if requires_ratings and third is None:
                 raise InvalidDataError("Explicit ratings are required for this model")
             _reject_non_finite(third)
-        return fit(self, *args, **kwargs)
+        with _verbose_logging(getattr(self, "verbose", False)):
+            return fit(self, *args, **kwargs)
 
     return wrapper

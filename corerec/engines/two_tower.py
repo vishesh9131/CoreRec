@@ -164,9 +164,8 @@ class TwoTower(BaseRecommender):
         # None means unseeded, on purpose.
         self.seed = seed
         
-        self.log = logging.getLogger(self.name)
-        if verbose:
-            self.log.setLevel(logging.INFO)
+        # under "corerec", so verbose=True shows it like every other model (#209)
+        self.log = logging.getLogger(__name__)
         
         # will be initialized in fit()
         self.model = None
