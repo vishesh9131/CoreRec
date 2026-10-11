@@ -453,6 +453,15 @@ def retrain_artifact(
         df["timestamp"] = df["row"].astype(float)
         cutoff = trained_rows - 1
     df = df.drop(columns="row", errors="ignore")
+    # --data replaces the training file, it isn't added to it: a file of only
+    # the new rows leaves the candidate a fraction of the data, so it loses (#208)
+    old_in_file, trained = int((df["timestamp"] <= cutoff).sum()), (manifest.get("stats") or {}).get("rows")
+    short = None
+    if by_time and trained and old_in_file < trained / 2:
+        short = (f"{source} has {old_in_file:,} rows from before the last training, but the model "
+                 f"was trained on {trained:,}. The data file must hold every row, old and new; "
+                 "the candidate learns only from it, so it will score lower than it should.")
+        warnings.warn(short, UserWarning, stacklevel=2)
     n_feedback, feedback_through = 0, manifest.get("feedback_through")
     if feedback:
         from corerec.serving.feedback import FeedbackLog
@@ -473,7 +482,8 @@ def retrain_artifact(
     decision = {"promoted": False, "would_promote": False, "model": name, "metric": f"NDCG@{k}",
                 "mode": "timestamps" if by_time else "row order",
                 "rows": len(df), "new_rows": len(new), "feedback_rows": n_feedback,
-                "data": str(source), "candidate": None, "current": None, "tolerance": tolerance}
+                "data": str(source), "candidate": None, "current": None, "tolerance": tolerance,
+                "warning": short}
     if len(new) < min_new_rows:
         decision["reason"] = f"only {len(new)} new rows since the last training (need {min_new_rows})"
         return decision

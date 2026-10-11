@@ -51,6 +51,33 @@ def test_a_worse_candidate_is_not_shipped(files):
     assert (art / "manifest.json").read_text() == original
 
 
+def test_data_with_only_the_new_rows_is_flagged(files, capsys, monkeypatch):
+    """The docs said "--data newer.csv"; with only the new rows the candidate trains on a
+    fraction of the data and always loses, and a nightly cron never refreshes (#208)."""
+    import sys
+
+    from corerec import cli
+
+    tmp, art, df = files
+    before = json.loads((art / "manifest.json").read_text())["trained_through"]
+    df[df["timestamp"] > before].to_csv(tmp / "newer.csv", index=False)
+    with pytest.warns(UserWarning, match="must hold every row, old and new"):
+        d = retrain_artifact(art, data=tmp / "newer.csv", dry_run=True)
+    assert "0 rows from before the last training" in d["warning"]
+
+    monkeypatch.setattr(sys, "argv", ["corerec", "retrain", str(art), "--data", str(tmp / "newer.csv"),
+                                      "--dry-run"])
+    with pytest.warns(UserWarning):
+        cli.main()
+    assert "Warning   " in capsys.readouterr().out
+
+
+def test_full_data_is_not_flagged(files, recwarn):
+    tmp, art, _ = files
+    assert retrain_artifact(art, data=tmp / "now.csv", dry_run=True)["warning"] is None
+    assert not [w for w in recwarn if "old and new" in str(w.message)]
+
+
 def test_dry_run_changes_nothing(files):
     tmp, art, _ = files
     original = (art / "manifest.json").read_text()
