@@ -183,6 +183,32 @@ def test_fallback_also_covers_models_that_raise_for_unknown_users(events_csv):
     assert resp.status_code == 200 and resp.json()["source"] == "fallback"
 
 
+@pytest.mark.parametrize("model", ["ALS", "SAR"])
+def test_batch_recommend_follows_the_recommend_contract(events_csv, tmp_path, model):
+    """/batch/recommend gave unknown users [] and logged nothing (#204)."""
+    result = train_from_csv(events_csv, model=model, evaluate=False)
+    client = TestClient(build_server(result.model, result.manifest(), feedback_log=tmp_path / "fb.jsonl").app)
+    popular = result.manifest()["popular_items"]
+
+    body = client.post("/batch/recommend", json={"user_ids": ["nobody", "user0"], "top_k": 3}).json()
+    assert body["recommendations"]["nobody"] == popular[:3]
+    assert body["sources"] == {"nobody": "fallback", "user0": "model"}
+    single = client.post("/recommend", json={"user_id": "user0", "top_k": 3}).json()
+    assert body["recommendations"]["user0"] == single["recommendations"]
+
+    # every user is an impression, and its request_id credits a click
+    assert len((tmp_path / "fb.jsonl").read_text().splitlines()) == 3
+    rid, item = body["request_ids"]["user0"], body["recommendations"]["user0"][0]
+    assert client.post("/feedback", json={"request_id": rid, "user_id": "user0", "item_id": item}).status_code == 200
+    m = client.get("/metrics").json()["variants"]["all"]
+    assert m["requests"] == 3 and m["clicks"] == 1
+
+    excluded = client.post("/batch/recommend", json={"user_ids": ["nobody", "user0"], "top_k": 3,
+                                                     "exclude_items": [popular[0]]}).json()
+    assert excluded["recommendations"]["nobody"] == popular[1:4]
+    assert popular[0] not in excluded["recommendations"]["user0"]
+
+
 def test_parse_params():
     assert parse_params(["factors=64", "reg=0.5", "name=x", "dims=[8, 4]"]) == {
         "factors": 64, "reg": 0.5, "name": "x", "dims": [8, 4]}
