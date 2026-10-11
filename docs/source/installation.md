@@ -93,6 +93,23 @@ The first run of `ml_1m.load()` downloads MovieLens 1M (~25 MB) to your local ca
 - **NumPy / PyTorch**: If you see NumPy compatibility warnings with PyTorch, use a matched pair, e.g. `pip install 'numpy<2'` with older PyTorch builds, or upgrade PyTorch to a NumPy 2–compatible release.
 - **GPU**: Deep learning models auto-detect CUDA when available; CPU works for small examples.
 
+### Intel Macs
+
+PyTorch's last macOS x86_64 wheel is 2.2.2, and it only works with NumPy 1.x.
+On an Intel Mac CoreRec therefore pins `numpy<2`, `scipy<1.14`, `pandas<2.3`
+and `scikit-learn<1.6`, the newest versions built for NumPy 1.x. That's
+automatic, but it needs Python 3.12 or older (there is no torch 2.2.2 for
+3.13):
+
+```bash
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install "corerec[serving,datasets]"
+python -c "import corerec, numpy, torch; print(numpy.__version__, torch.__version__)"
+# 1.26.x 2.2.2
+```
+
+Apple Silicon and Linux are not affected.
+
 ## Verify Installation
 
 ```python
