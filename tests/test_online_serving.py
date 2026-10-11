@@ -130,3 +130,33 @@ def test_slow_model_does_not_block_other_requests():
     assert codes == [200] * 4
     assert total < 1.5, f"4 requests of 0.5s took {total:.2f}s: served one at a time"
     assert health < 0.25, f"/health waited {health:.2f}s behind inference"
+
+
+def test_batch_is_a_from_interactions_argument(monkeypatch):
+    """The guide said to pass batch=1_000_000, which was a TypeError (#211)."""
+    import corerec.serving.online as online
+
+    seen = {}
+    real = online._train_lightgcn_embeddings
+
+    def spy(*a, **kw):
+        seen.update(kw)
+        return real(*a, **kw)
+
+    monkeypatch.setattr(online, "_train_lightgcn_embeddings", spy)
+    df = _toy_interactions()
+    online.OnlineRecommender.from_interactions(df, dim=8, epochs=1, batch=1_000_000)
+    assert seen["batch"] == 1_000_000 and seen["device"] == "auto"
+
+
+def test_stats_say_what_actually_serves():
+    """Without FAISS, stats() said 'hnsw' while a NumPy scan was serving (#211)."""
+    import corerec.serving.online as online
+
+    rec = online.OnlineRecommender.from_embeddings(item_ids=[1, 2, 3], item_emb=np.eye(3), index_type="flat")
+    faiss = rec.stats()["faiss"]
+    if faiss:
+        pytest.skip("FAISS installed: index types are real")
+    with pytest.warns(UserWarning, match="FAISS isn't installed"):
+        hnsw = online.OnlineRecommender.from_embeddings(item_ids=[1, 2, 3], item_emb=np.eye(3))
+    assert hnsw.stats()["index_type"] == "exact" and hnsw.stats()["requested_index_type"] == "hnsw"
