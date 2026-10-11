@@ -381,6 +381,51 @@ class BaseRecommender(ABC):
             )
         return user_map[user_id]
 
+    # One IdIndex per side on every model (#76). Models that build one set it in
+    # fit/load; the rest derive it from the map they already keep, with that
+    # map's own codes, so the attribute is there after fit and after every load.
+    _USER_MAPS = ("user_map", "user2index", "user_id_map", ("feature_map", "user"), "user_sequences")
+    _ITEM_MAPS = ("item_map", "item2index", "item_id_map", "item_to_index", ("feature_map", "item"))
+
+    @property
+    def users_index(self):
+        return self._id_index("_users_index", self._USER_MAPS)
+
+    @users_index.setter
+    def users_index(self, value):
+        self.__dict__["_users_index"] = value
+
+    @property
+    def items_index(self):
+        return self._id_index("_items_index", self._ITEM_MAPS)
+
+    @items_index.setter
+    def items_index(self, value):
+        self.__dict__["_items_index"] = value
+
+    def _id_index(self, slot: str, sources) -> "IdIndex":
+        from corerec.api.id_index import IdIndex
+
+        if self.__dict__.get(slot) is not None:
+            return self.__dict__[slot]
+        for src in sources:
+            m = (self.__dict__.get(src[0]) or {}).get(src[1]) if isinstance(src, tuple) else self.__dict__.get(src)
+            if isinstance(m, dict) and m:
+                cached = self.__dict__.get(slot + "_derived")
+                if cached is not None and cached[0] is m and cached[1] == len(m):
+                    return cached[2]
+                codes = list(m.values())
+                if all(isinstance(c, (int, np.integer)) and not isinstance(c, bool) for c in codes):
+                    lo = int(min(codes))
+                    if int(max(codes)) - lo + 1 != len(codes) or len(set(codes)) != len(codes):
+                        continue  # not a plain lo..hi coding; an IdIndex would renumber it
+                    idx = IdIndex.from_dict(m, offset=lo)
+                else:  # e.g. user_sequences: known ids, no codes of their own
+                    idx = IdIndex(m)
+                self.__dict__[slot + "_derived"] = (m, len(m), idx)
+                return idx
+        raise AttributeError(f"{type(self).__name__} has no id index until it is fitted")
+
     def fit_from_dataset(self, dataset: "RecommenderDataset", **kwargs: Any) -> "BaseRecommender":
         """Train using a :class:`~corerec.api.dataset.RecommenderDataset`."""
         from corerec.api.dataset import RecommenderDataset
