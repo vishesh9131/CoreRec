@@ -151,6 +151,8 @@ class ModelServer:
                 Users are assigned by a stable hash, so each sees one variant.
             reload_fn: zero-argument callable returning a fresh model; enables
                 POST /reload (e.g. after ``corerec retrain`` replaced the artifact).
+                In an A/B test pass {"variant": callable, ...}; /reload then
+                reloads every variant, or one with ``?variant=name``.
             admin_token: when set, POST /reload needs ``Authorization: Bearer <token>``.
             feedback_token: when set, POST /feedback needs ``Authorization: Bearer <token>``.
                 Without them anyone who reaches the port can swap the model or
@@ -172,7 +174,12 @@ class ModelServer:
         self.model = next(iter(self.models.values()))
         self.feedback_log = (feedback_log if feedback_log is None or isinstance(feedback_log, FeedbackLog)
                              else FeedbackLog(feedback_log))
+        # one loader per variant; a bare callable reloads the only (or first) model
         self.reload_fn = reload_fn
+        self._reloaders = (dict(reload_fn) if isinstance(reload_fn, dict)
+                           else {next(iter(self.models)): reload_fn} if reload_fn else {})
+        if not set(self._reloaders) <= set(self.models):
+            raise ValueError(f"reload_fn names {sorted(self._reloaders)} must be models {sorted(self.models)}")
         self.admin_token = admin_token
         self.feedback_token = feedback_token
         self.host = host
@@ -375,14 +382,20 @@ class ModelServer:
             return _no_nan(out)
 
         @self.app.post("/reload")
-        def reload(http: Request):
-            """Swap in a fresh model from reload_fn without restarting."""
+        def reload(http: Request, variant: Optional[str] = None):
+            """Swap in fresh models from reload_fn without restarting (all variants, or ?variant=)."""
             _check_token(http, self.admin_token)
-            if self.reload_fn is None or len(self.models) != 1:
+            if not self._reloaders:
                 raise HTTPException(status_code=404, detail="reload is not configured")
-            name = next(iter(self.models))
-            self.models[name] = self.model = self.reload_fn()
-            return {"status": "reloaded", "model": type(self.model).__name__}
+            if variant is not None and variant not in self._reloaders:
+                raise HTTPException(status_code=404,
+                                    detail=f"no reload for variant {variant!r}; have {sorted(self._reloaders)}")
+            names = [variant] if variant is not None else list(self._reloaders)
+            fresh = {name: self._reloaders[name]() for name in names}  # load all before swapping any
+            self.models.update(fresh)
+            self.model = next(iter(self.models.values()))
+            return {"status": "reloaded", "model": type(next(iter(fresh.values()))).__name__,
+                    "variants": {name: type(m).__name__ for name, m in fresh.items()}}
 
         @self.app.get("/health")
         async def health():

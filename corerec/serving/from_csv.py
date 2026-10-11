@@ -554,12 +554,13 @@ def build_server(model, manifest: Optional[Dict[str, Any]] = None, host: str = "
                  challenger: Optional[Any] = None, challenger_share: float = 0.1,
                  artifact: Optional[Union[str, Path]] = None,
                  admin_token: Optional[str] = None, feedback_token: Optional[str] = None,
-                 allow_pickle: bool = False):
+                 allow_pickle: bool = False, challenger_artifact: Optional[Union[str, Path]] = None):
     """A :class:`~corerec.serving.ModelServer` that answers unknown users with popular items.
 
     feedback_log: JSONL path; turns on /feedback and /metrics.
     challenger: a second model for an A/B test, given ``challenger_share`` of users.
     artifact: the directory *model* came from; enables POST /reload after a retrain.
+    challenger_artifact: the directory *challenger* came from, so /reload refreshes it too.
     admin_token, feedback_token: bearer tokens for POST /reload and POST /feedback.
     """
     from corerec.serving.model_server import ModelServer
@@ -569,7 +570,16 @@ def build_server(model, manifest: Optional[Dict[str, Any]] = None, host: str = "
     if challenger is not None:
         models = {"control": model, "challenger": challenger}
         traffic = {"control": 1 - challenger_share, "challenger": challenger_share}
-    reload_fn = (lambda: load_artifact(artifact, allow_pickle=allow_pickle)[0]) if artifact and challenger is None else None
+    def loader(path):
+        return lambda: load_artifact(path, allow_pickle=allow_pickle)[0]
+
+    reload_fn = None
+    if artifact and challenger is None:
+        reload_fn = loader(artifact)
+    elif artifact:  # A/B test: each variant reloads from its own artifact
+        reload_fn = {"control": loader(artifact)}
+        if challenger_artifact:
+            reload_fn["challenger"] = loader(challenger_artifact)
     return ModelServer(models, host=host, port=port, metadata=manifest,
                        fallback_items=manifest.get("popular_items"), feedback_log=feedback_log,
                        traffic=traffic, reload_fn=reload_fn,
