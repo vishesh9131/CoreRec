@@ -92,11 +92,18 @@ Pick up the new model without a restart:
 curl -X POST localhost:8000/reload
 ```
 
+During an A/B test this reloads both variants, each from its own artifact
+(`artifacts/m` and the `--challenger` one). Reload just one with
+`curl -X POST 'localhost:8000/reload?variant=challenger'`.
+
 Nightly with cron:
 
 ```text
-0 3 * * *  corerec retrain /srv/artifacts/m --feedback /srv/feedback.jsonl && curl -s -X POST localhost:8000/reload
+0 3 * * *  corerec retrain /srv/artifacts/m --feedback /srv/feedback.jsonl && curl -fsS -X POST localhost:8000/reload
 ```
+
+`-f` makes curl exit nonzero on an HTTP error, so a reload that fails also
+fails the cron job instead of leaving the old model running quietly.
 
 ### Protect /reload and /feedback
 

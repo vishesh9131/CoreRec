@@ -212,6 +212,28 @@ def test_cli_train_writes_a_servable_artifact(events_csv, tmp_path, monkeypatch,
     assert server.port == 9999 and server.metadata["model"] == "ALS"
 
 
+def test_cli_serve_with_a_challenger_can_reload_both(events_csv, tmp_path, monkeypatch):
+    """With --challenger, POST /reload was refused, so a retrained model never went live (#205)."""
+    from fastapi.testclient import TestClient
+
+    from corerec import cli
+
+    arts = {}
+    for name, model in (("control", "ItemKNN"), ("challenger", "ALS")):
+        arts[name] = save_artifact(train_from_csv(events_csv, model=model, evaluate=False),
+                                   tmp_path / name)
+    started = {}
+    monkeypatch.setattr("corerec.serving.model_server.ModelServer.start",
+                        lambda self, reload=False: started.setdefault("server", self))
+    monkeypatch.setattr(sys, "argv", ["corerec", "serve", str(arts["control"]),
+                                      "--challenger", str(arts["challenger"])])
+    assert cli.main() == 0
+    server = started["server"]
+    r = TestClient(server.app).post("/reload")
+    assert r.status_code == 200
+    assert r.json()["variants"] == {"control": "ItemKNN", "challenger": "ALS"}
+
+
 def test_reads_latin1_and_bom_csv(tmp_path):
     """Excel exports: Latin-1 bytes crashed with UnicodeDecodeError (#87), and a
     UTF-8 byte-order mark ends up in the first column name."""

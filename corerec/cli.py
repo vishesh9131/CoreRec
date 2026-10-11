@@ -259,6 +259,7 @@ def serve_command(args):
     server = build_server(model, manifest, host=args.host, port=args.port,
                           feedback_log=args.feedback_log, challenger=challenger,
                           challenger_share=args.challenger_share, artifact=artifact,
+                          challenger_artifact=args.challenger,
                           admin_token=args.admin_token, feedback_token=args.feedback_token,
                           allow_pickle=args.allow_pickle)
     if args.feedback_log:

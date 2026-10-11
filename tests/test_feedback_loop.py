@@ -149,6 +149,37 @@ def test_reload_swaps_the_model(good, tmp_path):
     assert recs == Worst().recommend(0, top_k=3)
 
 
+def test_reload_works_during_an_ab_test(good):
+    """/reload answered 404 'reload is not configured' whenever a challenger ran (#205)."""
+    loads = []
+    server = ModelServer({"control": good, "challenger": good}, traffic={"control": 0.5, "challenger": 0.5},
+                         reload_fn={"control": lambda: loads.append("control") or Worst(),
+                                    "challenger": lambda: loads.append("challenger") or Worst()})
+    client = TestClient(server.app)
+    r = client.post("/reload", params={"variant": "challenger"})
+    assert r.status_code == 200 and r.json()["variants"] == {"challenger": "Worst"}
+    assert loads == ["challenger"] and server.models["control"] is good
+    assert client.post("/reload").json()["variants"] == {"control": "Worst", "challenger": "Worst"}
+    assert all(isinstance(m, Worst) for m in server.models.values()) and isinstance(server.model, Worst)
+    assert client.post("/reload", params={"variant": "nope"}).status_code == 404
+
+
+def test_a_failed_reload_keeps_every_variant(good):
+    def broken():
+        raise RuntimeError("artifact half-written")
+
+    server = ModelServer({"control": good, "challenger": good}, traffic={"control": 0.5, "challenger": 0.5},
+                         reload_fn={"control": lambda: Worst(), "challenger": broken})
+    with pytest.raises(RuntimeError):
+        TestClient(server.app).post("/reload")
+    assert server.models == {"control": good, "challenger": good}
+
+
+def test_reload_fn_names_must_be_models(good):
+    with pytest.raises(ValueError, match="must be models"):
+        ModelServer(good, reload_fn={"treatment": lambda: Worst()})
+
+
 def test_log_lines_are_plain_json(tmp_path):
     log = FeedbackLog(tmp_path / "fb.jsonl")
     log.impression(np.int64(3), [np.int64(1), 2])
