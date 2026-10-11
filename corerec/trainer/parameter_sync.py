@@ -52,10 +52,14 @@ class ParameterSync:
             else:
                 module = model
 
-            for name, param in module.named_parameters():
-                if param.requires_grad and getattr(param, "sparse", False):
-                    self.sparse_param_names.append(name)
-                    self.sparse_params.append(param)
+            # sparse=True lives on the nn.Embedding module, not its weight tensor;
+            # checking the parameter found nothing, so sync() never synced
+            for mod_name, mod in module.named_modules():
+                weight = getattr(mod, "weight", None)
+                if getattr(mod, "sparse", False) is True and weight is not None \
+                        and weight.requires_grad:
+                    self.sparse_param_names.append(f"{mod_name}.weight" if mod_name else "weight")
+                    self.sparse_params.append(weight)
 
     def sync(self):
         """Synchronize parameters across processes.
@@ -70,11 +74,8 @@ class ParameterSync:
             return
 
         # Synchronize sparse parameters
-        for name, param in zip(self.sparse_param_names, self.sparse_params):
-            # Generate a unique tag for this parameter
-            tag = hash(name) % 1000000
-
-            # Sync using all-reduce
+        for param in self.sparse_params:
+            # average across processes
             dist.all_reduce(param.data, op=dist.ReduceOp.SUM)
             param.data.div_(self.world_size)
 
