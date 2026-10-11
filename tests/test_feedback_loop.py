@@ -132,6 +132,42 @@ def test_drift_alerts_on_fallback_and_ctr(tmp_path):
     assert "fallback" in alerts and "CTR" in alerts
 
 
+def _catalogue_log(path, n, popularity, rng):
+    """n requests over a 1,000-item catalogue; ~75% of them click one item drawn from popularity."""
+    log = FeedbackLog(path)
+    for k in range(n):
+        item = int(rng.choice(len(popularity), p=popularity))
+        rid = log.impression(k, [item])
+        if rng.random() < 0.75:
+            log.feedback(k, item, request_id=rid)
+    return log
+
+
+def test_drift_is_quiet_on_stationary_traffic_over_a_large_catalogue(tmp_path):
+    """Two small click samples over many items differ by TVD ~0.2+ from noise alone, so
+    stationary traffic alarmed on every check (#207)."""
+    rng = np.random.default_rng(0)
+    pop = 1.0 / np.arange(1, 1001) ** 0.8
+    pop /= pop.sum()
+    path = tmp_path / "fb.jsonl"
+    _catalogue_log(path, 1500, pop, rng)
+    d = _catalogue_log(path, 1000, pop, rng).drift(recent=1000)
+    assert d["click_shift_tvd"] > 0.2  # what used to trip the alert
+    assert d["click_shift_tvd"] <= d["click_shift_noise"]
+    assert d["alerts"] == []
+
+
+def test_drift_still_alerts_on_a_real_item_shift(tmp_path):
+    rng = np.random.default_rng(0)
+    pop = 1.0 / np.arange(1, 1001) ** 0.8
+    pop /= pop.sum()
+    path = tmp_path / "fb.jsonl"
+    _catalogue_log(path, 1500, pop, rng)
+    d = _catalogue_log(path, 1000, pop[::-1].copy(), rng).drift(recent=1000)  # tastes flipped
+    assert d["click_shift_tvd"] > d["click_shift_noise"]
+    assert any("clicked-item distribution shifted" in a for a in d["alerts"])
+
+
 def test_clicks_export_for_retraining(tmp_path):
     log = FeedbackLog(tmp_path / "fb.jsonl")
     rid = log.impression("u1", ["a", "b"])

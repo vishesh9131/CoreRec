@@ -23,7 +23,7 @@ import time
 import uuid
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 def _safe(v: Any) -> Any:
@@ -173,7 +173,9 @@ class FeedbackLog:
         Alerts when CTR fell by more than ``ctr_drop`` (relative), the
         unknown-user fallback share rose by more than ``fallback_rise``
         (absolute), or the distribution of clicked items moved by more than
-        ``shift`` (total variation distance, 0 = same, 1 = disjoint).
+        ``shift`` (total variation distance, 0 = same, 1 = disjoint) and by
+        more than sampling noise: the 99th percentile of the TVD between random
+        splits of the same clicks, reported as ``click_shift_noise``.
         """
         imps = sorted(self._joined(), key=lambda i: i["ts"])
         if len(imps) < 2 * recent:
@@ -186,16 +188,12 @@ class FeedbackLog:
             alerts.append(f"fallback (unknown-user) share rose from {base['fallback_share']:.1%} "
                           f"to {now['fallback_share']:.1%}")
 
-        def clicked(group):
-            c = Counter(i for imp in group for i in imp["clicked"])
-            total = sum(c.values())
-            return {k: v / total for k, v in c.items()} if total else {}
-
-        p, q = clicked(imps[:-recent]), clicked(imps[-recent:])
-        tvd = 0.5 * sum(abs(p.get(k, 0) - q.get(k, 0)) for k in set(p) | set(q)) if p and q else 0.0
-        if tvd > shift:
-            alerts.append(f"clicked-item distribution shifted (TVD {tvd:.2f})")
-        return {"alerts": alerts, "baseline": base, "recent": now, "click_shift_tvd": tvd}
+        tvd, noise = _click_shift([i for imp in imps[:-recent] for i in imp["clicked"]],
+                                  [i for imp in imps[-recent:] for i in imp["clicked"]])
+        if tvd > max(shift, noise):
+            alerts.append(f"clicked-item distribution shifted (TVD {tvd:.2f}, noise {noise:.2f})")
+        return {"alerts": alerts, "baseline": base, "recent": now, "click_shift_tvd": tvd,
+                "click_shift_noise": noise}
 
     def to_events(self, events=("click", "purchase")):
         """Positive feedback as a user_id/item_id/rating/timestamp DataFrame."""
@@ -204,6 +202,33 @@ class FeedbackLog:
         rows = [(r["user_id"], r["item_id"], 1.0, r["ts"]) for r in self.records()
                 if r["type"] == "feedback" and r.get("event") in events]
         return pd.DataFrame(rows, columns=["user_id", "item_id", "rating", "timestamp"])
+
+
+def _click_shift(a: List[Any], b: List[Any], n_perm: int = 200) -> Tuple[float, float]:
+    """TVD between two samples of clicked items, and what noise alone gives.
+
+    Two small samples over a large catalogue are far apart in TVD even when
+    they come from one distribution (0.22 on stationary ML-1M traffic), so
+    the observed TVD is compared with the 99th percentile over random splits
+    of the pooled clicks into groups of the same sizes (#207).
+    """
+    import numpy as np
+
+    if not a or not b:
+        return 0.0, 0.0
+    index: Dict[Any, int] = {}
+    codes = np.array([index.setdefault(i, len(index)) for i in a + b])
+
+    def tvd(x, y):
+        px = np.bincount(x, minlength=len(index)) / len(x)
+        return 0.5 * float(np.abs(px - np.bincount(y, minlength=len(index)) / len(y)).sum())
+
+    rng = np.random.default_rng(0)  # fixed, so /metrics doesn't flicker between calls
+    null = []
+    for _ in range(n_perm):
+        p = rng.permutation(codes)
+        null.append(tvd(p[:len(a)], p[len(a):]))
+    return tvd(codes[:len(a)], codes[len(a):]), float(np.quantile(null, 0.99))
 
 
 def assign_variant(user_id: Any, traffic: Dict[str, float], salt: str = "corerec") -> str:
