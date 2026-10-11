@@ -17,8 +17,11 @@ from corerec.engines.dcn import DCN
 model = DCN(embedding_dim=64, epochs=20)
 model.fit(user_ids, item_ids, ratings)
 
-model.save("artifacts/production_dcn")  # writes .meta.json + .weights.pt
-loaded = DCN.load("artifacts/production_dcn")
+# one directory per model; the base path's last part names the files in it
+model.save("artifacts/production_dcn/model")
+# artifacts/production_dcn/model.meta.json
+# artifacts/production_dcn/model.<generation>.weights.npz   (and .arrays.npz)
+loaded = DCN.load("artifacts/production_dcn/model")
 ```
 
 See {doc}`../user_guide/safe_bundle_persistence` for layout and legacy migration.
@@ -29,7 +32,7 @@ See {doc}`../user_guide/safe_bundle_persistence` for layout and legacy migration
 from corerec.serving import ModelServer
 from corerec.engines.dcn import DCN
 
-model = DCN.load("artifacts/production_dcn")
+model = DCN.load("artifacts/production_dcn/model")
 server = ModelServer(model, host="0.0.0.0", port=8000)
 server.start()
 
@@ -60,7 +63,7 @@ from flask import Flask, request, jsonify
 from corerec.engines.dcn import DCN
 
 app = Flask(__name__)
-model = DCN.load("artifacts/production_dcn")
+model = DCN.load("artifacts/production_dcn/model")
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -86,7 +89,7 @@ from pydantic import BaseModel
 from corerec.engines.dcn import DCN
 
 app = FastAPI()
-model = DCN.load("artifacts/production_dcn")
+model = DCN.load("artifacts/production_dcn/model")
 
 class PredictRequest(BaseModel):
     user_id: int
@@ -171,13 +174,14 @@ from pathlib import Path
 MODEL_DIR = Path("artifacts/models")
 
 def save_versioned_model(model, version):
-    path = MODEL_DIR / f"model_v{version}"
+    path = MODEL_DIR / f"v{version}" / "model"    # one directory per version
     model.save(str(path))
     return path
 
 def load_latest_model():
-    dirs = sorted(MODEL_DIR.glob("model_v*"))
-    return DCN.load(str(dirs[-1])) if dirs else None
+    # a bundle is several files, so find versions by their metadata file
+    found = sorted(MODEL_DIR.glob("v*/model.meta.json"), key=lambda p: int(p.parent.name[1:]))
+    return DCN.load(str(found[-1].parent / "model")) if found else None
 ```
 
 ## Docker Deployment
@@ -197,7 +201,7 @@ CMD ["python", "serve.py"]
 from corerec.serving import ModelServer
 from corerec.engines.dcn import DCN
 
-model = DCN.load("artifacts/production_dcn")
+model = DCN.load("artifacts/production_dcn/model")
 ModelServer(model, host="0.0.0.0", port=8000).start()
 ```
 

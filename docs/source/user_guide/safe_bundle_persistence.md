@@ -16,7 +16,11 @@ For the base path `production/dcn`, CoreRec writes:
 
 `<generation>` is a generated identifier. Only the components needed by the model
 are written. Use the path passed to `save()` when calling `load()`; the metadata
-records the component filenames.
+records the component filenames. Because the names aren't fixed, ship a bundle by
+its directory: save to `artifacts/dcn/model` and copy `artifacts/dcn/`. Files get
+the same permissions as any file your process creates (umask), so a container
+running as another user can read them. CTR models (DCN, DeepFM) keep their
+feature map in `meta.json`, so it can be several MB.
 
 New components are written before metadata is replaced atomically. A failed save
 preserves the previous bundle. Successful saves remove the previous generated

@@ -62,6 +62,16 @@ def require_legacy_pickle(path: Union[str, Path], allow_pickle: bool = False) ->
                   UserWarning, stacklevel=3)
 
 
+def _umask() -> int:
+    mask = os.umask(0)
+    os.umask(mask)
+    return mask
+
+
+# read once: os.umask can only be read by setting it, which isn't thread-safe
+_UMASK = _umask()
+
+
 @contextmanager
 def _atomic_file(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -72,6 +82,9 @@ def _atomic_file(path: Path):
             yield f
             f.flush()
             os.fsync(f.fileno())
+        # NamedTemporaryFile is always 0600; give the file the mode a plain open()
+        # would, so an image running as another user can read the model (#210)
+        os.chmod(temporary, 0o666 & ~_UMASK)
         os.replace(temporary, path)
     finally:
         if temporary is not None:

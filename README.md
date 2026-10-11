@@ -285,8 +285,8 @@ model = ModelClass.load('artifacts/my_model')   # restore
 ```
 
 > **Persistence note**: `save` writes a *safe bundle* — pass a base path (not a `.pkl`
-> file). It produces `<base>.meta.json` + `<base>.weights.pt`; `load` takes the same base
-> path. See [Safe Bundle Persistence](docs/source/user_guide/safe_bundle_persistence.md).
+> file). It produces `<base>.meta.json` plus `<base>.<generation>.weights.npz` /
+> `.arrays.npz`; `load` takes the same base path. See [Safe Bundle Persistence](docs/source/user_guide/safe_bundle_persistence.md).
 
 ---
 
