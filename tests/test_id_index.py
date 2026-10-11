@@ -109,3 +109,23 @@ def test_sar_builds_its_maps_from_id_index(tmp_path):
     back = SAR.load(tmp_path / "s")
     assert back.item2index == m.item2index
     assert back.recommend("u1", top_k=2) == m.recommend("u1", top_k=2)
+
+
+def test_from_dict_keeps_codes():
+    idx = IdIndex.from_dict({"b": 2, "a": 1}, offset=1)
+    assert idx.ids == ["a", "b"] and idx.as_dict() == {"a": 1, "b": 2}
+
+
+@pytest.mark.parametrize("name,kw", [("TwoTower", {"embedding_dim": 4, "epochs": 1, "verbose": False}),
+                                     ("LightGCN", {"n_factors": 4, "n_layers": 1, "epochs": 1,
+                                                   "verbose": False})])
+def test_loaded_models_have_the_same_id_index_as_fitted_ones(name, kw, tmp_path):
+    """fit() set users_index/items_index (#76) but load() didn't."""
+    import corerec.engines as engines
+
+    cls = getattr(engines, name)
+    m = cls(device="cpu", **kw).fit(["u2", "u1", "u2"], [30, 10, 20], [1.0, 1.0, 1.0])
+    m.save(tmp_path / "m")
+    back = cls.load(tmp_path / "m")
+    assert back.users_index.as_dict() == m.users_index.as_dict()
+    assert back.items_index.as_dict() == m.items_index.as_dict()

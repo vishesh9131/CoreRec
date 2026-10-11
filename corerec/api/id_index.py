@@ -54,6 +54,11 @@ class IdIndex:
         """The ``{id: code}`` dict models expose today as user_map / item_map."""
         return dict(self._code)
 
+    @classmethod
+    def from_dict(cls, id_map: Dict[Any, int], offset: int = 0) -> "IdIndex":
+        """Rebuild from a ``{id: code}`` map (what loaders restore), codes kept."""
+        return cls(sorted(id_map, key=id_map.get), offset)
+
     def to_json(self) -> Dict[str, Any]:
         return {"ids": [x.item() if isinstance(x, np.generic) else x for x in self.ids],
                 "offset": self.offset}

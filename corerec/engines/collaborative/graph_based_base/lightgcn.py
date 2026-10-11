@@ -432,6 +432,8 @@ class LightGCN(BaseRecommender):
             instance.n_items = state["n_items"]
             instance.user_id_map = maps["user_id_map"]
             instance.item_id_map = maps["item_id_map"]
+            instance.users_index = IdIndex.from_dict(instance.user_id_map)
+            instance.items_index = IdIndex.from_dict(instance.item_id_map)
             instance.reverse_user_map = maps["reverse_user_map"]
             instance.reverse_item_map = maps["reverse_item_map"]
             instance.user_interactions = {
@@ -457,6 +459,8 @@ class LightGCN(BaseRecommender):
         instance.n_items = state["n_items"]
         instance.user_id_map = state["user_id_map"]
         instance.item_id_map = state["item_id_map"]
+        instance.users_index = IdIndex.from_dict(instance.user_id_map)
+        instance.items_index = IdIndex.from_dict(instance.item_id_map)
         instance.reverse_user_map = state["reverse_user_map"]
         instance.reverse_item_map = state["reverse_item_map"]
         instance.user_interactions = {
