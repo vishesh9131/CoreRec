@@ -6,10 +6,14 @@ Stage 2 of the recommendation pipeline. Rankers score candidates with precision,
 
 ```python
 from corerec.ranking import PointwiseRanker
+from corerec.retrieval.base import Candidate
 
-ranker = PointwiseRanker(score_fn=my_score_fn, feature_extractor=my_extractor)
-ranker.fit()
-result = ranker.rank(candidates, context)
+# score_fn gets each candidate's features ("retrieval_score" plus whatever a
+# feature_extractor(candidate, context) adds) and returns a float
+ranker = PointwiseRanker(score_fn=lambda f: f.get("retrieval_score", 0)).fit()
+candidates = [Candidate(item_id=1, score=0.2), Candidate(item_id=2, score=0.9)]
+result = ranker.rank(candidates, {"user_id": 7})
+print(result)   # item 2 first
 ```
 
 ## API Reference
