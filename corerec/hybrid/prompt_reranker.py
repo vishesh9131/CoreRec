@@ -13,12 +13,19 @@ import logging
 import time
 import os
 import json
+import re
+import string
 import requests
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import aiohttp
 
 from corerec.core.base_model import BaseModel
+
+
+def _mentions(response: str, item_id: Any) -> bool:
+    """True if the reply names this id as a whole token: "12" doesn't mention 1 or 2."""
+    return re.search(rf"(?<![\w-]){re.escape(str(item_id))}(?![\w-])", response) is not None
 
 
 class PromptTemplate:
@@ -39,7 +46,8 @@ class PromptTemplate:
             template (str): Prompt template with placeholders in the format "{placeholder}"
         """
         self.template = template
-        self.placeholders = [p.strip("{}") for p in template.split("{") if "}" in p]
+        # Formatter parses "{name}" the way str.format will, "{{" escapes included
+        self.placeholders = [f for _, f, _, _ in string.Formatter().parse(template) if f]
 
     def format(self, **kwargs) -> str:
         """Format the prompt template with the provided values.
@@ -412,8 +420,7 @@ class PromptReranker(BaseModel):
             try:
                 # Find the item ID in the response
                 for item_id in item_ids:
-                    if item_id in response:
-                        idx = item_ids.index(item_id)
+                    if _mentions(response, item_id):
                         scores[i] = 1.0
                         break
             except Exception as e:
@@ -458,7 +465,7 @@ class PromptReranker(BaseModel):
         try:
             # Find the item ID in the response
             for item_id in item_ids:
-                if item_id in response:
+                if _mentions(response, item_id):
                     reranked.append((item_id, 1.0))
                 else:
                     reranked.append((item_id, 0.0))
