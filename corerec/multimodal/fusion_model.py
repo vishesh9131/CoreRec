@@ -408,8 +408,8 @@ class MultimodalFusionModel(BaseModel):
         Returns:
             Dict[str, float]: Dictionary with loss values
         """
-        # Extract labels
-        labels = batch.pop("labels")
+        # don't pop: the caller's batch must still have labels next epoch
+        labels = batch["labels"].float()
 
         # Forward pass
         predictions = self.forward(batch)
@@ -436,8 +436,7 @@ class MultimodalFusionModel(BaseModel):
         Returns:
             Dict[str, float]: Dictionary with validation metrics
         """
-        # Extract labels
-        labels = batch.pop("labels")
+        labels = batch["labels"].float()
 
         # Forward pass
         with torch.no_grad():
