@@ -34,6 +34,12 @@ curl -X POST localhost:8000/feedback -H 'Content-Type: application/json' \
 `event` is free text; `click` and `purchase` are used for retraining. The log
 is one JSON object per line, easy to ship to a warehouse.
 
+The ids here are strings because this `events.csv` uses ids like `u0042`.
+With numeric ids (MovieLens' `user_id`, `movie_id`) send numbers,
+`{"user_id": 6040}`. The artifact records which type it was trained on, and
+the server converts `"6040"` to `6040` (and `42` to `"42"` for string ids),
+so either spelling finds the user.
+
 ## 2. Online metrics
 
 ```bash

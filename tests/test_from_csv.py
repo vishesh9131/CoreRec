@@ -209,6 +209,51 @@ def test_batch_recommend_follows_the_recommend_contract(events_csv, tmp_path, mo
     assert popular[0] not in excluded["recommendations"]["user0"]
 
 
+def test_string_ids_find_a_model_trained_on_int_ids(tmp_path):
+    """A CSV of int ids served "6040" as an unknown user: fallback recs and uncounted clicks (#203)."""
+    df = _events()
+    df["userId"] = df["userId"].str.replace("user", "").astype(int)
+    df["movieId"] = df["movieId"].str.replace("item", "").astype(int) + 1000
+    path = tmp_path / "ints.csv"
+    df.to_csv(path, index=False)
+    result = train_from_csv(path, model="ItemKNN", evaluate=False)
+    assert result.manifest()["stats"]["id_types"] == {"user": "int", "item": "int"}
+    server = build_server(result.model, result.manifest(), feedback_log=tmp_path / "fb.jsonl")
+    client = TestClient(server.app)
+
+    as_int = client.post("/recommend", json={"user_id": 5, "top_k": 3}).json()
+    as_str = client.post("/recommend", json={"user_id": "5", "top_k": 3}).json()
+    assert as_str["source"] == "model" and as_str["recommendations"] == as_int["recommendations"]
+
+    item = as_str["recommendations"][0]
+    client.post("/feedback", json={"user_id": "5", "item_id": str(item), "request_id": as_str["request_id"]})
+    assert client.get("/metrics").json()["variants"]["all"]["clicks"] == 1
+
+    excluded = client.post("/recommend", json={"user_id": "5", "top_k": 3, "exclude_items": [str(item)]}).json()
+    assert item not in excluded["recommendations"]
+    batch = client.post("/batch/recommend", json={"user_ids": ["5"], "top_k": 3}).json()
+    assert batch["sources"] == {"5": "model"}
+    pred = client.post("/predict", json={"user_id": "5", "item_id": str(item)}).json()
+    assert pred["user_id"] == 5 and pred["item_id"] == item
+    assert client.post("/recommend", json={"user_id": "not-a-number", "top_k": 3}).json()["source"] == "fallback"
+
+
+def test_artifacts_without_id_types_serve_as_before(events_csv):
+    result = train_from_csv(events_csv, model="ItemKNN", evaluate=False)
+    manifest = result.manifest()
+    del manifest["stats"]["id_types"]  # written before #203
+    client = TestClient(build_server(result.model, manifest).app)
+    assert client.post("/recommend", json={"user_id": "user0", "top_k": 3}).json()["source"] == "model"
+
+
+def test_as_id():
+    from corerec.serving.model_server import _as_id
+
+    assert _as_id("6040", "int") == 6040 and _as_id("u1", "int") == "u1"
+    assert _as_id(42, "str") == "42" and _as_id(True, "str") is True
+    assert _as_id("6040", None) == "6040" and _as_id(7, "int") == 7
+
+
 def test_parse_params():
     assert parse_params(["factors=64", "reg=0.5", "name=x", "dims=[8, 4]"]) == {
         "factors": 64, "reg": 0.5, "name": "x", "dims": [8, 4]}

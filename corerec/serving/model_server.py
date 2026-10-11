@@ -16,6 +16,18 @@ except ImportError:
     np = None
 
 
+def _as_id(value: Any, kind: Optional[str]) -> Any:
+    """*value* in the id type the model was trained on, when it plainly means that id."""
+    if kind == "int" and isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return value
+    if kind == "str" and isinstance(value, int) and not isinstance(value, bool):
+        return str(value)
+    return value
+
+
 def _to_json_safe(value: Any) -> Any:
     """Convert numpy scalars and nested lists to JSON-serializable Python types."""
     if np is not None and isinstance(value, np.generic):
@@ -131,7 +143,8 @@ class ModelServer:
             traffic: Optional[Dict[str, float]] = None,
             reload_fn: Any = None,
             admin_token: Optional[str] = None,
-            feedback_token: Optional[str] = None):
+            feedback_token: Optional[str] = None,
+            id_types: Optional[Dict[str, Optional[str]]] = None):
         """
         Initialize model server.
 
@@ -159,6 +172,9 @@ class ModelServer:
                 Without them anyone who reaches the port can swap the model or
                 write clicks that retraining learns from; set both unless the
                 port is private.
+            id_types: {"user": "int"|"str", "item": ...}, the id types the model
+                was trained on. Request ids are converted to them, so JSON
+                "6040" finds user 6040 instead of silently getting the fallback.
 
         Author: Vishesh Yadav (mail: sciencely98@gmail.com)
         """
@@ -187,6 +203,7 @@ class ModelServer:
         self.port = port
         self.metadata = metadata
         self.fallback_items = list(fallback_items) if fallback_items else None
+        self.id_types = dict(id_types or {})
 
         # Create FastAPI app
         self.app = FastAPI(
@@ -227,6 +244,20 @@ class ModelServer:
         excluded = set(exclude_items or ())
         return [i for i in self.fallback_items if i not in excluded][:top_k], "fallback"
 
+    def _ids(self, request):
+        """Convert the request's ids, in place, to the types the model was trained on (#203)."""
+        u, i = self.id_types.get("user"), self.id_types.get("item")
+        for field, kind in (("user_id", u), ("item_id", i)):
+            if hasattr(request, field):
+                setattr(request, field, _as_id(getattr(request, field), kind))
+        if hasattr(request, "user_ids"):
+            request.user_ids = [_as_id(x, u) for x in request.user_ids]
+        if hasattr(request, "exclude_items"):
+            request.exclude_items = [_as_id(x, i) for x in request.exclude_items]
+        if hasattr(request, "pairs"):
+            request.pairs = [(_as_id(a, u), _as_id(b, i)) for a, b in request.pairs]
+        return request
+
     def _setup_routes(self):
         """Setup API routes."""
 
@@ -252,6 +283,7 @@ class ModelServer:
                     "score": 0.8523
                 }
             """
+            self._ids(request)
             try:
                 model = self.models[self._variant(request.user_id)]
                 score = model.predict(request.user_id, request.item_id)
@@ -283,6 +315,7 @@ class ModelServer:
                     "scores": [0.95, 0.92, 0.89, ...]  // if available
                 }
             """
+            self._ids(request)
             try:
                 variant = self._variant(request.user_id)
                 recs, source = self._recommend(
@@ -305,6 +338,7 @@ class ModelServer:
         @self.app.post("/batch/predict")
         def batch_predict(request: BatchPredictionRequest):
             """Batch predictions for multiple user-item pairs."""
+            self._ids(request)
             try:
                 if len(self.models) == 1 and hasattr(self.model, "batch_predict"):
                     scores = self.model.batch_predict(request.pairs)
@@ -326,6 +360,7 @@ class ModelServer:
         def batch_recommend(request: BatchRecommendationRequest):
             """Batch recommendations with the /recommend contract for every user:
             popular-item fallback, exclude_items, A/B variant and impression logging."""
+            self._ids(request)
             from corerec.api.exceptions import RecommendationError
 
             try:
@@ -375,6 +410,7 @@ class ModelServer:
             Pass the request_id from the /recommend response so the click is
             credited to the list and variant that showed the item.
             """
+            self._ids(request)
             _check_token(http, self.feedback_token)
             if self.feedback_log is None:
                 raise HTTPException(status_code=404, detail="feedback logging is off; "
