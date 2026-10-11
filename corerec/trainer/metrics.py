@@ -99,20 +99,13 @@ def mean_reciprocal_rank(predictions: torch.Tensor, labels: torch.Tensor) -> tor
         label_matrix[torch.arange(batch_size, device=device), labels] = 1
         labels = label_matrix
 
-    # Compute MRR for each row
+    # MRR is 1 / rank of the *first* relevant item; this averaged over all of
+    # them, disagreeing with corerec.evaluation's mrr_at_k
     mrr = torch.zeros(labels.shape[0], device=labels.device)
     for i in range(labels.shape[0]):
-        # Get positions of relevant items
-        relevant_indices = torch.nonzero(labels[i], as_tuple=True)[0]
-        if relevant_indices.numel() > 0:
-            # For each relevant item, find its rank
-            for idx in relevant_indices:
-                # Find the position (rank) of the item
-                rank = torch.nonzero(indices[i] == idx, as_tuple=True)[0][0] + 1
-                # Add reciprocal rank
-                mrr[i] += 1.0 / rank
-            # Average over relevant items
-            mrr[i] /= relevant_indices.numel()
+        hits = torch.nonzero(labels[i, indices[i]] > 0, as_tuple=True)[0]
+        if hits.numel() > 0:
+            mrr[i] = 1.0 / (hits[0].float() + 1)
 
     # Return mean MRR
     return torch.mean(mrr)
@@ -235,13 +228,14 @@ def average_precision_at_k(
         relevance = labels[i, top_k_indices[i]]
 
         if torch.sum(relevance) > 0:
-            # Compute precision at each position
-            precision_at_j = torch.zeros(k, device=labels.device)
-            for j in range(k):
-                precision_at_j[j] = torch.sum(relevance[: j + 1]) / (j + 1)
-
-            # Compute AP
-            ap[i] = torch.sum(precision_at_j * relevance) / torch.sum(relevance)
+            # precision at each of the top positions (len(relevance) = min(k, n_items);
+            # a fixed length k crashed on catalogues smaller than k)
+            ranks = torch.arange(1, len(relevance) + 1, device=labels.device, dtype=torch.float)
+            precision_at_j = torch.cumsum(relevance, 0) / ranks
+            # normalise by what could have been found, as corerec.evaluation does;
+            # dividing by the hits made one lucky hit out of five relevant score 1.0
+            n_relevant = int((labels[i] > 0).sum())
+            ap[i] = torch.sum(precision_at_j * relevance) / min(k, n_relevant)
 
     # Return mean AP
     return torch.mean(ap)
@@ -279,35 +273,19 @@ def auc_roc(predictions: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     Returns:
         torch.Tensor: AUC-ROC score
     """
-    # Sort predictions and corresponding labels
-    sorted_indices = torch.argsort(predictions, descending=True)
-    sorted_labels = labels[sorted_indices]
+    from scipy.stats import rankdata
 
-    # Compute true positive rate (TPR) and false positive rate (FPR) at each threshold
-    n_pos = torch.sum(labels)
-    n_neg = len(labels) - n_pos
-
+    # Mann-Whitney U with average ranks, so tied scores count half. The old
+    # sort-then-trapezoid result depended on how ties happened to be ordered
+    # (a constant predictor could score anywhere from 0 to 1, not 0.5).
+    y = labels.detach().cpu().numpy() > 0
+    n_pos = int(y.sum())
+    n_neg = len(y) - n_pos
     if n_pos == 0 or n_neg == 0:
         return torch.tensor(0.5, device=labels.device)
-
-    # Compute TPR and FPR at each point
-    tp_cumsum = torch.cumsum(sorted_labels, dim=0)
-    fp_cumsum = torch.cumsum(1 - sorted_labels, dim=0)
-
-    tpr = tp_cumsum / n_pos
-    fpr = fp_cumsum / n_neg
-
-    # Compute AUC using trapezoidal rule
-    # Add (0,0) at the beginning
-    tpr = torch.cat([torch.tensor([0.0], device=labels.device), tpr])
-    fpr = torch.cat([torch.tensor([0.0], device=labels.device), fpr])
-
-    # Calculate area using the trapezoidal rule
-    width = fpr[1:] - fpr[:-1]
-    height = (tpr[1:] + tpr[:-1]) / 2
-    auc = torch.sum(width * height)
-
-    return auc
+    ranks = rankdata(predictions.detach().cpu().numpy())
+    auc = (ranks[y].sum() - n_pos * (n_pos + 1) / 2) / (n_pos * n_neg)
+    return torch.tensor(float(auc), device=labels.device)
 
 
 def f1_score(predictions: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
