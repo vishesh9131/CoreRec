@@ -15,7 +15,7 @@ These models live under `corerec.engines.*`, inherit `BaseRecommender`, and pass
 
 ### Example (triplet-based models)
 
-Most production deep models accept `(user_ids, item_ids, ratings)` triplets. Use **binary (0/1) or normalized ratings** for models trained with BCE loss (e.g. GNNRec).
+Most production deep models accept `(user_ids, item_ids, ratings)` triplets. Use **binary (0/1) or normalized ratings** for models trained with BCE loss (e.g. DCN and DeepFM with `task="implicit"`).
 
 ```python
 from corerec.engines.dcn import DCN
@@ -28,7 +28,7 @@ recs = model.recommend(user_id=1, top_k=10)
 model.save("artifacts/dcn")  # safe bundle by default
 ```
 
-**SASRec** and **BERT4Rec** use an **interaction matrix** instead of raw triplets — see their tutorials.
+**SASRec** reads the triple in time order (one row per event) or an interaction matrix, and **HSTU** takes `timestamps=` — see their tutorials.
 
 ## Sandbox models (experimental)
 
@@ -79,9 +79,8 @@ Always import sandbox models from `corerec.sandbox.*`, not `corerec.engines.*`. 
 
 - Large interaction datasets with non-linear patterns
 - Rich side features (DCN, DeepFM)
-- Sequential behavior (SASRec, BERT4Rec)
-- Graph structure (GNNRec)
-- Multi-interest sessions (MIND)
+- Sequential behavior (SASRec, HSTU)
+- Graph structure (LightGCN)
 - Dual-tower retrieval at scale (TwoTower)
 
 ## See also

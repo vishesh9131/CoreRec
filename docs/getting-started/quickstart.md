@@ -16,7 +16,7 @@ This example loads a sample dataset, trains a simple Collaborative Filtering mod
 
 ```python
 import pandas as pd
-from corerec.engines.collaborative import FastRecommender
+from corerec.engines import ALS
 
 # 1. Load Data (User-Item-Rating)
 # Replace with your own CSV or dataset
@@ -27,20 +27,16 @@ data = pd.DataFrame({
 })
 
 # 2. Initialize Model
-# 'FastRecommender' uses optimized Matrix Factorization
-model = FastRecommender(embedding_dim=64, epochs=10)
+# ALS: matrix factorization by alternating least squares
+model = ALS(factors=8, iterations=10)
 
 # 3. Train
 print("Training model...")
-model.fit(
-    interaction_matrix=None,  # Not needed for FastRecommender, it handles raw data
-    user_ids=data['user_id'].tolist(),
-    item_ids=data['item_id'].tolist()
-)
+model.fit(data['user_id'].tolist(), data['item_id'].tolist(), data['rating'].tolist())
 
 # 4. Recommend
 user_id = 1
-recs = model.recommend(user_id=user_id, top_n=3)
+recs = model.recommend(user_id=user_id, top_k=3)
 
 print(f"Top 3 recommendations for User {user_id}: {recs}")
 ```

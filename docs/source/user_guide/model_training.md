@@ -52,7 +52,7 @@ those interactions as positive feedback.
 
 ## Choosing the task: implicit ranking vs. rating prediction
 
-The deep CTR/graph models (`DCN`, `DeepFM`, `GNNRec`) accept a `task` argument that
+The deep CTR models (`DCN`, `DeepFM`) accept a `task` argument that
 controls how labels are interpreted and how the model is trained:
 
 ```python
