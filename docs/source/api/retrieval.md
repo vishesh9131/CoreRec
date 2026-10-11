@@ -5,12 +5,24 @@ Stage 1 of the recommendation pipeline. Retrievers generate candidate items from
 ## Quick Start
 
 ```python
-from corerec.retrieval import SemanticRetriever, CollaborativeRetriever, EnsembleRetriever
+import numpy as np
+from corerec.retrieval import SemanticRetriever
 
-retriever = SemanticRetriever(encoder="all-MiniLM-L6-v2")
-retriever.fit(items=item_catalog)
-candidates = retriever.retrieve(query=user_id, top_k=100)
+item_ids = ["a", "b", "c", "d"]
+item_vectors = np.random.default_rng(0).normal(size=(4, 384)).astype("float32")
+
+retriever = SemanticRetriever(embedding_dim=384)
+retriever.fit(item_ids, item_embeddings=item_vectors)
+
+# the query is an embedding, or text when the retriever has an encoder
+result = retriever.retrieve(item_vectors[0], top_k=2)
+print(result.item_ids(), result.scores())
 ```
+
+With `pip install sentence-transformers`, pass texts instead of vectors:
+`SemanticRetriever(encoder="all-MiniLM-L6-v2").fit(item_ids, item_texts=texts)`,
+then `retrieve("wireless headphones")`. To retrieve for a user, wrap a fitted
+model: `CollaborativeRetriever(model=als).retrieve(user_id, top_k=100)`.
 
 ## API Reference
 
