@@ -138,8 +138,10 @@ class TextEncoder:
         else:
             emb_b = text_b
         
-        # cosine similarity (already normalized if self.normalize=True)
-        return float(np.dot(emb_a, emb_b))
+        # a true cosine: with normalize=False, or for embeddings passed in, the
+        # vectors aren't unit length and the bare dot product isn't one
+        denom = max(float(np.linalg.norm(emb_a) * np.linalg.norm(emb_b)), 1e-10)
+        return float(np.dot(emb_a, emb_b)) / denom
     
     def __repr__(self) -> str:
         return f"TextEncoder(model={self.model_name}, dim={self._dim})"

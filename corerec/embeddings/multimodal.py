@@ -136,10 +136,23 @@ class MultimodalEncoder:
             raise ValueError(f"Unknown fusion strategy: {self.fusion}")
     
     def _fuse_concat(self, embeddings: Dict[str, np.ndarray]) -> np.ndarray:
-        """Concatenate embeddings."""
-        # maintain consistent order
-        ordered = [embeddings[k] for k in sorted(embeddings.keys())]
-        return np.concatenate(ordered)
+        """Concatenate embeddings, zero-filling a missing modality's slot."""
+        # A skipped modality used to just shorten the vector, so items missing an
+        # image got a different length than the rest. Every vector must have one
+        # layout: each encoder's slot, in sorted name order.
+        parts = []
+        for name in sorted(self.encoders):
+            if name in embeddings:
+                parts.append(embeddings[name])
+                continue
+            dim = getattr(self.encoders[name], "embedding_dim", None)
+            if not dim:
+                raise ValueError(
+                    f"modality {name!r} is missing and its encoder has no embedding_dim, "
+                    "so concat can't keep vectors the same length; pass it, or give the "
+                    "encoder an embedding_dim")
+            parts.append(np.zeros(dim, dtype=np.float32))
+        return np.concatenate(parts)
     
     def _fuse_average(self, embeddings: Dict[str, np.ndarray]) -> np.ndarray:
         """Average embeddings (must have same dim)."""
