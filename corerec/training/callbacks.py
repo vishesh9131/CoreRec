@@ -21,6 +21,11 @@ class Callback:
     Author: Vishesh Yadav (mail: sciencely98@gmail.com)
     """
 
+    model = None  # set by Trainer before training starts
+
+    def set_model(self, model) -> None:
+        self.model = model
+
     def on_train_begin(self, logs: Optional[Dict] = None):
         """Called at the beginning of training."""
         pass
@@ -181,7 +186,11 @@ class ModelCheckpoint(Callback):
                 should_save = False
 
         if should_save:
-            # Model saving will be handled by trainer
+            # this only printed before; nothing was ever written
+            if self.model is None:
+                raise RuntimeError("ModelCheckpoint has no model; use it through Trainer, "
+                                   "or call set_model(model) first")
+            torch.save(self.model.state_dict(), self.filepath)
             print(f"Saved model to {self.filepath}")
 
 
