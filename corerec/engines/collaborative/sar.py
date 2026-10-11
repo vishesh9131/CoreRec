@@ -25,6 +25,8 @@ import os
 import pickle
 
 from corerec.api.id_index import IdIndex
+from corerec.api.dataset import as_interaction_frame
+from corerec.api.interactions import to_interactions
 from corerec.api.base_recommender import BaseRecommender
 from corerec.api.exceptions import ModelNotFittedError, InvalidDataError
 from corerec.constants import (
@@ -416,20 +418,14 @@ class SAR(BaseRecommender):
         Raises:
             InvalidDataError: if input has issues
         """
-        # (user_ids, item_ids, ratings) triple, the shape every other model takes.
-        # Param is named *args on purpose: _accept_datasets reads that as
-        # "this fit wants a frame" and keeps unpacking datasets to a DataFrame.
-        if args or user_ids is not None:
-            if user_ids is None:
-                # fit(users, items, ratings) or fit(users, items, ratings=...)
-                user_ids, (item_ids, ratings) = df, (args + (ratings,))[:2]
-            return self.fit_from_lists(user_ids, item_ids, ratings, timestamps=timestamps)
         # A DataFrame that already uses this model's column names is taken as
-        # is. Coercing it would rename the columns to SAR's defaults and then
-        # fail to find the custom col_user/col_item the caller configured.
+        # is (it may carry a custom col_user/col_item). Every other form, the
+        # (user_ids, item_ids, ratings) triple, keywords, a user_id/item_id
+        # frame or a dataset, is read by the one adapter the other models use (#78).
         already_named = isinstance(df, pd.DataFrame) and {self.col_user, self.col_item} <= set(df.columns)
         if not already_named:
-            df = self._coerce_fit_dataframe(df, sar_format=True)
+            df = self._frame_from_interactions(df, args, user_ids=user_ids, item_ids=item_ids,
+                                               ratings=ratings, timestamps=timestamps)
         # figure out which cols we need
         required_cols = [self.col_user, self.col_item, self.col_rating]
         if self.time_decay_flag:
@@ -507,6 +503,26 @@ class SAR(BaseRecommender):
         logger.info("SAR training complete")
         
         return self
+
+    def _frame_from_interactions(self, df, args, **kwargs) -> pd.DataFrame:
+        """Read any fit() input with to_interactions into a frame in SAR's column names."""
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+        pos = ((df,) if df is not None else ()) + tuple(args)
+        inter = to_interactions(*pos, **kwargs)
+        # the adapter stores float32 ratings; SAR sums them as given, so the
+        # ratings come from the input at full precision (like DCN/DeepFM)
+        if len(pos) == 1 and "ratings" not in kwargs:
+            ratings = as_interaction_frame(pos[0])["rating"]
+        else:
+            ratings = kwargs.get("ratings", pos[2] if len(pos) > 2 else None)
+        frame = pd.DataFrame({
+            self.col_user: pd.Index(inter.users.ids).take(inter.user_codes),
+            self.col_item: pd.Index(inter.items.ids).take(inter.item_codes),
+            self.col_rating: np.asarray(ratings, dtype=np.float64),
+        })
+        if inter.timestamps is not None:
+            frame[self.col_timestamp] = inter.timestamps
+        return frame
 
     # =========================================================================
     # SCORING
