@@ -254,6 +254,10 @@ class ModelCheckpoint(Callback):
         self.is_better = self._is_less if mode == "min" else self._is_greater
         self.best_value = float("inf") if mode == "min" else -float("inf")
 
+    def on_train_begin(self, trainer):
+        # a second train() must not compare against the first run's best
+        self.best_value = float("inf") if self.mode == "min" else -float("inf")
+
     def _is_less(self, current: float, best: float) -> bool:
         """Check if current value is less than best value.
 
@@ -294,33 +298,25 @@ class ModelCheckpoint(Callback):
         if (epoch + 1) % self.save_freq != 0:
             return False
 
-        # Get monitored metric
-        if self.monitor.startswith("val_") and not val_metrics:
-            # No validation metrics available
+        source = val_metrics if self.monitor.startswith("val_") else train_metrics
+        current = (source or {}).get(self.monitor)
+        if current is None and self.save_best_only:
+            # nothing to compare against; saving every epoch doesn't need the metric
             return False
 
-        if self.monitor.startswith("val_"):
-            current = val_metrics.get(self.monitor, None)
-        else:
-            current = train_metrics.get(self.monitor, None)
-
-        if current is None:
-            # Monitored metric not available
-            return False
-
-        # Check if current value is better than best value
         if not self.save_best_only or self.is_better(current, self.best_value):
-            # Update best value
-            self.best_value = current
+            if current is not None:
+                self.best_value = current
 
-            # Create filepath
-            filepath = self.filepath.format(epoch=epoch + 1, **train_metrics, **val_metrics)
+            # one merged dict: both carry 'steps', so passing them as two **kwargs
+            # raised "multiple values for keyword argument" on every validated run
+            filepath = self.filepath.format(epoch=epoch + 1, **{**train_metrics, **val_metrics})
 
-            # Save model
+            # Save model (the full checkpoint went to checkpoint_dir, not filepath)
             if self.save_weights_only:
                 torch.save(trainer.model.state_dict(), filepath)
             else:
-                trainer.save_checkpoint(epoch, val_metrics)
+                trainer.save_checkpoint(epoch, val_metrics, path=filepath)
 
             if self.verbose > 0:
                 trainer.logger.info(f"Model saved to {filepath}")
