@@ -12,6 +12,10 @@ pip install "corerec[datasets]"
 
 The first `ml_1m.load()` downloads ~25 MB to your local cache.
 
+This guide needs CoreRec 0.7.0 or newer. If
+`python -c "import corerec; print(corerec.__version__)"` prints an older
+version, see [Installation](installation.md) for the GitHub install.
+
 ## Basic Example
 
 ```python

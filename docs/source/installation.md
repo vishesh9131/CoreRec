@@ -12,6 +12,21 @@
 pip install corerec
 ```
 
+These docs follow the `main` branch (CoreRec 0.7.0). Check what you have:
+
+```bash
+python -c "import corerec; print(corerec.__version__)"
+```
+
+If that prints something older than 0.7.0 (PyPI served 0.6.0 for a while),
+pages such as the Production Loop (`corerec train` / `serve` / `retrain`),
+`task=` on DCN/DeepFM, ONNX export and `corerec.nn` won't work yet. Install
+from GitHub until the release is on PyPI:
+
+```bash
+pip install "corerec[serving,datasets] @ git+https://github.com/vishesh9131/CoreRec"
+```
+
 ## Install from Source
 
 ```bash
