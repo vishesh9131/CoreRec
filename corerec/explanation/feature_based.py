@@ -82,10 +82,10 @@ class FeatureExplainer(BaseExplainer):
         else:
             item_feats = self.item_features.get(item_id, {})
         
-        # get user preferences
-        if self.preference_extractor and user_id:
+        # get user preferences (user 0 is a user: check for None, not falsiness)
+        if self.preference_extractor and user_id is not None:
             user_prefs = self.preference_extractor(user_id)
-        elif user_id:
+        elif user_id is not None:
             user_prefs = self.user_preferences.get(user_id, {})
         else:
             user_prefs = {}
@@ -104,7 +104,9 @@ class FeatureExplainer(BaseExplainer):
         if matches:
             # use the most specific match
             feat_name, feat_value = matches[0]
-            template = self.templates.get(feat_name, self.templates['default'])
+            # custom templates (like the docstring's) need not define 'default'
+            template = self.templates.get(
+                feat_name, self.templates.get('default', "Based on your preferences"))
             text = template.format(value=feat_value, feature=feat_name)
             exp_type = f"feature_{feat_name}"
         else:
@@ -173,7 +175,7 @@ class HistoryExplainer(BaseExplainer):
         """Generate history-based explanation."""
         user_id = context.get('user_id')
         
-        if not user_id or user_id not in self.user_history:
+        if user_id is None or user_id not in self.user_history:
             return Explanation(
                 item_id=item_id,
                 text="Recommended for you",
@@ -203,7 +205,7 @@ class HistoryExplainer(BaseExplainer):
             # no similarity function, just use most recent
             best_match = history[-1]
         
-        if best_match:
+        if best_match is not None:  # item 0 is an item
             match_name = self.item_names.get(best_match, str(best_match))
             text = f"Because you liked {match_name}"
             supporting = [best_match]

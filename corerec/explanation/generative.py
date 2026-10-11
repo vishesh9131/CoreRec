@@ -90,7 +90,7 @@ class GenerativeExplainer(BaseExplainer):
         if self.item_context_fn:
             item_info = self.item_context_fn(item_id) or {}
         
-        if self.user_context_fn and user_id:
+        if self.user_context_fn and user_id is not None:
             user_info = self.user_context_fn(user_id) or {}
         
         # build prompt
