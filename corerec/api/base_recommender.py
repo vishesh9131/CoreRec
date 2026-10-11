@@ -379,20 +379,6 @@ class BaseRecommender(ABC):
             )
         return user_map[user_id]
 
-    def _coerce_fit_dataframe(self, data: Any, *, sar_format: bool = False) -> Any:
-        """If *data* is a dataset/DataFrame wrapper, return a concrete DataFrame."""
-        from corerec.api.dataset import coerce_dataset
-
-        ds = coerce_dataset(data)
-        if ds is None:
-            return data
-        mode = ds.infer_mode()
-        if mode in ("dataframe", "triplet"):
-            return ds.as_sar_dataframe() if sar_format else ds.as_ncf_dataframe()
-        raise InvalidDataError(
-            f"{self.__class__.__name__}.fit() expects a DataFrame or triplet dataset, got '{mode}'."
-        )
-
     def fit_from_dataset(self, dataset: "RecommenderDataset", **kwargs: Any) -> "BaseRecommender":
         """Train using a :class:`~corerec.api.dataset.RecommenderDataset`."""
         from corerec.api.dataset import RecommenderDataset
