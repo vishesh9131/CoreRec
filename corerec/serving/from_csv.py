@@ -340,7 +340,7 @@ def train_from_csv(
     df, cols = read_interactions(path, rating_merge=rating_merge,
                                  **{f"{r}_col": v for r, v in columns.items()})
     stats = {"rows": len(df), "users": int(df["user"].nunique()), "items": int(df["item"].nunique()),
-             "test_rows": 0}
+             "test_rows": 0, "id_types": id_types(df)}
 
     metrics = baseline = None
     if evaluate:
@@ -507,7 +507,8 @@ def retrain_artifact(
             if f.is_file():
                 shutil.move(str(f), backup / f.name)
         stats = {"rows": len(everything), "users": int(everything["user"].nunique()),
-                 "items": int(everything["item"].nunique()), "test_rows": len(test)}
+                 "items": int(everything["item"].nunique()), "test_rows": len(test),
+                 "id_types": id_types(everything)}
         result = TrainResult(model=final, model_name=name, params=params, columns=cols,
                              stats=stats, popular=popular_items(everything),
                              fit_seconds=time.perf_counter() - start, k=k, metrics=cand,
@@ -549,6 +550,16 @@ def load_artifact(path: Union[str, Path], *, allow_pickle: bool = False):
     return model, manifest
 
 
+def id_types(df: pd.DataFrame) -> Dict[str, Optional[str]]:
+    """"int" or "str" per id column, so the server can read "6040" as 6040 (#203).
+    None for anything else (floats, mixed), which the server leaves alone."""
+    def kind(col):
+        if pd.api.types.is_integer_dtype(col):
+            return "int"
+        return "str" if col.map(type).eq(str).all() else None
+    return {"user": kind(df["user"]), "item": kind(df["item"])}
+
+
 def build_server(model, manifest: Optional[Dict[str, Any]] = None, host: str = "0.0.0.0",
                  port: int = 8000, feedback_log: Optional[Union[str, Path]] = None,
                  challenger: Optional[Any] = None, challenger_share: float = 0.1,
@@ -581,6 +592,7 @@ def build_server(model, manifest: Optional[Dict[str, Any]] = None, host: str = "
         if challenger_artifact:
             reload_fn["challenger"] = loader(challenger_artifact)
     return ModelServer(models, host=host, port=port, metadata=manifest,
+                       id_types=((manifest or {}).get("stats") or {}).get("id_types"),
                        fallback_items=manifest.get("popular_items"), feedback_log=feedback_log,
                        traffic=traffic, reload_fn=reload_fn,
                        admin_token=admin_token, feedback_token=feedback_token)

@@ -271,7 +271,10 @@ def serve_command(args):
         print("Auth      none: anyone who reaches this port can POST /reload and /feedback "
               "(set COREREC_ADMIN_TOKEN / COREREC_FEEDBACK_TOKEN)")
     print(f"Serving   http://{args.host}:{args.port}  (docs at /docs, Ctrl-C to stop)")
-    print(f"""Try       curl -X POST localhost:{args.port}/recommend -H 'Content-Type: application/json' -d '{{"user_id": "<a user>", "top_k": 5}}'""")
+    # quote the id only if the model was trained on string ids (#203)
+    kind = ((manifest or {}).get("stats") or {}).get("id_types", {}).get("user")
+    user = "<a user id>" if kind == "int" else '"<a user id>"'
+    print(f"""Try       curl -X POST localhost:{args.port}/recommend -H 'Content-Type: application/json' -d '{{"user_id": {user}, "top_k": 5}}'""")
     server.start()
 
 
