@@ -77,8 +77,8 @@ class WeightedFusion(nn.Module):
         # normalize weights
         weights = F.softmax(self.weights, dim=0)
         
-        # weighted sum
-        result = torch.zeros_like(embeddings[self.modalities[0]])
+        # weighted sum (shape from any present modality: the first may be missing)
+        result = torch.zeros_like(next(iter(embeddings.values())))
         
         for i, modality in enumerate(self.modalities):
             if modality in embeddings:
@@ -274,11 +274,14 @@ class MultiModalFusion(nn.Module):
         raw_embeddings: dict with modality name -> [batch, modality_dim] tensor
         Returns: [batch, output_dim] fused representation
         """
-        # project to common space
-        projected = {}
-        for name, emb in raw_embeddings.items():
-            if name in self.modality_projections:
-                projected[name] = self.modality_projections[name](emb)
+        # project to common space, in the declared order: concat used the caller's
+        # dict order, so {'text', 'image'} and {'image', 'text'} gave different outputs
+        missing = [m for m in self.modality_dims if m not in raw_embeddings]
+        if missing and self.strategy in ("concat", "gated"):
+            raise ValueError(f"missing modalities {missing}: the '{self.strategy}' strategy "
+                             f"needs all of {list(self.modality_dims)}")
+        projected = {name: self.modality_projections[name](raw_embeddings[name])
+                     for name in self.modality_dims if name in raw_embeddings}
         
         # fuse
         if self.strategy == "concat":
