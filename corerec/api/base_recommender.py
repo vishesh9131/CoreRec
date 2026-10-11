@@ -33,6 +33,7 @@ from corerec.api.recommend_args import normalize_recommend_kwargs
 
 if TYPE_CHECKING:
     from corerec.api.dataset import RecommenderDataset
+    from corerec.api.id_index import IdIndex
 
 
 class BaseRecommender(ABC):
