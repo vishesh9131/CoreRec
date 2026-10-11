@@ -11,6 +11,7 @@ from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
+import scipy.sparse as sp
 
 from corerec.api.exceptions import InvalidDataError
 from corerec.api.id_index import IdIndex
@@ -67,6 +68,8 @@ def to_interactions(*args: Any, item_offset: int = 0, **kwargs: Any) -> Interact
             raise TypeError(f"unexpected arguments: {sorted(kwargs) or args[3:]}")
         if users is None or items is None:
             raise TypeError("need user_ids and item_ids")
+        if ratings is not None and (sp.issparse(ratings) or np.ndim(ratings) == 2):
+            return _from_matrix(users, items, ratings, item_offset)
 
     users, items = list(users), list(items)
     if len(users) != len(items):
@@ -97,3 +100,24 @@ def to_interactions(*args: Any, item_offset: int = 0, **kwargs: Any) -> Interact
     except ValueError as exc:
         raise InvalidDataError(str(exc)) from exc
     return Interactions(uix, iix, ucodes, icodes, r, ts)
+
+
+def _from_matrix(users: Any, items: Any, matrix: Any, item_offset: int) -> Interactions:
+    """The matrix form: one user id per row, one item id per column, and every
+    nonzero cell is an event. Ids with an empty row or column stay in the index."""
+    users, items = list(users), list(items)
+    m = sp.coo_matrix(matrix)
+    if m.shape != (len(users), len(items)):
+        raise InvalidDataError(f"a {m.shape[0]}x{m.shape[1]} interaction matrix needs {m.shape[0]} "
+                               f"user_ids and {m.shape[1]} item_ids, got {len(users)} and {len(items)}")
+    uix, iix = IdIndex(users), IdIndex(items, item_offset)
+    if len(uix) != len(users) or len(iix) != len(items):
+        raise InvalidDataError("with an interaction matrix, user_ids and item_ids name its rows "
+                               "and columns, so each id may appear only once")
+    keep = m.data != 0  # NaN != 0, so NaN cells are kept and rejected below
+    r = np.asarray(m.data[keep], np.float64)
+    bad = int((~np.isfinite(r)).sum())
+    if bad:
+        raise InvalidDataError(f"{bad} cells of the interaction matrix are NaN or infinite")
+    return Interactions(uix, iix, m.row[keep].astype(np.int64),
+                        m.col[keep].astype(np.int64) + item_offset, r.astype(np.float32))

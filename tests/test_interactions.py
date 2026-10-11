@@ -63,10 +63,52 @@ def test_normalize_interactions_reads_the_triple_through_the_adapter():
     assert users == ["b", "a"] and items == [1, 2, 3]       # first appearance
     assert m.toarray().tolist() == [[5.0, 0, 4.0], [0, 2.0, 0]]  # repeat keeps its last rating
     assert normalize_interactions(["a"], [1], None)[2].toarray().tolist() == [[1.0]]
-    dense = np.ones((2, 3), dtype=np.float32)                # matrix form is untouched
-    assert normalize_interactions(["u", "v"], [1, 2, 3], dense)[2] is dense
+    dense = np.ones((2, 3), dtype=np.float32)                # matrix form keeps its values
+    assert np.array_equal(normalize_interactions(["u", "v"], [1, 2, 3], dense)[2].toarray(), dense)
     assert sp.issparse(normalize_interactions(["u", "v"], [1, 2, 3], sp.csr_matrix(dense))[2])
     with pytest.raises(InvalidDataError, match="1 of 2 ratings are NaN"):
         normalize_interactions(["a", "b"], [1, 2], [1.0, float("nan")])
     with pytest.raises(InvalidDataError, match="3 user_ids but 2 item_ids"):
         normalize_interactions(["a", "b", "c"], [1, 2], None)
+
+
+def test_the_matrix_form_reads_nonzero_cells_as_events():
+    """(unique users, unique items, [n_users, n_items] matrix): the form TwoTower and SASRec take."""
+    import scipy.sparse as sp
+
+    m = np.array([[0, 2.5, 0], [0, 0, 0], [1.0, 0, 3.0]])
+    for matrix in (m, sp.csr_matrix(m)):
+        x = to_interactions(["u1", "u2", "u3"], [10, 20, 30], matrix)
+        assert x.users.ids == ["u1", "u2", "u3"]          # u2 has no events but keeps its row
+        assert x.items.ids == [10, 20, 30]
+        assert x.user_codes.tolist() == [0, 2, 2] and x.item_codes.tolist() == [1, 0, 2]
+        assert x.ratings.tolist() == [2.5, 1.0, 3.0]
+    padded = to_interactions(["u1", "u2", "u3"], [10, 20, 30], m, item_offset=1)
+    assert padded.item_codes.tolist() == [2, 1, 3]
+
+
+@pytest.mark.parametrize("users,items,matrix,match", [
+    (["a", "b"], [1, 2], np.ones((3, 2)), "3x2 interaction matrix needs 3 user_ids"),
+    (["a", "a"], [1, 2], np.ones((2, 2)), "each id may appear only once"),
+    (["a", "b"], [1, 2], np.array([[1.0, np.nan], [0, 1.0]]), "1 cells of the interaction matrix are NaN"),
+])
+def test_a_bad_matrix_says_what_is_wrong(users, items, matrix, match):
+    with pytest.raises(InvalidDataError, match=match):
+        to_interactions(users, items, matrix)
+
+
+@pytest.mark.parametrize("name,kw", [
+    ("TwoTower", {"embedding_dim": 8, "epochs": 2, "verbose": False, "seed": 0}),
+    ("SASRec", {"hidden_units": 8, "num_blocks": 1, "num_heads": 1, "epochs": 1, "max_seq_length": 5,
+                "verbose": False, "seed": 0}),
+])
+def test_matrix_and_triple_train_the_same_model(name, kw):
+    import corerec.engines as engines
+
+    users, items = ["u1", "u2", "u3"], ["a", "b", "c", "d"]
+    m = np.array([[1.0, 0, 1.0, 0], [0, 1.0, 0, 1.0], [1.0, 1.0, 0, 0]])
+    rows, cols = m.nonzero()
+    cls = getattr(engines, name)
+    a = cls(device="cpu", **kw).fit(users, items, m)
+    b = cls(device="cpu", **kw).fit([users[r] for r in rows], [items[c] for c in cols], [1.0] * len(rows))
+    assert a.recommend("u1", top_k=2) == b.recommend("u1", top_k=2)

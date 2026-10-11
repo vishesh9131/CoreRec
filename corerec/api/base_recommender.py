@@ -633,20 +633,11 @@ def normalize_interactions(user_ids, item_ids, interactions):
     """
     import scipy.sparse as sp
 
-    users, items = list(user_ids), list(item_ids)
-    if sp.issparse(interactions) and interactions.shape == (len(users), len(items)):
-        return users, items, interactions.tocsr()
-    arr = None if interactions is None else np.asarray(interactions)
-
-    # Matrix form: one row per user, one column per item.
-    if arr is not None and arr.ndim == 2 and arr.shape == (len(users), len(items)):
-        return users, items, arr
-
-    # Triple form: one entry per interaction. Read through the one adapter (#78),
-    # so lengths and NaN/inf ratings fail the same way as for every other model.
     from corerec.api.interactions import to_interactions
 
-    events = to_interactions(users, items, interactions)
+    # Both forms are read by the one adapter (#78), so lengths, shapes and
+    # NaN/inf fail the same way as for every other model.
+    events = to_interactions(user_ids, item_ids, interactions)
     # a repeated (user, item) keeps its last rating, as the dense version did
     last = ~pd.DataFrame({"u": events.user_codes, "i": events.item_codes}) \
         .duplicated(keep="last").to_numpy()
