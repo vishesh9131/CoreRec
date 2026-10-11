@@ -72,10 +72,14 @@ class OnlineTrainer:
 
         # Set up logger
         self.logger = logging.getLogger("OnlineTrainer")
-        file_handler = logging.FileHandler(os.path.join(log_dir, "online_trainer.log"))
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        file_handler.setFormatter(formatter)
-        self.logger.addHandler(file_handler)
+        log_path = os.path.abspath(os.path.join(log_dir, "online_trainer.log"))
+        # the logger is shared: a handler per instance wrote every line N times
+        # and leaked a file handle for each trainer created
+        if not any(getattr(h, "baseFilename", None) == log_path for h in self.logger.handlers):
+            file_handler = logging.FileHandler(log_path)
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            file_handler.setFormatter(formatter)
+            self.logger.addHandler(file_handler)
         self.logger.setLevel(logging.INFO)
 
         # Set up data queue for receiving new data
