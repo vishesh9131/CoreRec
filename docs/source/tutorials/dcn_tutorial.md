@@ -64,6 +64,9 @@ import numpy as np
 # Load dataset with CORRECT API
 data = ml_1m.load()  # Returns dict with 'ratings', 'users', 'movies'
 ratings_df = data['ratings']  # DataFrame with user_id, movie_id, rating, timestamp
+# the first 100k ratings train in a minute or two on a laptop CPU; all 1M take
+# roughly 10x longer per epoch
+ratings_df = ratings_df.head(100_000).rename(columns={'movie_id': 'item_id'})
 
 print(f"Loaded {len(ratings_df)} ratings")
 
@@ -72,11 +75,11 @@ train_df, test_df = train_test_split(ratings_df, test_size=0.2, random_state=42)
 
 # Extract arrays for model
 train_users = train_df['user_id'].values
-train_items = train_df['movie_id'].values
+train_items = train_df['item_id'].values
 train_ratings = train_df['rating'].values
 
 test_users = test_df['user_id'].values
-test_items = test_df['movie_id'].values
+test_items = test_df['item_id'].values
 test_ratings = test_df['rating'].values
 ```
 
@@ -89,7 +92,7 @@ model = DCN(
     num_cross_layers=3,
     deep_layers=[128, 64],
     dropout=0.2,
-    epochs=20,
+    epochs=5,
     batch_size=256,
     learning_rate=0.001,
     verbose=True
@@ -138,13 +141,28 @@ for rank, item_id in enumerate(recommendations, 1):
 
 ### Step 6: Evaluate
 
+DCN is trained for ranking here: the default `task="auto"` treats every
+rating as a positive and samples negatives, so `predict()` is a click
+probability in [0, 1], not a 1-5 rating. Evaluate it as a ranker, on what it
+recommends:
+
+```python
+from corerec.evaluation import evaluate
+
+metrics = evaluate(model, test_df, train_interactions=train_df, k=10)
+print(f"NDCG@10: {metrics['NDCG@10']:.4f}  Recall@10: {metrics['Recall@10']:.4f}")
+```
+
+To predict ratings instead, train with `task="rating"` (MSE on the ratings
+themselves); then RMSE is the right measure:
+
 ```python
 from sklearn.metrics import mean_squared_error
-import numpy as np
 
-# Predict all test ratings
-test_pred = [model.predict(u, i) for u, i in zip(test_users, test_items)]
-rmse = np.sqrt(mean_squared_error(test_ratings, test_pred))
+rating_model = DCN(embedding_dim=64, epochs=5, task="rating")
+rating_model.fit(user_ids=train_users, item_ids=train_items, ratings=train_ratings)
+pred = rating_model.batch_predict(list(zip(test_users[:2000], test_items[:2000])))
+rmse = np.sqrt(mean_squared_error(test_ratings[:2000], pred))
 print(f"Test RMSE: {rmse:.4f}")
 ```
 
