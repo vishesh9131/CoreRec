@@ -20,6 +20,7 @@ trained natively here (``from_interactions``), or supplied directly
 from __future__ import annotations
 
 import time
+import warnings
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -41,6 +42,10 @@ class OnlineRecommender:
         self.index_type = index_type
         self.metric = metric
         self._vindex = VectorIndex(index_type=index_type, metric=metric)
+        if index_type != "flat" and not getattr(self._vindex, "_faiss_available", False):
+            warnings.warn(f"FAISS isn't installed, so index_type={index_type!r} serves with an "
+                          "exact NumPy scan over every item (correct, but O(catalogue) per "
+                          "query). pip install faiss-cpu for sub-linear search.", stacklevel=2)
         self._item_ids: List = []
         self._item_pos: Dict = {}
         self._item_emb: Optional[np.ndarray] = None  # kept for fold-in (ridge)
@@ -90,29 +95,35 @@ class OnlineRecommender:
         dim: int = 64,
         epochs: int = 200,
         n_layers: int = 3,
-        device: str = "cpu",
+        device: str = "auto",
         index_type: str = "hnsw",
         metric: Optional[str] = None,
         verbose: bool = False,
+        batch: Optional[int] = None,
     ) -> "OnlineRecommender":
         """Train native embeddings and build the serving index.
 
         Args:
             model: 'lightgcn' (default, strongest on graph benchmarks) or 'bpr'.
+            device: 'auto' (CUDA when available, else CPU), or a torch device.
             metric: defaults to 'ip' (dot product) -- the right ranking for these
                 MF/GCN embeddings; pass 'cosine' to normalize.
+            batch: training batch size (default 8192 for LightGCN, 4096 for BPR).
+                A large one, e.g. 1_000_000, fits several times faster for a
+                small accuracy cost.
         """
         if metric is None:
             metric = "ip"
         users, items, u_ids, i_ids, seen = _frame_to_arrays(interactions, user_col, item_col)
+        extra = {} if batch is None else {"batch": int(batch)}
         if model == "lightgcn":
             U, V = _train_lightgcn_embeddings(
                 users, items, len(u_ids), len(i_ids), dim=dim, n_layers=n_layers,
-                epochs=epochs, device=device, verbose=verbose)
+                epochs=epochs, device=device, verbose=verbose, **extra)
         elif model == "bpr":
             U, V = _train_bpr_embeddings(
                 users, items, len(u_ids), len(i_ids), dim=dim, epochs=epochs,
-                device=device, verbose=verbose)
+                device=device, verbose=verbose, **extra)
         else:
             raise ValueError("model must be 'lightgcn' or 'bpr'")
         counts = np.bincount(items, minlength=len(i_ids))
@@ -220,12 +231,15 @@ class OnlineRecommender:
     # ------------------------------------------------------------------ #
     def stats(self) -> Dict:
         lat = np.asarray(self._latencies_ms) if self._latencies_ms else np.zeros(1)
+        faiss = bool(getattr(self._vindex, "_faiss_available", False))
         return {
             "n_items": len(self._item_ids),
             "n_users": len(self._user_emb),
-            "index_type": self.index_type,
+            # what actually serves: without FAISS every index type is a NumPy scan
+            "index_type": self.index_type if faiss else "exact",
+            "requested_index_type": self.index_type,
             "metric": self.metric,
-            "faiss": bool(getattr(self._vindex, "_faiss_available", False)),
+            "faiss": faiss,
             "queries_served": len(self._latencies_ms),
             "latency_ms_p50": float(np.percentile(lat, 50)),
             "latency_ms_p99": float(np.percentile(lat, 99)),

@@ -25,7 +25,7 @@ df = pd.DataFrame({"user_id": users, "item_id": items})
 
 # trains native embeddings (LightGCN by default) AND builds the ANN index
 rec = OnlineRecommender.from_interactions(
-    df, model="lightgcn", dim=64, epochs=200, device="cuda",
+    df, model="lightgcn", dim=64, epochs=20,   # device="auto": CUDA when available
 )
 
 rec.recommend(user_id=42, top_k=10)        # sub-ms ANN retrieval
@@ -33,9 +33,12 @@ rec.recommend_batch([1, 2, 3], top_k=10)   # batched
 ```
 
 `model="lightgcn"` (default) is the strongest option on large graph datasets;
-`model="bpr"` is a lighter matrix-factorization alternative. Both train on GPU when
-available. For a ~7x faster fit at a small accuracy cost, pass a large `batch`
-(e.g. `from_interactions(..., )` with the trainer's `batch=1_000_000`).
+`model="bpr"` is a lighter matrix-factorization alternative. Both train on CUDA
+when it's available (`device="auto"`, the default) and otherwise on CPU; Apple
+MPS can't run the sparse propagation, so Macs train on CPU. `epochs=20` takes a
+few minutes on a laptop CPU for ~1M interactions; the default `epochs=200` is
+sized for a GPU. For a ~7x faster fit at a small accuracy cost, pass a large
+`batch`, e.g. `from_interactions(df, batch=1_000_000)`.
 
 ## Serving an existing model's embeddings
 
@@ -88,9 +91,12 @@ rec.recommend("brand_new_user", top_k=10)   # -> popular items, not an error
 
 ```python
 rec.stats()
-# {'n_items': ..., 'n_users': ..., 'index_type': 'hnsw', 'faiss': True,
-#  'queries_served': ..., 'latency_ms_p50': ..., 'latency_ms_p99': ...}
+# {'n_items': ..., 'n_users': ..., 'index_type': 'hnsw', 'requested_index_type': 'hnsw',
+#  'faiss': True, 'queries_served': ..., 'latency_ms_p50': ..., 'latency_ms_p99': ...}
 ```
+
+`index_type` is what is actually serving: without FAISS it reads `'exact'`
+(a NumPy scan over every item), and building the index warns once.
 
 ## Scale and performance
 
@@ -98,7 +104,8 @@ On Gowalla (29,858 users, 40,981 items, ~1.0M interactions) the engine builds in
 seconds, serves at **~0.09 ms/user (p50), ~10,000 req/s single-thread**, and holds
 **~1.5 GB** of memory — versus tens of GB for dense co-occurrence models. FAISS
 HNSW scales to a **1M-item index searched in ~0.02 ms/query**, and the approximate
-ANN preserves 88–99% of exact-search accuracy.
+ANN preserves 88–99% of exact-search accuracy. These numbers need FAISS; the
+NumPy fallback is exact and its cost grows with the catalogue.
 
 ## Installing the ANN backend
 
