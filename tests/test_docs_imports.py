@@ -32,6 +32,11 @@ IMPORT_RE = re.compile(
     r"^\s*(?:from\s+(corerec[\w\.]*)\s+import|import\s+(corerec[\w\.]*))", re.M
 )
 
+# `from corerec.x import A, B` and the parenthesised multi-line form: the names
+# must exist too, not just the module (#213: `from corerec.engines.collaborative
+# import NCF` passed because the package imports).
+FROM_RE = re.compile(r"^\s*from\s+(corerec[\w\.]*)\s+import\s+(\([^)]*\)|[^\n]+)", re.M)
+
 # Placeholders that are meant to be filled in by the reader, not imported.
 PLACEHOLDERS = {"corerec.engines.your_model"}
 
@@ -58,6 +63,24 @@ def _importable(module: str) -> bool:
     return _cache[module]
 
 
+def _missing_names(text: str):
+    """`module.name` for every imported name the module doesn't have."""
+    missing = set()
+    for m in FROM_RE.finditer(text):
+        module, names = m.group(1), m.group(2)
+        if module in PLACEHOLDERS or not _importable(module):
+            continue  # reported as a broken module already
+        mod = importlib.import_module(module)
+        names = re.sub(r"#[^\n]*", "", names)  # comments first, they can hide the next name
+        for part in names.strip("()").replace("\\", " ").split(","):
+            name = part.split(" as ")[0].strip()
+            if not name or name == "*" or not name.isidentifier():
+                continue
+            if not hasattr(mod, name) and not _importable(f"{module}.{name}"):
+                missing.add(f"{module}.{name}")
+    return missing
+
+
 def _published_pages():
     if not MKDOCS.exists():
         return []
@@ -78,7 +101,7 @@ PUBLISHED = _published_pages()
 def _broken_imports(rel_path: str):
     text = (DOCS / rel_path).read_text(errors="ignore")
     modules = {m.group(1) or m.group(2) for m in IMPORT_RE.finditer(text)}
-    return sorted(m for m in modules - PLACEHOLDERS if not _importable(m))
+    return sorted({m for m in modules - PLACEHOLDERS if not _importable(m)} | _missing_names(text))
 
 
 # docs/source pages that still import removed modules (corerec.engines.gnnrec,
@@ -93,7 +116,7 @@ SOURCE_PAGES = sorted(p.relative_to(SOURCE).as_posix() for p in SOURCE.rglob("*.
 def _broken_source_imports(rel_path: str):
     text = (SOURCE / rel_path).read_text(errors="ignore")
     modules = {m.group(1) or m.group(2) for m in IMPORT_RE.finditer(text)}
-    return sorted(m for m in modules - PLACEHOLDERS if not _importable(m))
+    return sorted({m for m in modules - PLACEHOLDERS if not _importable(m)} | _missing_names(text))
 
 
 @pytest.mark.parametrize("rel_path", SOURCE_PAGES, ids=SOURCE_PAGES)
@@ -113,6 +136,13 @@ def test_known_stale_source_only_names_real_pages():
     missing = [p for p in KNOWN_STALE_SOURCE if not (SOURCE / p).is_file()]
     assert not missing, f"KNOWN_STALE_SOURCE names pages that do not exist: {missing}"
     assert len(SOURCE_PAGES) > 20, f"only found {len(SOURCE_PAGES)} docs/source pages"
+
+
+def test_missing_names_are_found():
+    """The parser itself: single-line, aliased and parenthesised forms."""
+    text = ("from corerec.engines import ALS, NoSuchModel as X\n"
+            "from corerec.evaluation import (\n    evaluate,  # ok\n    ndcg_at_k_nope,\n)\n")
+    assert _missing_names(text) == {"corerec.engines.NoSuchModel", "corerec.evaluation.ndcg_at_k_nope"}
 
 
 def test_docs_are_actually_published():

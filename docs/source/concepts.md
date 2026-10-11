@@ -48,7 +48,7 @@ All **production** models inherit from `BaseRecommender`, providing:
 #### Engines
 CoreRec organizes models under `corerec.engines`:
 - **Top-level engines** (`corerec.engines.dcn`, `deepfm`, `sasrec`, …): **14 production models**
-- **`corerec.engines.collaborative`**: SAR, NCF, FAST, LightGCN, …
+- **`corerec.engines.collaborative`**: SAR, LightGCN, …
 - **`corerec.engines.content_based`**: TF-IDF and content methods
 - **`corerec.sandbox`**: ~50 experimental research models (not production-tested)
 
@@ -56,7 +56,7 @@ CoreRec organizes models under `corerec.engines`:
 
 CoreRec models are organized into two tiers:
 
-- **Production Models** (14 models): Fully tested, CI-enforced, and implement the complete `BaseRecommender` interface. These are recommended for production deployments. Examples: DCN, DeepFM, SASRec, NCF, LightGCN, TwoTower, FAST.
+- **Production Models** (the names in `corerec.engines.MODELS`, also listed by `corerec models`): Fully tested, CI-enforced, and implement the complete `BaseRecommender` interface. These are recommended for production deployments. Examples: ALS, EASE, SAR, DCN, DeepFM, SASRec, HSTU, LightGCN, TwoTower.
 - **Sandbox Models** (~50 models): Experimental implementations for research and learning. These cover a wide range of published algorithms but are not production-tested. Always validate thoroughly before using in production.
 
 See the [Model Documentation](models/index.md#model-tiers) for the full breakdown.

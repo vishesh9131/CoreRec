@@ -7,6 +7,8 @@ Classic and neural collaborative filtering models that learn user/item represent
 | Model | Type | Import | Tutorial |
 |-------|------|--------|----------|
 | **SAR** | Item similarity / co-occurrence | `from corerec.engines.collaborative import SAR` | [SAR](../tutorials/sar_tutorial.md) |
+| **ALS** | Implicit matrix factorization | `from corerec.engines import ALS` | below |
+| **EASE** | Closed-form item-item linear model | `from corerec.engines import EASE` | below |
 
 ### SAR (DataFrame API)
 
@@ -26,25 +28,33 @@ model.fit(df)
 recs = model.recommend(user_id=0, top_k=10)
 ```
 
-### NCF (DataFrame API)
+### ALS (triplet API)
 
 ```python
-from corerec.engines.collaborative import NCF
+from corerec.engines import ALS
 
-model = NCF(num_epochs=10, verbose=True)
-model.fit(df)  # columns: user_id, item_id, rating
+user_ids = [0, 0, 1, 1, 2]
+item_ids = [10, 11, 10, 12, 11]
+ratings = [5.0, 4.0, 3.0, 5.0, 2.0]
+
+model = ALS(factors=64, iterations=15)
+model.fit(user_ids, item_ids, ratings)
+recs = model.recommend(user_id=0, top_k=10)
+score = model.predict(user_id=0, item_id=10)
+```
+
+### EASE (triplet API)
+
+```python
+from corerec.engines import EASE
+
+model = EASE(reg=250.0)
+model.fit(user_ids, item_ids, ratings)
 recs = model.recommend(user_id=0, top_k=10)
 ```
 
-### FAST / FASTRecommender (triplet API)
-
-```python
-from corerec.engines.collaborative import FAST
-
-model = FAST(factors=64, iterations=15, seed=42)
-model.fit(user_ids, item_ids, ratings)
-score = model.predict(user_id=0, item_id=10)
-```
+NCF and FAST were removed in 0.7.0; ALS and EASE cover the same ground and are
+CI-tested.
 
 ## Sandbox models (experimental)
 
@@ -68,9 +78,9 @@ Old docs referenced `corerec.engines.unionizedFilterEngine.*` — that module la
 | Scenario | Start with |
 |----------|------------|
 | Fast baseline, implicit feedback | **SAR** |
-| Neural pairwise ranking | **NCF** |
-| Low-latency similarity CF | **FAST** |
-| Research / classic MF | Sandbox ALS, SVD |
+| Matrix factorization, implicit feedback | **ALS** |
+| Strong item-item baseline, small/medium catalogues | **EASE** |
+| Research / classic MF | Sandbox SVD, A2SVD |
 
 ## See also
 

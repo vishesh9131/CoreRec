@@ -63,15 +63,21 @@ model.fit(df)
 recs = model.recommend(user_id=0, top_k=10)
 ```
 
-### Neural Collaborative Filtering (NCF)
+### Matrix Factorization (ALS)
+
+NCF was removed in 0.7.0; ALS is the production matrix-factorization model.
 
 ```python
-from corerec.engines.collaborative import NCF
+import numpy as np
+from corerec.engines import ALS
 
-ncf_df = pd.DataFrame({'user_id': [0, 0, 1], 'item_id': [0, 1, 2], 'rating': [1, 1, 1]})
-model = NCF(num_epochs=10, verbose=True)
-model.fit(ncf_df)
-recs = model.recommend(user_id=0, top_k=10)
+rng = np.random.default_rng(0)
+users = rng.integers(0, 50, 1000).tolist()
+items = rng.integers(0, 100, 1000).tolist()
+
+model = ALS(factors=32, iterations=10)
+model.fit(users, items, [1.0] * len(users))
+recs = model.recommend(user_id=users[0], top_k=10)
 ```
 
 ### Sequential Models (SASRec)

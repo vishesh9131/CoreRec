@@ -85,7 +85,7 @@ print(f"Loaded model recommendations: {recs}")
 - Interpretable item-similarity recommendations
 
 ❌ **Not ideal for:**
-- Strict sequential next-item prediction (use SASRec / BERT4Rec)
+- Strict sequential next-item prediction (use SASRec / HSTU)
 - Rich side features only (pair with content models)
 
 ### Best Practices

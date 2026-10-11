@@ -7,7 +7,7 @@
 | Quick baseline | SAR | Fast, no deep learning needed |
 | Large catalog retrieval | TwoTower | Efficient dual-encoder architecture |
 | User interaction graph | LightGCN | Captures graph connectivity |
-| Sequential behavior | SASRec, BERT4Rec | Temporal pattern modeling |
+| Sequential behavior | SASRec, HSTU | Temporal pattern modeling |
 | Feature-rich data | DeepFM, DCN | Automatic feature interactions |
 | Multi-modal content | Multimodal Fusion | Combines text, image, audio |
 

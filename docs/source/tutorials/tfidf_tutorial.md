@@ -62,18 +62,24 @@ for rank, item_id in enumerate(recommendations, 1):
 
 ### Step 6: Evaluate
 
+TF-IDF scores item similarity, not ratings, so evaluate it as ranking: here an
+item's relevant neighbours are the other items on the same topic.
+
 ```python
-from corerec.metrics import rmse, ndcg_at_k
+import numpy as np
+from corerec.evaluation import RankingMetrics
 
-# Rating prediction
-predictions = [model.predict(u, i) for u, i, r in test_data]
-test_rmse = rmse(test_data.ratings, predictions)
-print(f"Test RMSE: {test_rmse:.4f}")
-
-# Ranking quality
-ndcg = ndcg_at_k(model, test_data, k=10)
-print(f"NDCG@10: {ndcg:.4f}")
+ndcg, recall = [], []
+for item in items:
+    relevant = [j for j in items if j != item and j % 5 == item % 5]  # same topic
+    recs = model.recommend(item, top_k=10)
+    ndcg.append(RankingMetrics.ndcg_at_k(recs, relevant, k=10))
+    recall.append(RankingMetrics.recall_at_k(recs, relevant, k=10))
+print(f"NDCG@10: {np.mean(ndcg):.4f}  Recall@10: {np.mean(recall):.4f}")
 ```
+
+For a model trained on user interactions, `corerec.evaluation.evaluate(model,
+test, train_interactions=train, k=10)` computes the same metrics in one call.
 
 ### Step 7: Save & Load
 

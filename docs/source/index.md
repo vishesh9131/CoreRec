@@ -106,14 +106,14 @@ Batch inference, model loading, and a lightweight model server for production de
 :link: models/graph_based
 :link-type: doc
 
-**6 models** -- GNNRec, LightGCN, graph neural networks.
+**LightGCN** in production; graph neural network models in the sandbox.
 :::
 
 :::{grid-item-card} Sequential
 :link: models/sequential
 :link-type: doc
 
-**6 models** -- SASRec, MIND, Caser, NextItNet.
+**SASRec** and **HSTU** in production; Caser, NextItNet and others in the sandbox.
 :::
 
 :::{grid-item-card} Bayesian

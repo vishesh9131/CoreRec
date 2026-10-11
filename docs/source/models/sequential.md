@@ -14,7 +14,7 @@ Models that use ordered interaction history for next-item prediction.
 **SAR** (Smart Adaptive Recommendations) is **item-similarity collaborative filtering**, not a sequential model. See [Matrix Factorization](matrix_factorization.md).
 ```
 
-### SASRec / BERT4Rec (interaction matrix)
+### SASRec (interaction matrix)
 
 Sequential production models require a user×item **interaction matrix** (not raw rating triplets alone):
 

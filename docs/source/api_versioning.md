@@ -34,7 +34,6 @@ loaded = ModelClass.load(path)
 |--------|-------------|
 | `recommend(..., top_n=10)` | `recommend(..., top_k=10)` |
 | `items_to_ignore` | `exclude_items` |
-| `from corerec.engines.collaborative import FastRecommender` (broken) | Works; aliases `FASTRecommender` |
 | Pickle-only artifacts (untrusted) | Use `safe_persistence.save_artifact` / torch `state_dict` |
 
 Deprecation warnings use Python's `DeprecationWarning` and can be surfaced in CI:
