@@ -85,6 +85,7 @@ class BatchRecommendationRequest(BaseModel):
 
     user_ids: List[Any]
     top_k: int = 10
+    exclude_items: List[Any] = []
 
 
 class ModelServer:
@@ -316,17 +317,35 @@ class ModelServer:
 
         @self.app.post("/batch/recommend")
         def batch_recommend(request: BatchRecommendationRequest):
-            """Batch recommendations for multiple users."""
-            try:
-                if len(self.models) == 1 and hasattr(self.model, "batch_recommend"):
-                    recs = self.model.batch_recommend(
-                        request.user_ids, request.top_k)
-                else:
-                    recs = {
-                        uid: self._recommend(uid, request.top_k, [])[0]
-                        for uid in request.user_ids}
+            """Batch recommendations with the /recommend contract for every user:
+            popular-item fallback, exclude_items, A/B variant and impression logging."""
+            from corerec.api.exceptions import RecommendationError
 
-                return {"recommendations": recs}
+            try:
+                fast = {}
+                if (len(self.models) == 1 and hasattr(self.model, "batch_recommend")
+                        and not request.exclude_items):
+                    # the model's vectorised path, for the users it knows
+                    try:
+                        fast = self.model.batch_recommend(request.user_ids, request.top_k)
+                    except RecommendationError:
+                        fast = {}
+                body = {"recommendations": {}, "sources": {}, "variants": {}}
+                if self.feedback_log is not None:
+                    body["request_ids"] = {}
+                for uid in request.user_ids:
+                    variant = self._variant(uid)
+                    recs, source = fast.get(uid), "model"
+                    if not recs:
+                        recs, source = self._recommend(uid, request.top_k, request.exclude_items, variant)
+                    key = _to_json_safe(uid)
+                    body["recommendations"][key] = _to_json_safe(recs)
+                    body["sources"][key] = source
+                    body["variants"][key] = variant
+                    if self.feedback_log is not None:
+                        body["request_ids"][key] = self.feedback_log.impression(
+                            uid, recs, variant=variant, source=source)
+                return body
             except Exception as e:
                 self.logger.error(f"Batch recommendation error: {e}")
                 raise HTTPException(status_code=500, detail=str(e))

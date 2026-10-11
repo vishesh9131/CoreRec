@@ -32,7 +32,7 @@ server.start()
 - `POST /predict` — Single prediction
 - `POST /recommend` — Single user recommendations
 - `POST /batch/predict` — Batch predictions
-- `POST /batch/recommend` — Batch recommendations
+- `POST /batch/recommend` — Batch recommendations, with the same rules as `/recommend` for each user: popular items for unknown users, `exclude_items`, the A/B variant and impression logging. The response maps each user id to its `recommendations`, `sources`, `variants` and (with a feedback log) `request_ids`.
 - `GET /health` — Health check
 - `GET /info` — Model information
 
