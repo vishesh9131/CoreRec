@@ -1,0 +1,79 @@
+/* hero banner at the top of the landing page */
+.hero-banner {
+    text-align: center;
+    padding: 2.5rem 1rem 1.8rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--pst-color-border);
+}
+
+.hero-banner h1 {
+    font-size: 2.4rem;
+    margin-bottom: 0.4rem;
+    letter-spacing: -0.02em;
+}
+
+.hero-banner .tagline {
+    font-size: 1.15rem;
+    opacity: 0.78;
+    max-width: 600px;
+    margin: 0 auto 1.2rem;
+    line-height: 1.5;
+}
+
+.hero-banner .install-cmd {
+    display: inline-block;
+    font-family: var(--pst-font-family-monospace);
+    font-size: 0.92rem;
+    padding: 0.45rem 1.4rem;
+    border-radius: 6px;
+    background: var(--pst-color-surface);
+    border: 1px solid var(--pst-color-border);
+}
+
+/* stats row beneath the hero */
+.stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding: 0.8rem 0;
+}
+
+.stats-row .stat {
+    text-align: center;
+}
+
+.stats-row .stat-num {
+    font-size: 1.8rem;
+    font-weight: 700;
+    display: block;
+    line-height: 1.2;
+}
+
+.stats-row .stat-label {
+    font-size: 0.82rem;
+    opacity: 0.65;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* cards -- subtle refinement over defaults */
+.sd-card {
+    border-radius: 8px !important;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.sd-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+/* section headers */
+.landing-section-title {
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin: 2.2rem 0 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid var(--pst-color-border);
+}
