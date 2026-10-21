@@ -37,7 +37,7 @@ jobs:
 
       - id: token
         if: env.HAS_KEY == 'true'
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.COREREC_BOT_APP_ID }}
           private-key: ${{ secrets.COREREC_BOT_PRIVATE_KEY }}
